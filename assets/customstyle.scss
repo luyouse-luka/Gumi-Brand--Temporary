@@ -35,7 +35,7 @@
 // 都吃这个值 —— 预览走的是 file://，浏览器会把 css/js/woff2 缓存到下一次
 // 硬刷新为止，没有版本号的话"改了但页面没变"会被误判成"没改"。
 // build-check.html 会把这个值打出来，用来确认浏览器拿到的是哪一版。
-$build: "20260824-r20";
+$build: "20260824-r22";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -1941,6 +1941,7 @@ $rv-in: 0.28s;
 .gb-scallop--mint-to-cream { --wave-bg: #{$c-lime-150}; --wave-fg: #{$c-cream}; }
 .gb-scallop--cream-to-white{ --wave-bg: #{$c-cream};    --wave-fg: #{$c-white}; }
 .gb-scallop--white-to-cream{ --wave-bg: #{$c-white};    --wave-fg: #{$c-cream}; }
+.gb-scallop--cream-to-sand { --wave-bg: #{$c-cream};    --wave-fg: #{$c-sand}; }
 
 // 透底 --------------------------------------------------------------------
 // 让**上一个模块的内容**穿到波浪底下、只被圆弧切掉（任务文档第 2 条）。
@@ -2126,6 +2127,27 @@ $rv-in: 0.28s;
     letter-spacing: -0.28px;
   }
   @include tablet { height: fluid(32px, 40px); font-size: fluid(14px, 16px); line-height: fluid(20px, 24px); letter-spacing: fluid(-0.28px, -0.32px); }
+}
+
+// Trustpilot 的五颗星。官方是第三方 embed，上线前整条会被换掉；在那之前先用
+// 稿里的形状顶上，免得公告条只剩两个词。
+// 稿 332:16402「stars」= 77x14，五个 14x14 的实例横排、间距 1.75；每个实例是
+// 一块 #b5ed61 的方板，中间嵌一个 10.5x10.5 的深绿五角星（内缩 1.75）。
+// 方板走 currentColor、星形走自己的类 —— 两条选择器特异性相同，不会互相压
+// （见 memory svg-presentation-attr-beats-inherit：写在 SVG 上的 fill 属性
+// 赢得过继承但输给规则，所以两块颜色都必须由规则给）。
+// 一整条 77x14 的 SVG，而不是五个元素排 flex：五颗星在稿里是死间距 1.75，
+// 一条 SVG 就把「方板 + 星 + 间距」全部锁进 viewBox，桌面手机同一套（手机稿
+// I237:12777;237:15402;196:18751 同样是 77x14 / 1.75 / 10.5）。
+.gb-announcement__stars {
+  display: block;
+  width: 77px;
+  height: 14px;
+  flex-shrink: 0;
+  color: $c-lime;
+
+  .gb-announcement__star-plate { fill: currentColor; }
+  .gb-announcement__star-pt    { fill: $c-green; }
 }
 
 // Header bar --------------------------------------------------------------
@@ -2585,15 +2607,18 @@ body.is-menu-open {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 32px;
+  gap: 30px;
 }
 
+// Figma 313:9710「Curved Text」桌面框 452×51，椭圆本体 289×132（rx144.5/ry66）
+// 居中嵌在框内（左右各留 81px）。旧实现直接把椭圆自己的 289×62 当框用，
+// 框窄了、弧也跟着被压扁成 A 338 338 的近似正圆。
 .gb-footer-cta__arc {
-  width: 289px;
+  width: 452px;
   margin-bottom: -8px;
 
   @include narrow { width: 237px; }
-  @include tablet { width: fluid(237px, 289px); }
+  @include tablet { width: fluid(237px, 452px); }
 }
 
 .gb-footer-cta__title {
@@ -2606,6 +2631,7 @@ body.is-menu-open {
 
 .gb-footer-cta__text {
   max-width: 625px;
+  margin-top: -6px;
   font-size: 18px;
   line-height: 28px;
   letter-spacing: -0.36px;
@@ -2764,7 +2790,7 @@ body.is-menu-open {
   display: flex;
   flex: 1 1 auto;
   justify-content: flex-end;
-  gap: 24px;
+  gap: 22px;
 
   @include narrow {
     display: grid;
@@ -3169,7 +3195,8 @@ body.is-menu-open {
 }
 
 .gb-hero__btn {
-  align-self: flex-start;
+  // 稿 332:16424 宽 380 = .gb-hero__cta 的整宽，不是 shrink-to-fit
+  align-self: stretch;
   height: 60px;
   padding: 0 64px;
   background: $c-green;
@@ -3279,30 +3306,33 @@ body.is-menu-open {
   }
 }
 
-// The PNG used to carry ~336px of transparent margin each side, which forced an
-// oversize-and-clip trick that ended up cutting the bear's crown and feet. The
-// file is now trimmed to its ink (528x874, original kept in figma/assets-raw/),
-// so it can be sized directly and never needs clipping.
-//
 // THE BEAR IS TILTED. Figma frame 332:16444 ("Background") carries
 // relativeTransform [[.99046,-.13782],[.13782,.99046]] = CSS rotate(7.92deg),
 // and the 568x816 slot above is just the axis-aligned box that tilt produces.
 // Reading the slot as if it were the artwork is what made earlier rounds
-// conclude Figma "crops the image vertically": the design's glow measures
-// 535.8 x 785.6 axis-aligned, but UN-rotated it is 439.1 x 732.06 — ratio
-// 0.5998, which is our file's 528/874 = 0.6041 to within 0.7%. No crop, a tilt.
+// conclude Figma "crops the image vertically". No crop, a tilt.
 //
-// So: size the un-rotated artwork to the design's un-rotated glow
-// (439.1 / 568.05 = 77.3% of the slot), centre it, then rotate. The rotated box
-// lands back on the slot, and the ~4% width shortfall recorded in round six
-// disappears with it.
+// **光晕不是照片自带的，是稿里单独一条描边**（任务文档第 2 条）：
+// 332:16445 是一条 439.066 x 732.078 的路径，没有填充，只有 26.2137 的
+// **CENTER 描边**（#b5ed61），所以光圈向外扩 13.107、向内压 13.107。
+// 旧的 gumi-bear-front-glow.png 是照着照片 alpha 描出来的一圈约 12px（换算到
+// 屏幕只有 10.4px），不到设计的 40%，而且它跟着照片每个凹凸走 —— 设计那条是
+// 一条平滑的贴纸轮廓，腿缝那种窄口直接被 26px 的粗描边糊平。这就是「外轮廓
+// 大小宽度不对」。
+// 新图是按稿重建的：glow 路径的 strokeGeometry 填 #b5ed61 打底，照片
+// (332:16446，rect 1010.919x780.649 @ -271.928,-13.757，scaleMode FILL) 盖在上面，
+// 一起被 Background 的 467.886x759.180 裁一刀，再裁到墨迹 —— 得到 559x910。
+// 生成脚本 tools/make-hero-glow.py。
+//
+// 尺寸因此从旧的「路径宽 439.1」变成「路径 + 描边 = 466.0」：
+// 466.0 / 568.05 = 82.04% of the slot，居中后再旋转。
 // It still runs past the frame's bottom edge on purpose, as 285:18162 draws it.
 .gb-hero__bear {
   --bear-rot: 7.92deg;   // desktop 285:18162
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 77.3%;          // 439.1 of the 568.05 slot, un-rotated
+  width: 82.04%;         // 466.0 of the 568.05 slot, un-rotated（含 glow 描边）
   max-width: none;
   height: auto;
   transform: translate(-50%, -50%) rotate(var(--bear-rot));
@@ -3311,7 +3341,7 @@ body.is-menu-open {
   // in a 432.74 slot.
   @include narrow {
     --bear-rot: -15deg;
-    width: 67.7%;
+    width: 71.39%;       // 308.95 of the 432.74 slot（292.95 路径 + 16 描边）
   }
 }
 
@@ -3350,6 +3380,9 @@ body.is-menu-open {
 .gb-logo-scroll__viewport {
   display: flex;
   overflow: hidden;
+  // 稿 341:47385：行高 96，里面的 Logo 框 79.88 高、上下各留 8.06。
+  // 槽位只给 80，余下的 16 由这里的内距出——两者相加仍是 96，section 总高不变。
+  padding: 8px 0;
 }
 
 .gb-logo-scroll__track {
@@ -3372,7 +3405,7 @@ body.is-menu-open {
   justify-content: center;
   flex-shrink: 0;
   width: 193px;
-  height: 96px;
+  height: 80px;                    // 稿 341:47386 Logo 框 79.88；余下 16 在 viewport 的内距里
 }
 
 // These used to be the Figma *frame* sizes driven through object-fit: cover,
@@ -3437,7 +3470,18 @@ body.is-menu-open {
   @include tablet { gap: fluid(32px, 48px); }
 }
 
-.gb-stats__arc { width: 237px; }
+// 稿 341:47317「Curved Text」= 278x29 的占位框，弧字本体（341:47318）是一段
+// **椭圆**弧：rx 118.5261 / ry 65.7047，圆心 (139, 82.073)，基线走椭圆顶点 (139, 16.368)。
+// 之前写的是 `A 338 338`（正圆），同样跨度只落 11px 而设计落 20px，所以弧度太平。
+// 框高 29 也不是随便取的：29 + 48(head gap) 之后，弧字墨迹底到标题墨迹顶正好是设计的 52px。
+.gb-stats__arc {
+  width: 278px;
+
+  // 手机稿 236:12453 用同一个椭圆、同一个 278x29 的框，只把字号降到 20
+  @include narrow {
+    text { font-size: 20px; letter-spacing: -0.2px; }
+  }
+}
 
 .gb-stats__title {
   font-size: 56px;
@@ -3484,8 +3528,15 @@ body.is-menu-open {
   }
 }
 
-.gb-stat--ingredients { left: 6.38%;  top: 5.1%; }
-.gb-stat--fibre       { left: 70.43%; top: 5.1%; }
+// left 全部取自 Figma（76.047/840.094/0/890.879 of 1192.879），实测与设计误差 <0.01%。
+// top 上面两个是任务文档给的 5.5%，不是 Figma 的 5.099%：稿里「Ingredients Item
+// Container」高 56，里面的 TEXT 从 +1.957 开始，我们的 .gb-stat__value 行盒 51 高、
+// 文字贴着块顶，所以同样的 top 我们的墨迹比设计高约 1.96px（= 0.31%）。
+// 5.5% 正好把这 1.96px 补回去（推导值 5.41%，差 0.5px，取用户给的整数）。
+// 下面两个仍是 Figma 原值 —— 同样高 1.96px，任务文档没点名就不动，要改按同样
+// 的 +0.31% 算：vitamins 56.93% / benefits 53.72%。
+.gb-stat--ingredients { left: 6.38%;  top: 5.5%; }
+.gb-stat--fibre       { left: 70.43%; top: 5.5%; }
 .gb-stat--vitamins    { left: 0;      top: 56.61%; }
 .gb-stat--benefits    { left: 74.68%; top: 53.41%; }
 
@@ -3515,6 +3566,27 @@ body.is-menu-open {
 
 .gb-stat__unit { font-size: 28px; }
 
+// 加号。设计稿里 PP Palma 的 “+” 墨迹只有数字的 47.9% 高、顶边与数字顶边齐平
+// （285:18162 三处实测：hero 12/25、stats 60+ 17/35.5、stats 10+ 17/36），
+// 而我们这份 PP Palma 试用档的 “+” 字形是 85.7% 高且垂直居中 —— 字形对不上，
+// 只能用排版还原：0.56em 把墨迹压到 47.9%，再抬 0.6em 让顶边对齐。
+// position:relative 的位移不进入行盒，所以数值块的高度和位置一个像素都不动。
+// 光晕是 .gb-ink-halo 上以 em 声明、计算成绝对 px 后继承下来的，加号周围仍是 7px，
+// 与设计一致（实测设计里数字和加号的光晕都是 7px）。
+//
+// line-height: 0 不是随手加的。父级的 line-height 是**长度**（37px / 51px），
+// 会原样继承给这个 0.56em 的行内盒；它的内容区只有 22.6px，于是 (37-22.6)/2 = 7.2
+// 的半行距落在基线**下方**，比 32px 的 strut 还低 5.3px —— 行盒被撑高 5px，
+// 首屏 .gb-usps 连带 .gb-hero 一起长高 5px（快照里就是这么抓出来的）。
+// 归零后这个行内盒不再参与行盒高度计算，字形照画不误。
+.gb-stat__plus,
+.gb-usp__plus {
+  font-size: 0.56em;
+  line-height: 0;
+  position: relative;
+  top: -0.6em;
+}
+
 .gb-stat__label {
   font-size: 24px;
   font-weight: 800;
@@ -3537,21 +3609,33 @@ body.is-menu-open {
   @include tablet { font-size: fluid(14px, 16px); line-height: fluid(20px, 24px); letter-spacing: fluid(-0.28px, -0.32px); }
 }
 
-// Hand-drawn arrows, decorative only
+// Hand-drawn arrows, decorative only.
+//
+// 它们现在是 .gb-stats__bear 的子元素（任务文档第 6 条），所以下面的百分比都
+// 相对熊框 302.797 x 375.016 算，超出 0~100% 是正常的 —— 四支箭头本来就摊在
+// 熊的四周。熊框是 position:absolute，天然就是它们的包含块。
+// 副作用：熊带着 .gb-float-art--d1 的漂浮，箭头现在跟着一起漂。
+//
+// **旧版把 Figma 组的旋转漏掉了**：341:47322/25/28/31 四个组的 relativeTransform
+// 行列式是 -1（旋转 + 镜像），导出的 SVG 只取了未旋转的原始矢量，所以 viewBox
+// 长宽比是 1.70/2.83/2.67/3.03，而设计里的外接盒是 1.16/1.08/1.07/1.11 —— 差 2.5 倍。
+// 现在的 SVG 把 组变换 x 子变换 烘进 <path transform>，viewBox 直接取合成后的
+// 墨迹盒（含描边），四支箭头与设计逐像素重合。
+// 描边：Figma 是 OUTSIDE 1.78036，SVG 只有居中描边，所以宽度取两倍 3.56071。
 .gb-stats__arrow {
   position: absolute;
   color: $c-lime;
   pointer-events: none;
 
-  svg { width: 100%; height: auto; }
+  svg { width: 100%; height: auto; display: block; }
 
   @include stack { display: none; }
 }
 
-.gb-stats__arrow--1 { left: 32.74%; top: 6.42%;  width: 9.47%; }
-.gb-stats__arrow--2 { left: 24.38%; top: 47.42%; width: 10.23%; }
-.gb-stats__arrow--3 { left: 64.79%; top: 36.71%; width: 10.23%; }
-.gb-stats__arrow--4 { left: 64.68%; top: 80.37%; width: 10.31%; }
+.gb-stats__arrow--1 { left: -22.937%;  top: -26.474%; width: 38.451%; }
+.gb-stats__arrow--2 { left: -55.851%;  top:  40.554%; width: 41.578%; }
+.gb-stats__arrow--3 { left: 103.350%;  top:  21.072%; width: 41.397%; }
+.gb-stats__arrow--4 { left: 102.892%;  top:  93.502%; width: 41.855%; }
 
 // Bear. The artwork overruns its 303x375 frame, so it is offset by the amount
 // Figma reports and the frame clips nothing — the glow needs to stay visible.
@@ -3579,6 +3663,7 @@ body.is-menu-open {
     width: 208px;
     margin: 0 auto;
     overflow: hidden;      // desktop lets the glow spill; narrow layouts cannot
+                           // （箭头在 stack 下已 display:none，不受这里裁切影响）
   }
 }
 
@@ -3706,10 +3791,10 @@ body.is-menu-open {
 .gb-science-card__body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 22px;
 
   @include narrow { gap: 12px; }
-  @include tablet { gap: fluid(12px, 16px); }
+  @include tablet { gap: fluid(12px, 22px); }
 }
 
 .gb-science-card__eyebrow {
@@ -3761,9 +3846,9 @@ body.is-menu-open {
 .gb-bear-meter {
   display: grid;
   grid-template-columns: repeat(20, 1fr);
-  gap: 4px;
+  gap: 8px 4px;
   width: 100%;
-  max-width: 346px;              // 20 × 13.5 + 19 × 4
+  max-width: 347px;
 }
 
 .gb-bear-meter__bear {
@@ -3889,6 +3974,7 @@ body.is-menu-open {
   font-size: 32px;
   line-height: 40px;
   letter-spacing: -0.32px;
+  margin-bottom: 14px;
   color: $c-white;
 
   @include narrow { font-size: 24px; line-height: 30px; }
@@ -3896,6 +3982,7 @@ body.is-menu-open {
 }
 
 .gb-highlight-card__text {
+  max-width: 300px;
   font-size: 16px;
   line-height: 24px;
   letter-spacing: -0.32px;
@@ -4265,20 +4352,6 @@ body.is-menu-open {
   svg { width: 20px; height: 20px; flex-shrink: 0; color: $c-lime-stroke; }
 }
 
-// Slot for whatever the subscription app renders. Structure and spacing only:
-// options, prices and delivery intervals all come from the app, so nothing is
-// hard-coded here.
-.gb-product__app-slot {
-  min-height: 120px;
-  padding: 20px;
-  border: 1px dashed $c-gray-300;
-  border-radius: $r-lg;
-  color: $c-gray-500;
-  font-size: 14px;
-  line-height: 22px;
-  letter-spacing: -0.28px;
-}
-
 // Add-to-cart shell. The subscription app owns what it actually submits.
 .gb-product__cta {
   display: flex;
@@ -4354,10 +4427,11 @@ body.is-menu-open {
 // 把这段距离塞进 summary 的 padding-bottom，收起态几何一模一样，但整段归可点区；
 // --acc-gap 让面板收尾用同一个数，不必两处各写一遍。
 .gb-product__accordion {
-  --acc-gap: 20px;
+  --acc-gap: 24px;
 
   display: flex;
   flex-direction: column;
+  margin-top: 8px;
 }
 
 .gb-product__acc-item {
@@ -4406,6 +4480,11 @@ body.is-menu-open {
   flex-direction: column;
   align-items: center;
   gap: 24px;
+  margin-top: 24px;
+}
+
+.gb-product__packed {
+  align-items: flex-start;
 }
 
 .gb-product__sub-title {
@@ -4681,7 +4760,7 @@ body.is-menu-open {
 .gb-testimonial__body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   padding: 0 2px;
 }
 
@@ -4704,6 +4783,7 @@ body.is-menu-open {
 }
 
 .gb-testimonial__name {
+  margin-top: -8px;
   font-size: 16px;
   font-weight: 500;
   line-height: 24px;
@@ -4712,7 +4792,8 @@ body.is-menu-open {
 }
 
 .gb-reviews__disclaimer {
-  max-width: 1100px;
+  max-width: 626px;
+  margin-top: 48px;
   padding: 0 20px;
   font-size: 14px;
   line-height: 22px;

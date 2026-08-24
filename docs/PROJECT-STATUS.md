@@ -190,6 +190,8 @@ npx sass@1.77.8 assets/customstyle.scss assets/customstyle.css --no-source-map
 | `shoot.py --all` | 同上 + 全页截图 + 卡住的 `.wowo` | 收尾 |
 | `sect.py` | 按区块截图（整页一万像素高看不动） | 要人眼看某个模块时 |
 | `r19check.py` | 第十九轮 7 条任务的专项判据（弹窗时长 / 手风琴死区 / 图标 / 焦点 / 吸顶 / 弧 / 波浪色） | 动这七处中任意一处之后 |
+| `r20check.py` | 第二十轮 8 条的专项判据（hero 按钮 / 星条 / 光晕尺寸 / logo 槽位 / 弧度 / 加号 / 箭头 / stats 波浪），全部与 Figma 数值比 | 动这八处中任意一处之后 |
+| `make-hero-glow.py` | 按稿重建 `images/gumi-bear-front-glow.png`（glow 是稿里一条 26.2137 的 CENTER 描边，不是照片自带的） | 换 hero 熊照片、或要改光圈粗细 / 采样率时 |
 
 用法：`python3 tools/cssnap.py before` → 改 → `python3 tools/cssnap.py after`
 → `python3 tools/cssnap.py diff before after`。
@@ -373,6 +375,8 @@ npx sass@1.77.8 assets/customstyle.scss assets/customstyle.css --no-source-map
 | 2026-08-21 | **波浪搬进所属 section**（第十八轮）：`<main>` 下 27 个独立波浪 + hero 那个全部成为宿主 section 的最后一个子元素（`.gb-sec-edge` / `.gb-scallop--edge`），尺寸只写在 section 上、波浪继承。留白用 `::after` 占位块 —— border 会被 Chromium 取整到整数 px（每道差 ~1px），padding 得逐个 section 逐断点 calc。判据换成**与位置无关的矩形多重集**（路径式 diff 因节点移动整体错位而失效）：除宿主各自长高一个条高外所有盒子逐一不变、`body` 总高 22 个组合一位小数不差。详见 CHANGELOG 第十八轮 |
 | 2026-08-21 | **任务文档 3 项**（第十七轮）：全站平滑滚动接 **Lenis 1.3.11**（手写阻尼版换掉——触控板的 wheel 已带 OS 惯性，再叠一层会拖尾）；`nutrition__band` 透到波浪底下（稿里那一个 Spacer 的 `frameFill` 本就是 `none`，旧实现把包装袋直线硬切在 section 底边）、pack 行改居中屏幕 + 始终两侧被裁 + 全面 `fluid()`；hero 小熊去掉放大改纯淡入、页脚装饰熊去 fadeIn、动效改挂包裹 div。**总高度是不变量**：nutrition +127.979 与波浪 −127.979 精确抵消，`body` 高度一位小数没动。波浪归属给出结论（做设置项不做独立 section，DOM 不用动）。详见 CHANGELOG 第十七轮 |
 | 2026-08-24 | **任务文档 7 项**（第十九轮）：弹窗退场换曲线并加长（真因是 out 曲线倒放、不是时长）；手风琴行距从容器 `gap` 挪进 `summary` 的 `padding-bottom`（行间死区归零，末项要单独归零否则页面长高）；59 处加号图标改纯 CSS 两条线、展开转平、去 hover 放大；输入框焦点改 border-color（复选框留 outline）；header 吸顶 + 抽屉高度实测 + PDP sticky 避让；弧形文字两个真因（SVG `overflow:hidden` 切上缘 −11.7、文字比路径长 1.9）；页脚波浪条带改透明，5 页点名薄荷。判据 `tools/r19check.py` 全绿 + **body 总高 22 组合不变**。详见 CHANGELOG 第十九轮 |
+| 2026-08-24 | **对话给的 8 项（第二十轮）**：hero 按钮满宽 + 公告条补 Trustpilot 五颗星；**hero 光晕按稿重建**（稿里 glow 是一条 26.2137 的 CENTER 描边、不是照片自带的，旧图只有约 12px 且贴着照片凹凸走）；logo 槽位 96→80 + viewport 上下 8；**`ONE HANDFUL` 的弧从正圆 `A 338 338` 改回设计的椭圆** rx118.5261/ry65.7047，框回 278×29；`60+`/`10+` 的加号缩到 0.56em 并上浮（PP Palma 试用档的 `+` 字形对不上，用排版模拟）；**四支箭头补上 Figma 组的旋转+镜像**（旧 viewBox 长宽比差 2.5 倍）并移进 `.gb-stats__bear`；补回 `.gb-stats` 从来就没有的下缘波浪（cream→sand，96）。判据 `tools/r20check.py` 全绿；10 个非首页页面除星条外逐像素不变。详见 CHANGELOG 第二十轮 |
+| 2026-08-24 | **对话给的 PC 端 15 项（第二十一轮）**：science-card/bear-meter/highlight-card/product accordion·taste·packed/testimonial/reviews disclaimer/footer-cta 共 14 处间距与尺寸微调；`.gb-product__app-slot`（订阅 app 占位虚线框）整块删除；**footer-cta 弧度还原**——真因是 viewBox 一直拿椭圆本体的 289×62 当框用，Figma 里椭圆外面还套着一层 452×51 的 `Curved Text FRAME` 没找到，弧被压成近似正圆，改用椭圆左右顶点间的整段圆顶弧（`M 81 83 A 144.5 66 0 0 1 370 83`）。`tools/rwd.py` 11 页×10 档全绿。全站还剩 4 处同缺陷（promo-card / dosed×2 / cta-band）+ footer-cta 手机变体未做，详见 CHANGELOG 第二十一轮遗留 |
 | 2026-08-20 | **缓存版本号 + 构建自检**：反馈「改动没落实」，服务器侧查证文件全对、真因是 `file://` 预览把无版本号的 css/js/woff2 缓存住了。给引用与字体 url 加 `?v=$build`，`font-check.html` 扩成构建自检（版本号 + 10 条功能探针 + 字体表）。详见 CHANGELOG 第九轮 |
 ## 阻塞
 

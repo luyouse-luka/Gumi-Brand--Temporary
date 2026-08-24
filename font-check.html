@@ -59,7 +59,7 @@
 // 整段推迟到 DOMContentLoaded：main.js 的模块也是在那时候才 init 的，
 // 解析期跑的话「Lenis 实例在不在」这类探针必然读到 null，报假红。
 function run() {
-  var EXPECT_BUILD = "20260824-r20";
+  var EXPECT_BUILD = "20260824-r22";
   var DIR = "assets/";
   var rows = function (id, arr) {
     document.getElementById(id).innerHTML = "<tbody>" + arr.join("") + "</tbody>";
@@ -298,6 +298,42 @@ function run() {
     ["页脚 CTA 上边缘的波浪条带透明（第十九轮）",
      probe('<div class="gb-scallop gb-scallop--to-lime"></div>', function (el) {
        return getComputedStyle(el).backgroundColor === "rgba(0, 0, 0, 0)";
+     })],
+
+    ["hero 按钮满宽，不再 shrink-to-fit（第二十轮）",
+     probe('<a class="gb-btn gb-hero__btn"></a>', function (el) {
+       return getComputedStyle(el).alignSelf === "stretch";
+     })],
+    ["公告条的 Trustpilot 星条 77x14（第二十轮）",
+     probe('<svg class="gb-announcement__stars" viewBox="0 0 77 14"></svg>', function (el) {
+       var s = getComputedStyle(el);
+       return s.width === "77px" && s.height === "14px" && s.color === "rgb(181, 237, 97)";
+     })],
+    ["logo 槽位 80，viewport 上下各 8（第二十轮）",
+     probe('<div class="gb-logo-scroll__viewport"><ul class="gb-logo-scroll__track">' +
+           '<li class="gb-logo-scroll__item"></li></ul></div>', function (el) {
+       var item = el.querySelector(".gb-logo-scroll__item");
+       return getComputedStyle(el).paddingTop === "8px" &&
+              getComputedStyle(item).height === "80px";
+     })],
+    ["stats 弧字框回到稿的 278x29（第二十轮）",
+     probe('<svg class="gb-arc-text gb-stats__arc" viewBox="0 0 278 29"></svg>', function (el) {
+       return getComputedStyle(el).width === "278px";
+     })],
+    ["60+ 的加号缩小上浮且不撑高行盒（第二十轮）",
+     probe('<span class="gb-usp__plus">+</span>', function (el) {
+       var s = getComputedStyle(el);
+       return s.position === "relative" && parseFloat(s.top) < 0 && s.lineHeight === "0px";
+     })],
+    ["stats 箭头改为相对小熊定位（第二十轮）",
+     probe('<span class="gb-stats__arrow gb-stats__arrow--1"></span>', function (el) {
+       return parseFloat(getComputedStyle(el).left) < 0;   // 旧值是 +32.74%
+     })],
+    ["新增 cream -> sand 的波浪配色（第二十轮）",
+     probe('<div class="gb-scallop gb-scallop--cream-to-sand"></div>', function (el) {
+       var s = getComputedStyle(el);
+       return s.getPropertyValue("--wave-bg").trim() === "#faf9f8" &&
+              s.getPropertyValue("--wave-fg").trim() === "#f5f1e9";
      })]
   ];
 

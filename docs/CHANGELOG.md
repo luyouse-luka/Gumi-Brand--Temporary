@@ -1861,3 +1861,229 @@ Liquid 里一个 `{% if %}` 同时决定两边。
   （拿它测「收起态」会得到反的结论）、science 的手机手风琴在桌面宽是 `display:none`
   （rect 全 0，命中测试恒假）、**`el.focus()` 不触发 `:focus-visible`**（那是给真实交互的
   启发式，必须用 `page.click`）。
+
+---
+
+## 第二十轮 — 对话给的 8 条：hero 光晕重建 / 弧度还原 / 箭头旋转 / 补回缺失的波浪（2026-08-24）
+
+本轮任务由对话直接给出（不是 `修改任务文档.txt`，那份是第十九轮的，未改动）。
+原文 8 条，第 8 条是问「`gb-sec-edge gb-sec-edge--lg` 是干嘛的」，答在最后。
+
+所有数值一律取自 Figma 节点数据（`figma/nodes/285-18162_homepage-desktop.json`
+= 1440 桌面首页、`228-5932_homepage-mobile.json` = 390 手机首页），
+判据脚本 `tools/r20check.py`。
+
+### 改了什么
+
+**1a `.gb-hero__btn` 满宽** — 稿 `332:16424` 宽 380 = 所在列 `Frame 427319663` 的整宽，
+不是 shrink-to-fit。`align-self: flex-start` → `stretch`。
+
+**1b 公告条补上 Trustpilot 五颗星** — 之前只有 `Excellent` 和 `Truspilot` 两个词，
+中间什么都没有。稿 `332:16402`「stars」= 77×14，五个 14×14 的方板（`#b5ed61`）
+横排、间距 1.75，每块中间嵌 10.5×10.5 的深绿五角星（内缩 1.75，几何直接取
+`fillGeometry`）。做成**一整条 77×14 的 SVG** 而不是五个 flex 项：间距在稿里是死值，
+一条 SVG 就把「方板 + 星 + 间距」全锁进 viewBox，桌面手机同一套（手机稿同尺寸）。
+官方 embed 上线前这条会被整体换掉。
+
+**2 hero 的 `gumi-bear-front-glow` 按稿重建** —— 「外轮廓大小宽度不对」的真因：
+**光晕不是照片自带的，是稿里单独一条描边**。`332:16445` 是一条 439.066×732.078 的
+路径，`fillGeometry` 是空的，只有 `strokeWeight 26.2137` / **CENTER** / `#b5ed61`，
+所以光圈向外扩 13.107、向内压 13.107。旧文件是照着照片 alpha 描出来的一圈
+**约 12px**（换算到屏幕只有 10.4px，不到设计的 40%），而且贴着照片每个凹凸走 ——
+腿缝那种窄口在设计里被 26px 的粗描边直接糊平，旧图却老实地凹进去。
+新图 `tools/make-hero-glow.py` 按稿重建：glow 路径的 `strokeGeometry` 填 `#b5ed61` 打底，
+照片（`332:16446`，rect 1010.919×780.649 @ (−271.928, −13.757)，`scaleMode FILL`，
+源图 `images/gumi-bear-front.png` 1200×927 比例一致所以等于直接拉伸）盖在上面，
+一起被 Background 的 467.886×759.180 裁一刀（实测没裁到任何墨迹），再裁到墨迹。
+尺寸因此从「路径宽 439.1」变成「路径 + 描边 = 466.0」，槽位占比 77.3% → **82.04%**，
+手机 67.7% → **71.39%**（292.95 + 16 描边，手机稿描边是 16 不是 26.2）。
+输出 559×910，与旧文件同采样率，**LCP 字节数基本不变**（787K/76K → 760K/79K，PSNR 38.2 dB）。
+
+**3 logo 轨道：槽位 80 + viewport 上下各 8** — 稿 `341:47385` 行高 96，里面的
+`Logo` 框是 **79.88 高、上下各留 8.06**。两者相加仍是 96，section 总高一个像素没变。
+
+**4 `ONE HANDFUL` 的弧改成设计的椭圆** — 稿里的弧字 `341:47318` 是一段**椭圆**弧：
+`rx 118.5261 / ry 65.7047`，圆心 (139, 82.073)，基线走椭圆顶点 (139, 16.368)。
+之前写的是 `A 338 338`（正圆），同样半跨 85.5 只落 **11.0px**，设计落 **20.2px** —— 弧度太平。
+框也回到稿的 `Curved Text` = **278×29**（之前 237×50）。
+**head gap 保持稿的 48，没有改成 30**：30 是在旧的 50px 弧框上量出来的补偿值；
+框改回 29 之后，48 得到的「弧字墨迹底 → 标题墨迹顶」正好是设计的 **52px**（旧的是 58）。
+若仍想更紧，`.gb-stats__head` 的 gap 改 30 得到墨迹 34px，一行的事。
+
+**5 `60+` / `10+` 的加号缩小上浮** — 设计稿实测三处：hero 12/25、stats `60+` 17/35.5、
+stats `10+` 17/36 —— 加号墨迹一律是数字的 **47.9%** 高、顶边与数字顶边齐平。
+而我们这份 PP Palma **试用档**的 `+` 字形是 85.7% 高且垂直居中（`plus` 轮廓
+y 136..1364 / 数字 −32..1500，upm 2000），**字形本身对不上**，只能用排版还原：
+`font-size: 0.56em` 把墨迹压到 47.9%，`top: -0.6em` 抬到顶边对齐。
+光晕不用管 —— `.gb-ink-halo` 的 `0.15em` 在父级就算成了绝对 px 再继承，
+加号周围仍是 7px，与设计实测一致。
+`.gb-stat--ingredients` / `--fibre` 的 `top` 按任务文档给的 **5.5%**（Figma 原值 5.099%）：
+稿里 `Ingredients Item Container` 高 56、里面的 TEXT 从 +1.957 开始，我们的行盒 51 高
+且文字贴块顶，同样的 top 我们的墨迹高约 1.96px，5.5% 正好补回来（推导值 5.41%）。
+
+**6 四支箭头补上组的旋转，并移进 `.gb-stats__bear`** —— 「位置没还原」的真因不是位置：
+`341:47322/25/28/31` 四个组的 `relativeTransform` **行列式是 −1**（旋转 + 镜像），
+旧实现导出的是**未旋转**的原始矢量，viewBox 长宽比 1.70 / 2.83 / 2.67 / 3.03，
+而设计里的外接盒是 1.16 / 1.08 / 1.07 / 1.11 —— **差 2.5 倍**，形状和高度全错。
+新 SVG 把「组变换 × 子变换」烘进 `<path transform>`，viewBox 直接取合成后的墨迹盒。
+描边：Figma 是 OUTSIDE 1.78036，SVG 只有居中描边，宽度取两倍 **3.56071** 才等外扩量。
+四支现在是 `.gb-stats__bear` 的子元素（任务文档要求），百分比改成相对熊框
+302.797×375.016 算，超出 0~100% 是正常的。**副作用：熊带着 `.gb-float-art--d1`
+的漂浮，箭头现在跟着一起飘**（不想要就把 `gb-float-art gb-float-art--d1` 从熊上摘掉）。
+
+**7 `.gb-science` 上方的波浪补回来** — 不是「看不到了」，是**从来就没有**：
+`.gb-stats` 没带 `gb-sec-edge`，也没有 `.gb-scallop--edge` 子元素。稿里
+`341:47307`「Spacer Desktop」高 96、底色 `#faf9f8`（= 上方 stats 的 cream），
+下一段 `341:46641` 是 `#f5f1e9`（sand）。补 `gb-sec-edge`（不带 `--lg`，96 而非 128）
++ 新配色类 `.gb-scallop--cream-to-sand`。science.html 的两个 `.gb-science` 上下同色，
+本来就不需要波浪，没动。
+
+**8「`gb-sec-edge gb-sec-edge--lg` 是干嘛的」** —— 让 section **自带它自己的下边缘波浪**：
+- `.gb-sec-edge` 做两件事：① 用 `::after` 占位块留出波浪的高度（`--edge-h`），
+  ② 把 `--edge-w / --edge-band / --edge-h` 声明在 section 上，让绝对定位的
+  `.gb-scallop--edge` 子元素继承 —— **尺寸只有一份真值**，不会出现「section 说大瓦片、
+  波浪说小瓦片」。
+- `--lg` 只是换一套更大的瓦片：普通 `--sc-*` 在 1440 下是 302 宽 / **96 高**，
+  `--sc-lg-*` 是 524 宽 / **128 高**，正好对上稿里两种 Spacer 的高度。
+- 波浪归**上面**那个 section 而不是下面，是因为 nutrition 那道要让包装袋穿到波浪底下
+  （`.gb-scallop--bleed`），跨不过模块边界。搬迁脚本 `tools/move-scallops.py`。
+
+### 判据（`tools/r20check.py`，全部通过）
+
+| 条 | 判据 |
+|---|---|
+| 1a | 按钮宽 == `.gb-hero__cta` 宽 == 稿的 380 |
+| 1b | 星条 77×14、五颗、方板 `rgb(181,237,97)`、星形 `rgb(0,86,53)`、夹在两段文案中间 |
+| 2 | 熊图占槽位 **82.04%**；资源比例 559:910 = 0.6143 == 设计墨迹 466.0:758.5 |
+| 3 | 槽位 80 / viewport `padding-top: 8px` / 行总高仍 96 |
+| 4 | `viewBox == "0 0 278 29"`；路径含 `118.5261 65.7047`；半跨 85.5 落差 **20.20**（旧 11.0）；弧长 227.0 > 文字长 171.8；head gap 48.00 |
+| 5 | 加号墨迹 / 数字墨迹 = **48.6%**（hero 50.0%），顶边差 +1.21px / +0.25px |
+| 6 | 四支都在 `.gb-stats__bear` 里；四支位置与设计误差 **≤0.02%**；长宽比 1.1650 / 1.0778 / 1.0737 / 1.1081 对设计 1.1649 / 1.0777 / 1.0736 / 1.1080 |
+| 7 | `.gb-stats` 带 `gb-sec-edge` + `.gb-scallop--edge`；`--wave-bg #faf9f8` / `--wave-fg #f5f1e9`；高 95.9 |
+| 手机 | 弧字字号 20（手机稿 `236:12453`）、弧框仍 278、星条 77×14 |
+
+几何不变量（本轮在 11 页的公告条里插了节点，路径式快照会整体错位，
+判据换成「**body 总高 + 排除公告条子树后的矩形多重集**」，见 memory
+`css-refactor-computed-style-judge`）：
+
+- **10 个非首页的页面 × 2 档 = 20 个组合，body 总高与非公告条矩形逐一全同** ——
+  本轮除星条外没碰过它们。
+- index 的差异逐条对得上账（忽略 y 只比 (x, w, h)）：
+  24 个 logo 槽 96→80、新增 1440×95.9 的波浪、`.gb-stats__head` 226→**205**（= 稿的 205）、
+  hero 按钮 204→380、hero 熊 535×780.3→566.1×815.6、四个箭头盒换形状、
+  弧框 237×50→278×29、USP 数值 66.8→56.4 宽（高仍 37）。
+- index body 总高 9471.4 → 9546.4，**+74.96 = 新波浪 +95.94 − 弧框 −21.0**，无残差。
+
+回归：`tools/rwd.py` ✅ 全绿；`tools/shoot.py --all` **110/110 ok**；
+`tools/r19check.py`（第十九轮判据）全部通过；`$build` → `20260824-r21`。
+
+### 途中抓到的一个副作用（已修）
+
+加号 `font-size: 0.56em` 之后，`.gb-usp__value` 从 37 长到 **42**，
+`.gb-hero` 连带长高 5px。原因是父级 `line-height` 是**长度**（37px），
+原样继承给这个小字号行内盒；它的内容区只有 22.6px，`(37−22.6)/2 = 7.2` 的
+半行距落在基线**下方**，比 32px 的 strut 还低 5.3px，行盒被撑高。
+补 `line-height: 0` 后行内盒不参与行盒高度计算，字形照画。
+**这条是靠 body 总高不变量抓出来的，肉眼完全看不出来。**
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   .gb-hero__btn align-self: stretch；新增 .gb-announcement__stars
+                             （+ __star-plate / __star-pt）；.gb-logo-scroll__viewport
+                             padding 8px 0、__item 高 80；.gb-stats__arc 278 宽 + narrow 字号 20；
+                             新增 .gb-stat__plus / .gb-usp__plus（0.56em / line-height 0 / top -0.6em）；
+                             .gb-stat--ingredients / --fibre top 5.5%；.gb-stats__arrow 四条
+                             百分比改为相对熊框；新增 .gb-scallop--cream-to-sand；
+                             .gb-hero__bear 宽 82.04% / narrow 71.39% + 注释重写；
+                             $build → 20260824-r21
+改  assets/customstyle.css    编译产物
+改  全部 11 页                公告条插入 <svg class="gb-announcement__stars">；?v= → 20260824-r21
+改  index.html                stats 弧 viewBox/path；三处 60+/10+ 加号包 span（含 halo 副本）；
+                             四支箭头换新 SVG 并移进 .gb-stats__bear；.gb-stats 加 gb-sec-edge
+                             + .gb-scallop--cream-to-sand 子元素；hero 熊图 width/height 559x910
+改  font-check.html           EXPECT_BUILD → 20260824-r21
+改  images/gumi-bear-front-glow.png / .webp    按稿重建，528x874 → 559x910
+新  tools/make-hero-glow.py   hero 光晕合成图的生成脚本（可复跑）
+新  tools/r20check.py         本轮 8 条的专项判据
+```
+
+### 遗留
+
+- **全站其余 5 处弧形文字用的还是 `A 338 338` 正圆，同一个缺陷。**
+  稿里只有两种椭圆：桌面 **289×132**（rx 144.5 / ry 66，footer-cta ×10、promo-card、
+  dosed ×2、cta-band）和手机 / 桌面-stats **237.05×131.41**（rx 118.5261 / ry 65.7047）。
+  各自的 `Curved Text` 框在稿里是 452×51 / 452×28 / 452×34 / 231×31 / 278×29 /
+  278.28×46.38 / 229×29 / 274×46，父级 gap 32 / 40 / 24 / 39。
+  另外 `.gb-arc-text text` 全站写死 24px，**手机稿是 20px**，所有实例在窄屏都偏大一号。
+  本轮只按任务文档改了 `gb-stats__arc`，其余要不要一起扫等指示 —— 那会动到 11 页的竖向节奏，
+  得单开一轮并重跑全部不变量。
+- `.gb-stat--vitamins` / `--benefits` 的 `top` 仍是 Figma 原值，与上面两个一样高约 1.96px。
+  要对齐按 **+0.31%** 算：vitamins 56.93% / benefits 53.72%。
+- `.gb-stat__value` 在桌面继承了 `letter-spacing: -0.32px`，稿里是 **0**。影响不到 1px，本轮没动。
+- 加号是**排版模拟**，不是字形。换成客户授权的 PP Palma 后，如果那一版的 `+` 本身就是
+  小号上浮的字形（设计稿的表现更像是这样），这两条规则要撤掉 —— `tools/r20check.py`
+  第 5 段会直接报出来（比例会变成 ~24%）。
+- hero 光晕图仍是 1.2× 采样（`docs/audit/04-performance` 的 P2「欠采样」那条没动）。
+  要提到 2× 把 `tools/make-hero-glow.py` 的 `OUT_W` 改成 932，webp 从 79K 涨到约 123K。
+
+## 第二十一轮 — 对话给的 PC 端 15 项数值 + footer-cta 弧度还原（2026-08-24）
+
+本轮由对话直接给出（不是 `修改任务文档.txt`），数值全部是需求方指定的具体值，直接照改；
+只有 footer-cta 的弧度是需求方报的 bug，按 Figma 节点数据查证后修。
+
+### 数值类（14 项，均为 PC/基础规则，未动 mobile 专属值）
+
+`.gb-science-card__body` gap 16→22（tablet fluid 上限同步改 22）、`.gb-bear-meter`
+max-width 346→347 / gap 4px→**8px 4px**（行距单独拉开，列距不变）、`.gb-highlight-card__title`
+补 margin-bottom 14px、`.gb-highlight-card__text` 补 max-width 300px、`.gb-product__accordion`
+补 margin-top 8px 且 `--acc-gap` 20→24（连带改了 `.gb-product__acc-row` 的 padding-bottom，
+两处共用一个变量，见第十九轮）、`.gb-product__taste` / `.gb-product__packed` 共享规则补
+margin-top 24px，`.gb-product__packed` 单独拆出 `align-items: flex-start`（taste 仍是 center —
+两者以前共用一条规则，现在拆成「共享块 + packed 单独覆盖」，taste 不受影响）、
+`.gb-testimonial__body` gap 8→10、`.gb-testimonial__name` 补 margin-top -8px、
+`.gb-reviews__disclaimer` max-width 1100→626 + 补 margin-top 48px、`.gb-footer-cta__inner`
+gap 32→30、`.gb-footer-cta__text` 补 margin-top -6px、`.gb-footer__link-groups` gap 24→22。
+
+`.gb-product__app-slot`（订阅 app 占位的虚线框）按需求整个删掉：`pdp.html` 里的
+`<div class="gb-product__app-slot">` 与 scss 里对应的规则块一起移除，CTA 按钮直接跟在
+产品信息后面。app 接入后会在按钮前挂载自己的内容，这块不需要预留占位壳。
+
+### footer-cta 弧度还原
+
+**bug 是框选小了，不是曲率算错。** `.gb-footer-cta__arc` 之前直接把椭圆本体的
+289×62 当 viewBox 用，而 Figma 里椭圆本体（`313:9711`「YOUR GREENS CALLED」，size
+289×132，rx144.5/ry66）外面还套着一层「Curved Text FRAME」（`313:9710`，size
+**452×51**，椭圆在其中左右各留 81px 居中），这层框此前一直没找到，只能拿椭圆自己
+的窄边凑合，弧于是被硬压成 `A 338 338` 的近似正圆（第二十轮遗留清单里已经把这层框的
+尺寸列出来了，本轮只是把 footer-cta 这一处按图施工）。
+
+新参数：viewBox `0 0 452 51`，椭圆中心 (225.5, 83)，`M 81 83 A 144.5 66 0 0 1 370 83`
+—— 取的是椭圆左右两个顶点之间的整段圆顶弧（不是像 `gb-stats__arc` 那样只取中间一小段），
+弧长 342.3 比「YOUR GREENS CALLED」的渲染文字长 267.9 富余约 28%，不会被 `textPath` 截断。
+CSS 宽度同步 289px → 452px（`@include tablet` 的 `fluid()` 上限跟着改，`@include narrow`
+的 237px 未动——mobile 用的是另一种椭圆 237.05×131.41，这条留在下面遗留里）。
+
+### 判据
+
+`tools/r22check.py`（临时脚本，未入库）逐项核对上面 14 处 computed style 数值、
+app-slot 已从 DOM 消失、弧形 viewBox/path/弧长富余量/CSS 宽度；`tools/rwd.py`
+11 页 × 10 档宽度全绿，本轮的 margin/max-width 改动没有引入横向溢出。
+
+### 遗留
+
+- **弧形文字还剩 4 处同一缺陷**（promo-card、dosed ×2、cta-band，各自的 Curved Text
+  框 452×28 / 452×34 / 231×31，尺寸见上一轮遗留清单）；footer-cta 的 mobile 变体
+  （237.05×131.41 那个真正的手机椭圆）也还没单独做，现在 mobile 只是把这次改对的
+  桌面路径等比缩窄，弧的曲率对但椭圆的长宽比不是手机稿本来的比例。全站扫描仍按
+  上一轮说的单开一轮处理，会动 11 页竖向节奏。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss    本轮 14 处数值 + .gb-product__app-slot 规则删除 +
+                               .gb-footer-cta__arc 宽度/fluid 上限；$build → 20260824-r22
+改  assets/customstyle.css     编译产物
+改  pdp.html                   删 .gb-product__app-slot 占位 div
+改  全部 11 页                  footer-cta 弧形 SVG 的 viewBox/path；?v= → 20260824-r22
+```
