@@ -1,0 +1,100 @@
+# Nutritional Label Pop up (`336:31949`) — 390×839
+
+共 96 条文案，按节点树顺序。⚠ 文案非最终版（见 HANDOVER-NOTES.md）。
+
+- `16.0px/400` gumi.com.au
+- `14.0px/400` Excellent
+- `14.0px/400` Truspilot
+- `1.4723334312438965px/600` Most Popular
+- `1.4723334312438965px/600` Most Popular
+- `1.4723334312438965px/600` Most Popular
+- `1.4723334312438965px/600` Most Popular
+- `1.4723334312438965px/600` Most Popular
+- `1.4723334312438965px/600` Most Popular
+- `16.0px/500` View Nutritional Label
+- `12.0px/400` 123,456+ happy customers
+- `30.0px/800` Superfood Greens Gummies
+- `14.0px/400` From $00.00 each
+- `16.0px/500` 60+ potent ingredients to revive whole body vitality in one great tasting gummy.
+- `16.0px/400` Promotes energy and focus
+- `16.0px/400` Promotes gut and digestive health
+- `16.0px/400` Promotes immunity and resilience
+- `16.0px/400` Promotes skin, hair and nail health
+- `16.0px/500` Choose Quantity
+- `14.0px/400` Buy 2 save 5%
+- `16.0px/400` 1
+- `16.0px/400` 2
+- `16.0px/500` Autoship and Save
+- `12.0px/500` MOST POPULAR: get 49% off
+- `16.0px/500` Subscribe & Save
+- `16.0px/500` $40.40
+- `12.0px/500` $79.99
+- `12.0px/400` 28 Packs delivered once
+- `12.0px/400` $1.46/day
+- `14.0px/500` How subscription works:
+- `14.0px/400` Locked in pricing, every delivery.
+- `14.0px/400` Skip, pause or cancel any time.
+- `14.0px/400` Delivered before you run out.
+- `14.0px/500` Delivers every:
+- `14.0px/400` 4 Weeks
+- `16.0px/500` One Time Purchase
+- `16.0px/500` $54.40
+- `12.0px/500` $79.99
+- `12.0px/400` 28 Packs delivered once
+- `12.0px/400` $1.94/day
+- `16.0px/500` Start Now
+- `14.0px/400` Less than 1% of customers use our money back guarantee.
+- `14.0px/400` 30 Day  Money Back Guarantee
+- `14.0px/400` Aussie Based Support Team
+- `14.0px/400` Batch Tested Quality
+- `16.0px/400` Why Gumi
+- `16.0px/400` Because your multivitamin routine shouldn't need a routine.
+- `16.0px/400` Ingredients & Allergies
+- `16.0px/400` Every active, every allergen, no fine print games.
+- `16.0px/400` Science
+- `16.0px/400` The research behind the recipe, not just the marketing.
+- `16.0px/400` Directions
+- `16.0px/400` One pouch, once a day. That's genuinely it.
+- `16.0px/400` Benefits
+- `16.0px/400` What 60+ ingredients actually do for you, in plain English.
+- `18.0px/500` Tastes Like
+- `16.0px/400` Heading
+- `16.0px/400` Heading
+- `16.0px/400` Heading
+- `18.0px/500` Packed With
+- `16.0px/400` Vitamins & Minerals
+- `16.0px/400` Adaptogens & Herbs
+- `16.0px/400` Prebiotics
+- `16.0px/400` Antioxidants
+- `16.0px/400` Whole Food Fruit & Veg Blend
+- `30.0px/800` Nutrition label
+- `16.0px/400` Nutritional Information
+- `16.0px/400` Ingredient List
+- `16.0px/500` Serving size:
+- `16.0px/400` Information here
+- `16.0px/500` Servings per container:
+- `16.0px/400` Information here
+- `16.0px/500` Suggested use:
+- `16.0px/400` Information here
+- `24.0px/800` Only 9g of Net Carbs
+- `20.0px/800` 9g
+- `14.0px/400` Net Carbs
+- `20.0px/800` 15g
+- `14.0px/400` Total Carbs
+- `20.0px/800` 6g
+- `14.0px/400` Dietary Fibre
+- `24.0px/800` 60+ Ingredients
+- `14.0px/400` Whole Food Vegetables
+- `14.0px/400` Whole Food Fruits
+- `14.0px/400` Vitamins & Minerals
+- `14.0px/400` Adaptogens*
+- `14.0px/400` Antioxidants
+- `14.0px/400` Super Mushrooms
+- `14.0px/400` Gut Health Prebiotics*
+- `24.0px/800` Clean Ingredients
+- `14.0px/400` Vegan
+- `14.0px/400` Gluten Free
+- `14.0px/400` Nut Free
+- `14.0px/400` Dairy Free
+- `14.0px/400` No Artificial Colours
+- `14.0px/400` No Artificial Flavours

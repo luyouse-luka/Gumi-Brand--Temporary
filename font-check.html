@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gumi — 构建自检（开发用，不属于站点）</title>
+<!-- 故意不带 ?v=：这页要读的就是「浏览器当前手上的那份 style.css」是哪一版 -->
+<script>(function(h){h.classList.add("js");function u(){window.gumi||h.classList.remove("js")}addEventListener("load",u);setTimeout(u,4000)})(document.documentElement)</script>
+<link rel="stylesheet" href="assets/customstyle.css">
+<style>
+  body { margin:0; padding:28px; background:#fff; color:#111;
+         font:14px/1.6 ui-monospace, Menlo, Consolas, monospace; }
+  h1 { font-size:19px; margin:0 0 4px; }
+  h2 { font-size:15px; margin:26px 0 8px; }
+  .sub { color:#666; font-size:12.5px; margin-bottom:18px; }
+  table { border-collapse:collapse; font-size:12.5px; width:100%; max-width:900px; }
+  th,td { border:1px solid #ddd; padding:5px 9px; text-align:left; vertical-align:top; }
+  th { background:#f4f4f4; }
+  .ok { color:#0a7a3d; font-weight:700; }
+  .bad { color:#c02626; font-weight:700; }
+  .gb-banner { max-width:900px; padding:12px 14px; border-radius:8px; margin-bottom:8px; font-size:13px; }
+  .gb-banner.ok { background:#e9f7ce; color:#0a3d20; }
+  .gb-banner.bad { background:#ffe9e9; color:#8a1a1a; }
+  .gb-spec { font-family:"PP Palma", sans-serif; font-size:24px; line-height:1.5; margin:0 0 2px; }
+  .lbl { font-size:11px; color:#888; margin-top:8px; }
+  code { background:#f2f2f2; padding:1px 4px; border-radius:3px; }
+</style>
+</head>
+<body>
+<h1>Gumi 构建自检</h1>
+<p class="sub">这一页只回答一件事：<b>你的浏览器现在手上的这份 css / js / 字体，是不是最新那一版。</b>
+如果下面出现红色，先按 <code>Ctrl+Shift+R</code>（Mac 是 <code>Cmd+Shift+R</code>）硬刷新本页和 index.html，再看一次。</p>
+
+<div id="banner" class="gb-banner">检测中…</div>
+
+<h2>1 · 构建版本</h2>
+<table id="build"><tbody><tr><td>检测中…</td></tr></tbody></table>
+
+<h2>2 · 本轮改动是否在你这份文件里</h2>
+<table id="feat"><tbody><tr><td>检测中…</td></tr></tbody></table>
+
+<h2>3 · PP Palma 四个字重各自命中哪个文件</h2>
+<table id="font"><tbody><tr><td>检测中…</td></tr></tbody></table>
+
+<h2>4 · 正文（400）实际排版：字距是否被撑开</h2>
+<p class="sub" style="margin:-2px 0 8px">首页 hero 引导段在设计稿里是 <b>380px 宽、2 行</b>。如果你看到它被撑成 3~4 行、字与字之间有大片空白，这张表会指出是「字体没加载」还是「字体加载了但字距被撑开」。</p>
+<table id="lead"><tbody><tr><td>检测中…</td></tr></tbody></table>
+
+<div id="specs"></div>
+
+<h2>5 · 字体生成流程诊断（找出坏在哪一步）</h2>
+<p class="sub" style="margin:-2px 0 8px">四行是一条链：原厂文件 → 只用 fontTools 重存 → 重存并重写每个字形的轮廓（坐标不变，结果本应与原厂一模一样）→ 真正的插值件。<b>从哪一行开始变成等宽 / 字距撑开，问题就出在那一步。</b></p>
+<div id="diag"></div>
+
+<script src="assets/lenis.min.js"></script>
+<script src="assets/main.js"></script>
+<script>
+(function () {
+// 整段推迟到 DOMContentLoaded：main.js 的模块也是在那时候才 init 的，
+// 解析期跑的话「Lenis 实例在不在」这类探针必然读到 null，报假红。
+function run() {
+  var EXPECT_BUILD = "20260824-r20";
+  var DIR = "assets/";
+  var rows = function (id, arr) {
+    document.getElementById(id).innerHTML = "<tbody>" + arr.join("") + "</tbody>";
+  };
+  var yes = function (b) { return b ? '<span class="ok">在</span>' : '<span class="bad">不在（旧文件）</span>'; };
+
+  /* ---- 探针：不读 cssRules（file:// 下可能被当跨域拒绝），一律拿计算样式判 ---- */
+  function probe(html, read) {
+    var box = document.createElement("div");
+    box.style.cssText = "position:absolute;left:-9999px;top:0;width:600px";
+    box.innerHTML = html;
+    document.body.appendChild(box);
+    var v = read(box.firstElementChild);
+    box.remove();
+    return v;
+  }
+
+  var build = (getComputedStyle(document.documentElement).getPropertyValue("--build") || "")
+                .replace(/["'\s]/g, "");
+  var buildOK = build === EXPECT_BUILD;
+
+  rows("build", [
+    "<tr><th>项</th><th>值</th></tr>",
+    "<tr><td>本页期望的版本</td><td>" + EXPECT_BUILD + "</td></tr>",
+    "<tr><td>你加载到的 style.css 版本</td><td class='" + (buildOK ? "ok" : "bad") + "'>" +
+      (build || "（读不到 --build，说明是很旧的一版）") + "</td></tr>"
+  ]);
+
+  /* ---- 逐条功能探针 ---- */
+  var feats = [
+    ["波浪几何改为由节距推导（第八轮）",
+     probe('<div class="gb-scallop"></div>', function (el) {
+       return getComputedStyle(el).getPropertyValue("--wave-amp").indexOf("0.24008") > -1;
+     })],
+    ["波浪节距上限收到稿值 302.19（第八轮）",
+     probe('<div class="gb-scallop"></div>', function (el) {
+       return getComputedStyle(el).getPropertyValue("--wave-w").indexOf("302.19") > -1;
+     })],
+    ["手风琴改原生 details（第十轮）",
+     probe('<details class="gb-faq__item"><summary class="gb-faq__row">x</summary><div>y</div></details>', function (el) {
+       // 折叠动画是 ::details-content，浏览器不支持就退成瞬开——所以这里只验样式在不在
+       return getComputedStyle(el.querySelector("summary")).listStyleType === "none";
+     })],
+    ["链接 hover 下划线 link-underline（第八轮）",
+     probe('<a class="gb-footer__link" href="#">x</a>', function (el) {
+       return getComputedStyle(el, "::after").transform === "matrix(0, 0, 0, 1, 0, 0)";
+     })],
+    ["reels 去掉居中 padding、改全出血（第八轮）",
+     probe('<div class="gb-reels"></div>', function (el) {
+       return parseFloat(getComputedStyle(el).paddingLeft) === 0;
+     })],
+    ["logo 条无缝循环：整组位移 100%（第十轮）",
+     probe('<div class="gb-logo-scroll__viewport"><ul class="gb-logo-scroll__track"></ul></div>', function (el) {
+       var cs = getComputedStyle(el.firstElementChild);
+       return cs.animationDuration === "15s" && parseFloat(cs.paddingRight) === 30;
+     })],
+    ["hero 小熊按稿倾斜 7.92deg（第十轮）",
+     probe('<div class="gb-hero"><div class="gb-hero__inner"><div class="gb-hero__art">' +
+           '<img class="gb-hero__bear"></div></div></div>', function (el) {
+       return getComputedStyle(el.querySelector(".gb-hero__bear")).transform.indexOf("0.99") > -1;
+     })],
+    ["promo 艺术图改单张 PNG（第十轮）",
+     probe('<div class="gb-promo-art"><img class="gb-promo-art__img"></div>', function (el) {
+       return getComputedStyle(el.querySelector("img")).position === "absolute";
+     })],
+    ["描边拆两层 ink-split：光晕在 .ink-halo 且压在字下（第十一轮）",
+     probe('<p class="gb-stat__value"><span class="gb-ink-halo">6</span>6</p>', function (el) {
+       var top = getComputedStyle(el), halo = getComputedStyle(el.querySelector(".gb-ink-halo"));
+       // 顶层只画字（无光晕），底层只画光晕（透明字 + z-index:-1）
+       return top.textShadow === "none" && top.isolation === "isolate" &&
+              halo.textShadow !== "none" && halo.zIndex === "-1" &&
+              parseFloat(top.webkitTextStrokeWidth || 0) === 0;
+     })],
+    ["reels 箭头回到 40x40 圆形、间距 10（第十一轮）",
+     probe('<div class="gb-reels__nav"><button class="gb-reels__btn">' +
+           '<svg viewBox="0 0 40 40"></svg></button></div>', function (el) {
+       var svg = getComputedStyle(el.querySelector("svg"));
+       return svg.width === "40px" && svg.height === "40px" &&
+              parseFloat(getComputedStyle(el).columnGap) === 10;
+     })],
+    ["reels 拖动态关掉 snap（第十一轮）",
+     probe('<div class="gb-reels is-dragging"></div>', function (el) {
+       var cs = getComputedStyle(el);
+       return cs.scrollSnapType === "none" && cs.cursor === "grabbing";
+     })],
+    ["reel 视频弹窗外壳 .rv-modal（第十一轮）",
+     probe('<div class="gb-rv-modal"><div class="gb-rv-panel"></div></div>', function (el) {
+       return getComputedStyle(el).visibility === "hidden" &&
+              getComputedStyle(el.querySelector(".gb-rv-panel")).aspectRatio.indexOf("304") > -1;
+     })],
+    ["logo 不再 object-fit:cover（第六轮）",
+     probe('<img class="gb-logo-scroll__img">', function (el) {
+       return getComputedStyle(el).objectFit !== "cover";
+     })],
+    ["轮播脚本 window.gumi.slider / gallery（第六轮）",
+     !!(window.gumi && window.gumi.slider && window.gumi.gallery)],
+    ["逐词弹出脚本 popText（第七轮，只用于 stats）",
+     !!(window.gumi && window.gumi.popText)],
+    ["pack band 整条转 -6.556deg、pack 自己不转（第十六轮）",
+     probe('<div class="gb-nutrition__band"><div class="gb-pack-band">' +
+           '<div class="gb-pack-band__row"><img class="gb-pack-band__pack"></div></div></div>',
+       function (el) {
+         var band = getComputedStyle(el.querySelector(".gb-pack-band"));
+         var pack = getComputedStyle(el.querySelector(".gb-pack-band__pack"));
+         return band.transform.indexOf("0.993") > -1 && pack.transform === "none";
+       })],
+    ["散落小熊合成单张 nutrition-bears（第十六轮）",
+     probe('<div class="gb-nutrition__band"><div class="gb-nutrition__bears">' +
+           '<img class="gb-nutrition__bears-img"></div></div>', function (el) {
+       return getComputedStyle(el.querySelector("img")).position === "absolute";
+     })],
+    ["产品图库改叠放淡入（第十六轮）",
+     probe('<div class="gb-product__stage"><div class="gb-product__image is-active"></div>' +
+           '<div class="gb-product__image"></div></div>', function (el) {
+       var a = getComputedStyle(el.children[0]), b = getComputedStyle(el.children[1]);
+       return a.position === "absolute" && a.opacity === "1" && b.opacity === "0" &&
+              a.transitionProperty === "opacity";
+     })],
+    ["手风琴同组排他 details[name]（第十六轮）",
+     document.querySelectorAll("details[name]").length >= 0 &&
+       !!(window.gumi && window.gumi.accordion)],
+    ["reel hover 只放大内部图、卡片无阴影（第十六轮）",
+     probe('<button class="gb-reel"><span class="gb-reel__media"></span></button>', function (el) {
+       return getComputedStyle(el).boxShadow === "none" &&
+              getComputedStyle(el.querySelector(".gb-reel__media")).transitionProperty === "transform";
+     })],
+    ["bear-meter 固定 20 列（第十六轮）",
+     probe('<div class="gb-bear-meter"></div>', function (el) {
+       return getComputedStyle(el).gridTemplateColumns.split(" ").length === 20;
+     })],
+    ["平板档插值生效：--pad-x 是 clamp（第十六轮）",
+     (getComputedStyle(document.documentElement).getPropertyValue("--pad-x") || "").length > 0],
+    ["平滑滚动已接管：Lenis 实例在（第十七轮）",
+     !!(window.gumi && window.gumi.smoothScroll && window.gumi.smoothScroll.lenis)],
+    ["html 的 scroll-behavior 必须是 auto，否则与 Lenis 叠成两层平滑（第十七轮）",
+     getComputedStyle(document.documentElement).scrollBehavior === "auto"],
+    ["内部可滚容器都在 PREVENT 名单里（第十七轮 / file:// 下只验名单非空）",
+     (function () {
+       // ⚠ 不能逐类断言「它现在是 overflow-y:auto」：thumbs 只在桌面滚、
+       //   header__panel 只在手机滚，同一视口下永远不可能三个都成立。
+       //   完整的不变量（每个可滚元素都挂上了 data-lenis-prevent）在
+       //   tools/rwd.py 里逐页 × 逐视口跑。
+       var list = ((window.gumi || {}).smoothScroll || {}).PREVENT || "";
+       var names = list.split(",").map(function (x) { return x.trim().replace(/^\./, ""); })
+                       .filter(Boolean);
+       if (!names.length) { return false; }
+       var declared = 0, seen = 0;
+       try {
+         for (var i = 0; i < document.styleSheets.length; i++) {
+           var rs = document.styleSheets[i].cssRules;
+           for (var j = 0; j < rs.length; j++) {
+             var r = rs[j];
+             if (r.style && /^(auto|scroll)$/.test(r.style.overflowY || "")) {
+               declared++;
+               if (names.some(function (n) { return (r.selectorText || "").indexOf(n) > -1; })) { seen++; }
+             }
+           }
+         }
+       } catch (e) { return true; }   // file:// 下 cssRules 可能被当跨域，见 memory
+       return declared === 0 || seen === declared;
+     })()],
+    ["hero 小熊去掉放大、改纯淡入（第十七轮）",
+     probe('<div class="gb-hero__art gb-float-art gb-float-art--still"></div>', function (el) {
+       return getComputedStyle(el).animationName === "gm-art-fade-in";
+     })],
+    ["装饰熊：定位挂在包裹 div 上，图片撑满（第十七轮）",
+     probe('<div class="gb-deco-bear gb-deco-bear--a"><img></div>', function (el) {
+       var box = getComputedStyle(el), img = getComputedStyle(el.querySelector("img"));
+       return box.position === "absolute" && img.display === "block" &&
+              Math.abs(parseFloat(img.width) - parseFloat(box.width)) < 1;
+     })],
+    ["波浪归属：section 自带下边缘形状（第十八轮）",
+     probe('<section class="gb-product gb-sec-edge gb-sec-edge--lg">' +
+           '<div class="gb-scallop gb-scallop--edge gb-scallop--white-to-mint"></div></section>',
+       function (el) {
+         var sec = getComputedStyle(el), w = getComputedStyle(el.firstElementChild);
+         var spacer = getComputedStyle(el, "::after");
+         // 高度由宿主的 ::after 占位块留出（不能用 border —— Chromium 会把 border
+         // 宽度取整到整数 px，每道波浪差 ~1px）；波浪绝对定位贴 padding box 底。
+         // 尺寸只写在 section 上，波浪继承 —— 占位块与波浪必须逐像素等高。
+         return w.position === "absolute" && parseFloat(w.bottom) === 0 &&
+                parseFloat(spacer.height) > 30 &&
+                Math.abs(parseFloat(spacer.height) - parseFloat(w.height)) < 0.05;
+       })],
+    ["裁切型宿主也不用特例：占位块在 padding box 内（第十八轮）",
+     probe('<section class="gb-nutrition gb-sec-edge gb-sec-edge--lg">' +
+           '<div class="gb-scallop gb-scallop--edge gb-scallop--lime-to-white gb-scallop--bleed"></div></section>',
+       function (el) {
+         var sec = getComputedStyle(el), w = getComputedStyle(el.firstElementChild);
+         return sec.overflow === "hidden" && parseFloat(sec.borderBottomWidth) === 0 &&
+                parseFloat(sec.paddingBottom) === 0 &&
+                w.backgroundColor === "rgba(0, 0, 0, 0)";   // --bleed：条带透明
+       })],
+    ["pack band 居中屏幕、两行同轴（第十七轮）",
+     probe('<div class="gb-nutrition__band"><div class="gb-pack-band">' +
+           '<div class="gb-pack-band__row"><img class="gb-pack-band__pack"></div></div></div>',
+       function (el) {
+         var band = el;   // probe() 给的就是 .gb-nutrition__band 本身
+         var cs = getComputedStyle(el.querySelector(".gb-pack-band"));
+         // computed 的 left 已经解析成 px，不会是 "50%"
+         return Math.abs(parseFloat(cs.left) - band.clientWidth / 2) < 1 &&
+                cs.alignItems === "center";
+       })],
+    ["弹窗退场 0.55s 比进场 0.4s 慢，且换了曲线（第十九轮）",
+     probe('<div class="gb-nl-modal"><div class="gb-nl-panel"></div></div>', function (el) {
+       var s = getComputedStyle(el.querySelector(".gb-nl-panel"));
+       return s.transitionDuration === "0.55s" && s.transitionTimingFunction.indexOf("0.65") > -1;
+     })],
+    ["手风琴行距挪进 summary 的 padding，容器不再有 gap（第十九轮）",
+     probe('<div class="gb-faq__list">' +
+           '<details class="gb-faq__item"><summary class="gb-faq__row">a</summary></details>' +
+           '<details class="gb-faq__item"><summary class="gb-faq__row">b</summary></details></div>', function (el) {
+       // 两个 details：第一个不是 last-child，才量得到真正的行距
+       return getComputedStyle(el).rowGap === "normal" &&
+              parseFloat(getComputedStyle(el.querySelector("summary")).paddingBottom) === 24;
+     })],
+    ["加号图标改 CSS 画、竖线立着等展开（第十九轮）",
+     probe('<span class="gb-acc-icon"></span>', function (el) {
+       var a = getComputedStyle(el, "::after");
+       return a.content === '""' && a.transform.indexOf("0, 1, -1, 0") > -1;
+     })],
+    ["输入框焦点走 border-color，不画 outline（第十九轮）",
+     probe('<input class="gb-footer__input">', function (el) {
+       // :focus-visible 在探针里模拟不了；验的是「这个框已经把 border-color 纳入过渡」
+       return getComputedStyle(el).transitionProperty.indexOf("border-color") > -1;
+     })],
+    ["header 吸顶（第十九轮）",
+     probe('<header class="gb-header"></header>', function (el) {
+       var s = getComputedStyle(el);
+       return s.position === "sticky" && s.top === "0px";
+     })],
+    ["弧形文字不再被 SVG 视口切掉上缘（第十九轮）",
+     probe('<svg class="gb-arc-text" viewBox="0 0 100 20"></svg>', function (el) {
+       return getComputedStyle(el).overflowX === "visible";
+     })],
+    ["页脚 CTA 上边缘的波浪条带透明（第十九轮）",
+     probe('<div class="gb-scallop gb-scallop--to-lime"></div>', function (el) {
+       return getComputedStyle(el).backgroundColor === "rgba(0, 0, 0, 0)";
+     })]
+  ];
+
+  var featBad = feats.filter(function (f) { return !f[1]; }).length;
+  rows("feat", ["<tr><th>改动</th><th>在不在</th></tr>"].concat(
+    feats.map(function (f) { return "<tr><td>" + f[0] + "</td><td>" + yes(f[1]) + "</td></tr>"; })
+  ));
+
+  /* ---- 字体 ---- */
+  var REF, WANT, S;
+  REF = {
+    "pppalma-light.woff2": "Light 300（非 Fizzy）",
+    "pppalma-medium.woff2": "Medium 500（非 Fizzy）",
+    "pppalma-regular-interp.woff2": "Regular 400（旧·非 Fizzy 插值件）",
+    "pppalma-fizzy-regular-interp.woff2": "Fizzy Regular 400（插值件·客户端不可用）",
+    "pppalma-fizzy-light.woff2": "Fizzy Light 300",
+    "pppalma-fizzy-medium.woff2": "Fizzy Medium 500",
+    "pppalma-fizzy-heavy.woff2": "Fizzy Heavy 800"
+  };
+  /* 400 暂时降级到原厂 FizzyLight —— 两个插值件在客户端都画不出字。
+     所以 300 与 400 现在指向同一个文件，两行命中同一个名字是预期结果。 */
+  WANT = { 300: "pppalma-fizzy-light.woff2", 400: "pppalma-fizzy-light.woff2",
+           500: "pppalma-fizzy-medium.woff2", 800: "pppalma-fizzy-heavy.woff2" };
+  S = "Real fruit, real veg, real vitamins, 60+ 21 6g";
+
+  function measure(family, weight) {
+    var s = document.createElement("span");
+    s.style.cssText = "position:absolute;visibility:hidden;white-space:pre;font-size:40px;" +
+                      "letter-spacing:0;font-family:" + JSON.stringify(family) + ";font-weight:" + weight;
+    s.textContent = S;
+    document.body.appendChild(s);
+    var r = document.createRange(); r.selectNodeContents(s);
+    var w = r.getBoundingClientRect().width;
+    s.remove();
+    return w;
+  }
+
+  /* 先把页面自己声明的四个字重逼下来。@font-face 是惰性的：不显式 load()，
+     下面 measure("PP Palma", w) 量到的会是 fallback 的宽度，四个字重一个数，
+     看起来像"全都没命中"——其实只是还没下载完。 */
+  var forceLoad = Promise.all(Object.keys(WANT).map(function (w) {
+    return document.fonts.load(w + ' 40px "PP Palma"').catch(function () {});
+  }));
+
+  forceLoad.then(function () { return Promise.all(Object.keys(REF).map(function (file) {
+    var ff = new FontFace("REF_" + file, 'url("' + DIR + file + '")');
+    return ff.load().then(
+      function (f) { document.fonts.add(f); return [file, measure("REF_" + file, 400)]; },
+      function () { return [file, null]; });
+  })); }).then(function (pairs) {
+    var ref = {};
+    pairs.forEach(function (p) { ref[p[0]] = p[1]; });
+
+    var out = ["<tr><th>声明字重</th><th>实测宽</th><th>命中文件</th><th>期望文件</th><th>判定</th></tr>"];
+    var fontBad = 0;
+    Object.keys(WANT).forEach(function (w) {
+      var got = measure("PP Palma", w), best = null, bestD = 1e9;
+      Object.keys(ref).forEach(function (file) {
+        if (ref[file] == null) return;
+        var d = Math.abs(ref[file] - got);
+        if (d < bestD) { bestD = d; best = file; }
+      });
+      var pass = bestD < 0.75 && best === WANT[w];
+      if (!pass) fontBad++;
+      out.push("<tr><td>" + w + "</td><td>" + got.toFixed(2) + "</td><td>" +
+        (bestD < 0.75 ? best : "（对不上任何本地文件，最近的是 " + best + "，差 " + bestD.toFixed(1) + "px）") +
+        "</td><td>" + WANT[w] + "</td><td class='" + (pass ? "ok'>通过" : "bad'>不符") + "</td></tr>");
+    });
+    out.push("<tr><th colspan='5'>参照标尺（各文件单独加载后的实测宽）</th></tr>");
+    Object.keys(REF).forEach(function (file) {
+      out.push("<tr><td colspan='2'>" + REF[file] + "</td><td colspan='3'>" + file + " — " +
+        (ref[file] == null ? "<span class='bad'>加载失败</span>" : ref[file].toFixed(2) + "px") + "</td></tr>");
+    });
+    rows("font", out);
+
+    /* ---- 正文 400 的实际排版 ----
+       用户报「PP Palma regular 间距过大」时，光看字重命中表不够：字体命中对了、
+       字距仍可能被浏览器层面撑开。这里直接量 hero 引导段那一句在 380px 容器里
+       占几行、每个字符平均推进多少，跟设计稿的 2 行 / 约 8.5px 对一遍。 */
+    var LEAD = "Real fruit, real veg, real vitamins, hiding in a gumi bear.";
+    var lp = document.createElement("div");
+    lp.style.cssText = 'position:absolute;left:-9999px;top:0;width:380px;font-weight:400;' +
+      'font-size:20px;line-height:30px;letter-spacing:-0.4px;' +
+      'font-family:"PP Palma", Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+    lp.textContent = LEAD;
+    document.body.appendChild(lp);
+    var lr = document.createRange(); lr.selectNodeContents(lp);
+    var lines = lr.getClientRects().length;
+    /* 同一句话不换行时的自然宽度 -> 每字符平均推进 */
+    var lw = document.createElement("span");
+    lw.style.cssText = lp.style.cssText + ";width:auto;white-space:pre;display:inline-block";
+    lw.textContent = LEAD;
+    document.body.appendChild(lw);
+    var natural = lw.getBoundingClientRect().width;
+    var perChar = natural / LEAD.length;
+    lp.remove(); lw.remove();
+
+    var hitOK = fontBad === 0;
+    var spacingOK = perChar < 12;          // 稿约 9.4px；掉到系统字体约 10~11；被撑开会 >20
+    var linesOK = lines <= 2;
+    var leadBad = (spacingOK && linesOK) ? 0 : 1;
+    var verdict;
+    if (spacingOK && linesOK) verdict = "<span class='ok'>正常</span>——与设计稿一致";
+    else if (!hitOK) verdict = "<span class='bad'>字体没加载</span>：先看上面第 3 张表，" +
+        "命中列写的是哪个文件；多半是 <code>assets/</code> 里少了那个 woff2（没同步过来）";
+    else verdict = "<span class='bad'>字体命中正确，但字距被撑开了</span>：不是站点 CSS 造成的" +
+        "（这里写死 letter-spacing:-0.4px）。请查浏览器的「字体 / 可读性」设置或扩展" +
+        "（Chrome: 设置→外观→自定义字体；以及阅读增强类扩展）";
+
+    rows("lead", [
+      "<tr><th>项</th><th>设计稿</th><th>你这里</th><th>判定</th></tr>",
+      "<tr><td>380px 容器内行数</td><td>2</td><td class='" + (linesOK ? "ok" : "bad") + "'>" + lines + "</td>" +
+        "<td rowspan='2'>" + verdict + "</td></tr>",
+      "<tr><td>每字符平均推进</td><td>约 8.5px</td><td class='" + (spacingOK ? "ok" : "bad") + "'>" +
+        perChar.toFixed(2) + "px</td></tr>"
+    ]);
+
+    var bad = (buildOK ? 0 : 1) + featBad + fontBad + leadBad;
+    var b = document.getElementById("banner");
+    b.className = "banner " + (bad ? "bad" : "ok");
+    b.innerHTML = bad
+      ? "✗ 有 " + bad + " 项不符。" +
+        (leadBad && !fontBad && buildOK
+          ? "注意：版本和字体命中都是对的，唯独正文字距被撑开 —— 看下面第 4 节的判定，" +
+            "以及最底下的「对照」那一行。"
+          : "你的浏览器多半还在用缓存里的旧文件。先 Ctrl+Shift+R 硬刷新本页；" +
+            "若仍不符，就是文件没同步到你这台机器，把这张表发回来。")
+      : "✓ 全部通过：你加载到的就是最新一版（" + EXPECT_BUILD + "），页面上看到的即当前实现。";
+
+    var sp = [];
+    [300, 400, 500, 800].forEach(function (w) {
+      sp.push('<div class="lbl">font-weight: ' + w + '</div><p class="gb-spec" style="font-weight:' + w + '">' + S + "</p>");
+    });
+    /* 对照组：同一句话完全不经过 PP Palma。两行都被撑开 = 浏览器/系统层面的字距设置，
+       与本站无关；只有上面 400 那行被撑开 = 字体文件的问题。 */
+    sp.push('<div class="lbl">对照 —— 完全不用 PP Palma（系统字体）</div>' +
+            '<p class="gb-spec" style="font-family:-apple-system,BlinkMacSystemFont,' +
+            "'Segoe UI',Roboto,Arial,sans-serif\">" + S + "</p>");
+    sp.push('<p class="sub" style="margin-top:10px">若<b>对照行的字距同样被撑开</b>，' +
+            '问题在浏览器或系统层面（字体/可读性设置、阅读增强类扩展），本站改不动它；' +
+            '若<b>只有 400 那行被撑开</b>，那就是字体文件，把本页截图发回来。</p>');
+    document.getElementById("specs").innerHTML = sp.join("");
+
+    /* ---- 第 5 节：生成流程二分 ----
+       客户端上插值件的字形全部不可用（face 被接受，但一个字也画不出来），
+       本机 Linux Chrome 复现不了。这四行把生成流程切成三刀，让对方直接指认
+       是「保存」还是「重写 charstring」还是「插值」那一步坏的。 */
+    var DIAG = [
+      ["① 原厂文件（未经我处理）", "pppalma-fizzy-medium.woff2"],
+      ["② 仅用 fontTools 重新保存，轮廓一字未动", "diag-a-resave.woff2"],
+      ["③ 重存 + 重写每个字形轮廓（坐标不变，本应与①相同）", "diag-b-rewrite.woff2"],
+      ["④ 真正的插值件（页面上的 400 曾经用它）", "pppalma-fizzy-regular-interp.woff2"]
+    ];
+    Promise.all(DIAG.map(function (d, i) {
+      var ff = new FontFace("DIAG_" + i, 'url("' + DIR + d[1] + '")');
+      return ff.load().then(function (f) { document.fonts.add(f); return true; },
+                            function () { return false; });
+    })).then(function (loaded) {
+      var out = DIAG.map(function (d, i) {
+        return '<div class="lbl">' + d[0] + (loaded[i] ? "" : " — <span class='bad'>文件加载失败</span>") +
+               '</div><p class="gb-spec" style="font-family:DIAG_' + i + ', sans-serif">' + S + "</p>";
+      });
+      out.push('<p class="sub" style="margin-top:10px">①②③ 本应长得完全一样。' +
+               '若 ③ 已经坏 → 坏在「重写轮廓」这一步（丢了 CFF hinting 之类）；' +
+               '若 ①②③ 都好、只有 ④ 坏 → 坏在插值本身。</p>');
+      document.getElementById("diag").innerHTML = out.join("");
+    });
+  });
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", run);
+} else { run(); }
+})();
+</script>
+</body>
+</html>

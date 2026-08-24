@@ -1,0 +1,192 @@
+# Homepage Desktop (`401:29604`) — 557×541
+
+共 188 条文案，按节点树顺序。⚠ 文案非最终版（见 HANDOVER-NOTES.md）。
+
+- `21.655467987060547px/800` 60+ whole foods. No juicer, no fuss.
+- `18.04622459411621px/800` 60+
+- `9.280914306640625px/800` Clean Ingredients
+- `6.187276363372803px/400` Whole fruits, veggies and superfoods, nothing artificial hiding in the mix
+- `18.04622459411621px/800` 6g
+- `9.280914306640625px/800` of Fibre
+- `6.187276363372803px/400` Because your gut deserves better than another green juice you'll forget to finish
+- `18.04622459411621px/800` 21
+- `9.280914306640625px/800` Vitamins & Minerals
+- `6.187276363372803px/400` A full day's worth of goodness, minus the multivitamin gag reflex
+- `18.04622459411621px/800` 10+
+- `9.280914306640625px/800` Green benefits
+- `6.187276363372803px/400` From energy to immunity to skin, one gumi is doing a lot of quiet work
+- `7.734095573425293px/400` One serving of gumi bears delivers what used to take a blender, a juicer, and a lot of willpower. Don't just take our word for it. Take the label's.
+- `15.468191146850586px/800` Lab-tested. Aussie approved.  No funny business.
+- `6.960685729980469px/400` You loved gumi bears as a kid. This time, they're actually good for you, and we've got the research to prove it.
+- `6.187276363372803px/500` Easy Habit
+- `21.655467987060547px/800` 95%
+- `6.187276363372803px/400` of users take Gumi at least 4-6x per week with 80% taking Gumi daily.*
+- `6.187276363372803px/500` Easy Habit
+- `21.655467987060547px/800` 95%
+- `6.187276363372803px/400` of users take Gumi at least 4-6x per week with 80% taking Gumi daily.*
+- `6.187276363372803px/500` Easy Habit
+- `21.655467987060547px/800` 95%
+- `6.187276363372803px/400` of users take Gumi at least 4-6x per week with 80% taking Gumi daily.*
+- `15.468191146850586px/800` Nutrition that fits in your pocket
+- `6.960685729980469px/400` You loved gumi bears as a kid. This time, they're actually good for you, and we've got the research to prove it.
+- `12.374552726745605px/800` Gym Bag Ready
+- `6.187276363372803px/400` Toss a pack in with your pocket,  no fridge, no mess, no excuses
+- `12.374552726745605px/800` Tastes Like a Treat
+- `6.187276363372803px/400` Because self care shouldn't  feel like a chore
+- `12.374552726745605px/800` One Handful a Day
+- `6.187276363372803px/400` That's it. That's the whole routine
+- `12.625062942504883px/800` Superfood Greens Gummies
+- `7.105501174926758px/500` Single Serving
+- `12.625062942504883px/800` Superfood Greens Gummies
+- `7.105501174926758px/500` Single Serving
+- `12.625062942504883px/800` Superfood Greens Gummies
+- `7.105501174926758px/500` Single Serving
+- `12.625062942504883px/800` Superfood Greens Gummies
+- `7.105501174926758px/500` Single Serving
+- `12.625062942504883px/800` Superfood Greens Gummies
+- `7.105501174926758px/500` Single Serving
+- `12.625062942504883px/800` Superfood Greens Gummies
+- `7.105501174926758px/500` Single Serving
+- `12.625062942504883px/800` Superfood Greens Gummies
+- `7.105501174926758px/500` Single Serving
+- `12.625062942504883px/800` Superfood Greens Gummies
+- `7.105501174926758px/500` Single Serving
+- `12.625062942504883px/800` Superfood Greens Gummies
+- `7.105501174926758px/500` Single Serving
+- `0.4997415244579315px/600` Most Popular
+- `0.4997415244579315px/600` Most Popular
+- `0.4997415244579315px/600` Most Popular
+- `0.4997415244579315px/600` Most Popular
+- `0.4997415244579315px/600` Most Popular
+- `4.850574016571045px/600` Most Popular
+- `6.960685729980469px/500` View Nutritional Label
+- `4.6404571533203125px/400` 123,456+ happy customers
+- `12.374552726745605px/800` Superfood Greens Gummies
+- `5.413866996765137px/400` From $00.00 each
+- `6.187276363372803px/500` 60+ potent ingredients to revive whole body vitality in one great tasting gummy.
+- `6.187276363372803px/400` Promotes energy and focus
+- `6.187276363372803px/400` Promotes gut and digestive health
+- `6.187276363372803px/400` Promotes immunity and resilience
+- `6.187276363372803px/400` Promotes skin, hair and nail health
+- `6.187276363372803px/500` Autoship and Save
+- `5.413866996765137px/500` MOST POPULAR: get 49% off
+- `6.187276363372803px/500` Subscribe & Save
+- `6.187276363372803px/500` $40.40
+- `5.413866996765137px/500` $79.99
+- `5.413866996765137px/400` 28 Packs delivered once
+- `5.413866996765137px/400` $1.46/day
+- `6.187276363372803px/500` How subscription works:
+- `5.413866996765137px/400` Locked in pricing, every delivery.
+- `5.413866996765137px/400` Skip, pause or cancel any time.
+- `5.413866996765137px/400` Delivered before you run out.
+- `6.187276363372803px/500` Delivers every:
+- `5.413866996765137px/400` 4 Weeks
+- `6.187276363372803px/500` One Time Purchase
+- `6.187276363372803px/500` $54.40
+- `5.413866996765137px/500` $79.99
+- `5.413866996765137px/400` 28 Packs delivered once
+- `5.413866996765137px/400` $1.94/day
+- `6.960685729980469px/500` Start Now
+- `5.413866996765137px/400` Less than 1% of customers use our money back guarantee.
+- `5.413866996765137px/400` 30 Day  Money Back Guarantee
+- `5.413866996765137px/400` Aussie Based Support Team
+- `5.413866996765137px/400` Batch Tested Quality
+- `6.187276363372803px/400` Why Gumi
+- `6.960685729980469px/400` Because your multivitamin routine shouldn't need a routine.
+- `6.187276363372803px/400` Ingredients & Allergies
+- `6.960685729980469px/400` Every active, every allergen, no fine print games.
+- `6.187276363372803px/400` Science
+- `6.960685729980469px/400` The research behind the recipe, not just the marketing.
+- `6.187276363372803px/400` Directions
+- `6.960685729980469px/400` One pouch, once a day. That's genuinely it.
+- `6.187276363372803px/400` Benefits
+- `6.960685729980469px/400` What 60+ ingredients actually do for you, in plain English.
+- `6.960685729980469px/500` Tastes Like
+- `6.187276363372803px/400` Heading
+- `6.187276363372803px/400` Heading
+- `6.187276363372803px/400` Heading
+- `6.960685729980469px/500` Packed With
+- `6.187276363372803px/400` Vitamins & Minerals
+- `6.187276363372803px/400` Adaptogens & Herbs
+- `6.187276363372803px/400` Prebiotics
+- `6.187276363372803px/400` Antioxidants
+- `6.187276363372803px/400` Whole Food Fruit & Veg Blend
+- `5.413866996765137px/400` 4.8 stars
+- `15.468191146850586px/800` Aussies are obsessed.  Here's why.
+- `6.187276363372803px/500` 10/10 would recommend.  The convenience and taste are huge!
+- `6.960685729980469px/400` Plus not having a clean shaker bottle or extra dishes for greens stuff in powder form, is absolutely excellent!
+- `6.187276363372803px/500` Dustin O.
+- `6.187276363372803px/500` 10/10 would recommend.  The convenience and taste are huge!
+- `6.960685729980469px/400` Plus not having a clean shaker bottle or extra dishes for greens stuff in powder form, is absolutely excellent!
+- `6.187276363372803px/500` Dustin O.
+- `6.187276363372803px/500` 10/10 would recommend.  The convenience and taste are huge!
+- `6.960685729980469px/400` Plus not having a clean shaker bottle or extra dishes for greens stuff in powder form, is absolutely excellent!
+- `6.187276363372803px/500` Dustin O.
+- `6.187276363372803px/500` 10/10 would recommend.  The convenience and taste are huge!
+- `6.187276363372803px/400` Plus not having a clean shaker bottle or extra dishes for greens stuff in powder form, is absolutely excellent!
+- `6.187276363372803px/500` Dustin O.
+- `5.413866996765137px/400` Testimonials featured in videos or other promotional materials may include individuals who received compensation, free product, or other incentives
+- `13.921371459960938px/800` They want to be gummies now
+- `6.960685729980469px/400` Join thousands of Aussies who've traded the multivitamin struggle for something they actually look forward to.
+- `6.187276363372803px/500` Start Your Greens
+- `6.960685729980469px/400` Made with more care than a vitamin gummy probably needs. That's on purpose.
+- `6.187276363372803px/400` Stay up to date
+- `6.187276363372803px/400` Enter your email
+- `6.187276363372803px/500` Subscribe
+- `6.187276363372803px/400` Why Gumi
+- `6.187276363372803px/400` Shop
+- `6.187276363372803px/400` How Gumi Works
+- `6.187276363372803px/400` Science
+- `6.187276363372803px/400` Reviews
+- `6.187276363372803px/600` Additional
+- `6.187276363372803px/600` Additional
+- `6.187276363372803px/600` Additional
+- `6.187276363372803px/600` Additional
+- `6.187276363372803px/600` Additional
+- `6.187276363372803px/400` Learn more
+- `6.187276363372803px/400` Our Story
+- `6.187276363372803px/400` FAQs
+- `6.187276363372803px/400` Shipping
+- `6.187276363372803px/400` Referral Program
+- `6.187276363372803px/600` Additional
+- `6.187276363372803px/600` Additional
+- `6.187276363372803px/600` Additional
+- `6.187276363372803px/600` Additional
+- `6.187276363372803px/600` Additional
+- `6.187276363372803px/400` Get in touch
+- `6.187276363372803px/400` Partners & Influencers
+- `6.187276363372803px/400` Press Inquiries
+- `6.187276363372803px/400` Careers
+- `6.187276363372803px/400` Contact
+- `6.187276363372803px/600` Additional
+- `6.187276363372803px/600` Additional
+- `6.187276363372803px/600` Additional
+- `6.187276363372803px/600` Additional
+- `6.187276363372803px/600` Additional
+- `6.187276363372803px/400` Follow us
+- `6.187276363372803px/400` © 2027 Gumi. All rights reserved.
+- `6.187276363372803px/400` Privacy
+- `6.187276363372803px/400` Cookies
+- `5.655556678771973px/400` gumi.com.au
+- `19.124998092651367px/400` 􀙨
+- `6.187276363372803px/400` Excellent
+- `6.187276363372803px/400` Truspilot
+- `6.187276363372803px/500` Menu
+- `6.187276363372803px/400` Our Story
+- `6.187276363372803px/400` FAQs
+- `6.187276363372803px/400` Shipping
+- `6.187276363372803px/400` Referral Program
+- `6.187276363372803px/500` Shop now
+- `23.202285766601562px/800` Eating your greens never felt this good.
+- `7.734095573425293px/400` Real fruit, real veg, real vitamins,  hiding in a gumi bear.
+- `6.960685729980469px/500` Try Gumi
+- `12.468545913696289px/800` 60+
+- `6.960685729980469px/500` Clean Ingredients
+- `12.468545913696289px/800` 21
+- `6.960685729980469px/500` Vitamins & Minerals
+- `12.468545913696289px/800` 6g
+- `6.960685729980469px/500` of Fibre
+- `4.6404571533203125px/400` 123,456+ happy customers
+- `6.187276363372803px/400` You loved gumi bears as a kid. This time, they're actually good for you, and we've got the research to prove it.
+- `6.187276363372803px/500` The Science
+- `6.187276363372803px/500` Daily Ritual

@@ -1,0 +1,219 @@
+# Reviews Desktop (`324:63924`) — 1440×9066
+
+共 215 条文案，按节点树顺序。⚠ 文案非最终版（见 HANDOVER-NOTES.md）。
+
+- `16.0px/500` The Science
+- `16.0px/500` Daily Ritual
+- `16.0px/500` The Transformation
+- `32.24306106567383px/800` 60+
+- `16.0px/500` Clean Ingredients
+- `32.24306106567383px/800` 21
+- `16.0px/500` Vitamins  & Minerals
+- `32.24306106567383px/800` 6g
+- `16.0px/500` of Fibre
+- `14.624998092651367px/400` gumi.com.au
+- `19.124998092651367px/400` 􀙨
+- `16.0px/400` Excellent
+- `16.0px/400` Truspilot
+- `16.0px/500` Menu
+- `16.0px/400` Our Story
+- `16.0px/400` FAQs
+- `16.0px/400` Shipping
+- `16.0px/400` Referral Program
+- `16.0px/500` Shop now
+- `14.0px/400` 123,456+ happy customers
+- `12.0px/400` 123,456+ happy customers
+- `18.0px/500` Reviewed. Endorsed. Enjoyed.
+- `56.0px/800` Aussies are obsessed.  Here's why.
+- `20.0px/400` Real reviews from real people, all across the country.
+- `40.0px/800` Recommended by experts
+- `18.0px/400` Sub heading about quality
+- `32.0px/800` Connor
+- `16.0px/500` CONNORS TITLE HERE
+- `16.0px/400` "Grüns has everything I need nutritionally to help my body recover & feel energized. The amount of vitamin B12, Vitamin C, & Vitamin D3 is exactly what I need to keep training at a high level."
+- `32.0px/800` Connor
+- `16.0px/500` CONNORS TITLE HERE
+- `16.0px/400` "Grüns has everything I need nutritionally to help my body recover & feel energized. The amount of vitamin B12, Vitamin C, & Vitamin D3 is exactly what I need to keep training at a high level."
+- `32.0px/800` Connor
+- `16.0px/500` CONNORS TITLE HERE
+- `16.0px/400` "Grüns has everything I need nutritionally to help my body recover & feel energized. The amount of vitamin B12, Vitamin C, & Vitamin D3 is exactly what I need to keep training at a high level."
+- `40.0px/800` Real Customer Reviews
+- `66.18181610107422px/800` 4.76
+- `16.0px/400` Based on 123,000 reviews
+- `15.272727012634277px/500` AF
+- `16.0px/400` Arianna F
+- `14.0px/400` Verified Buyer
+- `14.0px/400` 24 minutes ago
+- `16.0px/500` Great tasting, and super healthy product that would
+- `16.0px/400` Great tasting and great product! A great vitamin. greens powder alternative
+- `14.0px/400` Would recommend
+- `14.0px/400` 0
+- `14.0px/400` 0
+- `15.272727012634277px/500` JB
+- `16.0px/400` James B
+- `14.0px/400` Verified Buyer
+- `14.0px/400` 2 hours ago
+- `16.0px/500` Refreshing taste with natural ingredients, perfect for daily use.
+- `16.0px/400` I love how this supplement fits seamlessly into my morning routine. Definitely a must-have!
+- `14.0px/400` Would recommend
+- `14.0px/400` 2
+- `14.0px/400` 0
+- `15.272727012634277px/500` ML
+- `16.0px/400` Maya L
+- `14.0px/400` Verified Buyer
+- `14.0px/400` 5 hours ago
+- `16.0px/500` Smooth texture and energizing effects without any aftertaste.
+- `16.0px/400` This greens gumi has replaced my usual vitamins. Feeling more vibrant every day!
+- `14.0px/400` Would recommend
+- `14.0px/400` 3
+- `14.0px/400` 1
+- `15.272727012634277px/500` RS
+- `16.0px/400` Robert S
+- `14.0px/400` Verified Buyer
+- `14.0px/400` 1 day ago
+- `16.0px/500` An excellent source of nutrients that supports my active lifestyle.
+- `16.0px/400` Balanced flavor and effective. Helps me maintain energy throughout my workouts.
+- `14.0px/400` Would recommend
+- `14.0px/400` 1
+- `14.0px/400` 0
+- `15.272727012634277px/500` EC
+- `16.0px/400` Emma C
+- `14.0px/400` Verified Buyer
+- `14.0px/400` 3 days ago
+- `16.0px/500` Natural and potent, ideal for a quick health boost anytime.
+- `16.0px/400` I appreciate the clean ingredients and the noticeable benefits after a week.
+- `14.0px/400` Would recommend
+- `14.0px/400` 4
+- `14.0px/400` 0
+- `16.0px/500` See More Reviews
+- `1.2923076152801514px/600` Most Popular
+- `1.2923076152801514px/600` Most Popular
+- `1.2923076152801514px/600` Most Popular
+- `1.2923076152801514px/600` Most Popular
+- `1.2923076152801514px/600` Most Popular
+- `12.543352127075195px/600` Most Popular
+- `18.0px/500` View Nutritional Label
+- `12.0px/400` 123,456+ happy customers
+- `32.0px/800` Superfood Greens Gummies
+- `14.0px/400` From $00.00 each
+- `16.0px/500` 60+ potent ingredients to revive whole body vitality in one great tasting gummy.
+- `16.0px/400` Promotes energy and focus
+- `16.0px/400` Promotes gut and digestive health
+- `16.0px/400` Promotes immunity and resilience
+- `16.0px/400` Promotes skin, hair and nail health
+- `16.0px/500` Autoship and Save
+- `14.0px/500` MOST POPULAR: get 49% off
+- `16.0px/500` Subscribe & Save
+- `16.0px/500` $40.40
+- `14.0px/500` $79.99
+- `14.0px/400` 28 Packs delivered once
+- `14.0px/400` $1.46/day
+- `16.0px/500` How subscription works:
+- `14.0px/400` Locked in pricing, every delivery.
+- `14.0px/400` Skip, pause or cancel any time.
+- `14.0px/400` Delivered before you run out.
+- `16.0px/500` Delivers every:
+- `14.0px/400` 4 Weeks
+- `16.0px/500` One Time Purchase
+- `16.0px/500` $54.40
+- `14.0px/500` $79.99
+- `14.0px/400` 28 Packs delivered once
+- `14.0px/400` $1.94/day
+- `18.0px/500` Start Now
+- `14.0px/400` Less than 1% of customers use our money back guarantee.
+- `14.0px/400` 30 Day  Money Back Guarantee
+- `14.0px/400` Aussie Based Support Team
+- `14.0px/400` Batch Tested Quality
+- `16.0px/400` Why Gumi
+- `18.0px/400` Because your multivitamin routine shouldn't need a routine.
+- `16.0px/400` Ingredients & Allergies
+- `18.0px/400` Every active, every allergen, no fine print games.
+- `16.0px/400` Science
+- `18.0px/400` The research behind the recipe, not just the marketing.
+- `16.0px/400` Directions
+- `18.0px/400` One pouch, once a day. That's genuinely it.
+- `16.0px/400` Benefits
+- `18.0px/400` What 60+ ingredients actually do for you, in plain English.
+- `18.0px/500` Tastes Like
+- `16.0px/400` Heading
+- `16.0px/400` Heading
+- `16.0px/400` Heading
+- `18.0px/500` Packed With
+- `16.0px/400` Vitamins & Minerals
+- `16.0px/400` Adaptogens & Herbs
+- `16.0px/400` Prebiotics
+- `16.0px/400` Antioxidants
+- `16.0px/400` Whole Food Fruit & Veg Blend
+- `17.628498077392578px/500` Super  Mushrooms
+- `17.628498077392578px/500` Whole  Fruits
+- `17.628498077392578px/500` Whole Veggies
+- `17.628498077392578px/500` Adaptogens
+- `17.628498077392578px/500` Gut health  prebiotics
+- `17.628498077392578px/500` Vitamins & Minerals
+- `32.0px/800` Heading
+- `18.0px/400` Consectetur adipiscing elit, sed do tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.
+- `18.0px/500` Shop Now
+- `32.0px/800` Heading
+- `18.0px/400` Consectetur adipiscing elit, sed do tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.
+- `18.0px/500` Shop Now
+- `17.628498077392578px/500` Super  Mushrooms
+- `17.628498077392578px/500` Whole  Fruits
+- `17.628498077392578px/500` Whole Veggies
+- `17.628498077392578px/500` Adaptogens
+- `17.628498077392578px/500` Gut health  prebiotics
+- `17.628498077392578px/500` Vitamins & Minerals
+- `40.0px/800` And Last Questions?
+- `18.0px/400` You loved gumi bears as a kid. This time, they're actually good for you, and we've got the research to prove it.
+- `16.0px/400` Accordion Closed
+- `18.0px/400` Text here
+- `16.0px/400` Accordion Closed
+- `18.0px/400` Text here
+- `16.0px/400` Accordion Closed
+- `18.0px/400` Text here
+- `16.0px/400` Accordion Closed
+- `18.0px/400` Text here
+- `16.0px/400` Accordion Closed
+- `18.0px/400` Text here
+- `16.0px/400` Accordion Closed
+- `18.0px/400` Text here
+- `36.0px/800` They want to be gummies now
+- `18.0px/400` Join thousands of Aussies who've traded the multivitamin struggle for something they actually look forward to.
+- `16.0px/500` Start Your Greens
+- `18.0px/400` Made with more care than a vitamin gummy probably needs. That's on purpose.
+- `16.0px/400` Stay up to date
+- `16.0px/400` Enter your email
+- `16.0px/500` Subscribe
+- `16.0px/400` Why Gumi
+- `16.0px/400` Shop
+- `16.0px/400` How Gumi Works
+- `16.0px/400` Science
+- `16.0px/400` Reviews
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/400` Learn more
+- `16.0px/400` Our Story
+- `16.0px/400` FAQs
+- `16.0px/400` Shipping
+- `16.0px/400` Referral Program
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/400` Get in touch
+- `16.0px/400` Partners & Influencers
+- `16.0px/400` Press Inquiries
+- `16.0px/400` Careers
+- `16.0px/400` Contact
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/400` Follow us
+- `16.0px/400` © 2027 Gumi. All rights reserved.
+- `16.0px/400` Privacy
+- `16.0px/400` Cookies

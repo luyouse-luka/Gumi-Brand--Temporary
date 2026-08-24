@@ -1,0 +1,148 @@
+# Our Story Desktop (`324:72839`) — 1440×7155
+
+共 144 条文案，按节点树顺序。⚠ 文案非最终版（见 HANDOVER-NOTES.md）。
+
+- `14.624998092651367px/400` gumi.com.au
+- `19.124998092651367px/400` 􀙨
+- `16.0px/400` Excellent
+- `16.0px/400` Truspilot
+- `16.0px/500` Menu
+- `16.0px/400` Our Story
+- `16.0px/400` FAQs
+- `16.0px/400` Shipping
+- `16.0px/400` Referral Program
+- `16.0px/500` Shop now
+- `12.0px/400` 123,456+ happy customers
+- `56.0px/800` Our mission is to make daily  nutrition simple and enjoyable.
+- `32.0px/800` Life is busy
+- `18.0px/400` Between work, commutes, kids, gym, "eat better" is easy to say and hard to actually do. Multivitamins that need five steps and a morning routine don't survive a busy week. We know, because we've lived it too.
+- `32.0px/800` We made it simple
+- `18.0px/400` One pouch. Once a day. No mixing, no measuring, no five step routine to forget by Wednesday. We stripped out everything that gets in the way of actually doing it.
+- `32.0px/800` Potent ingredients
+- `18.0px/400` Making something simple to use doesn't mean cutting corners on what's in it. 60+ ingredients, dosed to actually matter, in something you'd genuinely want to eat. Easy for you. Not easy on us.
+- `36.0px/800` Nutrition that fits the life you're living.
+- `18.0px/400` Join thousands of Aussies who've swapped the multivitamin struggle for something they actually look forward to.
+- `16.0px/500` Shop Now
+- `14.0px/400` 4.8 stars
+- `40.0px/800` Aussies are obsessed.  Here's why.
+- `16.0px/500` 10/10 would recommend.  The convenience and taste are huge!
+- `18.0px/400` Plus not having a clean shaker bottle or extra dishes for greens stuff in powder form, is absolutely excellent!
+- `16.0px/500` Dustin O.
+- `16.0px/500` 10/10 would recommend.  The convenience and taste are huge!
+- `18.0px/400` Plus not having a clean shaker bottle or extra dishes for greens stuff in powder form, is absolutely excellent!
+- `16.0px/500` Dustin O.
+- `16.0px/500` 10/10 would recommend.  The convenience and taste are huge!
+- `18.0px/400` Plus not having a clean shaker bottle or extra dishes for greens stuff in powder form, is absolutely excellent!
+- `16.0px/500` Dustin O.
+- `16.0px/500` 10/10 would recommend.  The convenience and taste are huge!
+- `16.0px/400` Plus not having a clean shaker bottle or extra dishes for greens stuff in powder form, is absolutely excellent!
+- `16.0px/500` Dustin O.
+- `14.0px/400` Testimonials featured in videos or other promotional materials may include individuals who received compensation, free product, or other incentives
+- `1.2923076152801514px/600` Most Popular
+- `1.2923076152801514px/600` Most Popular
+- `1.2923076152801514px/600` Most Popular
+- `1.2923076152801514px/600` Most Popular
+- `1.2923076152801514px/600` Most Popular
+- `12.543352127075195px/600` Most Popular
+- `18.0px/500` View Nutritional Label
+- `12.0px/400` 123,456+ happy customers
+- `32.0px/800` Superfood Greens Gummies
+- `14.0px/400` From $00.00 each
+- `16.0px/500` 60+ potent ingredients to revive whole body vitality in one great tasting gummy.
+- `16.0px/400` Promotes energy and focus
+- `16.0px/400` Promotes gut and digestive health
+- `16.0px/400` Promotes immunity and resilience
+- `16.0px/400` Promotes skin, hair and nail health
+- `16.0px/500` Autoship and Save
+- `14.0px/500` MOST POPULAR: get 49% off
+- `16.0px/500` Subscribe & Save
+- `16.0px/500` $40.40
+- `14.0px/500` $79.99
+- `14.0px/400` 28 Packs delivered once
+- `14.0px/400` $1.46/day
+- `16.0px/500` How subscription works:
+- `14.0px/400` Locked in pricing, every delivery.
+- `14.0px/400` Skip, pause or cancel any time.
+- `14.0px/400` Delivered before you run out.
+- `16.0px/500` Delivers every:
+- `14.0px/400` 4 Weeks
+- `16.0px/500` One Time Purchase
+- `16.0px/500` $54.40
+- `14.0px/500` $79.99
+- `14.0px/400` 28 Packs delivered once
+- `14.0px/400` $1.94/day
+- `18.0px/500` Start Now
+- `14.0px/400` Less than 1% of customers use our money back guarantee.
+- `14.0px/400` 30 Day  Money Back Guarantee
+- `14.0px/400` Aussie Based Support Team
+- `14.0px/400` Batch Tested Quality
+- `16.0px/400` Why Gumi
+- `18.0px/400` Because your multivitamin routine shouldn't need a routine.
+- `16.0px/400` Ingredients & Allergies
+- `18.0px/400` Every active, every allergen, no fine print games.
+- `16.0px/400` Science
+- `18.0px/400` The research behind the recipe, not just the marketing.
+- `16.0px/400` Directions
+- `18.0px/400` One pouch, once a day. That's genuinely it.
+- `16.0px/400` Benefits
+- `18.0px/400` What 60+ ingredients actually do for you, in plain English.
+- `18.0px/500` Tastes Like
+- `16.0px/400` Heading
+- `16.0px/400` Heading
+- `16.0px/400` Heading
+- `18.0px/500` Packed With
+- `16.0px/400` Vitamins & Minerals
+- `16.0px/400` Adaptogens & Herbs
+- `16.0px/400` Prebiotics
+- `16.0px/400` Antioxidants
+- `16.0px/400` Whole Food Fruit & Veg Blend
+- `36.0px/800` They want to be gummies now
+- `18.0px/400` Join thousands of Aussies who've traded the multivitamin struggle for something they actually look forward to.
+- `16.0px/500` Start Your Greens
+- `18.0px/400` Made with more care than a vitamin gummy probably needs. That's on purpose.
+- `16.0px/400` Stay up to date
+- `16.0px/400` Enter your email
+- `16.0px/500` Subscribe
+- `16.0px/400` Why Gumi
+- `16.0px/400` Shop
+- `16.0px/400` How Gumi Works
+- `16.0px/400` Science
+- `16.0px/400` Reviews
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/400` Learn more
+- `16.0px/400` Our Story
+- `16.0px/400` FAQs
+- `16.0px/400` Shipping
+- `16.0px/400` Referral Program
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/400` Get in touch
+- `16.0px/400` Partners & Influencers
+- `16.0px/400` Press Inquiries
+- `16.0px/400` Careers
+- `16.0px/400` Contact
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/400` Follow us
+- `16.0px/400` © 2027 Gumi. All rights reserved.
+- `16.0px/400` Privacy
+- `16.0px/400` Cookies
+- `16.0px/500` The Science
+- `16.0px/500` Daily Ritual
+- `16.0px/500` The Transformation
+- `32.24306106567383px/800` 60+
+- `16.0px/500` Clean Ingredients
+- `32.24306106567383px/800` 21
+- `16.0px/500` Vitamins  & Minerals
+- `32.24306106567383px/800` 6g
+- `16.0px/500` of Fibre

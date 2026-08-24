@@ -1,0 +1,21 @@
+# 验证脚本的产物 —— 只留脚本本身，产物随时可重跑
+# （tools/snap 168MB computed-style 快照、tools/shots 60MB 截图）
+tools/snap/
+tools/shots/
+
+# 设计源 127MB，本来就标着「不进交付」；需要时看服务器上的
+# /home/ly/project/Gumi-Brand/figma/
+# 另外 figma/nodes/*.json 里带 Figma 图片的 S3 预签名串（AKIA…），
+# 推上去会触发 GitHub 的 secret scanning
+figma/
+
+# PP Palma 试用包：EULA 明确排除商业用途，不随仓库分发。
+# （assets/pppalma-*.woff2 是站点当前渲染要用的占位件，那些保留）
+PP Palma - Free For Personal Use v1.0/
+
+# 杂项
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+1e4ea5b2-aa92-4e60-a9d4-36359d880baf.png

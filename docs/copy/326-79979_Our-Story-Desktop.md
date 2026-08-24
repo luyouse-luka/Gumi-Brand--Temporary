@@ -1,0 +1,85 @@
+# Our Story Desktop (`326:79979`) — 1440×2863
+
+共 81 条文案，按节点树顺序。⚠ 文案非最终版（见 HANDOVER-NOTES.md）。
+
+- `14.624998092651367px/400` gumi.com.au
+- `19.124998092651367px/400` 􀙨
+- `16.0px/400` Excellent
+- `16.0px/400` Truspilot
+- `16.0px/500` Menu
+- `16.0px/400` Our Story
+- `16.0px/400` FAQs
+- `16.0px/400` Shipping
+- `16.0px/400` Referral Program
+- `16.0px/500` Shop now
+- `12.0px/400` 123,456+ happy customers
+- `56.0px/800` Let's talk gummies
+- `18.0px/500` Send it through, we'll get back to you before your next gumi.
+- `40.0px/800` And Last Questions?
+- `18.0px/400` You loved gumi bears as a kid. This time, they're actually good for you, and we've got the research to prove it.
+- `14.0px/400` First name
+- `16.0px/400` First Name
+- `14.0px/400` This is a hint text to help user.
+- `14.0px/400` Last name
+- `16.0px/400` Last name
+- `14.0px/400` Email
+- `16.0px/400` you@company.com
+- `14.0px/400` Phone number
+- `16.0px/400` AU
+- `16.0px/400` +61 400 000 000
+- `14.0px/400` Enquiry Type*
+- `16.0px/400` Contact Us
+- `14.0px/400` Message
+- `16.0px/400` you@company.com
+- `16.0px/400` You agree to our friendly privacy policy
+- `18.0px/500` Send Message
+- `36.0px/800` They want to be gummies now
+- `18.0px/400` Join thousands of Aussies who've traded the multivitamin struggle for something they actually look forward to.
+- `16.0px/500` Start Your Greens
+- `18.0px/400` Made with more care than a vitamin gummy probably needs. That's on purpose.
+- `16.0px/400` Stay up to date
+- `16.0px/400` Enter your email
+- `16.0px/500` Subscribe
+- `16.0px/400` Why Gumi
+- `16.0px/400` Shop
+- `16.0px/400` How Gumi Works
+- `16.0px/400` Science
+- `16.0px/400` Reviews
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/400` Learn more
+- `16.0px/400` Our Story
+- `16.0px/400` FAQs
+- `16.0px/400` Shipping
+- `16.0px/400` Referral Program
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/400` Get in touch
+- `16.0px/400` Partners & Influencers
+- `16.0px/400` Press Inquiries
+- `16.0px/400` Careers
+- `16.0px/400` Contact
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/400` Follow us
+- `16.0px/400` © 2027 Gumi. All rights reserved.
+- `16.0px/400` Privacy
+- `16.0px/400` Cookies
+- `16.0px/500` The Science
+- `16.0px/500` Daily Ritual
+- `16.0px/500` The Transformation
+- `32.24306106567383px/800` 60+
+- `16.0px/500` Clean Ingredients
+- `32.24306106567383px/800` 21
+- `16.0px/500` Vitamins  & Minerals
+- `32.24306106567383px/800` 6g
+- `16.0px/500` of Fibre

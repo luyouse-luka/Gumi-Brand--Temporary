@@ -1,0 +1,11 @@
+1. gb-nl-modal 关闭消失的速度太快了
+2. gb-product__accordion 去掉gap，给gb-product__acc-row或者gb-product__acc-item加上padding-b，这样点击details下方不会出现点不到的情况。同时尽量还原设计，以及点击之后模块之间的间距，gb-faq__list同样如此
+3.gb-acc-icon 去掉hover放大的效果，点击的active状态改为竖向的横线旋转，这里不用svg的icon表示，采用css用样式代替
+4. input的去掉:focus-visible {
+    outline-offset: 2px;
+    outline: rgb(0, 86, 53) solid 2px;
+} 的效果，并且改为修改border-color 的颜色
+
+5. header需要sticky在顶部
+6. gb-cta-band__head svg出现了被裁的情况
+7. gb-footer-cta-wrap 的gb-scallop gb-scallop--to-lime应该是透明的

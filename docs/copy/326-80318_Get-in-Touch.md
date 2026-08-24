@@ -1,0 +1,70 @@
+# Get in Touch (`326:80318`) — 390×2848
+
+共 66 条文案，按节点树顺序。⚠ 文案非最终版（见 HANDOVER-NOTES.md）。
+
+- `16.0px/400` gumi.com.au
+- `14.0px/400` First name
+- `16.0px/400` First Name
+- `14.0px/400` This is a hint text to help user.
+- `14.0px/400` Last name
+- `16.0px/400` Last name
+- `14.0px/400` Email
+- `16.0px/400` you@company.com
+- `14.0px/400` Phone number
+- `16.0px/400` AU
+- `16.0px/400` +61 400 000 000
+- `14.0px/400` Enquiry Type*
+- `16.0px/400` Contact Us
+- `14.0px/400` Message
+- `16.0px/400` you@company.com
+- `16.0px/400` You agree to our friendly privacy policy
+- `16.0px/500` Send Message
+- `14.0px/400` Excellent
+- `14.0px/400` Truspilot
+- `12.0px/400` 123,456+ happy customers
+- `36.0px/800` Let's talk gummies
+- `18.0px/400` Send it through, we'll get back to you before your next gumi.
+- `16.0px/400` 60+ ingredients, 21 vitamins & minerals, and 6g fiber in easy, great-tasting gummies backed by real results that you can read for yourself!
+- `16.0px/500` The Science
+- `16.0px/500` Daily Ritual
+- `16.0px/500` The Transformation
+- `32.24306106567383px/800` 60+
+- `16.0px/500` Clean Ingredients
+- `32.24306106567383px/800` 21
+- `16.0px/500` Vitamins  & Minerals
+- `32.24306106567383px/800` 6g
+- `16.0px/500` of Fibre
+- `36.0px/800` They want to be gummies now
+- `16.0px/400` Join thousands of Aussies who've traded the multivitamin struggle for something they actually look forward to.
+- `16.0px/500` Start Your Greens
+- `16.0px/400` Made with more care than a  vitamin gummy probably needs.  That's on purpose.
+- `14.0px/400` Stay up to date
+- `16.0px/400` Enter your email
+- `16.0px/500` Subscribe
+- `14.0px/400` Homepage
+- `14.0px/400` PDP
+- `14.0px/400` Science
+- `14.0px/400` Reviews
+- `14.0px/400` How Gumi Works
+- `14.0px/400` Our Story
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `14.0px/400` FAQs
+- `14.0px/400` Referral Program
+- `14.0px/400` Contact
+- `14.0px/400` Influencers
+- `14.0px/400` Press Inquiries
+- `14.0px/400` Careers
+- `14.0px/400` Shipping
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `16.0px/600` Additional
+- `14.0px/400` Follow us
+- `14.0px/400` Privacy
+- `14.0px/400` Cookies
+- `14.0px/400` © 2027 Gumi. All rights reserved.

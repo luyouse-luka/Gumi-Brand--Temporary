@@ -1,0 +1,156 @@
+# Nutritional Label Pop up (`336:29511`) — 390×839
+
+共 152 条文案，按节点树顺序。⚠ 文案非最终版（见 HANDOVER-NOTES.md）。
+
+- `16.0px/400` gumi.com.au
+- `14.0px/400` Excellent
+- `14.0px/400` Truspilot
+- `1.4723334312438965px/600` Most Popular
+- `1.4723334312438965px/600` Most Popular
+- `1.4723334312438965px/600` Most Popular
+- `1.4723334312438965px/600` Most Popular
+- `1.4723334312438965px/600` Most Popular
+- `1.4723334312438965px/600` Most Popular
+- `16.0px/500` View Nutritional Label
+- `12.0px/400` 123,456+ happy customers
+- `30.0px/800` Superfood Greens Gummies
+- `14.0px/400` From $00.00 each
+- `16.0px/500` 60+ potent ingredients to revive whole body vitality in one great tasting gummy.
+- `16.0px/400` Promotes energy and focus
+- `16.0px/400` Promotes gut and digestive health
+- `16.0px/400` Promotes immunity and resilience
+- `16.0px/400` Promotes skin, hair and nail health
+- `16.0px/500` Choose Quantity
+- `14.0px/400` Buy 2 save 5%
+- `16.0px/400` 1
+- `16.0px/400` 2
+- `16.0px/500` Autoship and Save
+- `12.0px/500` MOST POPULAR: get 49% off
+- `16.0px/500` Subscribe & Save
+- `16.0px/500` $40.40
+- `12.0px/500` $79.99
+- `12.0px/400` 28 Packs delivered once
+- `12.0px/400` $1.46/day
+- `14.0px/500` How subscription works:
+- `14.0px/400` Locked in pricing, every delivery.
+- `14.0px/400` Skip, pause or cancel any time.
+- `14.0px/400` Delivered before you run out.
+- `14.0px/500` Delivers every:
+- `14.0px/400` 4 Weeks
+- `16.0px/500` One Time Purchase
+- `16.0px/500` $54.40
+- `12.0px/500` $79.99
+- `12.0px/400` 28 Packs delivered once
+- `12.0px/400` $1.94/day
+- `16.0px/500` Start Now
+- `14.0px/400` Less than 1% of customers use our money back guarantee.
+- `14.0px/400` 30 Day  Money Back Guarantee
+- `14.0px/400` Aussie Based Support Team
+- `14.0px/400` Batch Tested Quality
+- `16.0px/400` Why Gumi
+- `16.0px/400` Because your multivitamin routine shouldn't need a routine.
+- `16.0px/400` Ingredients & Allergies
+- `16.0px/400` Every active, every allergen, no fine print games.
+- `16.0px/400` Science
+- `16.0px/400` The research behind the recipe, not just the marketing.
+- `16.0px/400` Directions
+- `16.0px/400` One pouch, once a day. That's genuinely it.
+- `16.0px/400` Benefits
+- `16.0px/400` What 60+ ingredients actually do for you, in plain English.
+- `18.0px/500` Tastes Like
+- `16.0px/400` Heading
+- `16.0px/400` Heading
+- `16.0px/400` Heading
+- `18.0px/500` Packed With
+- `16.0px/400` Vitamins & Minerals
+- `16.0px/400` Adaptogens & Herbs
+- `16.0px/400` Prebiotics
+- `16.0px/400` Antioxidants
+- `16.0px/400` Whole Food Fruit & Veg Blend
+- `30.0px/800` Nutrition label
+- `16.0px/400` Nutritional Information
+- `16.0px/400` Ingredient List
+- `9.536785125732422px/500` Amount Per Serving
+- `9.536785125732422px/300` Calories
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Total Carbohydrate
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Dietary Fibre
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Total Sugars
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Includes 8 g Added Sugars
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Vitamin A (as retinyl palmitate)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Vitamin C (as ascorbic acid)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Vitamin D (D₃) (as cholecalciferol)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Vitamin E (as d-alpha-tocopherol)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Thiamin (as thiamin hydrochloride)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Riboflavin (Vitamin B₂)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Niacin (as niacinamide)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Vitamin B₆ (as pyridoxal-5-phosphate)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Vitamin K₂ (as menaquinone-7)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Folate (as L-5-methyltetrahydrofolate)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Vitamin B₁₂ (as methylcobalamin)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Biotin
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Pantothenic Acid (as calcium d-pantothenate)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Iron (as ferrous fumarate)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Iodine (as potassium iodide)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Zinc (as zinc citrate)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Selenium (as sodium selenite)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Copper (as copper citrate)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Manganese (as manganese gluconate)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Chromium (as chromium chloride)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Molybdenum (as sodium molybdate)
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.536785125732422px/300` Core Nutrients Blend
+- `9.536785125732422px/300` 15 g
+- `9.536785125732422px/300` 5%
+- `9.68188190460205px/300` Daily Value (DV) not established
+- `9.68188190460205px/300` **Percent Daily Values (DV) are based on a 2,000 calorie diet

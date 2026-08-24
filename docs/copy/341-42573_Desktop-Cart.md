@@ -1,0 +1,44 @@
+# Desktop Cart (`341:42573`) — 1440×768
+
+共 40 条文案，按节点树顺序。⚠ 文案非最终版（见 HANDOVER-NOTES.md）。
+
+- `16.0px/400` Your Cart
+- `14.0px/500` Spend another $20 for FREE Delivery
+- `16.0px/400` Subscribe & Save
+- `14.0px/400` Superfood Greens Gummies
+- `14.0px/400` 28 Packs
+- `14.0px/400` 1
+- `12.0px/400` $60
+- `14.0px/400` $45
+- `14.0px/400` Delivers every
+- `14.0px/500` 4 Weeks
+- `14.0px/400` Superfood Greens Gummies
+- `14.0px/400` 28 Packs
+- `14.0px/400` 1
+- `12.0px/400` $60
+- `14.0px/400` $45
+- `14.0px/400` Delivers every
+- `14.0px/500` One Time Purchase
+- `14.0px/400` Gift Name Here
+- `12.0px/400` $60
+- `14.0px/400` FREE
+- `12.0px/400` This here is a gift description that can go over two lines or even possibly three lines depending on what it says.
+- `14.0px/400` Subtotal
+- `14.0px/400` $60
+- `14.0px/400` Discount
+- `14.0px/400` Automatic
+- `14.0px/400` -$15
+- `14.0px/400` Shipping
+- `14.0px/400` Calculated at checkout
+- `14.0px/500` Total
+- `14.0px/500` $45
+- `12.0px/400` Discount codes applied at checkout
+- `14.0px/400` Continue Shopping
+- `16.0px/500` Total
+- `16.0px/400` $60
+- `16.0px/500` $45
+- `16.0px/500` Secure Checkout
+- `16.0px/500` Total
+- `16.0px/400` $60
+- `16.0px/500` $45
+- `16.0px/500` Secure Checkout
