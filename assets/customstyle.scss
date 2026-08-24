@@ -35,7 +35,7 @@
 // 都吃这个值 —— 预览走的是 file://，浏览器会把 css/js/woff2 缓存到下一次
 // 硬刷新为止，没有版本号的话"改了但页面没变"会被误判成"没改"。
 // build-check.html 会把这个值打出来，用来确认浏览器拿到的是哪一版。
-$build: "20260824-r22";
+$build: "20260824-r25";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -1334,11 +1334,11 @@ $nl-ease-out:  $ease-in-out;
   border-radius: 50%;
   color: $c-green;
 
-  transition: trans(background-color, transform);
+  transition: trans(background-color);
 
   svg { width: 20px; height: 20px; }
 
-  @include hover { background: $c-lime-100; transform: rotate(90deg); }
+  @include hover { background: $c-lime-100; }
 }
 
 .gb-nl-tabs {
@@ -1365,7 +1365,7 @@ $nl-ease-out:  $ease-in-out;
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 8px;
+    bottom: 10px;
     height: 2px;
     background: $c-lime;
     opacity: 0;
@@ -1405,7 +1405,7 @@ $nl-ease-out:  $ease-in-out;
 }
 
 .gb-nl-pane {
-  padding: 20px 24px 24px;
+  padding: 18px 10px 24px 24px;
 
   &[hidden] { display: none; }
 
@@ -1513,7 +1513,7 @@ $nl-ease-out:  $ease-in-out;
   text-align: left;
 
   caption {
-    padding: 3px 0;
+    padding: 8px 0 6px;
     border-top: 4.05px solid $c-lime;
     border-bottom: 1.93px solid $c-lime;
     font-weight: 500;
@@ -1522,14 +1522,14 @@ $nl-ease-out:  $ease-in-out;
 
   th,
   td {
-    padding: 6px 0;
+    padding: 7px 0;
     border-bottom: 0.64px solid $c-lime;
     font-weight: inherit;
   }
 
-  td { width: 100px; }
+  td { width: 72px; }
 
-  td:last-child { width: 60px; }
+  td:last-child { width: 128px; }
 
   tbody tr:last-child th,
   tbody tr:last-child td { border-bottom-width: 1.93px; }
@@ -1547,10 +1547,16 @@ $nl-ease-out:  $ease-in-out;
 }
 
 // html is the scroll container here (the reset puts overflow-x on it),
-// so the lock has to sit on both elements
+// so the lock has to sit on both elements.
+// Killing the native scrollbar makes the viewport that many px wider, so the
+// page content shifts sideways (or a centred layout re-centres) the instant
+// the modal opens. --scrollbar-w is measured in main.js modal.open() right
+// before this class lands (while the real scrollbar is still there to
+// measure), and padding-right eats the freed space back.
 html.is-modal-open,
 body.is-modal-open {
   overflow: hidden;
+  padding-right: var(--scrollbar-w, 0px);
 }
 
 // Reel video lightbox ------------------------------------------------------
@@ -1987,34 +1993,15 @@ $rv-in: 0.28s;
 // 几何上与「独立兄弟」逐像素等价：section 高度 +--edge-h、波浪脱离文档流，
 // 净变化为 0；波浪顶边 = section 底边 − --edge-h = 原来那个兄弟所在的位置。
 //
-// **尺寸只写在 section 上**（--edge-w / --edge-band / --edge-h），波浪从父级继承 ——
-// 一份真值，不会出现「section 说大瓦片、波浪说小瓦片」这种对不上的情况。
-// 所以 .gb-scallop--edge **不再带 --lg**，大小由宿主的 --lg 决定。
-.gb-sec-edge {
-  --edge-w:    var(--sc-w);
-  --edge-band: var(--sc-band);
-  --edge-h:    var(--sc-h);
-
-  position: relative;
-
-  &::after {
-    content: "";
-    display: block;
-    height: var(--edge-h);
-  }
-}
-
-.gb-sec-edge--lg {
-  --edge-w:    var(--sc-lg-w);
-  --edge-band: var(--sc-lg-band);
-  --edge-h:    var(--sc-lg-h);
-}
-
+// 2026-08-24：gb-sec-edge / gb-sec-edge--lg 撤掉了（需求方定，全站不要「尺寸写在
+// section 上、靠 class 传给波浪」这层）。.gb-scallop 与 .gb-scallop--lg 本来就是
+// 自给自足的（读 :root 的 --sc-w/h 或 --sc-lg-w/h，不靠任何人传值），真正依赖
+// section 配合的只有「多留出一条波浪高的空间」这一件事——现在直接把
+// var(--sc-h) / var(--sc-lg-h) 加进各模块自己 padding-bottom 的数值里
+// （各模块规则旁边有注释标注），不再需要 ::after 占位块。
+// .gb-scallop--edge 现在只剩定位这一件事，尺寸完全由 .gb-scallop / .gb-scallop--lg
+// 自己决定。
 .gb-scallop--edge {
-  --wave-w:    var(--edge-w);
-  --wave-band: var(--edge-band);
-  --wave-h:    var(--edge-h);
-
   position: absolute;
   left: 0;
   right: 0;
@@ -2607,7 +2594,7 @@ body.is-menu-open {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 30px;
+  gap: 0;
 }
 
 // Figma 313:9710「Curved Text」桌面框 452×51，椭圆本体 289×132（rx144.5/ry66）
@@ -2623,6 +2610,8 @@ body.is-menu-open {
 
 .gb-footer-cta__title {
   max-width: 625px;
+  margin-top: 38px;
+  margin-bottom: 30px;
   font-size: 36px;
   line-height: 40px;
   letter-spacing: -0.36px;
@@ -2632,6 +2621,7 @@ body.is-menu-open {
 .gb-footer-cta__text {
   max-width: 625px;
   margin-top: -6px;
+  margin-bottom: 32px;
   font-size: 18px;
   line-height: 28px;
   letter-spacing: -0.36px;
@@ -2919,12 +2909,15 @@ body.is-menu-open {
 // goes ABOVE the copy, pad 32/20/64, gap 24. That reversal is why the mobile
 // rule is `column-reverse` and not just `column`; the design does not simply
 // stack the desktop order.
+// science.html / reviews.html 的页头都带大瓦片波浪（原来靠 gb-sec-edge--lg 传，
+// 现在直接把 --sc-lg-h 加进 padding-bottom）。
 .gb-page-hero {
+  position: relative;
   background: $c-lime-150;
-  padding: 56px 0 88px;
+  padding: 56px 0 calc(88px + var(--sc-lg-h));
 
-  @include narrow { padding: 32px 0 64px; }
-  @include tablet { padding: fluid(32px, 56px) fluid(0, 0) fluid(64px, 88px); }
+  @include narrow { padding: 32px 0 calc(64px + var(--sc-lg-h)); }
+  @include tablet { padding: fluid(32px, 56px) fluid(0, 0) calc(fluid(64px, 88px) + var(--sc-lg-h)); }
 }
 
 .gb-page-hero__inner {
@@ -3087,11 +3080,12 @@ body.is-menu-open {
 // 324:69636 centres the copy across the full 1220 with no media at all, and
 // sets its own heading size on mobile (36/40, not the 30/36 the other boards
 // use).
+// faq / get-in-touch / privacy-policy / referral / shipping 用的就是这个（小瓦片）。
 .gb-page-hero--center {
-  padding: 80px 0 96px;
+  padding: 80px 0 calc(96px + var(--sc-h));
 
-  @include narrow { padding: 32px 0 64px; }
-  @include tablet { padding: fluid(32px, 80px) fluid(0, 0) fluid(64px, 96px); }
+  @include narrow { padding: 32px 0 calc(64px + var(--sc-h)); }
+  @include tablet { padding: fluid(32px, 80px) fluid(0, 0) calc(fluid(64px, 96px) + var(--sc-h)); }
 
   .gb-page-hero__inner { justify-content: center; }
 
@@ -3109,6 +3103,16 @@ body.is-menu-open {
   }
 }
 
+// how-gumi-works / our-story 的页头是同一个 --center 布局，但波浪是大瓦片——两条轴
+// 互相独立（跟 .gb-scallop--lg 与 .gb-scallop--down 是同一种正交关系），所以另开一个
+// 修饰类只覆盖 padding-bottom 那一个值，不重复 --center 的其余样式。
+.gb-page-hero--center.gb-page-hero--lg {
+  padding-bottom: calc(96px + var(--sc-lg-h));
+
+  @include narrow { padding-bottom: calc(64px + var(--sc-lg-h)); }
+  @include tablet { padding-bottom: calc(fluid(64px, 96px) + var(--sc-lg-h)); }
+}
+
 // ==========================================================================
 // 原 modules/_hero.scss
 // ==========================================================================
@@ -3121,6 +3125,8 @@ body.is-menu-open {
   overflow-x: clip;
   overflow-y: visible;
   background: $c-lime-150;
+  // 大瓦片波浪的高度，之前没有 padding-bottom，纯靠 gb-sec-edge--lg 的 ::after 撑出来。
+  padding-bottom: var(--sc-lg-h);
 }
 
 // Hero uses 110px gutters of its own, wider than the 80px site container.
@@ -3355,12 +3361,13 @@ body.is-menu-open {
 // grey background of the block below extends up through this strip — that is
 // what .gb-logo-scroll--off does.
 .gb-logo-scroll {
+  position: relative;
   background: $c-white;
-  padding: 88px 0 64px;
+  padding: 88px 0 calc(64px + var(--sc-h));
   overflow: hidden;
 
-  @include narrow { padding: 56px 0 40px; }
-  @include tablet { padding: fluid(56px, 88px) fluid(0, 0) fluid(40px, 64px); }
+  @include narrow { padding: 56px 0 calc(40px + var(--sc-h)); }
+  @include tablet { padding: fluid(56px, 88px) fluid(0, 0) calc(fluid(40px, 64px) + var(--sc-h)); }
 }
 
 .gb-logo-scroll--off { background: $c-cream; }
@@ -3434,11 +3441,12 @@ body.is-menu-open {
 // ==========================================================================
 
 .gb-stats {
+  position: relative;
   background: $c-cream;
-  padding: 96px 0 120px;
+  padding: 96px 0 calc(120px + var(--sc-h));
 
-  @include narrow { padding: 64px 0 88px; }
-  @include tablet { padding: fluid(64px, 96px) fluid(0, 0) fluid(88px, 120px); }
+  @include narrow { padding: 64px 0 calc(88px + var(--sc-h)); }
+  @include tablet { padding: fluid(64px, 96px) fluid(0, 0) calc(fluid(88px, 120px) + var(--sc-h)); }
 }
 
 .gb-stats__inner {
@@ -3614,7 +3622,8 @@ body.is-menu-open {
 // 它们现在是 .gb-stats__bear 的子元素（任务文档第 6 条），所以下面的百分比都
 // 相对熊框 302.797 x 375.016 算，超出 0~100% 是正常的 —— 四支箭头本来就摊在
 // 熊的四周。熊框是 position:absolute，天然就是它们的包含块。
-// 副作用：熊带着 .gb-float-art--d1 的漂浮，箭头现在跟着一起漂。
+// 浮动只挂在 .gb-stats__bear-art（包 <picture> 的内层 div）上，箭头是
+// .gb-stats__bear 的直接子元素，不在浮动 wrapper 里，跟着静止。
 //
 // **旧版把 Figma 组的旋转漏掉了**：341:47322/25/28/31 四个组的 relativeTransform
 // 行列式是 -1（旋转 + 镜像），导出的 SVG 只取了未旋转的原始矢量，所以 viewBox
@@ -3667,6 +3676,16 @@ body.is-menu-open {
   }
 }
 
+// 浮动只给照片本身：包一层 art wrapper 顶 .gb-float-art，四支箭头留在
+// .gb-stats__bear 上不动。wrapper 必须 inset:0 撑满 .gb-stats__bear 的整个框——
+// .gb-float-art 的 will-change:transform 会让它变成新的包含块，img 的
+// 百分比定位（相对熊框 302.797x375.016 算）跟着 wrapper 走，wrapper 尺寸
+// 与熊框不一致的话这些百分比全部算错。
+.gb-stats__bear-art {
+  position: absolute;
+  inset: 0;
+}
+
 .gb-stats__bear-img {
   position: absolute;
   left: -46.2%;
@@ -3677,6 +3696,7 @@ body.is-menu-open {
 }
 
 .gb-stats__note {
+  margin-top: -30px;
   max-width: 640px;
   font-size: 20px;
   line-height: 30px;
@@ -3692,16 +3712,46 @@ body.is-menu-open {
   @include tablet { font-size: fluid(18px, 20px); line-height: fluid(26px, 30px); letter-spacing: fluid(-0.36px, -0.4px); }
 }
 
+// 波浪右侧那只小熊（对话反馈：这里一直缺了它）。稿里的对应节点没能在本地
+// figma/nodes/ 里查到（大概率是设计稿在首次拉取之后又改过），只能按设计截图
+// 反推坐标，都是相对 .gb-stats 自身量出来的百分比。素材是 bear-gummy-glow.png
+// 裁掉透明边距后的版本（figma/nodes 里同一张图当年做过 promo-art 合成源）。
+// 用 translate(-50%,-50%) 钉中心点，量出来的宽高哪怕有点误差，视觉中心也不会偏。
+// ⚠ 熊心的 y 不能按截图原样填：.gb-stats 自己没有 overflow，熊只要探出 section
+// 底边，就会被下一个 section（.gb-science，不透明底色）的正常层叠盖住下半截——
+// 截图量出来的中心本来在 103%，收到 89.5%（手机 100.3%→91.5%）才能让熊全须
+// 全尾留在 .gb-stats 自己的画面里，比稿子里那处略往上，是这个限制换来的。
+.gb-stats__deco-bear {
+  position: absolute;
+  left: 81.25%;
+  top: 89.5%;
+  width: 10.1%;
+  aspect-ratio: 387 / 583;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+
+  img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+  // fluid() 是按 px 写的，百分比不能喂给它（会整条量纲错误丢弃），这里就不分
+  // tablet 档了——跟 .gb-stats__bear 自己的位置百分比是同一个做法。
+  @include narrow {
+    left: 69.2%;
+    top: 91.5%;
+    width: 25.6%;
+  }
+}
+
 // ==========================================================================
 // 原 modules/_science.scss
 // ==========================================================================
 
 .gb-science {
+  position: relative;
   background: $c-sand;
-  padding: 96px 0;
+  padding: 96px 0 calc(96px + var(--sc-lg-h));
 
-  @include narrow { padding: 64px 0; }
-  @include tablet { padding: fluid(64px, 96px) fluid(0, 0); }
+  @include narrow { padding: 64px 0 calc(64px + var(--sc-lg-h)); }
+  @include tablet { padding: fluid(64px, 96px) fluid(0, 0) calc(fluid(64px, 96px) + var(--sc-lg-h)); }
 }
 
 // The Science page runs the same cards on cream, and its second board (the
@@ -3710,10 +3760,10 @@ body.is-menu-open {
 .gb-science--cream { background: $c-cream; }
 
 .gb-science--tight {
-  padding: 48px 0 96px;
+  padding: 48px 0 calc(96px + var(--sc-lg-h));
 
-  @include narrow { padding: 32px 0 64px; }
-  @include tablet { padding: fluid(32px, 48px) fluid(0, 0) fluid(64px, 96px); }
+  @include narrow { padding: 32px 0 calc(64px + var(--sc-lg-h)); }
+  @include tablet { padding: fluid(32px, 48px) fluid(0, 0) calc(fluid(64px, 96px) + var(--sc-lg-h)); }
 }
 
 .gb-science__inner {
@@ -3886,10 +3936,10 @@ body.is-menu-open {
   position: relative;
   overflow: hidden;      // the pack band and bears overrun the section
   background: $c-lime;
-
-  // 本模块自带下边缘波浪（.gb-sec-edge--lg）。高度由 .gb-sec-edge 的 ::after 占位块
-  // 留出来，就在 padding box 之内 —— 于是这里的 overflow:hidden 正好把绿底和溢出的
-  // 包装袋一起送到波浪底下、只被圆弧切掉，也就是 .gb-scallop--bleed 要的效果。
+  // 本模块自带下边缘波浪（大瓦片）。padding-bottom 直接留出 --sc-lg-h，就在
+  // padding box 之内 —— 于是这里的 overflow:hidden 正好把绿底和溢出的包装袋
+  // 一起送到波浪底下、只被圆弧切掉，也就是 .gb-scallop--bleed 要的效果。
+  padding-bottom: var(--sc-lg-h);
 }
 
 .gb-nutrition__top {
@@ -3974,7 +4024,7 @@ body.is-menu-open {
   font-size: 32px;
   line-height: 40px;
   letter-spacing: -0.32px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   color: $c-white;
 
   @include narrow { font-size: 24px; line-height: 30px; }
@@ -4089,12 +4139,29 @@ body.is-menu-open {
 // 原 modules/_product.scss
 // ==========================================================================
 
+// how-gumi-works 用的是这个小瓦片版本；index / font-check 是 --lg（下面那条覆盖）；
+// pdp 是 --page（自己单开一条，见下）。
 .gb-product {
+  position: relative;
   background: $c-white;
-  padding: 96px 0;
+  padding: 96px 0 calc(96px + var(--sc-h));
 
-  @include narrow { padding: 64px 0; }
-  @include tablet { padding: fluid(64px, 96px) fluid(0, 0); }
+  @include narrow { padding: 64px 0 calc(64px + var(--sc-h)); }
+  @include tablet { padding: fluid(64px, 96px) fluid(0, 0) calc(fluid(64px, 96px) + var(--sc-h)); }
+}
+
+.gb-product--lg {
+  padding-bottom: calc(96px + var(--sc-lg-h));
+
+  @include narrow { padding-bottom: calc(64px + var(--sc-lg-h)); }
+  @include tablet { padding-bottom: calc(fluid(64px, 96px) + var(--sc-lg-h)); }
+}
+
+.gb-product--page {
+  padding-bottom: calc(96px + var(--sc-lg-h));
+
+  @include narrow { padding-bottom: calc(64px + var(--sc-lg-h)); }
+  @include tablet { padding-bottom: calc(fluid(64px, 96px) + var(--sc-lg-h)); }
 }
 
 .gb-product__inner {
@@ -4488,6 +4555,7 @@ body.is-menu-open {
 }
 
 .gb-product__sub-title {
+  align-self: center;
   font-size: 18px;
   font-weight: 500;
   line-height: 24px;
@@ -4543,6 +4611,7 @@ body.is-menu-open {
 // ==========================================================================
 
 .gb-reviews {
+  position: relative;
   background: $c-lime-150;
   padding: 96px 0;
 
@@ -4551,10 +4620,23 @@ body.is-menu-open {
 }
 
 // 324:69636 / 324:72839 run the same block on cream instead of mint.
-.gb-reviews--cream { background: $c-cream; }
+// how-gumi-works / our-story 用这个变体，波浪是大瓦片。
+.gb-reviews--cream {
+  background: $c-cream;
+  padding-bottom: calc(96px + var(--sc-lg-h));
 
-// 324:52658 runs the same block on sand instead of mint
-.gb-reviews--sand { background: $c-sand; }
+  @include narrow { padding-bottom: calc(64px + var(--sc-lg-h)); }
+  @include tablet { padding-bottom: calc(fluid(64px, 96px) + var(--sc-lg-h)); }
+}
+
+// 324:52658 runs the same block on sand instead of mint. pdp 用这个变体，波浪是小瓦片。
+.gb-reviews--sand {
+  background: $c-sand;
+  padding-bottom: calc(96px + var(--sc-h));
+
+  @include narrow { padding-bottom: calc(64px + var(--sc-h)); }
+  @include tablet { padding-bottom: calc(fluid(64px, 96px) + var(--sc-h)); }
+}
 
 .gb-reviews__inner {
   display: flex;
@@ -5173,11 +5255,12 @@ body.is-menu-open {
 // Desktop is a 924x448 three-column table (label | Gumi | the others); mobile
 // splits it into two stacked blocks that each repeat the labels.
 .gb-vs {
+  position: relative;
   background: $c-white;
-  padding: 120px 0;
+  padding: 120px 0 calc(120px + var(--sc-h));
 
-  @include stack { padding: 88px 0; }
-  @include narrow { padding: 64px 0; }
+  @include stack { padding: 88px 0 calc(88px + var(--sc-h)); }
+  @include narrow { padding: 64px 0 calc(64px + var(--sc-h)); }
 }
 
 .gb-vs__inner {
@@ -5530,12 +5613,21 @@ body.is-menu-open {
 // App-owned regions ---------------------------------------------------------
 // Reviews are rendered by the reviews app, so the page ships the shell only
 // (docs/PROJECT-STATUS.md, "implementation boundary").
+// pdp 用的是这个小瓦片版本；reviews.html 是 --lg（下面那条覆盖）。
 .gb-app-section {
+  position: relative;
   background: $c-cream;
-  padding: 96px 0;
+  padding: 96px 0 calc(96px + var(--sc-h));
 
-  @include narrow { padding: 64px 0; }
-  @include tablet { padding: fluid(64px, 96px) fluid(0, 0); }
+  @include narrow { padding: 64px 0 calc(64px + var(--sc-h)); }
+  @include tablet { padding: fluid(64px, 96px) fluid(0, 0) calc(fluid(64px, 96px) + var(--sc-h)); }
+}
+
+.gb-app-section--lg {
+  padding-bottom: calc(96px + var(--sc-lg-h));
+
+  @include narrow { padding-bottom: calc(64px + var(--sc-lg-h)); }
+  @include tablet { padding-bottom: calc(fluid(64px, 96px) + var(--sc-lg-h)); }
 }
 
 .gb-app-section__inner {
@@ -5701,10 +5793,11 @@ body.is-menu-open {
 // colour follows the card and the shape survives a real photo landing in the
 // frame later.
 .gb-expert {
+  position: relative;
   background: $c-white;
-  padding: 96px 0 120px;
+  padding: 96px 0 calc(120px + var(--sc-h));
 
-  @include narrow { padding: 64px 0; }
+  @include narrow { padding: 64px 0 calc(64px + var(--sc-h)); }
 }
 
 .gb-expert__inner {
@@ -5869,11 +5962,12 @@ body.is-menu-open {
 // The eyebrow is Figma's TEXT_PATH ("THE SCIENCE" / "THE RITUAL") at the same
 // 24px/800 the other arcs on the site use, so it reuses .gb-arc-text.
 .gb-dosed {
+  position: relative;
   background: $c-white;
-  padding: 96px 0;
+  padding: 96px 0 calc(96px + var(--sc-lg-h));
 
-  @include narrow { padding: 64px 0; }
-  @include tablet { padding: fluid(64px, 96px) fluid(0, 0); }
+  @include narrow { padding: 64px 0 calc(64px + var(--sc-lg-h)); }
+  @include tablet { padding: fluid(64px, 96px) fluid(0, 0) calc(fluid(64px, 96px) + var(--sc-lg-h)); }
 }
 
 .gb-dosed__inner {
@@ -6080,11 +6174,12 @@ body.is-menu-open {
 // number of lobes (14 vs 5), not one shape at two sizes. Each mask is used at
 // the size its own board draws, so neither is stretched sideways.
 .gb-cta-band {
+  position: relative;
   background: $c-white;
-  padding: 48px 0 120px;
+  padding: 48px 0 calc(120px + var(--sc-lg-h));
 
-  @include narrow { padding: 32px 0 64px; }
-  @include tablet { padding: fluid(32px, 48px) fluid(0, 0) fluid(64px, 120px); }
+  @include narrow { padding: 32px 0 calc(64px + var(--sc-lg-h)); }
+  @include tablet { padding: fluid(32px, 48px) fluid(0, 0) calc(fluid(64px, 120px) + var(--sc-lg-h)); }
 }
 
 .gb-cta-band__inner { @include container; }
@@ -6680,12 +6775,21 @@ body.is-menu-open {
 // Figma Image 520x520 places Frame 153 (427.4x365.7) at 46.3, 77.1, i.e.
 // 82.19% wide at 8.90% / 14.83%. Mobile draws the same group at 288/350 =
 // 82.29%, so one percentage serves both.
+// reviews.html 用的是这个小瓦片版本；science.html 是 --lg（下面那条覆盖）。
 .gb-ingredients {
+  position: relative;
   background: $c-white;
-  padding: 48px 0 120px;
+  padding: 48px 0 calc(120px + var(--sc-h));
 
-  @include narrow { padding: 32px 0 64px; }
-  @include tablet { padding: fluid(32px, 48px) fluid(0, 0) fluid(64px, 120px); }
+  @include narrow { padding: 32px 0 calc(64px + var(--sc-h)); }
+  @include tablet { padding: fluid(32px, 48px) fluid(0, 0) calc(fluid(64px, 120px) + var(--sc-h)); }
+}
+
+.gb-ingredients--lg {
+  padding-bottom: calc(120px + var(--sc-lg-h));
+
+  @include narrow { padding-bottom: calc(64px + var(--sc-lg-h)); }
+  @include tablet { padding-bottom: calc(fluid(64px, 120px) + var(--sc-lg-h)); }
 }
 
 .gb-ingredients__inner {

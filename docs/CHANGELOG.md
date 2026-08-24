@@ -2087,3 +2087,187 @@ app-slot 已从 DOM 消失、弧形 viewBox/path/弧长富余量/CSS 宽度；`t
 改  pdp.html                   删 .gb-product__app-slot 占位 div
 改  全部 11 页                  footer-cta 弧形 SVG 的 viewBox/path；?v= → 20260824-r22
 ```
+
+## 第二十二轮 — 对话追加的 7 项（stats 熊浮动范围 / 间距修正）（2026-08-24）
+
+对话在第二十一轮报告之后又追加了几条，内容仍是直接给值，唯一需要判断的是「浮动效果
+只给内部图片」——把 `gb-stats__bear` 上的 `gb-float-art gb-float-art--d1` 移到新加的
+`.gb-stats__bear-art`（包 `<picture>` 的内层 div），四支箭头作为 `.gb-stats__bear` 的
+直接子元素留在外层，不再跟着一起飘。⚠ `.gb-float-art` 的 `will-change: transform`
+会让承载它的元素变成新的包含块，`.gb-stats__bear-img` 的定位是按熊框
+302.797×375.016 算的百分比，wrapper 必须 `inset: 0` 撑满整个熊框，尺寸差一点这些
+百分比就全错——判据是两者 `getBoundingClientRect()` 逐一相等（entry 动画播完之后测，
+播放中间量会因为 `scale(0.5)` 的过渡值直接量出腰斩的宽高，是本轮踩过的一个假阳性）。
+
+### 改了什么
+
+- `.gb-product__packed .gb-product__sub-title` 补 `align-self: center`——上一轮把
+  `.gb-product__packed` 改成 `align-items: flex-start` 让列表左对齐，连带把标题也带偏了。
+- `gb-stats__bear` 浮动范围收窄到内部图片（见上）。
+- `.gb-stats__note` 补 `margin-top: -30px`。
+- `.gb-highlight-card__title` 的 `margin-bottom` 14px 改 12px（上一轮给错了）。
+- `.gb-footer-cta__inner` 的 `gap` 30px 改 0；间距改成分别写在 `.gb-footer-cta__title`
+  （`margin-top: 38px; margin-bottom: 30px`）与 `.gb-footer-cta__text`
+  （`margin-bottom: 32px`，`margin-top: -6px` 保留）上，不再靠容器 `gap` 统一控制。
+
+### 判据
+
+临时脚本核对以上 computed style；`tools/rwd.py` 11 页 × 10 档全绿。`$build` → `20260824-r23`。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss    本轮 6 处 + 新增 .gb-stats__bear-art；$build → 20260824-r23
+改  assets/customstyle.css     编译产物
+改  index.html                 gb-stats__bear 内插入 .gb-stats__bear-art 包裹 <picture>
+改  全部 11 页                  ?v= → 20260824-r23
+```
+
+## 第二十三轮 — 撤掉 gb-sec-edge 机制 + 补 stats 波浪右侧小熊（2026-08-24）
+
+用户对第十八轮定下的「尺寸写在 section 上、`.gb-scallop--edge` 靠 class 继承」这套
+机制不满意，明确要求**全站撤掉**，波浪自己的尺寸固定写在波浪自己身上，不要 section
+配合。另外指出 `.gb-stats` 的 `gb-scallop--cream-to-sand` 波浪右侧一直缺一只小熊
+（对照设计截图核实过，本地 `figma/nodes/` 里确实没有这个节点——大概率设计稿在
+首次拉取之后又单独改过这一处，没能补拉到）。
+
+### gb-sec-edge / gb-sec-edge--lg 撤掉
+
+**原理**：`.gb-scallop` / `.gb-scallop--lg` 本来就是自给自足的（直接读 `:root` 的
+`--sc-w/h` 或 `--sc-lg-w/h`，不需要任何人传值）；section 唯一真正需要外部配合的
+是「多留出一条波浪高的空间」——现在直接把 `var(--sc-h)` / `var(--sc-lg-h)` 加进
+各模块自己 `padding-bottom` 的数值里（`calc(既有值 + var(--sc-h))`，两个变量本身
+是 `clamp()` 算出来的，天然跟着视口连续变化，不需要再对齐断点），不再需要
+`::after` 占位块，`.gb-scallop--edge` 也不再从 section 继承 `--wave-w/band/h`，
+只剩定位这一件事。
+
+**14 个模块逐一顺过一遍**：多数模块「永远是大瓦片」或「永远是小瓦片」，直接把
+对应变量加进自己的 `padding-bottom`（`.gb-hero`/`.gb-nutrition`/`.gb-science`/
+`.gb-science--tight`/`.gb-dosed`/`.gb-cta-band` 永远大瓦片；`.gb-logo-scroll`/
+`.gb-stats`/`.gb-vs`/`.gb-expert` 永远小瓦片）。四个模块是**同一个 class 在不同页
+面要求不同瓦片**（`.gb-page-hero--center`、`.gb-product`、`.gb-app-section`、
+`.gb-ingredients`），新增四个正交修饰类（跟 `.gb-scallop--lg` 是同一种命名思路，
+只做「把 padding-bottom 覆盖成大瓦片版本」这一件事，不做别的）：
+`.gb-page-hero--lg`（how-gumi-works / our-story 的 `--center` 页头）、
+`.gb-product--lg`（index / font-check 的产品区）、`.gb-app-section--lg`
+（reviews.html）、`.gb-ingredients--lg`（science.html）。pdp 的 `.gb-product--page`
+原来没有自己的 padding 规则，新开一条。`.gb-reviews--cream` / `--sand` 两个颜色
+修饰符恰好各自唯一对应大 / 小瓦片，直接把 padding-bottom 加在颜色类自己身上。
+
+⚠ **12 个模块的 `position: relative` 之前是 `.gb-sec-edge` 给的，删掉那层之后
+必须逐一补回自己身上**——`.gb-scallop--edge` 的 `position: absolute` 没有落点会
+飘到更外层的定位祖先上去，量出来的第一版就是漏了这一步，30 处波浪里有一部分
+直接飘走。
+
+### 踩到的一个脚本 bug（已修）
+
+批量替换用的是「(section 原 class 字符串, 波浪原 class 字符串)」成对匹配的脚本，
+但**波浪的颜色配对 class 字符串在不同 section 之间会撞车**（比如
+`gb-scallop--edge gb-scallop--down gb-scallop--to-white` 全站 7 个页头一字不差），
+脚本按文件处理时波浪替换这一半没有绑定「本文件这条规则的 section 是否真的匹配」，
+导致 8 处被跨规则误传了 `gb-scallop--lg`（5 个小页头 + how-gumi-works 的
+`.gb-product` + reviews.html 的 `.gb-expert` / `.gb-ingredients`）。**判据是按
+「当前 section 的 class 列表」重新推一遍该不该有 `--lg`，逐一比对**，不是靠脚本
+本身的执行日志——日志显示"成功替换"不代表替换对了地方。
+
+### 判据
+
+- 全站 30 处波浪逐一核对：`position` 不是 `static`、波浪底边与 section 底边的
+  像素差 ≤0.6、波浪宽度与 section 宽度的像素差 ≤1（1440 与 390 两档，共 60 组）。
+- 29 处（不含 font-check）核对「波浪顶边到上方内容底边的间距」== 改前源码里那个
+  模块的 `padding-bottom` 原值（96 / 120 / 88 / 0 ……逐一列出的具体数），
+  证明改动没有让任何一处的总高度多算或漏算——**这条判据独立于本轮同时在做的
+  其余间距类改动**（footer-cta 那些 margin/gap 是故意变的，不在这条不变量里）。
+- `tools/rwd.py` 11 页 × 10 档全绿。
+
+### stats 波浪右侧的小熊
+
+素材用 `images/bear-gummy-glow.png`（原本只是 `promo-art.png` 的合成源，这次
+另外裁掉透明边距存成 `images/stats-bear-deco.png/.webp`，直接单独展示）。坐标
+按设计截图反推（本地没有这个节点的 Figma 数据），`.gb-stats` 相对定位、熊用
+`translate(-50%,-50%)` 钉中心点。
+
+⚠ **中心点的 y 没有照抄截图反推的位置**：`.gb-stats` 自己没有 `overflow`
+属性，熊只要探出 section 底边，就会被下一个 section（`.gb-science`，不透明底色，
+后画）按正常层叠盖住下半截——截图量出来的中心本来在 103%（相对 `.gb-stats`
+自身高度），收到 89.5%（手机同理，100.3%→91.5%）才能让熊全须全尾留在
+`.gb-stats` 自己的画面里。代价是熊比设计稿里更往上一点，没有整个压在波浪上，
+这是「不動 DOM 结构、不建跨 section 的 z-index/负 margin 特例」这个约束换来的；
+真要做到跟设计稿分毫不差需要重新设计层叠关系，本轮没有做。
+
+### 遗留
+
+- **弧形文字仍有 4 处 `A 338 338` 正圆未修**（同第二十一轮遗留，未动）。
+- stats 小熊装饰的坐标是反推的，等设计方给回这个节点的真实数据后需要用真实
+  尺寸/位置核对一遍。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss    删 .gb-sec-edge/.gb-sec-edge--lg；.gb-scallop--edge 精简为纯定位；
+                               14 个模块的 padding-bottom + position:relative；新增
+                               .gb-page-hero--lg / .gb-product--lg / .gb-app-section--lg /
+                               .gb-ingredients--lg / .gb-stats__deco-bear；$build → 20260824-r24
+改  assets/customstyle.css     编译产物
+改  全部 11 页 + font-check     30 处 section/波浪 class 改写（去 gb-sec-edge，按需补 --lg /
+                               新修饰类）；index.html 追加 .gb-stats__deco-bear；?v() → r24
+新  images/stats-bear-deco.png/.webp   bear-gummy-glow.png 裁边后的独立展示版
+```
+
+## 第二十四轮 — 弹窗滚动锁定的横向抖动 + nutritional-label 数值修正（2026-08-24）
+
+### 弹窗锁滚动时页面横向跳一下（已修，写进公约）
+
+`html.is-modal-open, body.is-modal-open { overflow:hidden; }` 关掉滚动条后，视口
+在桌面非 overlay 滚动条（Windows/Linux 常见）下会瞬间宽出滚动条那几 px，内容跟着
+右移/重新居中，肉眼是「开弹窗屏幕跳一下」。这个问题不是本项目独有，之前别的项目
+也遇到过，这次一并把修法记进了 `~/.claude/CLAUDE.md` 通用铁律第 14 条，供以后的
+项目直接复用，不用每次重新推导。
+
+修法：`assets/main.js` 的 `modal.open()` 在**加锁定 class 之前**（此时真实滚动条
+还在，测得出宽度）用 `window.innerWidth - document.documentElement.clientWidth`
+量出滚动条宽度，写成 `--scrollbar-w` 这个 CSS 变量；`assets/customstyle.scss` 里
+原来的锁定规则补一行 `padding-right: var(--scrollbar-w, 0px)` 把这段宽度吃回去。
+关闭弹窗时锁定 class 一并移除，`padding-right` 自动跟着归零，不需要额外复位逻辑。
+
+验证：headless 环境原生滚动条宽度恒为 0（见 memory headless-chromium-probe-limits），
+真机上跳动量测不出来，改用 Playwright 直接把 `--scrollbar-w` 覆写成合成值 `17px`，
+确认 `html`/`body` 的 computed `padding-right` 都正确跟到 `17px`，关闭后归零——
+这样验证的是「CSS 机制本身对这个变量的响应是否正确」这条不变量，不依赖 headless
+测不出的真实滚动条宽度。
+
+### gb-nl-panel__close 去掉 hover 时的 SVG 旋转
+
+`@include hover { background: $c-lime-100; transform: rotate(90deg); }` 里的
+`transform: rotate(90deg)` 删掉，`transition` 也把已经用不上的 `transform` 参数
+一并摘掉（`trans(background-color, transform)` → `trans(background-color)`），
+只保留背景色过渡。
+
+### nutritional-label 弹窗数值修正（对话给的 7 项）
+
+```
+.gb-nl-pane                 padding: 20px 24px 24px  →  18px 10px 24px 24px
+.gb-nl-tab::after            bottom: 8px  →  10px
+.gb-nl-table caption        padding: 3px 0  →  8px 0 6px
+.gb-nl-table th, td         padding: 6px 0  →  7px 0
+.gb-nl-table td             width: 100px  →  72px
+.gb-nl-table td:last-child  width: 60px  →  128px
+```
+
+Playwright 逐一读 computed style 核对，`.gb-nl-pane` 的 padding 合成后是
+`18px 10px 24px 24px`（4 值写法，因为 top 和 right 各自单独指定，与原来 left/right
+共用一个值的 3 值写法不再等价），表格宽度/间距全部通过。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   .gb-nl-panel__close 去 hover 旋转；.gb-nl-tab::after /
+                              .gb-nl-pane / .gb-nl-table 的 7 处数值修正；modal 锁定
+                              规则补 padding-right: var(--scrollbar-w, 0px)；
+                              $build → 20260824-r25
+改  assets/customstyle.css   编译产物
+改  assets/main.js           modal.open() 加锁前测滚动条宽度写入 --scrollbar-w
+改  全部 11 页 + font-check   ?v() → r25
+改  ~/.claude/CLAUDE.md      通用铁律新增第 14 条：锁滚动条要补偿滚动条宽度
+```
+```

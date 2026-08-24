@@ -235,27 +235,33 @@ npx sass@1.77.8 assets/customstyle.scss assets/customstyle.css --no-source-map
 - 站内锚点走 `lenis.scrollTo`，**不开 Lenis 自带的 `anchors`** —— 站里有 70 个
   `href="#"` 占位链接，交给它有把页面拉回顶部的风险。
 
-### 波浪（scallop）的归属：放在所属 section 内（2026-08-21 第十八轮定）
+### 波浪（scallop）的归属：放在所属 section 内（2026-08-21 第十八轮定，
+### 尺寸机制 2026-08-24 第二十三轮改过，下面是当前状态）
 
 **波浪是它所分隔的「上面那个 section」自己的最后一个子元素**，不是 `<main>` 下的
-独立兄弟，后台里也不该是独立的一条：
+独立兄弟，后台里也不该是独立的一条——这条结构性决定第十八轮定的，没有变：
 
 ```html
-<section class="gb-product gb-sec-edge gb-sec-edge--lg">
+<section class="gb-product gb-product--lg">
   …
-  <div class="gb-scallop gb-scallop--edge gb-scallop--white-to-mint"></div>
+  <div class="gb-scallop gb-scallop--edge gb-scallop--lg gb-scallop--white-to-mint"></div>
 </section>
 ```
 
 - **为什么归上面而不是下面**：`.gb-scallop--bleed`（nutrition 那道）要让上方模块的内容
   穿到波浪底下，跨不过模块边界。
-- **尺寸只写在 section 上**（`--edge-w` / `--edge-band` / `--edge-h`），波浪从父级继承。
-  所以 `.gb-scallop--edge` **不带 `--lg`**，大小由宿主的 `.gb-sec-edge--lg` 决定 ——
-  Liquid 里一个 `{% if %}` 同时决定两边，不会对不上。
-- **高度用 `.gb-sec-edge::after` 占位块留出来**，不用 border 也不用 padding：
-  border 会被 Chromium 取整到整数 px（127.979 → 127，每道差 ~1px）；
-  padding 得逐个 section 逐个断点 calc 在原值之上，早晚漂移。
-  `::after` 是纯增量，且在 padding box 之内，所以 `overflow:hidden` 的 section 也不用特例。
+- **尺寸写在波浪自己身上**（第二十三轮撤掉了「section 传 `--edge-w/band/h` 给波浪」
+  这层——`.gb-scallop` / `.gb-scallop--lg` 本来就自给自足，直接读 `:root` 的
+  `--sc-w/h` 或 `--sc-lg-w/h`）。section 只需要做一件事：把 `var(--sc-h)` 或
+  `var(--sc-lg-h)` 加进自己的 `padding-bottom`（`calc(原值 + var(--sc-h))`），
+  给波浪腾出一条自己的高度。多数模块「永远大瓦片」或「永远小瓦片」，直接把变量
+  写死进 `padding-bottom`；同一个 class 在不同页面要求不同瓦片的（`.gb-page-hero--center`
+  / `.gb-product` / `.gb-app-section` / `.gb-ingredients`），新增了 `--lg` 正交修饰类
+  （`.gb-page-hero--lg` / `.gb-product--lg` / `.gb-app-section--lg` / `.gb-ingredients--lg`，
+  跟 `.gb-scallop--lg` 是同一种命名思路，只覆盖 `padding-bottom`）。
+  ⚠ **`position: relative` 也要自己补**——之前是 `.gb-sec-edge` 给的，删掉那层之后
+  每个用到 `.gb-scallop--edge` 的 section 都要自己有这条，否则波浪的 `position:absolute`
+  飘到更外层的定位祖先上去。
 - 配色约定：`--wave-bg` 恒为**上方**那块的颜色、`--wave-fg` 恒为**下方**那块；
   `--down`（弧朝下）与 `--lg`（大瓦片）是两根正交的轴。
 - ⚠ **不要写 `section + .gb-scallop` 这类相邻兄弟选择器** —— Shopify 给每个 section 套的
@@ -263,9 +269,10 @@ npx sass@1.77.8 assets/customstyle.scss assets/customstyle.css --no-source-map
 - 页脚两道（`.gb-footer-cta-wrap` / `.gb-footer-wrap`）是**上边缘**、在流里，
   本来就在自己模块内，没有改；要做上边缘变体再加一组 `--edge-t`。
 
-⚠ **改 `.gb-sec-edge` 或搬波浪时，路径式的 computed-style diff 无效**（节点一移动，
+⚠ **改波浪尺寸机制或搬波浪时，路径式的 computed-style diff 无效**（节点一移动，
 后面所有兄弟的下标整体错位，diff 比的是不同元素）。判据要换成与位置无关的不变量：
-全站每个真实元素的**矩形多重集** + `body` 总高度。脚本见 CHANGELOG 第十八轮。
+「波浪顶边到上方内容底边的间距」==该模块原来的 `padding-bottom` 数值、波浪底边
+贴 section 底边（像素差 ≤0.6）、波浪宽度贴 section 宽度。脚本见 CHANGELOG 第二十三轮。
 
 ### 入场动效
 
@@ -377,6 +384,9 @@ npx sass@1.77.8 assets/customstyle.scss assets/customstyle.css --no-source-map
 | 2026-08-24 | **任务文档 7 项**（第十九轮）：弹窗退场换曲线并加长（真因是 out 曲线倒放、不是时长）；手风琴行距从容器 `gap` 挪进 `summary` 的 `padding-bottom`（行间死区归零，末项要单独归零否则页面长高）；59 处加号图标改纯 CSS 两条线、展开转平、去 hover 放大；输入框焦点改 border-color（复选框留 outline）；header 吸顶 + 抽屉高度实测 + PDP sticky 避让；弧形文字两个真因（SVG `overflow:hidden` 切上缘 −11.7、文字比路径长 1.9）；页脚波浪条带改透明，5 页点名薄荷。判据 `tools/r19check.py` 全绿 + **body 总高 22 组合不变**。详见 CHANGELOG 第十九轮 |
 | 2026-08-24 | **对话给的 8 项（第二十轮）**：hero 按钮满宽 + 公告条补 Trustpilot 五颗星；**hero 光晕按稿重建**（稿里 glow 是一条 26.2137 的 CENTER 描边、不是照片自带的，旧图只有约 12px 且贴着照片凹凸走）；logo 槽位 96→80 + viewport 上下 8；**`ONE HANDFUL` 的弧从正圆 `A 338 338` 改回设计的椭圆** rx118.5261/ry65.7047，框回 278×29；`60+`/`10+` 的加号缩到 0.56em 并上浮（PP Palma 试用档的 `+` 字形对不上，用排版模拟）；**四支箭头补上 Figma 组的旋转+镜像**（旧 viewBox 长宽比差 2.5 倍）并移进 `.gb-stats__bear`；补回 `.gb-stats` 从来就没有的下缘波浪（cream→sand，96）。判据 `tools/r20check.py` 全绿；10 个非首页页面除星条外逐像素不变。详见 CHANGELOG 第二十轮 |
 | 2026-08-24 | **对话给的 PC 端 15 项（第二十一轮）**：science-card/bear-meter/highlight-card/product accordion·taste·packed/testimonial/reviews disclaimer/footer-cta 共 14 处间距与尺寸微调；`.gb-product__app-slot`（订阅 app 占位虚线框）整块删除；**footer-cta 弧度还原**——真因是 viewBox 一直拿椭圆本体的 289×62 当框用，Figma 里椭圆外面还套着一层 452×51 的 `Curved Text FRAME` 没找到，弧被压成近似正圆，改用椭圆左右顶点间的整段圆顶弧（`M 81 83 A 144.5 66 0 0 1 370 83`）。`tools/rwd.py` 11 页×10 档全绿。全站还剩 4 处同缺陷（promo-card / dosed×2 / cta-band）+ footer-cta 手机变体未做，详见 CHANGELOG 第二十一轮遗留 |
+| 2026-08-24 | **对话追加 7 项（第二十二轮）**：`gb-stats__bear` 的浮动效果收窄到内部图片（新增 `.gb-stats__bear-art` 包裹层，四支箭头不再跟着飘）；packed 区 sub-title 补 `align-self:center`（上轮 packed 改 flex-start 连带带偏了标题）；stats__note / highlight-card__title / footer-cta 三处间距值订正。 |
+| 2026-08-24 | **撤掉 gb-sec-edge 机制 + 补 stats 波浪右侧小熊（第二十三轮，用户定）**：全站 14 个模块的波浪尺寸不再靠 section 上的 `gb-sec-edge`/`gb-sec-edge--lg` 传值，改成直接把 `var(--sc-h)`/`var(--sc-lg-h)` 加进各自的 `padding-bottom`（`.gb-scallop`/`.gb-scallop--lg` 本来就自给自足）；新增 4 个正交 `--lg` 修饰类处理「同一 class 不同页面要求不同瓦片」的情况。30 处波浪逐一核对定位上下文、贴边、宽度、间距不变量全部通过；踩到并修复一个批量替换脚本的跨规则误传 bug（8 处被错误加上 `--lg`）。另外把 `.gb-stats` 波浪右侧一直缺失的小熊补上（`images/stats-bear-deco.png`，从 `bear-gummy-glow.png` 裁边而来，坐标按设计截图反推——本地没有这个节点的 Figma 数据；因 `.gb-stats` 无 overflow 保护，位置比设计稿的截图位置上移了一截以避免被下一个 section 盖住下半截）。详见 CHANGELOG 第二十三轮，含遗留的架构文档更新。 |
+| 2026-08-24 | **弹窗滚动锁定横向抖动修复 + nutritional-label 数值订正（第二十四轮）**：`html/body.is-modal-open{overflow:hidden}` 关掉滚动条后视口凭空变宽、内容跟着跳一下——`main.js` 加锁前先测滚动条宽度写成 `--scrollbar-w`，CSS 补 `padding-right: var(--scrollbar-w,0px)` 吃回来，解锁自动归零；这个坑不止这一个项目踩过，已写进 `~/.claude/CLAUDE.md` 通用铁律第 14 条备用。另去掉 `.gb-nl-panel__close` hover 时的 SVG 旋转；`.gb-nl-pane`/`.gb-nl-tab::after`/`.gb-nl-table` 共 6 处数值订正。详见 CHANGELOG 第二十四轮。 |
 | 2026-08-20 | **缓存版本号 + 构建自检**：反馈「改动没落实」，服务器侧查证文件全对、真因是 `file://` 预览把无版本号的 css/js/woff2 缓存住了。给引用与字体 url 加 `?v=$build`，`font-check.html` 扩成构建自检（版本号 + 10 条功能探针 + 字体表）。详见 CHANGELOG 第九轮 |
 ## 阻塞
 

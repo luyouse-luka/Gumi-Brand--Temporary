@@ -328,6 +328,11 @@
       el.setAttribute("aria-hidden", "false");
       /* html carries the scroll, body does not: the reset sets overflow-x on
          html, which makes it the scrolling element */
+      // Measure the real scrollbar width before locking (it's still on screen
+      // here) so the CSS lock can pad the freed space back in and stop the
+      // page jumping sideways when the scrollbar disappears.
+      var scrollbarW = window.innerWidth - document.documentElement.clientWidth;
+      document.documentElement.style.setProperty("--scrollbar-w", scrollbarW + "px");
       document.documentElement.classList.add("is-modal-open");
       document.body.classList.add("is-modal-open");
       // 页面已被锁住，Lenis 再跑就是空转；停掉它弹窗正文才滚得动

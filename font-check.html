@@ -59,7 +59,7 @@
 // 整段推迟到 DOMContentLoaded：main.js 的模块也是在那时候才 init 的，
 // 解析期跑的话「Lenis 实例在不在」这类探针必然读到 null，报假红。
 function run() {
-  var EXPECT_BUILD = "20260824-r22";
+  var EXPECT_BUILD = "20260824-r25";
   var DIR = "assets/";
   var rows = function (id, arr) {
     document.getElementById(id).innerHTML = "<tbody>" + arr.join("") + "</tbody>";
@@ -232,8 +232,8 @@ function run() {
               Math.abs(parseFloat(img.width) - parseFloat(box.width)) < 1;
      })],
     ["波浪归属：section 自带下边缘形状（第十八轮）",
-     probe('<section class="gb-product gb-sec-edge gb-sec-edge--lg">' +
-           '<div class="gb-scallop gb-scallop--edge gb-scallop--white-to-mint"></div></section>',
+     probe('<section class="gb-product gb-product--lg">' +
+           '<div class="gb-scallop gb-scallop--edge gb-scallop--lg gb-scallop--white-to-mint"></div></section>',
        function (el) {
          var sec = getComputedStyle(el), w = getComputedStyle(el.firstElementChild);
          var spacer = getComputedStyle(el, "::after");
@@ -245,8 +245,8 @@ function run() {
                 Math.abs(parseFloat(spacer.height) - parseFloat(w.height)) < 0.05;
        })],
     ["裁切型宿主也不用特例：占位块在 padding box 内（第十八轮）",
-     probe('<section class="gb-nutrition gb-sec-edge gb-sec-edge--lg">' +
-           '<div class="gb-scallop gb-scallop--edge gb-scallop--lime-to-white gb-scallop--bleed"></div></section>',
+     probe('<section class="gb-nutrition">' +
+           '<div class="gb-scallop gb-scallop--edge gb-scallop--lg gb-scallop--lime-to-white gb-scallop--bleed"></div></section>',
        function (el) {
          var sec = getComputedStyle(el), w = getComputedStyle(el.firstElementChild);
          return sec.overflow === "hidden" && parseFloat(sec.borderBottomWidth) === 0 &&
