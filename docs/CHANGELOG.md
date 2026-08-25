@@ -2693,3 +2693,119 @@ app 边界内容（订阅/评论/accordion 那三类才是）。稿里没写触�
                               标题 data-line-reveal；?v= → r29
 改  font-check.html           EXPECT_BUILD → r29
 ```
+
+## 2026-08-25 第二十九轮：断点体系改制（`$build` = `20260825-r30`）
+
+第二批任务的地基项。需求方原话：「响应式不合理需要再次检查全站，很多模块都提前了
+breakpoint」，并重新划定 手机 ≤575 / 移动 ≤767 / 平板 767–1280（一般到 1200 才变）/
+PC ≥1280，卡片类 991 以下两列、767 以下一列。
+
+动手前先量了一遍现状，「效果不好」不是调参问题，是**两组断点区间重叠**：
+
+- `narrow`(≤768) 与 `tablet`(576–1280) 重叠 193px，同一选择器里两者都写时胜出方由
+  源码顺序决定，而顺序全站不一致（`narrow→tablet` 147 处、`tablet→narrow` 107 处）。
+  **130 个选择器在两边声明了同一属性** —— `.gb-hero__title` 就是活例子：768 宽时
+  字号取 `narrow` 的 36px，字距却取 `tablet` 插值出的 ≈-0.42px，一行字的两个值来自
+  两个不同的档。
+- `@include mobile`(≤575) 全站只用了 3 次，手机稿 390 的数值实际写在 `narrow`(≤768) 里
+  （221 处）—— 于是 768 宽的 iPad 竖屏吃的是 390 手机稿的字号与堆叠布局。
+  **这就是「提前了 breakpoint」的机制来源**，不是个别模块写错。
+
+### 改了什么
+
+1. **值档改成互斥区间**：`narrow` ≤768 → **≤767**，`tablet` 576–1280 → **768–1280**。
+   那 130 处同属性冲突一次性消失，**456 个调用点一行没动**。
+
+2. **`fluid()` 斜坡起点 576 → 768**（`$fluid-from` / `$fluid-span` 两个变量，
+   151 个调用点写法不变）。因为 `fluid($m,$d)` 在起点处精确等于 `$m`，
+   **767→768 的交接天然无缝** —— 这是选择「≤767 一律手机值」的连带好处，不是巧合。
+
+3. **新增 `$bp-mid: 991px` + `@include mid`**；删掉本轮后零使用的 `tablet-from()`。
+
+4. **卡片列数阈值落回值档边界**：`.gb-science__cards` / `.gb-nutrition__cards` 的
+   `tablet-from(744px)` / `(704px)` 换成 `narrow`(一列) + `tablet`(两列)，三列仍归 pc。
+   ⚠ **三列进不了平板档是算出来的，不是偷懒**：一列要装下 `.gb-bear-meter` 的
+   `max-width:347px` 加 2×32 padding = 411px，三列需要约 1361px 视口；992 处三列每列只有
+   288px，小熊会从 13.55px 压到 8.07px（设计的 60%）。`.gb-expert__cards` 是纯文本卡，
+   按需求方要的梯度走 `mid`：≥992 三列 / 768–991 两列 / ≤767 rail。
+
+5. **`--pad-x` 的覆盖空洞（本轮引入，已修）**：`:root` 的版心留白用的是
+   `@include mobile`(≤575)，斜坡起点抬到 768 之后 576–767 掉回基础的 80px ——
+   **屏幕更窄反而留白更大**。改成 `@include narrow`。全站扫描确认这是唯一一处
+   「`tablet` 有、`narrow` 没有」的空洞。判据脚本见下。
+
+6. **消除 768 边界的数值跳变**。根因是**布局阈值携带了排版数值**：`tight`/`stack` 里写着
+   `font-size` / `padding`，既与 `tablet` 重叠，又让 `narrow` 的手机值在 768 处硬跳。
+   `.gb-page-hero__title` 原本在 `tight` 里写死 48px，768 处从 30px 跳上去；
+   14 个模块的 `padding` 写在 `stack` 里当中间值。做法统一：数值搬进 `tablet` 的 `fluid`，
+   布局阈值只留排布。涉及 `.gb-page-hero__title`（含 `--center` 变体，它从 36 起跳，
+   需要自己的斜坡，否则会掉回基础斜坡、屏幕变宽字反而变小）、
+   `.gb-science-card--nutrient .gb-science-card__value`、`.gb-page-hero__lead--privacy-mobile`、
+   `.gb-footer__link`、`.gb-faq` / `.gb-faq-image` / `.gb-expert` / `.gb-rich-page` /
+   `.gb-promo` / `.gb-vs` / `.gb-nutrition__top` / `.gb-testimonials` /
+   `.gb-cta-band__content` / `.gb-promo-card__body` / `.gb-stat__text`。
+
+7. **`.gb-vs__pile` 在堆叠布局下溢出（既有缺陷，本轮暴露并修）**：768–1024 时
+   `.gb-vs__inner` 是 column，`.gb-vs__col` 宽约 728px，比桌面稿的 516px 还宽，
+   套桌面比例（`left`+`width` = 111%）必然越界。改动前 769–1024 同样越界，
+   只是旧的 `rwd.py` 采样点里有 768（当时走手机值）而没有 769，被掩盖了。
+   修法是让 `left`/`width` 跟着**排布**走（`stack`），`top` 是 px 仍走斜坡。
+   ⚠ **百分比无法用 `fluid()`**：CSS `calc()` 不能用长度除以长度得到无单位进度，
+   所以斜坡函数是 px 专用的。
+
+### 判据
+
+- `tools/cssnap.py` 扩了采样档位（**这是本轮第一步**）：原本只采 390/1440 两档，
+  而本次改动的影响区恰好是 576–1280，**两个采样点全在影响区外，照跑会全绿但什么都没验到**。
+  现在采 11 档，并分「不变量档」（390/1440，有差异即回归）与「观察档」（其余，本就会变）。
+  `tools/rwd.py` / `shoot.py` 同步补上 767/768 与 991/992 两对边界。
+- **不变量档零差异**：390 / 1440 逐项相同；575 零差异；576 只剩 16 处
+  `1.77636e-15px → 0px` 的浮点残差（`fluid()` clamp 的舍入，改后变精确，是改善）。
+- **边界连续性**（新脚本 `tools/r29edge.py` / `r29jump.py`）：前者从快照比对相邻宽度，
+  后者直接开两个视口按 class 聚合，输出能直接 grep 的选择器名。
+  768 边界的 `font-size` / `line-height` 跳变已清零。
+- `tools/rwd.py` 全站 **14 档宽度 × 12 页 = 168 组合：✅ 全绿**。
+
+⚠ **两个工具坑，都是自己踩出来的，写在脚本注释里**：
+① `r29edge.py` 第一版收了 `height`，报出 3608 条全是被动重排结果，真信号被埋 —— 边界处
+排布本来就要重排，高度是结果不是原因。
+② `r29jump.py` 第一版按 DOM 遍历顺序 `zip` 配对，而 `lineReveal` 在不同宽度下拆出的
+逐行遮罩数量不同，从第一处分行差异起整体错位，报出的每一条都是假的。改成按 DOM 路径
+配对并跳过 `.gb-line-mask` 系列。⚠ 另外**抽样两个页面就下结论会看错**：曾据 reviews /
+science 两页判定 `.gb-page-hero__lead--lg` 的 16→18 是假信号，全站实测才发现
+`privacy-policy.html` 确实在跳（`--privacy-mobile` 变体缺斜坡），工具是对的。
+
+### 遗留
+
+- **768 边界还剩约 30 个 class 有跳变**，本轮没动，分三类：
+  ① `padding-inline` / 版心内距一批（`.gb-page-hero__inner` / `.gb-compare__inner` /
+  `.gb-dosed__inner` / `.gb-ingredients__inner` / `.gb-faq-image__inner`），需求方另有
+  「各模块左右 padding 尽量一致」的要求，属于单独决策，不在改制里顺手动；
+  ② `.gb-hero__*` 一批 —— 需求方对 hero 有点名要求（1380 处的左右 padding、
+  `.gb-hero__bear` 的 62%/50%、768 以下 `__text` max-width 575px 等），留给那条任务；
+  ③ `border-radius` 16→24 与 `gap` 小幅一批，视觉影响小。
+- **`.gb-vs__bear` / `__logo` / `__others` 在 768–1024 仍用桌面比例**（既有问题，与 `pile`
+  同源，只是不造成溢出所以 `rwd.py` 抓不到）。要么一并改成跟排布走，要么整组重算。
+- **两栏堆叠阈值仍是 1024，没有按需求方说的推到 1200**。需要逐模块实测 1025–1200 区间
+  两栏的真实内容宽度，撑得住的才推 —— 第十六轮把 1024/1200 一刀切推到 1280，造成
+  1025–1280 全部塌成单列的回归，不重蹈。
+- `@include mobile`(≤575) 现在零使用者。档位定义保留（需求方的划分里有这一档）。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   断点变量段（$bp-narrow 768→767、新增 $bp-mid）；mixin 段
+                              重写（值档互斥 + mid + 删 tablet-from）；fluid 锚点 576→768；
+                              :root 的 --pad-x 改 narrow；science/nutrition/expert 卡片列数；
+                              14 个模块的数值从 tight/stack 搬进 tablet 的 fluid；
+                              .gb-vs__pile 定位跟排布走；$build → 20260825-r30
+改  assets/customstyle.css    编译产物
+改  tools/cssnap.py           采样档位 2 → 11 档；diff 分不变量档/观察档报告；
+                              缺快照不再伪装成回归
+改  tools/rwd.py              WIDTHS 补 767/768、991/992、1200
+改  tools/shoot.py            同上
+新  tools/r29edge.py          相邻宽度的数值跳变检查（读快照）
+新  tools/r29jump.py          同上，但按 class 聚合、直接开视口测，输出可 grep 的选择器名
+改  11 个页面 .html           ?v= → r30
+改  font-check.html           EXPECT_BUILD → r30
+```

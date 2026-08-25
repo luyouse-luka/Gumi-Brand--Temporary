@@ -35,7 +35,7 @@
 // 都吃这个值 —— 预览走的是 file://，浏览器会把 css/js/woff2 缓存到下一次
 // 硬刷新为止，没有版本号的话"改了但页面没变"会被误判成"没改"。
 // build-check.html 会把这个值打出来，用来确认浏览器拿到的是哪一版。
-$build: "20260825-r29";
+$build: "20260825-r30";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -86,18 +86,18 @@ $w-design:        1440px;
 $w-container:     1280px;
 $w-design-mobile: 390px;
 
-// 断点（需求方 2026-08-21 定死）：手机 ≤575 / 平板 576–1280 / PC ≥1281。
-// 设计稿只有 390（手机）和 1440（桌面）两张，平板一档没有稿 ——
-// 所以 narrow 承载「非 PC 的布局」，tablet 只做 576–1280 的数值插值与栅格降级。
-$bp-desktop:    1440px;   // 桌面稿基准宽，fluid 斜坡的上锚点
-$bp-tablet:     1280px;   // 平板上界
-$bp-mobile:     575px;    // 手机上界
-$bp-design-m:   390px;    // 手机稿基准宽
+// Value tiers (r29): phone ≤767 → interpolated 768–1280 → desktop ≥1281.
+// Only two boards exist (390, 1440); everything between is fluid().
+$bp-desktop:    1440px;   // desktop board, fluid() upper anchor
+$bp-tablet:     1280px;   // tablet upper bound
+$bp-mobile:     575px;    // phone-only tweaks
+$bp-design-m:   390px;    // mobile board
 
-// 布局阈值（不是系统档次，见下面 mixin 段的说明）
+// Layout thresholds — max-width only, may nest; never carry values (see mixins)
 $bp-tight:      1200px;
 $bp-stack:      1024px;
-$bp-narrow:     768px;
+$bp-mid:         991px;   // card grids drop a column
+$bp-narrow:      767px;   // phone layout + phone values
 
 // announcement bar + header bar, used to size the mobile drawer
 $h-announcement-mobile: 32px;
@@ -136,43 +136,50 @@ $z-modal:    1000;
 // Mixin —— 原 helpers/_mixins.scss
 // ==========================================================================
 
-// Breakpoints —— 分成**两组**，别把它们混着用：
+// Two families. Value tiers are MUTUALLY EXCLUSIVE — never overlap them.
 //
-// 一、系统三档（需求方 2026-08-21 定的口径，管「数值」）
-//   @include mobile   ≤575        手机。数值一律取手机稿 390。
-//   @include tablet   576–1280    平板。没有稿，数值由 fluid() 在两张稿之间插值。
-//   @include pc       ≥1281       PC。桌面稿 1440 的值就写在基础规则里，
-//                                 这个 mixin 只给「必须排除窄屏」的规则用（如 sticky）。
+// Value tiers (what a number is at a given width)
+//   @include mobile   ≤575        phone-only tweak, on top of narrow
+//   @include narrow   ≤767        phone board 390 values + phone layout
+//   @include tablet   768–1280    fluid() interpolation, no board exists
+//   @include pc       ≥1281       desktop board 1440; base rules already hold it
 //
-// 二、布局阈值（管「排布」，跟系统档次无关）
-//   @include tight    ≤1200       版心开始吃紧
-//   @include stack    ≤1024       稿里的两栏并排放不下了，改上下堆叠
-//   @include narrow   ≤768        手机版排布
+// Layout thresholds (how boxes are arranged) — max-width only, they may nest
+//   @include mid      ≤991        card grid drops a column
+//   @include stack    ≤1024       two columns become one
+//   @include tight    ≤1200       container starts to pinch
 //
-// 为什么布局不跟着系统三档走：一台 1194 宽的平板放得下稿里的两栏，硬把它堆成一列
-// 是把好排版改坏。所以「多宽以下堆叠」是各模块自己的几何问题，阈值就地判断；
-// 系统三档只负责「同一套排布下，字号间距该多大」。这三个阈值是既有的、已验证过的，
-// 改制时原样保留 —— 别为了对齐 575/1280 去动它们。
+// r29: narrow was ≤768 and tablet was 576–1280, overlapping by 193px — which of
+// the two won depended on source order, and order was inconsistent across the
+// file (narrow→tablet 147x, tablet→narrow 107x). 130 selectors declared the same
+// property in both. Making the tiers exclusive retired all of them at once.
+//
+// Layout thresholds deliberately do NOT align to 767/1280: a 1194-wide tablet
+// fits the two-column board, and forcing it to stack is making good layout worse
+// (round 16 shipped exactly that regression). Keep them geometric, per module.
+// They must only carry arrangement, never values — a value here would overlap
+// `tablet` again and reintroduce the order-dependence above.
 @mixin mobile { @media (max-width: $bp-mobile) { @content; } }
-@mixin tablet { @media (min-width: #{$bp-mobile + 1px}) and (max-width: $bp-tablet) { @content; } }
+@mixin narrow { @media (max-width: $bp-narrow) { @content; } }
+@mixin tablet { @media (min-width: #{$bp-narrow + 1px}) and (max-width: $bp-tablet) { @content; } }
 @mixin pc     { @media (min-width: #{$bp-tablet + 1px}) { @content; } }
-
-// 平板段里再切一刀。平板没有稿，「排两列还是一列」只能按列宽够不够判断，
-// 阈值各模块自己算（算式写在使用处的注释里），别拿去当系统断点用。
-@mixin tablet-from($w) { @media (min-width: $w) and (max-width: $bp-tablet) { @content; } }
 
 @mixin tight  { @media (max-width: $bp-tight)  { @content; } }
 @mixin stack  { @media (max-width: $bp-stack)  { @content; } }
-@mixin narrow { @media (max-width: $bp-narrow) { @content; } }
+@mixin mid    { @media (max-width: $bp-mid)    { @content; } }
 
 @mixin touch  { @media (hover: none) { @content; } }
 
-// 平板（576–1280）没有设计稿，数值一律由两张稿线性插值得到，不许拍脑袋填。
-//   $m 手机稿值（390 处成立）、$d 桌面稿值（1440 处成立）
-// 在 576 处等于 $m、1281 处等于 $d，中间线性过渡；clamp 保证不越出两端。
-$fluid-from: $bp-mobile + 1px;                                  // 576px
+// The 768–1280 tier has no board; every value is interpolated between the two
+// boards. Never hand-pick a middle number.
+//   $m mobile-board value (holds at 390), $d desktop-board value (holds at 1440)
+// Equals $m at 768 and $d at 1281, linear between; clamp guards both ends.
+// r29: the ramp used to start at 576. It now starts at 768 so that ≤767 is
+// uniformly phone values — which also makes the 767→768 handover seamless,
+// since fluid() returns exactly $m at its start.
+$fluid-from: $bp-narrow + 1px;                                  // 768px
 $fluid-to:   $bp-tablet + 1px;                                  // 1281px
-$fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 705
+$fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
 // ⚠ 斜率必须是**无单位数**。写成 `#{$d - $m} * (100vw - 576px)` 就是
 // px × px，量纲错了，整条声明会被静默丢弃 —— 表现是字号原地不动、
@@ -735,12 +742,15 @@ select {
 :root {
   --pad-x: #{$pad-x-desktop};
 
-  // 版心留白按系统三档走。平板这一档用插值而不是写死的 40：
-  // 稿只给了 390→20 和 1440→80 两个值，40 是当初自己补的。写死会在 1280/1281
-  // 交界处让内容宽度反向跳 79px（视口宽 1px，正文反而窄一截）；插值刚好在 1281
-  // 接上 PC 的 80，一点不跳。
+  // Interpolated rather than a hard 40 for the tablet tier: the boards only give
+  // 390→20 and 1440→80, and a hard value made the content width jump backwards
+  // by 79px across 1280/1281 (1px wider viewport, visibly narrower text).
+  // ⚠ narrow, not mobile. `mobile` stops at 575, so with the ramp starting at
+  // 768 the 576–767 band would fall through to the desktop 80px — wider padding
+  // on a narrower screen. Every tier-carried value must be handed over by
+  // narrow → tablet, never by mobile → tablet.
   @include tablet { --pad-x: #{fluid($pad-x-mobile, $pad-x-desktop)}; }
-  @include mobile { --pad-x: #{$pad-x-mobile}; }
+  @include narrow { --pad-x: #{$pad-x-mobile}; }
 }
 
 // ==========================================================================
@@ -3321,6 +3331,11 @@ body.is-menu-open {
   // (Privacy 326:83399, Shipping 326:83129, both 16/24/600/0) use a different
   // footer component and are pending the designer's call.
   @include narrow { font-size: 14px; line-height: 20px; letter-spacing: -0.28px; }
+  @include tablet {
+    font-size: fluid(14px, 16px);
+    line-height: fluid(20px, 24px);
+    letter-spacing: fluid(-0.28px, -0.32px);
+  }
 
   @include hover { color: $c-white; }
 }
@@ -3458,9 +3473,14 @@ body.is-menu-open {
   letter-spacing: -0.56px;
   color: $c-green;
 
-  @include tight { font-size: 48px; line-height: 56px; }
+  // Was a hard 48/56 on `tight`, which put a 30 → 48 step right on 768.
+  // Type belongs on the value tier, interpolated end to end.
   @include narrow { font-size: 30px; line-height: 36px; letter-spacing: -0.3px; }
-  @include tablet { letter-spacing: fluid(-0.3px, -0.56px); }
+  @include tablet {
+    font-size: fluid(30px, 56px);
+    line-height: fluid(36px, 64px);
+    letter-spacing: fluid(-0.3px, -0.56px);
+  }
 }
 
 // 324:63924 opens with a star rating above the headline; 324:56865 has the same
@@ -3563,6 +3583,13 @@ body.is-menu-open {
     letter-spacing: -0.32px;
     color: $c-gray-700;
   }
+  // Ramps to --lg's desktop 20/30/-0.4; without this the 768 step falls back to
+  // --lg's own ramp and the line jumps 16 → 18. Colour stays a step.
+  @include tablet {
+    font-size: fluid(16px, 20px);
+    line-height: fluid(24px, 30px);
+    letter-spacing: fluid(-0.32px, -0.4px);
+  }
 }
 
 // 324:70523 sets this line in the coral the cross marks use; 324:69636 leaves
@@ -3599,8 +3626,16 @@ body.is-menu-open {
     @include narrow { gap: 16px; }
   }
 
+  // This variant starts from 36 on mobile, not 30, so it needs its own ramp —
+  // otherwise 768 falls back to the base ramp and the title shrinks 36 → 30
+  // as the screen gets wider.
   .gb-page-hero__title {
     @include narrow { font-size: 36px; line-height: 40px; letter-spacing: -0.36px; }
+    @include tablet {
+      font-size: fluid(36px, 56px);
+      line-height: fluid(40px, 64px);
+      letter-spacing: fluid(-0.36px, -0.56px);
+    }
   }
 }
 
@@ -4122,7 +4157,12 @@ body.is-menu-open {
   color: $c-gray-800;
 
   @include narrow { padding: 0; font-size: 14px; line-height: 20px; letter-spacing: -0.28px; }
-  @include tablet { font-size: fluid(14px, 16px); line-height: fluid(20px, 24px); letter-spacing: fluid(-0.28px, -0.32px); }
+  @include tablet {
+    padding: 0 fluid(0px, 24px);
+    font-size: fluid(14px, 16px);
+    line-height: fluid(20px, 24px);
+    letter-spacing: fluid(-0.28px, -0.32px);
+  }
 }
 
 // Hand-drawn arrows, decorative only.
@@ -4334,12 +4374,13 @@ body.is-menu-open {
   gap: 24px;
   width: 100%;
 
-  @include stack { grid-template-columns: 1fr; max-width: 480px; }
-
-  // 3 → 2 → 1（任务文档第 9 条）。每列至少 320（一行 20 只熊 = 13.5×20 + 4×19 = 346，卡片内距算进去 320 是下限），
-  // 两列 + 24 间距 = 664，再加版心左右各 40 → 视口 744 以上才排两列
-  // 放不下两列就落回上面 stack 的一列 480 版心，不另写规则。
-  @include tablet-from(744px) { grid-template-columns: repeat(2, 1fr); max-width: 848px; }
+  // 3 → 2 → 1, and the thresholds fall exactly on the value tiers.
+  // A column holds .gb-bear-meter at its 347px max plus 2×32 padding = 411px,
+  // so three columns need ~1361px of viewport — wider than the whole tablet
+  // tier. Three columns therefore stay on pc only; the tier boundaries do the
+  // rest, no hand-computed threshold needed (was tablet-from(744px)).
+  @include narrow { grid-template-columns: 1fr; max-width: 480px; }
+  @include tablet { grid-template-columns: repeat(2, 1fr); max-width: 848px; }
 }
 
 .gb-science-card {
@@ -4447,6 +4488,13 @@ body.is-menu-open {
     letter-spacing: -0.36px;
     text-shadow: none;
   }
+  // text-shadow stays a step, not a ramp: the outline is present on the desktop
+  // board and absent on the mobile one, and a stroke cannot be interpolated.
+  @include tablet {
+    font-size: fluid(36px, 56px);
+    line-height: fluid(40px, 44px);
+    letter-spacing: fluid(-0.36px, 0px);
+  }
 }
 
 // ==========================================================================
@@ -4471,7 +4519,7 @@ body.is-menu-open {
   padding: 96px 0;
 
   @include narrow { gap: 32px; padding: 64px 0 48px; }
-  @include tablet { gap: fluid(32px, 48px); }
+  @include tablet { gap: fluid(32px, 48px); padding: fluid(64px, 96px) 0 fluid(48px, 96px); }
 }
 
 .gb-nutrition__title {
@@ -4492,11 +4540,10 @@ body.is-menu-open {
   gap: 24px;
   @include container;
 
-  @include stack { grid-template-columns: 1fr; max-width: 480px; }
-
-  // 3 → 2 → 1（任务文档第 9 条）。每列至少 300，两列 + 24 间距 = 624，加版心左右各 40 → 视口 704 以上才排两列
-  // 放不下两列就落回上面 stack 的一列 480 版心，不另写规则。
-  @include tablet-from(704px) { grid-template-columns: repeat(2, 1fr); max-width: 848px; }
+  // 3 → 2 → 1 on the value tiers, same reasoning as .gb-science__cards
+  // (was tablet-from(704px)).
+  @include narrow { grid-template-columns: 1fr; max-width: 480px; }
+  @include tablet { grid-template-columns: repeat(2, 1fr); max-width: 848px; }
 }
 
 .gb-highlight-card {
@@ -5347,8 +5394,9 @@ body.is-menu-open {
   width: 100%;
   max-width: 1441px;
 
-  @include stack { flex-direction: column; align-items: center; padding: 32px 40px 0; }
+  @include stack { flex-direction: column; align-items: center; }
   @include narrow { padding: 24px 20px 0; }
+  @include tablet { padding: fluid(24px, 48px) fluid(20px, 80px) 0; }
 }
 
 .gb-testimonial {
@@ -5418,8 +5466,8 @@ body.is-menu-open {
   background: $c-sand;
   padding: 120px 0 60px;
 
-  @include stack { padding: 88px 0 48px; }
   @include narrow { padding: 64px 0; }
+  @include tablet { padding: fluid(64px, 120px) 0 fluid(64px, 60px); }
 }
 
 .gb-promo__inner {
@@ -5493,8 +5541,11 @@ body.is-menu-open {
   padding: 48px 56px 48px 48px;
   text-align: center;
 
-  @include stack { padding: 40px 32px; gap: 32px; }
   @include narrow { gap: 8px; padding: 32px 24px; }
+  @include tablet {
+    gap: fluid(8px, 48px);
+    padding: fluid(32px, 48px) fluid(24px, 56px) fluid(32px, 48px) fluid(24px, 48px);
+  }
 }
 
 // Figma: text frame 427 wide with 40px inner padding, so copy runs at 347
@@ -5783,8 +5834,10 @@ body.is-menu-open {
   background: $c-white;
   padding: 120px 0 calc(120px + var(--sc-h));
 
-  @include stack { padding: 88px 0 calc(88px + var(--sc-h)); }
   @include narrow { padding: 64px 0 calc(64px + var(--sc-h)); }
+  @include tablet {
+    padding: fluid(64px, 120px) 0 calc(#{fluid(64px, 120px)} + var(--sc-h));
+  }
 }
 
 .gb-vs__inner {
@@ -5968,7 +6021,14 @@ body.is-menu-open {
   width: 32.276%;              // 112 / 347
   height: auto;
 
-  @include narrow { left: 80.627%; top: 0; width: 19.373%; }
+  // left/width follow the ARRANGEMENT, not the value tier: percentages are
+  // relative to .gb-vs__col, and while the column is stacked (≤1024) that box
+  // is ~728px — wider than the 516px desktop board — so the desktop ratios
+  // (left+width = 111%) push this off-screen. Percentages cannot be ramped:
+  // calc() has no way to divide a length by a length to get a unitless
+  // progress, so fluid() is px-only. top is a px value and still ramps.
+  @include stack { left: 80.627%; width: 19.373%; }
+  @include narrow { top: 0; }
   @include tablet { top: fluid(0, 6px); }
 }
 
@@ -6063,8 +6123,10 @@ body.is-menu-open {
   background: $c-lime-150;
   padding: 96px 0 120px;
 
-  @include stack { padding: 80px 0 96px; }
+  // `stack` used to hold a hand-picked 80/96 here — a layout threshold carrying
+  // values, which both overlapped `tablet` and left a 64 → 80 step at 768.
   @include narrow { padding: 64px 0; }
+  @include tablet { padding: fluid(64px, 96px) 0 fluid(64px, 120px); }
 }
 
 // 324:75766 (the FAQ page) runs the same list on white with no heading above it.
@@ -6208,6 +6270,7 @@ body.is-menu-open {
   padding: 96px 0 120px;
 
   @include narrow { padding: 64px 0; }
+  @include tablet { padding: fluid(64px, 96px) 0 fluid(64px, 120px); }
 }
 
 .gb-faq-image__inner {
@@ -6322,6 +6385,9 @@ body.is-menu-open {
   padding: 96px 0 calc(120px + var(--sc-h));
 
   @include narrow { padding: 64px 0 calc(64px + var(--sc-h)); }
+  @include tablet {
+    padding: fluid(64px, 96px) 0 calc(#{fluid(64px, 120px)} + var(--sc-h));
+  }
 }
 
 .gb-expert__inner {
@@ -6351,7 +6417,9 @@ body.is-menu-open {
   gap: 24px;
   width: 100%;
 
-  @include stack { grid-template-columns: repeat(2, 1fr); }
+  // Text-only cards compress fine, so this one follows the requested ladder:
+  // three from 992 up, two below it, rail below 768.
+  @include mid { grid-template-columns: repeat(2, 1fr); }
 
   // 324:64961 keeps all three side by side in a 350px column — a swipe rail.
   @include narrow {
@@ -6736,9 +6804,8 @@ body.is-menu-open {
   padding: 48px 80px;
   text-align: center;
 
-  @include stack { padding: 40px 32px; }
   @include narrow { gap: 108px; padding: 64px 38px; }
-  @include tablet { gap: fluid(108px, 40px); }
+  @include tablet { gap: fluid(108px, 40px); padding: fluid(64px, 48px) fluid(38px, 80px); }
 }
 
 // The eyebrow and the headline are one group in the design (gap 32), the
@@ -7047,6 +7114,7 @@ body.is-menu-open {
   padding: 96px 0 120px;
 
   @include narrow { padding: 64px 0; }
+  @include tablet { padding: fluid(64px, 96px) 0 fluid(64px, 120px); }
 }
 
 .gb-rich-page__inner {

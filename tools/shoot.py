@@ -22,7 +22,8 @@ OUT = os.path.join(ROOT, "tools", "shots")
 CHROME = os.path.expanduser("~/.cache/ms-playwright/chromium-1217/chrome-linux64/chrome")
 # 断点改制后（2026-08-21）：手机 ≤575 / 平板 576–1280 / PC ≥1281。
 # 每档取两端 + 中间一个，边界两侧各取一格，专抓「差一像素就塌」。
-WIDTHS = [360, 390, 575, 576, 768, 1024, 1280, 1281, 1440, 1920]
+# 断点边界两侧各取一档（r29 起含 767/768 与 991/992）
+WIDTHS = [360, 390, 575, 576, 767, 768, 991, 992, 1024, 1200, 1280, 1281, 1440, 1920]
 
 PROBE = """() => {
   const de = document.documentElement;

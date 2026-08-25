@@ -1,16 +1,25 @@
 #!/usr/bin/env python3
 """全站 computed-style 快照 —— CSS 改结构/断点时唯一有效的判据。
 
-    python3 tools/cssnap.py before            # 存快照到 tools/snap/before/
-    python3 tools/cssnap.py after             # 存快照
-    python3 tools/cssnap.py diff before after # 逐项比对
+    python3 tools/cssnap.py before                    # 存快照到 tools/snap/before/
+    python3 tools/cssnap.py after                     # 存快照
+    python3 tools/cssnap.py diff before after         # 逐项比对
+    python3 tools/cssnap.py before --widths 768,992   # 只采指定档位
 
 为什么不 diff 产物：改断点、搬 @media、改选择器名都会让产物文本大变而渲染不变
 （见 memory css-refactor-computed-style-judge）。所以判据取「每个元素最终算出来的样式」。
 
 ⚠ 伪元素必须一起采 —— 本项目大量视觉由 ::before/::after 承担（扇贝、描边、箭头）。
-⚠ 采样宽度默认取两张设计稿的宽度 390 / 1440：迁移断点时这两档必须逐字节不变，
-   中间档（576–1280）本来就是要改的，不进不变量。
+
+采样宽度分两类，diff 会分开报：
+
+  不变量档 390 / 1440 —— 两张设计稿的宽度。任何断点改制都不该动到它们，
+      这两档出现差异 = 回归，必须查清。
+  观察档 575…1280 —— 断点边界的两侧各取一档（575/576、767/768、991/992），
+      改断点时这些档**本来就会变**，diff 只做人工核对的输入，不是判据。
+
+⚠ 第二十九轮之前这里只有 [390, 1440] 两档，而断点改制的影响区恰好是 576–1280，
+   两个采样点全在影响区外 —— 照跑会全绿但什么都没验到。加档位是那一轮的第一步。
 """
 import json, os, sys, glob, hashlib
 from playwright.sync_api import sync_playwright
@@ -18,7 +27,10 @@ from playwright.sync_api import sync_playwright
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SNAP = os.path.join(ROOT, "tools", "snap")
 CHROME = os.path.expanduser("~/.cache/ms-playwright/chromium-1217/chrome-linux64/chrome")
-WIDTHS = [390, 1440]
+
+# 断点边界两侧各取一档，才能证明「边界挪到哪里」而不只是「有没有变」
+WIDTHS = [390, 575, 576, 767, 768, 991, 992, 1024, 1200, 1280, 1440]
+INVARIANT = {390, 1440}   # 设计稿宽度：断点改制不该动到，有差异就是回归
 
 # 采这些属性：布局、盒子、排版、装饰。全量 getComputedStyle 有 340+ 项，
 # 噪声（如 -webkit-locale）多且慢，取这一组足以抓住任何肉眼可见的变化。
@@ -74,13 +86,13 @@ def pages():
     return sorted(os.path.basename(p) for p in glob.glob(os.path.join(ROOT, "*.html")))
 
 
-def capture(tag):
+def capture(tag, widths):
     out = os.path.join(SNAP, tag)
     os.makedirs(out, exist_ok=True)
     props = json.loads(PROPS.replace("'", '"'))
     with sync_playwright() as pw:
         br = pw.chromium.launch(executable_path=CHROME)
-        for w in WIDTHS:
+        for w in widths:
             pg = br.new_page(viewport={"width": w, "height": 900})
             # main.js 的 word-pop / float-art 用 Math.random 撒抖动，不钉死的话
             # 同一份 CSS 连采两次就有 260+ 处「差异」，真信号会被埋掉
@@ -101,15 +113,17 @@ def capture(tag):
         br.close()
 
 
-def diff(a, b):
-    bad = 0
-    for w in WIDTHS:
+def diff(a, b, widths):
+    bad = 0           # 不变量档的差异 = 回归
+    watch = 0         # 观察档的差异 = 预期内，人工核对
+    missing = []      # 缺快照 ≠ 差异，单独报，否则会伪装成回归
+    per_width = {}
+    for w in widths:
         for name in pages():
             pa = os.path.join(SNAP, a, f"{name}.{w}.json")
             pb = os.path.join(SNAP, b, f"{name}.{w}.json")
             if not (os.path.exists(pa) and os.path.exists(pb)):
-                print(f"!! 缺快照 {name}@{w}")
-                bad += 1
+                missing.append(f"{name}@{w}")
                 continue
             da = dict(json.load(open(pa)))
             db = dict(json.load(open(pb)))
@@ -127,21 +141,47 @@ def diff(a, b):
                     if va != vb:
                         hits.append((k, p, va, vb))
             if hits:
-                bad += len(hits)
-                print(f"\n## {name} @{w} —— {len(hits)} 处不同")
-                for k, p, va, vb in hits[:25]:
-                    print(f"   {k}\n      {p}: {va}  ->  {vb}")
-                if len(hits) > 25:
-                    print(f"   … 另有 {len(hits)-25} 处")
-    print(f"\n{'✅ 完全一致' if bad == 0 else f'❌ 共 {bad} 处差异'}")
-    return 0 if bad == 0 else 1
+                per_width[w] = per_width.get(w, 0) + len(hits)
+                if w in INVARIANT:
+                    bad += len(hits)
+                    print(f"\n❌ {name} @{w}（不变量档）—— {len(hits)} 处不同")
+                    for k, p, va, vb in hits[:25]:
+                        print(f"   {k}\n      {p}: {va}  ->  {vb}")
+                    if len(hits) > 25:
+                        print(f"   … 另有 {len(hits)-25} 处")
+                else:
+                    watch += len(hits)
+
+    print("\n" + "=" * 60)
+    print("按宽度汇总（观察档的差异是预期内的，不算失败）")
+    for w in widths:
+        n = per_width.get(w, 0)
+        tag = "不变量" if w in INVARIANT else "观察 "
+        mark = "✅" if n == 0 else ("❌" if w in INVARIANT else "⚠ ")
+        print(f"  {mark} {tag} @{w:<5} {n} 处差异")
+    print("=" * 60)
+    if missing:
+        print(f"!! {len(missing)} 份快照缺失，这些组合没有验到：{', '.join(missing[:8])}"
+              + (" …" if len(missing) > 8 else ""))
+    if bad:
+        print(f"❌ 不变量档出现 {bad} 处差异 —— 这是回归，必须查清")
+    else:
+        print(f"✅ 不变量档（{'/'.join(str(w) for w in sorted(INVARIANT))}）零差异")
+    print(f"   观察档共 {watch} 处变化，逐档核对是否符合设计意图")
+    return 1 if (bad or missing) else 0
 
 
 if __name__ == "__main__":
-    if len(sys.argv) >= 4 and sys.argv[1] == "diff":
-        sys.exit(diff(sys.argv[2], sys.argv[3]))
-    if len(sys.argv) == 2:
-        capture(sys.argv[1])
+    argv = sys.argv[1:]
+    widths = WIDTHS
+    if "--widths" in argv:
+        i = argv.index("--widths")
+        widths = [int(x) for x in argv[i + 1].split(",")]
+        del argv[i:i + 2]
+    if len(argv) >= 3 and argv[0] == "diff":
+        sys.exit(diff(argv[1], argv[2], widths))
+    if len(argv) == 1:
+        capture(argv[0], widths)
         sys.exit(0)
     print(__doc__)
     sys.exit(2)

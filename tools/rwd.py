@@ -19,7 +19,9 @@ from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CHROME = os.path.expanduser("~/.cache/ms-playwright/chromium-1217/chrome-linux64/chrome")
-WIDTHS = [360, 390, 575, 576, 768, 1024, 1280, 1281, 1440, 1920]
+# 每个断点边界的两侧各取一档，否则交界处的回归漏检
+# r29 起新增 767/768（narrow↔tablet）与 991/992（mid，卡片列数）
+WIDTHS = [360, 390, 575, 576, 767, 768, 991, 992, 1024, 1200, 1280, 1281, 1440, 1920]
 
 # 只留两条**不会误报**的判据。别再往里加「元素越过视口边」那类 ——
 # 抽屉停在 -100%、跑马灯轨道比视口宽、滚动容器里的卡片，全都是有意越界，
