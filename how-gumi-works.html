@@ -6,7 +6,7 @@
 <title>Gumi — How Gumi Works</title>
 <meta name="description" content="The science, the daily ritual, the transformation.">
 <script>(function(h){h.classList.add("js");function u(){window.gumi||h.classList.remove("js")}addEventListener("load",u);setTimeout(u,4000)})(document.documentElement)</script>
-<link rel="stylesheet" href="assets/customstyle.css?v=20260825-r30">
+<link rel="stylesheet" href="assets/customstyle.css?v=20260825-r31">
 <noscript><style>.wowo{opacity:1 !important}</style></noscript>
 </head>
 <body>
@@ -106,15 +106,13 @@
 
   <main>
     <!-- Page header — Figma 324:69636 (1440x294) / 324:70523 (390x244).
-         ⚠ The two boards disagree on the subheading: desktop still says
-         "This is a placeholder subheading.", mobile carries real copy in the
-         cross/red #dd655e. The real copy is used at both widths; the colour
-         follows each board (docs/PROJECT-STATUS.md). -->
+         The two boards disagree on the subheading; the client picked the
+         desktop placeholder for both widths. Colour still follows each board. -->
     <section class="gb-page-hero gb-page-hero--center gb-page-hero--lg">
       <div class="gb-page-hero__inner">
-        <div class="gb-page-hero__text">
+        <div class="gb-page-hero__text" data-line-sequence>
           <h1 class="gb-page-hero__title" data-line-reveal>How Gumi Works</h1>
-          <p class="gb-page-hero__lead gb-page-hero__lead--lg gb-page-hero__lead--coral-mobile" data-line-reveal>The science, the daily ritual, the transformation.</p>
+          <p class="gb-page-hero__lead gb-page-hero__lead--lg gb-page-hero__lead--coral-mobile" data-line-reveal>This is a placeholder subheading.</p>
         </div>
       </div>
       <div class="gb-scallop gb-scallop--edge gb-scallop--lg gb-scallop--down gb-scallop--to-white"></div>
@@ -127,10 +125,14 @@
         <div class="gb-dosed__block">
           <div class="gb-dosed__media gb-scallop-box wowo fadeIn"></div>
           <div class="gb-dosed__body wowo fadeInUp">
-            <svg class="gb-arc-text gb-dosed__arc" viewBox="0 0 175 40" aria-hidden="true">
-            <path id="dosed-arc-1" d="M 7.5 32 A 338 338 0 0 1 167.5 32" fill="none"></path>
-            <text text-anchor="middle"><textPath href="#dosed-arc-1" startOffset="50%">THE SCIENCE</textPath></text>
-          </svg>
+            <svg class="gb-arc-text gb-dosed__arc gb-arc-text--pc" viewBox="0 0 231 31" aria-hidden="true">
+              <path id="dosed-arc-1" d="M -29 83 A 144.5 66 0 0 1 260 83" fill="none"></path>
+              <text text-anchor="middle"><textPath href="#dosed-arc-1" startOffset="50%">THE SCIENCE</textPath></text>
+            </svg>
+            <svg class="gb-arc-text gb-dosed__arc gb-arc-text--mob" viewBox="0 0 278 29" aria-hidden="true">
+              <path id="dosed-arc-1-m" d="M 20.5 82.105 A 118.5261 65.7047 0 0 1 257.55 82.105" fill="none"></path>
+              <text text-anchor="middle"><textPath href="#dosed-arc-1-m" startOffset="50%">THE SCIENCE</textPath></text>
+            </svg>
             <div class="gb-dosed__text">
               <h2 class="gb-dosed__title" data-line-reveal>It&#39;s dosed to actually do something.</h2>
               <p class="gb-dosed__lead" data-line-reveal>Most gummies are built around taste first and dosage second. We did it the other way. Every ingredient in Gumi is included at a level that&#39;s meant to matter, not just to make the list longer. Dosed for absorption, not decoration.</p>
@@ -140,10 +142,14 @@
         <div class="gb-dosed__block gb-dosed__block--flip">
           <div class="gb-dosed__media gb-scallop-box wowo fadeIn"></div>
           <div class="gb-dosed__body wowo fadeInUp">
-            <svg class="gb-arc-text gb-dosed__arc" viewBox="0 0 175 40" aria-hidden="true">
-            <path id="dosed-arc-2" d="M 7.5 32 A 338 338 0 0 1 167.5 32" fill="none"></path>
-            <text text-anchor="middle"><textPath href="#dosed-arc-2" startOffset="50%">THE RITUAL</textPath></text>
-          </svg>
+            <svg class="gb-arc-text gb-dosed__arc gb-arc-text--pc" viewBox="0 0 231 31" aria-hidden="true">
+              <path id="dosed-arc-2" d="M -29 83 A 144.5 66 0 0 1 260 83" fill="none"></path>
+              <text text-anchor="middle"><textPath href="#dosed-arc-2" startOffset="50%">THE RITUAL</textPath></text>
+            </svg>
+            <svg class="gb-arc-text gb-dosed__arc gb-arc-text--mob" viewBox="0 0 278 29" aria-hidden="true">
+              <path id="dosed-arc-2-m" d="M 20.5 82.105 A 118.5261 65.7047 0 0 1 257.55 82.105" fill="none"></path>
+              <text text-anchor="middle"><textPath href="#dosed-arc-2-m" startOffset="50%">THE RITUAL</textPath></text>
+            </svg>
             <div class="gb-dosed__text">
               <h2 class="gb-dosed__title" data-line-reveal>One pouch. Once a day.<br>That&#39;s the whole ritual.</h2>
               <p class="gb-dosed__lead" data-line-reveal>No mixing, no measuring, no five step routine to remember. Open the pouch, chew, done. It fits into the one minute you actually have, not the twenty you don&#39;t. Built for the days you forget everything.</p>
@@ -264,45 +270,45 @@
             <details class="gb-product__acc-item" name="gb-spec">
               <summary class="gb-product__acc-row">Why Gumi<span class="gb-acc-icon" aria-hidden="true"></span></summary>
               <div class="gb-acc-body">
-                <!-- TODO 待客户文案：设计组件 324:53921 里这行就是占位 "Text here" -->
+                <!-- TODO client copy: component 324:53921 ships this line as "Text here" -->
                 <p class="gb-acc-body__text">Text here</p>
-                <!-- TODO client image：组件里的 image 15 是灰色占位 -->
+                <!-- TODO client image: the component's "image 15" is a grey placeholder -->
                 <div class="gb-acc-body__media"></div>
               </div>
             </details>
             <details class="gb-product__acc-item" name="gb-spec">
               <summary class="gb-product__acc-row">Ingredients &amp; Allergies<span class="gb-acc-icon" aria-hidden="true"></span></summary>
               <div class="gb-acc-body">
-                <!-- TODO 待客户文案：设计组件 324:53921 里这行就是占位 "Text here" -->
+                <!-- TODO client copy: component 324:53921 ships this line as "Text here" -->
                 <p class="gb-acc-body__text">Text here</p>
-                <!-- TODO client image：组件里的 image 15 是灰色占位 -->
+                <!-- TODO client image: the component's "image 15" is a grey placeholder -->
                 <div class="gb-acc-body__media"></div>
               </div>
             </details>
             <details class="gb-product__acc-item" name="gb-spec">
               <summary class="gb-product__acc-row">Science<span class="gb-acc-icon" aria-hidden="true"></span></summary>
               <div class="gb-acc-body">
-                <!-- TODO 待客户文案：设计组件 324:53921 里这行就是占位 "Text here" -->
+                <!-- TODO client copy: component 324:53921 ships this line as "Text here" -->
                 <p class="gb-acc-body__text">Text here</p>
-                <!-- TODO client image：组件里的 image 15 是灰色占位 -->
+                <!-- TODO client image: the component's "image 15" is a grey placeholder -->
                 <div class="gb-acc-body__media"></div>
               </div>
             </details>
             <details class="gb-product__acc-item" name="gb-spec">
               <summary class="gb-product__acc-row">Directions<span class="gb-acc-icon" aria-hidden="true"></span></summary>
               <div class="gb-acc-body">
-                <!-- TODO 待客户文案：设计组件 324:53921 里这行就是占位 "Text here" -->
+                <!-- TODO client copy: component 324:53921 ships this line as "Text here" -->
                 <p class="gb-acc-body__text">Text here</p>
-                <!-- TODO client image：组件里的 image 15 是灰色占位 -->
+                <!-- TODO client image: the component's "image 15" is a grey placeholder -->
                 <div class="gb-acc-body__media"></div>
               </div>
             </details>
             <details class="gb-product__acc-item" name="gb-spec">
               <summary class="gb-product__acc-row">Benefits<span class="gb-acc-icon" aria-hidden="true"></span></summary>
               <div class="gb-acc-body">
-                <!-- TODO 待客户文案：设计组件 324:53921 里这行就是占位 "Text here" -->
+                <!-- TODO client copy: component 324:53921 ships this line as "Text here" -->
                 <p class="gb-acc-body__text">Text here</p>
-                <!-- TODO client image：组件里的 image 15 是灰色占位 -->
+                <!-- TODO client image: the component's "image 15" is a grey placeholder -->
                 <div class="gb-acc-body__media"></div>
               </div>
             </details>
@@ -340,54 +346,54 @@
             <details class="gb-faq__item" name="gb-faq">
               <summary class="gb-faq__row">Accordion Closed<span class="gb-acc-icon" aria-hidden="true"></span></summary>
               <div class="gb-acc-body">
-                <!-- TODO 待客户文案：设计组件 324:53921 里这行就是占位 "Text here" -->
+                <!-- TODO client copy: component 324:53921 ships this line as "Text here" -->
                 <p class="gb-acc-body__text">Text here</p>
-                <!-- TODO client image：组件里的 image 15 是灰色占位 -->
+                <!-- TODO client image: the component's "image 15" is a grey placeholder -->
                 <div class="gb-acc-body__media"></div>
               </div>
             </details>
             <details class="gb-faq__item" name="gb-faq">
               <summary class="gb-faq__row">Accordion Closed<span class="gb-acc-icon" aria-hidden="true"></span></summary>
               <div class="gb-acc-body">
-                <!-- TODO 待客户文案：设计组件 324:53921 里这行就是占位 "Text here" -->
+                <!-- TODO client copy: component 324:53921 ships this line as "Text here" -->
                 <p class="gb-acc-body__text">Text here</p>
-                <!-- TODO client image：组件里的 image 15 是灰色占位 -->
+                <!-- TODO client image: the component's "image 15" is a grey placeholder -->
                 <div class="gb-acc-body__media"></div>
               </div>
             </details>
             <details class="gb-faq__item" name="gb-faq">
               <summary class="gb-faq__row">Accordion Closed<span class="gb-acc-icon" aria-hidden="true"></span></summary>
               <div class="gb-acc-body">
-                <!-- TODO 待客户文案：设计组件 324:53921 里这行就是占位 "Text here" -->
+                <!-- TODO client copy: component 324:53921 ships this line as "Text here" -->
                 <p class="gb-acc-body__text">Text here</p>
-                <!-- TODO client image：组件里的 image 15 是灰色占位 -->
+                <!-- TODO client image: the component's "image 15" is a grey placeholder -->
                 <div class="gb-acc-body__media"></div>
               </div>
             </details>
             <details class="gb-faq__item" name="gb-faq">
               <summary class="gb-faq__row">Accordion Closed<span class="gb-acc-icon" aria-hidden="true"></span></summary>
               <div class="gb-acc-body">
-                <!-- TODO 待客户文案：设计组件 324:53921 里这行就是占位 "Text here" -->
+                <!-- TODO client copy: component 324:53921 ships this line as "Text here" -->
                 <p class="gb-acc-body__text">Text here</p>
-                <!-- TODO client image：组件里的 image 15 是灰色占位 -->
+                <!-- TODO client image: the component's "image 15" is a grey placeholder -->
                 <div class="gb-acc-body__media"></div>
               </div>
             </details>
             <details class="gb-faq__item" name="gb-faq">
               <summary class="gb-faq__row">Accordion Closed<span class="gb-acc-icon" aria-hidden="true"></span></summary>
               <div class="gb-acc-body">
-                <!-- TODO 待客户文案：设计组件 324:53921 里这行就是占位 "Text here" -->
+                <!-- TODO client copy: component 324:53921 ships this line as "Text here" -->
                 <p class="gb-acc-body__text">Text here</p>
-                <!-- TODO client image：组件里的 image 15 是灰色占位 -->
+                <!-- TODO client image: the component's "image 15" is a grey placeholder -->
                 <div class="gb-acc-body__media"></div>
               </div>
             </details>
             <details class="gb-faq__item" name="gb-faq">
               <summary class="gb-faq__row">Accordion Closed<span class="gb-acc-icon" aria-hidden="true"></span></summary>
               <div class="gb-acc-body">
-                <!-- TODO 待客户文案：设计组件 324:53921 里这行就是占位 "Text here" -->
+                <!-- TODO client copy: component 324:53921 ships this line as "Text here" -->
                 <p class="gb-acc-body__text">Text here</p>
-                <!-- TODO client image：组件里的 image 15 是灰色占位 -->
+                <!-- TODO client image: the component's "image 15" is a grey placeholder -->
                 <div class="gb-acc-body__media"></div>
               </div>
             </details>
@@ -614,7 +620,7 @@
         </div>
       </div>
     </div>
-  <script src="assets/lenis.min.js?v=20260825-r30"></script>
-  <script src="assets/main.js?v=20260825-r30"></script>
+  <script src="assets/lenis.min.js?v=20260825-r31"></script>
+  <script src="assets/main.js?v=20260825-r31"></script>
 </body>
 </html>

@@ -83,9 +83,10 @@
         if (el.classList.contains("is-open") && !el.contains(e.target)) self.set(false);
       });
 
-      // header 吸顶后，它到视口顶的距离随滚动变化（公告条滚走就归零），
-      // 手机抽屉「从 header 底一直到视口底」这个高度只能实测。CSS 里的
-      // calc(100svh - 公告条 - header) 只在页面停在最顶部时才成立。
+      // Once the header is sticky its distance to the viewport top changes with
+      // scroll (it drops to zero when the announcement bar leaves), so the mobile
+      // drawer's "header bottom to viewport bottom" height has to be measured.
+      // The CSS calc() only holds while the page is at the very top.
       window.addEventListener("resize", function () {
         if (el.classList.contains("is-open")) self.measure();
       }, { passive: true });
@@ -103,7 +104,7 @@
       }
     },
 
-    // 抽屉可用高度 = 视口高 − header 底边所在的位置
+    // Usable drawer height = viewport height - where the header's bottom sits
     measure: function () {
       var bottom = this.el.getBoundingClientRect().bottom;
       this.el.style.setProperty("--drawer-h", (window.innerHeight - bottom) + "px");
@@ -284,13 +285,14 @@
          for the swap, but never block longer than one frame's worth of
          patience: a font that never resolves must not leave the page unsplit.
 
-         而 500ms 这个兜底超时在慢网络上是**一定**会先跑的，所以光有它不够：
-         第二十八轮实测（字体响应压后 1500ms）里 .gb-hero__lead / .gb-science__lead /
-         .gb-product__lead 三段都是按兜底字体的换行点分了 2 行，真字体一到位每行
-         变宽、每个遮罩里挤进两行，元素高度从 60 涨到 90 —— 一次凭空的 30px 位移，
-         而且遮罩数还停在 2，动画会两行一起滑。所以字体到位后必须**重新分行**一次。
-         groupLines 本来就是幂等的（先把旧遮罩拆回去再按当前换行点重建），已经
-         揭示过的段落会走 is-settled 直接落终态，不会把入场动画重播一遍。 */
+         The 500ms fallback always fires first on a slow connection, so it is not
+         enough on its own: measured with the font response held back 1500ms, three
+         leads split into 2 lines against the fallback font, then each line grew
+         and every mask held two lines — the element went 60 -> 90, a 30px shift,
+         with the mask count still at 2 so the animation slid two lines at once.
+         So re-split once the font lands. groupLines is idempotent (it unwraps the
+         old masks and rebuilds against the current wrap points) and paragraphs
+         that already revealed go through is-settled straight to the end state. */
       var started = false;
       var refined = false;
 
@@ -303,10 +305,11 @@
       var refine = function () {
         if (refined) return;
         refined = true;
-        if (!started) { start(); return; }   // 字体够快，第一次就是拿真字体量的
+        if (!started) { start(); return; }   // font was fast; the first split already used it
         for (var n = 0; n < self.els.length; n++) {
           try { self.split(self.els[n]); } catch (e) { /* leave last-good state */ }
         }
+        self.sequence();
       };
 
       if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === "function") {
@@ -326,6 +329,7 @@
           for (var n = 0; n < self.els.length; n++) {
             try { self.split(self.els[n]); } catch (e) { /* leave last-good state */ }
           }
+          self.sequence();
         }, LINE_RESIZE_DEBOUNCE);
       });
     },
@@ -335,6 +339,7 @@
       for (var i = 0; i < els.length; i++) {
         try { this.split(els[i]); } catch (e) { els[i].setAttribute("data-line-failed", ""); }
       }
+      this.sequence();
 
       if (!("IntersectionObserver" in window)) {
         for (var j = 0; j < els.length; j++) els[j].classList.add("is-revealed");
@@ -436,27 +441,43 @@
         root.classList.remove("is-revealed");
         root.classList.add("is-settled");
       }
+    },
+
+    /* Hosts inside [data-line-sequence] play one after another instead of all
+       at once: --line-base continues the line index across siblings, so the
+       150ms per-line stagger carries straight on into the next block. Has to
+       re-run after every split pass -- the line counts move with the width. */
+    sequence: function () {
+      var groups = document.querySelectorAll("[data-line-sequence]");
+      for (var g = 0; g < groups.length; g++) {
+        var hosts = groups[g].querySelectorAll("[data-line-reveal]");
+        var base = 0;
+        for (var h = 0; h < hosts.length; h++) {
+          hosts[h].style.setProperty("--line-base", base);
+          base += hosts[h].querySelectorAll(".gb-line-mask").length || 1;
+        }
+      }
     }
   };
 
   /* ---------------------------------------------------------------------
-   * packBand — 营养区那条斜着铺过去的包装袋。
+   * packBand — the diagonal run of packs in the nutrition block.
    *
-   * 标记里每行只留两个 <picture>（任务文档第 5 条：DOM 里写 21 个同样的
-   * <picture> 太呆板），铺满屏幕要几个由这里按当前节距算出来再克隆补齐 ——
-   * 跟 .gb-bear-meter 用 JS 生成 100 个小熊是同一个路子。
+   * The markup carries two <picture> per row; how many are needed to fill the
+   * screen is computed here and cloned in — the same approach .gb-bear-meter uses
+   * to generate its 100 bears.
    *
-   * 原来两行写死 10 / 11 个，是照最宽的情况配的：桌面要铺 4385px、手机 2160px，
-   * 而视口分别只有 1440 / 390，两端都大幅过量。节距 --pack-w / --pack-gap 都是
-   * fluid()，随视口连续变化，个数本来就该跟着算。
+   * The rows used to be a hard-coded 10 / 11, sized for the widest case: desktop
+   * needs 4385px of run and mobile 2160px, against viewports of 1440 / 390. The
+   * pitch (--pack-w / --pack-gap) is fluid, so the count has to follow.
    *
-   * ⚠ 量宽度只能用 offsetWidth：.gb-pack-band 整条转了 -6.556°，
-   *   getBoundingClientRect() 给的是旋转后的外接盒，拿它算节距会偏大
-   *   （同一类坑见 memory figma-rotated-frame-bbox-is-not-the-artwork）。
-   * ⚠ 两行个数必须一奇一偶：稿里的砖缝错位就是靠行宽差一个节距、
-   *   再由 align-items:center 各自居中得来的，两行一样多就对齐了。
+   * ⚠ Measure with offsetWidth only: .gb-pack-band is rotated -6.556°, so
+   *   getBoundingClientRect() returns the rotated bounding box and the pitch comes
+   *   out too large.
+   * ⚠ The two counts must be one odd, one even: the board's brickwork offset comes
+   *   from the rows differing by one pitch and each centring itself.
    * ------------------------------------------------------------------- */
-  var PACK_BAND_TILT = 6.556;   // deg，与 .gb-pack-band 的 rotate 保持一致
+  var PACK_BAND_TILT = 6.556;   // deg, must match .gb-pack-band's rotate
 
   var packBand = {
     init: function () {
@@ -479,26 +500,28 @@
     fill: function () {
       var seed = this.rows[0].firstElementChild;
       if (!seed) return;
-      /* ⚠ 量的必须是 <img> 不是 <picture>：站里 picture 一律 display:contents
-         （见 helpers 里那条规则），它自己没有盒子，offsetWidth 恒为 0，真正的
-         flex 项是里面那个 img。computed width 是求值后的 used value，比
-         offsetWidth 多带小数（388.25 vs 388），累到十几个袋子上差得出来。
-         也不能去读 --pack-w：自定义属性的 computed 是没求值的 clamp() 串。 */
+      /* ⚠ Measure the <img>, not the <picture>: picture is display:contents
+         site-wide, so it has no box and offsetWidth is always 0 — the flex item is
+         the img inside. computed width is the used value and carries the fraction
+         (388.25 vs 388), which adds up over a dozen packs. Reading --pack-w does
+         not work either: a custom property's computed value is the unevaluated
+         clamp() string. */
       var probe = (seed.querySelector && seed.querySelector("img")) || seed;
       var packW = parseFloat(window.getComputedStyle(probe).width) || probe.offsetWidth;
-      if (!packW) return;                    // 还没布局出来，等 resize 再来
+      if (!packW) return;                    // not laid out yet; the resize pass will catch it
       var gap = parseFloat(window.getComputedStyle(this.rows[0]).columnGap) || 0;
       var pitch = packW + gap;
       if (pitch <= 0) return;
 
-      // 斜着铺，水平方向要多盖住转过去的那两角；+2 保证两侧一定被裁掉、
-      // 不会露出排头排尾（稿里就是被裁的）
+      // Running diagonally, the horizontal run has to cover the rotated corners;
+      // +2 guarantees both ends stay clipped, as the board has them
       var span = window.innerWidth / Math.cos(PACK_BAND_TILT * Math.PI / 180);
       var base = Math.ceil(span / pitch) + 2;
-      /* 第一行钉成偶数，跟原来写死的 10 / 11 相位一致：两行都靠 align-items:center
-         居中，偶数行的中线落在两个袋子中间那道缝上、奇数行落在正中那个袋子上，
-         错开的正好是半个节距。只保证「一奇一偶」是不够的 —— 若算出 5 / 6，
-         错位量虽然还是半个节距，但两行的角色对调了，砖缝跟稿里反过来。 */
+      /* Row one is pinned to an even count, matching the old hard-coded 10 / 11
+         phase: both rows centre, so an even row's centre line lands on the seam
+         between two packs and an odd row's on a pack. "One odd, one even" alone is
+         not enough — 5 / 6 keeps the half-pitch offset but swaps the roles and the
+         brickwork comes out mirrored. */
       if (base % 2) base++;
 
       for (var i = 0; i < this.rows.length; i++) this.setCount(this.rows[i], base + i);
@@ -513,14 +536,16 @@
   };
 
   /* ---------------------------------------------------------------------
-   * accordion — 同组只开一项（任务文档第 4 条）。
+   * accordion — one open item per group.
    *
-   * 主力是原生的 <details name="…">：同名的一组里，浏览器自己保证只有一项展开，
-   * 键盘、a11y 树、无 JS 都不受影响（Chrome 120+ / Safari 17.2+ / Firefox 130+）。
-   * 这里只补老浏览器 —— 它们把 name 当无关属性忽略，于是能同时展开好几项。
+   * Native <details name="…"> does the work: the browser keeps one item open per
+   * name, and keyboard, the a11y tree and the no-JS case are unaffected
+   * (Chrome 120+ / Safari 17.2+ / Firefox 130+). This only covers older browsers,
+   * which ignore name as an unknown attribute and open several at once.
    *
-   * 不做特性检测：支持的浏览器里别的项早已被自己关掉，这段循环等于空转；
-   * 而 `'name' in HTMLDetailsElement.prototype` 在部分版本上会误判成支持。
+   * No feature detection: where it is supported the others are already closed and
+   * this loop is a no-op, while `'name' in HTMLDetailsElement.prototype` reports
+   * support on some versions that do not have it.
    * ------------------------------------------------------------------- */
   var accordion = {
     init: function () {
@@ -594,7 +619,7 @@
       document.documentElement.style.setProperty("--scrollbar-w", scrollbarW + "px");
       document.documentElement.classList.add("is-modal-open");
       document.body.classList.add("is-modal-open");
-      // 页面已被锁住，Lenis 再跑就是空转；停掉它弹窗正文才滚得动
+      // The page is locked, so Lenis has nothing to do; stopping it lets the modal body scroll
       smoothScroll.pause();
       var first = el.querySelector(FOCUSABLE);
       if (first) first.focus();
@@ -930,18 +955,20 @@
   /* ---------------------------------------------------------------------
    * gallery — thumbnail rail driving the main stage.
    *
-   * 一次只出一张，切换是淡入（任务文档第 3 条）。原来是 scroll-snap 滚动条，
-   * 一次甩动能跨好几张、切换是位移。现在 slide 全部叠放，只有 .is-active
-   * 那张不透明；索引是这里的一个变量，不再从 scrollLeft 反推。
+   * One slide at a time, cross-faded. It used to be a scroll-snap rail where a
+   * flick could cross several slides and the change was a shift. Slides are
+   * stacked now and only .is-active is opaque; the index is a variable here rather
+   * than something inferred from scrollLeft.
    *
-   * 「每次只能滑动一张」= 一次手势只走 ±1，跟拖了多远无关 —— 拖 40px 和拖
-   * 400px 都只翻一张。到头就停，不回绕（这是产品图库不是轮播）。
+   * "One slide per gesture" means +/-1 regardless of distance — 40px and 400px both
+   * advance one. It stops at the ends and does not wrap (a product gallery, not a
+   * carousel).
    *
-   *   [data-gallery]        外壳
-   *     [data-gallery-thumbs] 缩略图列
-   *       [data-gallery-go="N"] 跳到第 N 张
-   *     [data-gallery-track]  舞台
-   *       [data-gallery-slide]  每一张
+   *   [data-gallery]        shell
+   *     [data-gallery-thumbs] thumbnail column
+   *       [data-gallery-go="N"] jump to slide N
+   *     [data-gallery-track]  stage
+   *       [data-gallery-slide]  one slide
    * ------------------------------------------------------------------- */
   var gallery = {
     init: function () {
@@ -974,7 +1001,7 @@
           if (on) { thumbs[j].setAttribute("aria-current", "true"); }
           else { thumbs[j].removeAttribute("aria-current"); }
         }
-        // 缩略图列自己也会滚（桌面竖向、窄屏横向），把当前那张带进视野
+        // The thumbnail rail scrolls too (vertical on desktop, horizontal when narrow)
         if (thumbs[idx] && thumbs[idx].scrollIntoView) {
           try { thumbs[idx].scrollIntoView({ block: "nearest", inline: "nearest" }); } catch (e) {}
         }
@@ -988,8 +1015,8 @@
         })(thumbs[i]);
       }
 
-      // 手势：一次只走一张。用 pointer 事件而不是 touch —— 触控板和鼠标拖动
-      // 也要能翻，而 pointerType 在这里不需要区分。
+      // One slide per gesture. Pointer events rather than touch, so trackpad and
+      // mouse drags work too; pointerType does not matter here.
       var x0 = null, y0 = null;
       stage.addEventListener("pointerdown", function (e) {
         x0 = e.clientX; y0 = e.clientY;
@@ -998,7 +1025,7 @@
         if (x0 === null) { return; }
         var dx = e.clientX - x0, dy = e.clientY - y0;
         x0 = y0 = null;
-        // 纵向为主的手势是在滚页面，不是在翻图
+        // A mostly-vertical gesture is scrolling the page, not changing slides
         if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) { return; }
         show(idx + (dx < 0 ? 1 : -1));
       }, { passive: true });
@@ -1009,7 +1036,7 @@
         else if (e.key === "ArrowLeft") { show(idx - 1); e.preventDefault(); }
       });
 
-      // 首屏对齐：HTML 里首张已带 is-active，这里只把缩略图的高亮补上
+      // First paint: the markup already has is-active on slide one, so only sync the thumbs
       for (var m = 0; m < thumbs.length; m++) {
         var on2 = m === idx;
         thumbs[m].classList.toggle("is-active", on2);
@@ -1050,36 +1077,37 @@
   };
 
   /* ---------------------------------------------------------------------
-   * smoothScroll — 全站平滑滚动（任务文档第 1 条）。用 Lenis 1.3.11（MIT），
-   * 文件已 vendored 到 assets/lenis.min.js，没有构建步骤，改版本＝换那个文件。
+   * smoothScroll — site-wide smooth scrolling on Lenis 1.3.11 (MIT), vendored to
+   * assets/lenis.min.js. No build step; changing version = replacing that file.
    *
-   * 为什么用插件而不是自己写阻尼：手写那版在鼠标滚轮下没问题，但**触控板**
-   * 的 wheel 事件是操作系统已经加过惯性的高频流，再叠一层阻尼会糊成拖尾。
-   * 归一化不同输入源（滚轮 / 触控板 / 精密滚轮 / deltaMode 三种单位）正是
-   * Lenis 主要在解决的事，而这一点在无头浏览器里验不出来
-   * （见 memory headless-chromium-probe-limits：mouse.wheel ≠ 真机）。
+   * Why a library rather than hand-rolled damping: the hand-rolled version was
+   * fine under a mouse wheel, but a TRACKPAD's wheel events are a high-frequency
+   * stream the OS has already added inertia to, and a second layer of damping
+   * smears into a trail. Normalising input sources (wheel / trackpad / precision
+   * wheel / three deltaMode units) is most of what Lenis does, and none of it can
+   * be verified headless (mouse.wheel is not a real device).
    *
-   * ⚠ 必须配 html{scroll-behavior:auto}。Lenis 内部靠 window.scrollTo 落位，
-   *   而按 CSSOM-View，scrollTo 是按元素的 scroll-behavior 执行的 —— CSS 那边
-   *   若是 smooth，就变成「平滑里再套一层平滑」，页面会飘。
-   *   老教程里那条 `.lenis.lenis-smooth{scroll-behavior:auto!important}` 保险丝
-   *   **自 Lenis 1.3 起已失效**（不再输出 lenis-smooth 类），指望不上。
-   *   见 memory scroll-behavior-smooth-vs-scrolltrigger。
+   * ⚠ Requires html{scroll-behavior:auto}. Lenis lands with window.scrollTo, and
+   *   per CSSOM-View scrollTo obeys the element's scroll-behavior — smooth in CSS
+   *   makes it smooth inside smooth and the page drifts. The old
+   *   `.lenis.lenis-smooth{scroll-behavior:auto!important}` fuse stopped working in
+   *   Lenis 1.3 (the class is no longer emitted).
    *
-   * 三个必须处理的边界：
-   *   1. 自己能滚的容器（缩略图竖轨、导航抽屉、营养表弹窗正文）要挂
-   *      data-lenis-prevent，否则滚轮会穿透去滚页面。**每加一个
-   *      overflow-y:auto 的容器就要在 PREVENT 里登记**，font-check.html
-   *      有一条自检在盯这件事。
-   *   2. 弹窗打开时 lenis.stop()，交还原生 —— 页面已被 is-modal-open 锁住，
-   *      弹窗正文才滚得动。modal.open/close 里调 pause()/resume()。
-   *   3. 触摸不接管（syncTouch 默认 false）：真机原生惯性比任何模拟都好，
-   *      接管 touch 是无障碍上的倒退。
+   * Three edges that have to be handled:
+   *   1. Anything that scrolls itself (thumbnail rail, nav drawer, the nutrition
+   *      table's body) needs data-lenis-prevent, or the wheel falls through to the
+   *      page. REGISTER EVERY NEW overflow-y:auto CONTAINER IN PREVENT —
+   *      font-check.html has a probe watching for this.
+   *   2. lenis.stop() while a modal is open, handing back to native — the page is
+   *      already locked by is-modal-open and the modal body has to scroll.
+   *      modal.open/close call pause()/resume().
+   *   3. Touch is left alone (syncTouch defaults to false): native inertia beats
+   *      any simulation and taking it over is an accessibility regression.
    *
-   * 关掉：给 <html> 加 data-no-smooth；prefers-reduced-motion 下自动不启用。
+   * To disable: data-no-smooth on <html>; prefers-reduced-motion skips it.
    * ------------------------------------------------------------------- */
   var smoothScroll = {
-    // 站内每一个 overflow-y:auto 的容器都要在这里登记
+    // Every overflow-y:auto container on the site has to be registered here
     PREVENT: ".gb-product__thumbs, .gb-header__panel, .gb-nl-panel__body",
 
     lenis: null,
@@ -1087,7 +1115,7 @@
     init: function () {
       var root = document.documentElement;
       if (root.hasAttribute("data-no-smooth")) { return; }
-      if (typeof Lenis !== "function") { return; }   // 插件没加载就走原生，不报错
+      if (typeof Lenis !== "function") { return; }   // library absent: native scrolling, no error
       if (window.matchMedia &&
           window.matchMedia("(prefers-reduced-motion: reduce)").matches) { return; }
 
@@ -1098,7 +1126,7 @@
 
       this.lenis = new Lenis({
         duration: 1,
-        // easeOutExpo：起步快、尾巴长，是「顺滑」而不是「粘手」的关键
+        // easeOutExpo: quick start, long tail — the difference between smooth and sticky
         easing: function (t) { return t === 1 ? 1 : 1 - Math.pow(2, -10 * t); },
         smoothWheel: true,
         syncTouch: false,
@@ -1108,18 +1136,19 @@
       this.anchors();
     },
 
-    /* 站内锚点。不开 Lenis 自带的 anchors：本站有 70 个 href="#" 的占位链接，
-       交给它有把页面拉回顶部的风险。这里逐条守卫后再自己送进 lenis.scrollTo。 */
+    /* In-page anchors. Lenis's own anchor handling is off: the site has 70
+       href="#" placeholders and it could pull the page back to the top. Guarded
+       here, then handed to lenis.scrollTo. */
     anchors: function () {
       var self = this;
       document.addEventListener("click", function (e) {
         var a = e.target.closest && e.target.closest('a[href^="#"]');
         if (!a) { return; }
         var hash = a.getAttribute("href");
-        if (!hash || hash === "#") { return; }              // 占位链接
+        if (!hash || hash === "#") { return; }              // placeholder link
         if (a.pathname !== location.pathname || a.origin !== location.origin) { return; }
         var t;
-        try { t = document.querySelector(hash); }           // hash 是数据不是选择器
+        try { t = document.querySelector(hash); }           // hash is data, not a selector
         catch (err) { return; }
         if (!t) { return; }
         e.preventDefault();

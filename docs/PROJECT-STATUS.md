@@ -67,7 +67,7 @@ Homepage 有 3 处 mobile 字号是凭手感缩的（已修）。判据是把每
 | Science 三张 stat 卡 | 三张同一句占位 | 三段各不相同的真文案 | 用手机的文案；数值仍取 95%（桌面 + homepage 一致，手机的 50% 判为占位残留） |
 | Science 成分区收尾 | 「Shop Now」按钮，标题 Heading | 四行手风琴，标题 Just the necessities | 两套都做，按断点切换 |
 | Science nutrient 卡 | 3 张 | 4 张 | 做 3 张，不造第 4 张 |
-| How Gumi Works 副标 | This is a placeholder subheading. | 真文案，且是珊瑚红 #dd655e | 文案用手机的，颜色各按各稿 |
+| How Gumi Works 副标 | This is a placeholder subheading. | 真文案，且是珊瑚红 #dd655e | **2026-08-25 需求方定：用桌面的占位串**（第三十轮改，此前用手机的真文案），颜色仍各按各稿 |
 
 ### 第十四轮新增的待决事项
 
@@ -96,7 +96,10 @@ Homepage 有 3 处 mobile 字号是凭手感缩的（已修）。判据是把每
    改成原生 `<details>` 是为了让开合不依赖 JS；Firefox / Safari 现在是瞬开瞬收。
 8. **Shipping 桌面稿缺失** — 只有手机稿，**已按 Privacy Policy 的文本页布局实现**，需确认
 9. **PDP 产品图 sticky 的吸顶偏移量** — 批注只说要 sticky，没给数值，现用 `top: 24px`
-10. **营养标签弹窗开合时长**（0.4s）与曲线 — 稿中没有，是自定值（第三轮遗留）
+10. **营养标签弹窗开合时长**（0.4s）与曲线 — 稿中没有，是自定值（第三轮遗留）。
+    ⚠ **出现方式已经反转过两次**：批注 401:31227 原本要「底部上滑」→ 第二十八轮按
+    「所有弹窗只淡入淡出」全撤 → 第三十轮按需求方点名，**只在手机端（≤767）改回上滑**，
+    桌面与另外两个弹窗仍是纯淡入淡出。再动之前先读这一条。
 11. **平板（576–1280）没有设计稿**（第十六轮）—— 需求方 2026-08-21 把断点定成
     手机 ≤575 / 平板 576–1280 / PC ≥1281，但 Figma 只有 390 与 1440 两张板。
     这一档现在所有数值都是两张稿之间的**线性插值**（`fluid()`，576 处等于手机值、
@@ -137,6 +140,14 @@ Gumi-Brand/
 ```
 npx sass@1.77.8 assets/customstyle.scss assets/customstyle.css --no-source-map
 ```
+
+### 代码注释（2026-08-25 第三十轮需求方定）
+
+- **一律英文，且极简**：只写「什么会坏、为什么」，不写推导过程与轮次叙事——
+  那些进 [CHANGELOG.md](CHANGELOG.md)。判据是「将来别人读到这行，会不会因此少踩一次坑」，
+  答案是否就删掉。
+- ⚠ `font-check.html` 是**开发自检页**（标题写着「开发用，不属于站点」），
+  页内中文是 UI 文案不是代码注释，本轮保留；要不要一起翻等需求方确认。
 
 ### 数值来源
 - 所有数值 token（font-size / line-height / letter-spacing / 颜色 / padding / gap / radius / shadow）
@@ -409,6 +420,7 @@ npx sass@1.77.8 assets/customstyle.scss assets/customstyle.css --no-source-map
 | 2026-08-24 | **对话追加 7 项（第二十二轮）**：`gb-stats__bear` 的浮动效果收窄到内部图片（新增 `.gb-stats__bear-art` 包裹层，四支箭头不再跟着飘）；packed 区 sub-title 补 `align-self:center`（上轮 packed 改 flex-start 连带带偏了标题）；stats__note / highlight-card__title / footer-cta 三处间距值订正。 |
 | 2026-08-24 | **撤掉 gb-sec-edge 机制 + 补 stats 波浪右侧小熊（第二十三轮，用户定）**：全站 14 个模块的波浪尺寸不再靠 section 上的 `gb-sec-edge`/`gb-sec-edge--lg` 传值，改成直接把 `var(--sc-h)`/`var(--sc-lg-h)` 加进各自的 `padding-bottom`（`.gb-scallop`/`.gb-scallop--lg` 本来就自给自足）；新增 4 个正交 `--lg` 修饰类处理「同一 class 不同页面要求不同瓦片」的情况。30 处波浪逐一核对定位上下文、贴边、宽度、间距不变量全部通过；踩到并修复一个批量替换脚本的跨规则误传 bug（8 处被错误加上 `--lg`）。另外把 `.gb-stats` 波浪右侧一直缺失的小熊补上（`images/stats-bear-deco.png`，从 `bear-gummy-glow.png` 裁边而来，坐标按设计截图反推——本地没有这个节点的 Figma 数据；因 `.gb-stats` 无 overflow 保护，位置比设计稿的截图位置上移了一截以避免被下一个 section 盖住下半截）。详见 CHANGELOG 第二十三轮，含遗留的架构文档更新。 |
 | 2026-08-24 | **弹窗滚动锁定横向抖动修复 + nutritional-label 数值订正（第二十四轮）**：`html/body.is-modal-open{overflow:hidden}` 关掉滚动条后视口凭空变宽、内容跟着跳一下——`main.js` 加锁前先测滚动条宽度写成 `--scrollbar-w`，CSS 补 `padding-right: var(--scrollbar-w,0px)` 吃回来，解锁自动归零；这个坑不止这一个项目踩过，已写进 `~/.claude/CLAUDE.md` 通用铁律第 14 条备用。另去掉 `.gb-nl-panel__close` hover 时的 SVG 旋转；`.gb-nl-pane`/`.gb-nl-tab::after`/`.gb-nl-table` 共 6 处数值订正。详见 CHANGELOG 第二十四轮。 |
+| 2026-08-25 | **任务文档两批共 24 项（第三十轮）**：查清「gb-nl-modal 的波浪」实指首单折扣弹窗——桌面锯齿线原来摆在图片列正中、离接缝 260px，手机端底部那道扇贝边（第二十七轮遗留）补上；营养标签弹窗**手机端改回底部上滑**（对第二十八轮的定向反转，桌面不动）；三处弧形文字从近似正圆还原成设计的椭圆并改成桌面/手机各一个 SVG；promo 卡「每行首字母被啃掉」查明是 `.gb-promo-card__lip` 的绘制顺序压过文案、不是 `flex: 1 1 50%`；`body` 的全局 `letter-spacing` 删掉（843 个受影响元素归 8 组、逐组比 Figma 均为 ls 0）；hero 与另外 5 个模块的响应式左右留白统一走 `--pad-x`；手机端 hero 小熊移出文档流；页头元素依次入场（`--line-base`）；富文本改成编辑器式折叠 margin 并补 ul/ol/blockquote；约 20 处数值；全站注释改写为极简英文。判据 `tools/r31check.py` 51 条断言全过 + `rwd.py` 12×14 全绿 + 入场/遮挡/字距三个专项探针。详见 CHANGELOG 第三十轮 |
 | 2026-08-20 | **缓存版本号 + 构建自检**：反馈「改动没落实」，服务器侧查证文件全对、真因是 `file://` 预览把无版本号的 css/js/woff2 缓存住了。给引用与字体 url 加 `?v=$build`，`font-check.html` 扩成构建自检（版本号 + 10 条功能探针 + 字体表）。详见 CHANGELOG 第九轮 |
 ## 阻塞
 

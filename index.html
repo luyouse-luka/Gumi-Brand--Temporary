@@ -6,7 +6,7 @@
 <title>Gumi — Eating your greens never felt this good</title>
 <meta name="description" content="Real fruit, real veg, real vitamins, hiding in a gumi bear.">
 <script>(function(h){h.classList.add("js");function u(){window.gumi||h.classList.remove("js")}addEventListener("load",u);setTimeout(u,4000)})(document.documentElement)</script>
-<link rel="stylesheet" href="assets/customstyle.css?v=20260825-r30">
+<link rel="stylesheet" href="assets/customstyle.css?v=20260825-r31">
 <noscript><style>.wowo{opacity:1 !important}</style></noscript>
 </head>
 <body>
@@ -440,9 +440,9 @@
           </picture>
         </div>
         <div class="gb-pack-band wowo fadeIn" aria-hidden="true" data-pack-band>
-          <!-- 每行只写两个：铺满屏幕所需的个数由 main.js 的 packBand 按当前节距
-               算出来再克隆补齐（同 .gb-bear-meter 的做法）。原来两行写死 10 / 11 个，
-               在 1440 上要铺 4385px、在 390 上要铺 2160px，两端都是大幅过量。 -->
+          <!-- Two per row; main.js/packBand computes how many the current pitch needs
+               and clones the rest. Hard-coding 10 / 11 meant 4385px of run at 1440
+               and 2160px at 390 — far more than either viewport uses. -->
           <div class="gb-pack-band__row">
             <picture>
               <source srcset="images/product-pack.webp" type="image/webp">
@@ -522,45 +522,45 @@
             <details class="gb-product__acc-item" name="gb-spec">
               <summary class="gb-product__acc-row">Why Gumi<span class="gb-acc-icon" aria-hidden="true"></span></summary>
               <div class="gb-acc-body">
-                <!-- TODO 待客户文案：设计组件 324:53921 里这行就是占位 "Text here" -->
+                <!-- TODO client copy: component 324:53921 ships this line as "Text here" -->
                 <p class="gb-acc-body__text">Text here</p>
-                <!-- TODO client image：组件里的 image 15 是灰色占位 -->
+                <!-- TODO client image: the component's "image 15" is a grey placeholder -->
                 <div class="gb-acc-body__media"></div>
               </div>
             </details>
             <details class="gb-product__acc-item" name="gb-spec">
               <summary class="gb-product__acc-row">Ingredients &amp; Allergies<span class="gb-acc-icon" aria-hidden="true"></span></summary>
               <div class="gb-acc-body">
-                <!-- TODO 待客户文案：设计组件 324:53921 里这行就是占位 "Text here" -->
+                <!-- TODO client copy: component 324:53921 ships this line as "Text here" -->
                 <p class="gb-acc-body__text">Text here</p>
-                <!-- TODO client image：组件里的 image 15 是灰色占位 -->
+                <!-- TODO client image: the component's "image 15" is a grey placeholder -->
                 <div class="gb-acc-body__media"></div>
               </div>
             </details>
             <details class="gb-product__acc-item" name="gb-spec">
               <summary class="gb-product__acc-row">Science<span class="gb-acc-icon" aria-hidden="true"></span></summary>
               <div class="gb-acc-body">
-                <!-- TODO 待客户文案：设计组件 324:53921 里这行就是占位 "Text here" -->
+                <!-- TODO client copy: component 324:53921 ships this line as "Text here" -->
                 <p class="gb-acc-body__text">Text here</p>
-                <!-- TODO client image：组件里的 image 15 是灰色占位 -->
+                <!-- TODO client image: the component's "image 15" is a grey placeholder -->
                 <div class="gb-acc-body__media"></div>
               </div>
             </details>
             <details class="gb-product__acc-item" name="gb-spec">
               <summary class="gb-product__acc-row">Directions<span class="gb-acc-icon" aria-hidden="true"></span></summary>
               <div class="gb-acc-body">
-                <!-- TODO 待客户文案：设计组件 324:53921 里这行就是占位 "Text here" -->
+                <!-- TODO client copy: component 324:53921 ships this line as "Text here" -->
                 <p class="gb-acc-body__text">Text here</p>
-                <!-- TODO client image：组件里的 image 15 是灰色占位 -->
+                <!-- TODO client image: the component's "image 15" is a grey placeholder -->
                 <div class="gb-acc-body__media"></div>
               </div>
             </details>
             <details class="gb-product__acc-item" name="gb-spec">
               <summary class="gb-product__acc-row">Benefits<span class="gb-acc-icon" aria-hidden="true"></span></summary>
               <div class="gb-acc-body">
-                <!-- TODO 待客户文案：设计组件 324:53921 里这行就是占位 "Text here" -->
+                <!-- TODO client copy: component 324:53921 ships this line as "Text here" -->
                 <p class="gb-acc-body__text">Text here</p>
-                <!-- TODO client image：组件里的 image 15 是灰色占位 -->
+                <!-- TODO client image: the component's "image 15" is a grey placeholder -->
                 <div class="gb-acc-body__media"></div>
               </div>
             </details>
@@ -924,7 +924,7 @@
         </div>
       </div>
     </div>
-  <script src="assets/lenis.min.js?v=20260825-r30"></script>
-  <script src="assets/main.js?v=20260825-r30"></script>
+  <script src="assets/lenis.min.js?v=20260825-r31"></script>
+  <script src="assets/main.js?v=20260825-r31"></script>
 </body>
 </html>

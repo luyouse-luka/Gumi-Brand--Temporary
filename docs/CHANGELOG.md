@@ -2809,3 +2809,238 @@ science 两页判定 `.gb-page-hero__lead--lg` 的 16→18 是假信号，全站
 改  11 个页面 .html           ?v= → r30
 改  font-check.html           EXPECT_BUILD → r30
 ```
+
+---
+
+## 2026-08-25 第三十轮：任务文档两批共 24 项（`$build` = `20260825-r31`）
+
+根目录 `修改任务文档.txt` 的两批需求。第一批的断点改制部分已由第二十九轮完成，
+本轮做掉其余全部条目 + 第二批 1~14 条。动手前先跟需求方确认了三处含糊的地方，
+答复记在下面各条里。
+
+### 改了什么
+
+**弹窗 / 波浪**
+
+1. **「gb-nl-modal 的波浪」查证后指的是首单折扣弹窗**（需求方确认）。营养标签弹窗
+   四张稿（336:31534 桌面 / 336:28414 手机）的头身接缝是直线，节点树里没有任何
+   scallop 图层，现有实现同样没有——不是漏做。真正错的是 `.gb-promo-modal`：
+   - **桌面锯齿分隔线整条摆错了位置**。285:19373 把 126 宽的 "Union" 放在面板
+     x 489（离 531 的接缝还差 42），圆心因此落在 552，只有左半边露在
+     `overflow:hidden` 的图片列里 —— 凸起顶点 489、谷 518。旧写法是
+     `left:50%` + `translateX(-50%)`，即**在图片列正中**，离接缝 260px，
+     整条波浪飘在一片空米色里。改成 `left: calc(100% - 42px)`。
+   - **手机端底部那道背景波浪补上**（第二十七轮遗留的「475×333 Union 辨认不出效果」）。
+     它不是「白色色块」：285:18988 的面板底色 `#f5f1e9` 一直铺到图片区往下 71px，
+     再沿一道扇贝边交给 `#faf9f8`。六个 185.3 的圆、节距 144.85 —— 半径 : 节距
+     = 0.6407，跟全站 `.gb-scallop` 是同一族，所以直接读 `--sc-w` 就落在稿值上，
+     不用第二套数字。实现是 `.gb-promo-panel__art` 的 `::before`（弧带）+ `::after`
+     （实底），小熊给 `z-index: 1` 压在上面。
+
+2. **营养标签弹窗手机端改回底部上滑**（第二批第 1 条）。⚠ **这是对第二十八轮的反转**：
+   那一轮按需求方「所有弹窗只淡入淡出」把三个弹窗的位移全撤了，本轮需求方点名
+   营养标签在手机端要「从屏幕底部滑出、原路滑回」。**只反转 narrow（≤767）这一档**，
+   桌面与另外两个弹窗仍是纯淡入淡出。回退方式：删掉 `.gb-nl-panel` 里那个
+   `@include narrow` 的 transform 块即可，其余一个字没动。
+   进退场沿用第十九轮的非对称时长（进 0.4s out 曲线 / 退 0.55s in-out）。
+   `prefers-reduced-motion` 下退回淡入淡出。
+
+**弧形文字（第二批第 3 条）**
+
+3. **三处弧形文字从「近似正圆」还原成设计的椭圆**，并且**两块板各出一个 SVG**。
+   全站弧字实际上是两族，一族一个椭圆：桌面 289×132（rx 144.5 / ry 66）、
+   手机 237.05×131.41（118.5261 / 65.7047），而且外框宽度也不同 —— 一个 viewBox
+   装不下两族（把桌面的缩到手机宽度，弧会变平、字也跟着缩水）。所以标记里两个
+   `<svg>`，`.gb-arc-text--pc` / `--mob` 按断点切换：
+   | 组件 | 桌面框 | 手机框 |
+   |---|---|---|
+   | `.gb-promo-card__arc`（OUR PROMISE） | 452×34 | 278×29 |
+   | `.gb-dosed__arc`（THE SCIENCE / THE RITUAL） | 231×31 | 278×29 |
+   | `.gb-cta-band__arc`（GET HEALTHY） | 452×28 | 229×29 |
+   三处原来都写着 `A 338 338`，同样跨度只落 11px 而设计落 20px。
+   顺带 `.gb-promo-card__main` 那条 `margin-top: -105px` 删掉了 —— 它是为了把文案
+   拉回旧的 158 高弧框底下，现在弧框就是稿里的 34，`__stack` 的 24 gap 就是全部距离。
+   ⚠ `.gb-footer-cta__arc`（11 页）仍是单 viewBox，手机端沿用桌面椭圆缩放，
+   与第二十一轮的遗留同一条，本轮没动。
+
+**promo 卡：`flex: 1 1 50%` 的真凶不是 padding（第二批第 2 条）**
+
+4. 实测 768/900/1024/1200/1440 五档，两半**始终精确 50/50**，padding 也与稿一致
+   （48/56/48/48，内容 427 = 531−48−56）。真正的症状是 **768~1100 之间每行第一个
+   字母被啃掉**（"We got sick" 渲染成 "Ve got sick"，白卡则是右侧被啃）。
+   根因是绘制顺序：`.gb-promo-card__lip` 是图片半的**绝对定位子元素**，因此在最后
+   一个绘制阶段落笔，压在文案半的**流内文字**之上；lip 盒宽 126、探进文案列 63px，
+   而文案列在那个宽度区间最窄。给 `.gb-promo-card__body` 加
+   `position: relative; z-index: 1` 即可 —— 半宽本来就是 50%，被吃掉的是绘制层级。
+
+**字距（第二批第 6 条）**
+
+5. **`body { letter-spacing: -0.32px }` 整条删掉**。稿里字距并不统一，全局给一个值
+   等于把所有「设计是 0」的地方悄悄改窄。删之前先做全站快照（11 页 × 2 档 = 4400 个
+   文字元素），删之后再做一遍，**只有 843 个元素、8 组 class 变化**，逐组回查 Figma：
+   | 变的东西 | 个数 | 设计 ls | 结论 |
+   |---|---|---|---|
+   | 营养表 `td/th`（12.9px） | 790 | 0 | 改对了 |
+   | `.gb-nl-table__sub` | 30 | 0 | 改对了 |
+   | `.gb-header__cta`「Shop now」16/500 | 11 | 0 | 改对了 |
+   | `.gb-vs__label` 桌面 16/500 | 5 | 0 | 改对了 |
+   | get-in-touch 同意行 16/400 | 4 | 0 | 改对了 |
+   | `.gb-hero__btn` / `.gb-btn--xl` 18/500 | 3 | 0 | 改对了 |
+   八组全部是设计 ls = 0，即这一条改动没有引入任何偏差。
+
+**响应式（第一批）**
+
+6. **hero 左右留白 ≤1380 交回版心 `--pad-x`**（需求方选定）。原来是自己一套
+   110/60/40/20，与 header 在 1024 处差 10px、在 1200 处差 10.5px。现在
+   ≥1381 保留稿里的 110，其余全站同宽。同时把 `tight`/`stack` 里携带的
+   `padding` 拆成 `padding-block`，不再和 `tablet` 抢同一个属性。
+7. **其余五个模块的响应式左右留白一起统一**：`.gb-page-hero__inner` /
+   `.gb-compare__inner` / `.gb-dosed__inner` / `.gb-ingredients__inner` /
+   `.gb-faq-image__inner` 的 `tight`/`stack`/`narrow` 档从写死的
+   `$pad-x-desktop/$pad-x-tablet/$pad-x-mobile` 换成 `var(--pad-x)`。
+   PC 档各自的稿值（189/110/95/188）不动。
+8. **手机端 hero 小熊移出文档流**（第一批最后一条）。228:5932 里 "Hovering Bear/Bear 2"
+   是 hero **下面的一个独立块**（390×496），熊的 432.74×570.40 画框从 hero 底内距上方
+   63px 起、往下探出 507。原来熊在流里，浅绿底跟着一路铺到熊脚下，比稿低了约 590px。
+   现在 `@include narrow` 下 `.gb-hero__art` 绝对定位到 `top: calc(100% - 63px)`，
+   `.gb-hero` 用 `margin-bottom: calc(496px - var(--sc-lg-h))` 给它让出位置。
+   另：`.gb-hero__text` 补 `max-width: 575px`、`.gb-hero__btn` 补 `margin: 0 auto`。
+9. **卡片一列时去掉最大宽度**（`.gb-science__cards` / `.gb-nutrition__cards` 的
+   `narrow` 档 `max-width: 480px`）。
+10. **`.gb-footer__link-groups` 换行后靠左**。`.gb-footer__middle` 在 ≤1023 会换行，
+    这一块独占一行时 `justify-content: flex-end` 把它顶到右缘、左边空出约 260px。
+    加 `@include stack { justify-content: flex-start; }` —— 1024 那一档盒子正好被
+    内容填满，所以那里是空操作。
+
+**页头元素依次出现（第二批第 10 条）**
+
+11. `lineReveal` 新增 `sequence()`：`[data-line-sequence]` 容器内的每个
+    `[data-line-reveal]` 拿到一个 `--line-base`，等于它前面所有 host 的行数之和，
+    CSS 的 `animation-delay` 改成 `calc((var(--line-base,0) + var(--line-i,0)) * 150ms)`。
+    于是标题播完接副标，而不是两段同时起跑。9 个页头都挂上了。
+    行数随宽度变，所以每次重新分行（首次 / 字体到位 / resize）后都要重跑一次。
+
+**一批数值 / 尺寸**
+
+12. `.gb-nl-tab` padding `9px 3px 11px`；`.gb-nav-card__tag` `1px 6px` + margin-bottom 10；
+    `.gb-icon-chevron` 补 transition（与抽屉同一档 0.35s，新增 `$t-panel`）；
+    `.gb-header` 补 `background-color` 过渡（原来 `.is-open` 一撤底色瞬间跳回，
+    而抽屉还有 0.35s 才收完）；`.gb-vs__row + .gb-vs__row` padding-top 13；
+    `.gb-vs__value` pc 档 padding-right 1；`.gb-footer-cta__text` margin-top 0；
+    `.gb-science--cream` padding-bottom 96（**它没有自己的波浪**，却在继承基础规则的
+    `calc(96px + var(--sc-lg-h))`，白留了一条大波浪的高度）；
+    `.gb-science--tight .gb-science__inner` gap 22；`.gb-faq-image__body`
+    `justify-content: flex-start`；`.gb-dosed__body` gap 34；`.gb-cta-band__head` gap 26；
+    `.gb-cta-band__content` padding-top 54；`.gb-faq--plain` padding-top 94 且首个
+    faq-item 去掉 padding-top / border-top；`.gb-acc-body` padding-top 10；
+    `.gb-acc-body__text` 改 PP Palma 18/28/−2%；`.gb-page-hero--center`
+    padding `64px 0 calc(70px + var(--sc-h))`；`.gb-field__phone select` padding-right 23；
+    `.gb-form__note` ls 0。
+13. **`.gb-reviews__disclaimer` 的 48px 从 margin-top 挪到 `.gb-testimonials` 的
+    margin-bottom**（需求方原话「给他上面的那个元素加 margin-b」）——
+    没有 testimonials 的 reviews 板块不该继承这段间距。
+14. **`.gb-vs__bear` 补上 −14.006° 倾斜**。341 那组的 relativeTransform
+    `[[.97027,.24203],[-.24203,.97027]]` 两块板都带，之前只把**旋转后的外接盒**
+    （202×173）当画框用、图正着放，所以既没倾斜又大了 16%。现在盒子换成画本身的
+    174.17×134.50，旋转交给 CSS，渲染出来的外接盒又回到 202×173。
+    left/top 取「外接盒中心 − 半个未旋转尺寸」（绕中心转，中心不动）。
+15. **`.gb-compare__row` 与 `.gb-compare__avatars` 拆开**：头像用 `1fr 96px 96px`
+    （稿里两张 96 在 319 / 423），对勾用 `1fr 109px 92px`（32 的图标圆心在
+    363.7 / 473.7）。那 3px 错位是稿自己的手摆，头像就在正上方，看得出来，所以照做。
+    手机档同理解出 `1fr 79.68px 62.44px`。
+16. **compare 的小熊头像太小**：稿里那格是 `scaleMode: STRETCH` + imageTransform
+    `sx 0.861042`，即方形裁切只取 1200 宽源图的 86.1%，画面比 `object-fit: contain`
+    （按宽度贴合）大 1/0.861042 = 1.16138 倍。加一个 `--bear` 修饰类做 `scale(1.16138)`，
+    源图左右各有约 350px 透明边距，放大不会裁到墨迹。
+17. **`.gb-dosed__title` 的描边在手机端偏细**：324:70523 是 30px 字配 15 的
+    OUTSIDE 描边（0.5em），而基础规则的 `0.4em` 继承下去只有 12px。`ink-outline()`
+    编译期就把 ~90 个偏移烤死了，`fluid()` 喂不进去，所以 narrow 与 tablet 都取 15px
+    （767/768 交接精确，1280→1281 是 15→16）。
+
+**富文本（第二批第 14 条）**
+
+18. `.gb-rich-text` 内部的 `__section` 包裹 div 全部拆掉（privacy 7 个 / shipping 3 个），
+    改成编辑器输出的扁平结构：`display: block` + 折叠 margin，`p` margin-bottom 20、
+    `h2/h3` margin-top 48（与上一段的 20 折叠成 48，不是叠加成 68）、
+    `h2` margin-bottom 20 / `h3` 12。实测间距 20 / 48 / 12，首尾无外溢。
+    并补上稿里没有但 CMS 随时会吐的 `ul` / `ol` / `li` / `blockquote` / `a` /
+    `strong` / `em` / `hr` / `img` / `figcaption` 样式。
+
+**文案 / 注释**
+
+19. how-gumi-works 的 `gb-page-hero__lead` 改成桌面稿的
+    `This is a placeholder subheading.`（第二批第 11 条）。
+    ⚠ 这是对 `docs/PROJECT-STATUS.md`「桌面稿与手机稿对不上」表格里那条
+    「文案用手机的」的**反转**，已同步改掉那张表。
+20. **注释清理**（第一批第 6 条）：`customstyle.scss` 457 行中文、`main.js` 89 行、
+    9 个页面 93 行，全部改写成极简英文；推导过程留在本文件。
+    超长英文块（断点表 / ink-outline / mask / scallop 几何 / pack band / hero 光晕 /
+    CTA 板）各砍掉 40~50%，只留「什么会坏、为什么」。
+    ⚠ `font-check.html` 没动 —— 它是开发自检页（标题就写着「开发用，不属于站点」），
+    里面的中文是**页面 UI 文案**不是代码注释，翻掉反而不好用。要一起改请说一声。
+
+### 判据
+
+- **`tools/r31check.py`（新）51 条 computed-style 定向断言全过**，每条都标了页面 + 宽度，
+  含反向断言（`.gb-vs__value` 的 padding-right 在 1024 必须是 0、
+  `.gb-arc-text--pc` 在 390 必须 `display:none`）。
+- `tools/rwd.py` 全站 12 页 × 14 档宽度：✅ 全绿。
+- **入场动效**：11 页 × 2 档滚一遍全页再等 2.2s，`[data-line-reveal]` 与 `.wowo`
+  没有一个卡在 opacity < 1；`--line-base` 在 9 个页头都按行数递增。
+- **遮挡探针（新写，一次性）**：对每个直接装文字的元素在墨迹范围内取 3 点做
+  `elementsFromPoint`，最上层若不是它自己/它的后代就报。8 档宽度 × 11 页，
+  排除吸顶栏与收起的抽屉、且只算「有不透明底色或是图形」的覆盖者之后，
+  只剩 3 条，逐条查证都是外接盒误报（图片透明边距）。
+  ⚠ 第一版没有这两条过滤，报出 588 种组合全是假阳性 —— 收起的抽屉里那些
+  `.gb-nav-card__*` 和被吸顶栏盖住的正文占了绝大多数。
+- **字距**：见上表，843 个受影响元素归为 8 组，逐组比 Figma 的 `letterSpacing`。
+- **弹窗轨迹**：390 档 `.gb-nl-panel` 的 transform 从 `translateY(686)` 走到 0、
+  关闭原路回到 686，opacity 恒 1；1440 档 transform 恒 `none`、opacity 在变。
+- **富文本**：`.gb-rich-text` 相邻子元素实测间距 P→P 20 / P→H2 48 / H2→P 20 /
+  P→H3 48 / H3→P 12，首个子元素上边距 0、末个下边距 0。
+- **promo 卡啃字**：900 档隐藏 `.gb-promo-card__lip` 后文字完整 → 证明是绘制顺序
+  而不是布局；加 `z-index` 后同一档截图逐字完整。
+- 弧形文字、折扣弹窗波浪、compare 头像、vs 小熊倾斜、hero 手机版式：与设计稿截图
+  逐一比对（本轮共 20 张对照图）。
+
+### 遗留
+
+- **`font-check.html` 仍是中文**（见上，开发自检页，等需求方确认要不要一起翻）。
+- **`.gb-footer-cta__arc` 的手机椭圆没做**：11 个页面用它，仍是「桌面 viewBox 缩到
+  237px」的近似，弧比稿平、字比稿小。跟第二十一轮那条遗留是同一件事，
+  要做就照本轮三处的双 SVG 写法补。
+- **`.gb-science--tight` 的 `__inner` gap 22 是需求方指定值**，324:56865 section 2 的
+  `itemSpacing` 是 48（与 section 1 相同）。稿值记在代码注释里。
+- **`.gb-page-hero--center.gb-page-hero--lg` 的 padding-bottom 仍是 96**：本轮只按
+  字面改了 `--center` 的 70，两个变体因此不再一致（how-gumi-works / our-story 用
+  `--lg`）。若 70 是对所有居中页头都成立的，`--lg` 那条要一起改。
+- **`.gb-dosed__arc` 桌面只有 THE RITUAL 的框**（231×31）：324:69636 里没有
+  THE SCIENCE 的弧字节点，两处目前共用同一个框。
+- 768 边界剩下的 `border-radius` 16→24 与若干 `gap` 跳变（第二十九轮遗留 ③）没动。
+- 300（FizzyLight）仍是试用装文件。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   nl-panel 手机上滑；promo-modal 分隔线归位 + 手机波浪；
+                              三处弧形文字改双 board SVG；promo-card body z-index；
+                              body 去 letter-spacing；hero 留白/手机小熊/按钮居中；
+                              5 个模块响应式留白改 --pad-x；footer link-groups 靠左；
+                              卡片 narrow 去 max-width；compare 网格拆分 + 熊放大；
+                              vs 小熊旋转；rich-text 改折叠 margin + 编辑器样式；
+                              约 20 处数值；新增 $t-panel / $bp-hero-gutter；
+                              全文注释改写为极简英文；$build → 20260825-r31
+改  assets/customstyle.css    编译产物
+改  assets/main.js            lineReveal 新增 sequence()（--line-base）；注释改写
+改  pdp.html                  promo-card 弧形文字双 SVG；?v= → r31
+改  how-gumi-works.html       dosed 弧形文字 ×2 双 SVG；页头副标改占位文案；?v=
+改  our-story.html / faq.html cta-band 弧形文字双 SVG；?v=
+改  science.html              compare 小熊头像加 --bear 修饰类；?v=
+改  privacy-policy.html / shipping.html
+                              rich-text 拆掉 __section 包裹层；?v=
+改  index.html / reviews.html / get-in-touch.html / referral.html
+                              page-hero__text 加 data-line-sequence；注释；?v=
+改  font-check.html           EXPECT_BUILD → r31
+新  tools/r31check.py         本轮 51 条 computed-style 断言
+新  tools/measure.py          临时探针：按宽度打印选择器的 computed 值与矩形
+```
