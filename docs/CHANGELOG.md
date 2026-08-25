@@ -2270,4 +2270,426 @@ Playwright 逐一读 computed style 核对，`.gb-nl-pane` 的 padding 合成后
 改  全部 11 页 + font-check   ?v() → r25
 改  ~/.claude/CLAUDE.md      通用铁律新增第 14 条：锁滚动条要补偿滚动条宽度
 ```
+
+---
+
+## 第二十五轮 — 小熊浮动范围恢复 + 补全「正文文字上滑」效果（2026-08-25）
+
+### 小熊浮动：推翻第十六/二十二轮的收窄，改「全站浮动，波浪上的除外」
+
+对话给的新规则：全站小熊图案恢复上下浮动，压在波浪形状上的除外。这是对第十六轮
+「浮动收归 stats」的**再次反转**，逐个按几何/历史核实后落地：
+
+- **hero 首图熊**：`.gb-float-art--still` → `.gb-float-art`，恢复浮动。
+  ⚠ 这条推翻的是第六轮**客户明确要求**「banner 保持静止」，已跟对话核实过、
+  对方确认要推翻，不是我自己的判断——接手的人如果又收到「banner怎么在动」的反馈，
+  这是已知的、双方确认过的取舍，不是回归。代价：这只熊是首页 LCP 元素，
+  进场时长从 `--still` 的 0.7s+0.2s≈0.9s 变回完整浮动版的 1.5s+0.5s=2.0s，
+  LCP 相应推迟。
+- **nutrition 散熊合成图**（`.gb-nutrition__bears`）：新增 `.gb-float-art`，
+  不挨任何波浪，直接扩围。
+- **保持静止（判定为「在波浪上」或另有历史原因，未动）**：
+  - 页脚 CTA 那对装饰熊（`.gb-deco-bear--a/--b`，11 页共用）——对话确认两只按一对
+    处理、都不浮动，尽管几何上只有 A 熊（`top:-100px`）真压在 mint→lime 波浪上，
+    B 熊（`top:408px`）其实不挨。
+  - stats 贴边熊（`.gb-stats__deco-bear`）——`top:89.5%` 卡在 `--cream-to-sand`
+    波浪转场正下方，判定为「在波浪上」。
+  - PDP「Us VS Them」小熊光晕（`.gb-vs__bear`）——对话确认保持静止：第四轮
+    changelog 明确记录过这只熊「稿中本来就没有浮动」，之前的浮动是挂错 class
+    的实现 bug，不是效果，恢复浮动=重新引入那个 bug，故不动。
+  - 头部导航卡片熊（`.gb-nav-card__art`，抽屉里的功能性图）、`.gb-bear-meter`
+    （science 卡里 100 个小熊图标拼的数据填充条）、`.gb-compare__avatar`（跟
+    非小熊图片 `others-bottles.png` 共用同一个 class 的对比头像）——判定为功能性/
+    数据可视化元素而非独立装饰画面，未纳入这次扩围，没有明确指示前不擅自动。
+
+### 补全「正文文字上滑」效果——第一轮标记「本轮未做」的那一半
+
+第一轮参考 cravburgers.shop 时其实调研到了两套文字入场机制，只落地了逐词乱转的
+那套（现在的 `.gb-pop-word`，只用在 4 个 STATISTICS 数字上），另一套「整行遮罩
+上滑」记在遗留里没做。对话这次点名要参考的正是这一套，重新核实过参考站源码
+（GSAP `SplitText {type:"lines", mask:"lines"}`）拿到精确参数：
+
+```
+duration 1.4s / ease power4.out（quintic，非字面的「power1」度数）
+stagger .15（150ms/行）/ y:100%→0%（相对行自身盒高，不是定值 px）
+ScrollTrigger {start:"top 95%", once:true}
+reduced-motion 降级：整体 opacity 0→1，0.4s，同样只播一次
+```
+
+新增：
+- `assets/customstyle.scss`：`--e-power4-out`（linear() 精确曲线，cubic-bezier
+  兜底）+ `.gb-line-mask`（overflow:hidden 遮罩）+ `.gb-line-mask__inner`
+  （承载 translateY 位移的行内容）+ `gm-line-up` 关键帧 + `.is-settled` 修饰类
+  （见下方「resize 不重播」）+ reduced-motion 分支，全部紧挨着 `.gb-pop-word`
+  那段写，共用同一个 reduced-motion 媒体查询块。
+- `assets/main.js`：新模块 `lineReveal`（挂 `[data-line-reveal]`，架构照抄
+  `popText` 的 split/IntersectionObserver 骨架）。核心是 `wrapWords`（词级
+  拆分，只处理根节点直接子文本节点——`[data-line-reveal]` 挂的都是纯文本 `<p>`，
+  不含内联标签）+ `groupLines`（按 `offsetTop` 把词分组成行，逐行套遮罩）。
+- 应用范围：全站 `*__lead` 段落里「标题下的引导句」一类（`gb-page-hero__lead` /
+  `gb-hero__lead` / `gb-science__lead` / `gb-product__lead` / `gb-vs__lead` /
+  `gb-compare__lead` / `gb-dosed__lead` / `gb-ingredients__lead` /
+  `gb-faq-image__lead`），10 页共 22 处，从容器级 `wowo`（或压根没有入场）
+  换成逐行上滑。**卡片/列表内的 `__lead`**（`gb-testimonial__lead` 12 处、
+  `gb-story-card__lead` 3 处、`gb-promo-card__lead` 2 处）沿用第一轮「卡片/图块
+  仍走 wowo」的既定分界，未换。标题（h1/h2）本身也未换——参考站的标题走的是
+  逐词乱转那套，不是这套，两套效果对应不同元素，不能混用。
+
+### 修掉的坑
+
+| 症状 | 根因 |
+|---|---|
+| hero lead 首屏偶发把 "a" 并进第一行（"...hiding in a" / "gumi bear."），本该是"...hiding in" / "a gumi bear." | `groupLines` 在 `DOMContentLoaded` 时同步测 `offsetTop` 分行，如果此时品牌字体（PP Palma/Figtree）还没换上、用的是系统兜底字体量出来的换行点，分组就定型在错的地方——非首屏文字有滚动到可见前的缓冲时间自然被字体加载追上，**首屏文字第一次揭示就来不及等**，12 次试验复现 2 次。改 `init()` 用 `document.fonts.ready` 门控首次拆分（拿不到该 API 或 500ms 内没 resolve 就直接跑，绝不无限等） |
+| `tools/rwd.py` 全站每个 `data-line-reveal` 段落报"被裁"（100 个页面×宽度组合） | 遮罩机制本身：揭示前 `.gb-line-word` 被 `translateY(100%)` 蹲在 `overflow:hidden` 的 `.gb-line-mask` 框外，`opacity` 却仍是 1，探测脚本原有的 `opacity===0` 排除规则挡不住它；`rwd.py` 又只等 150ms，来不及滚入视口触发揭示。判定为探测工具的盲区而非真 bug（唯一命中的选择器清一色是 `gb-line-word`/`gb-line-mask`，没有一条别的），给 `tools/rwd.py` 补一条 `cl.classList.contains('gb-line-mask')` 排除 |
+
+### 判据
+
+- 22 处逐行上滑元素跨 10 页：`textContent` 拆分前后逐元素比对全等（含 resize
+  触发的二次拆分前后）；全站滚动到底后 `.gb-line-mask__inner` 的 computed
+  transform 均已归位到 `translateY(0)`，零处卡在遮罩里；`prefers-reduced-motion`
+  降级路径单独验证过（揭示后 opacity 归 1，无位移）。
+- `tools/rwd.py` 全站 11 页 × 10 档宽度回归：✅ 全绿（补排除规则前是 100 个
+  页面×宽度组合报"被裁"，确认是本轮新机制的盲区后修的探测脚本，不是改错内容）。
+
+### 遗留
+
+- resize 触发的二次分行 (`groupLines`) 对已经播放完的行，直接换成 `.is-settled`
+  跳到终态、不重播动画——这条逻辑目前只有自动化断言覆盖（不变量：resize 后
+  `translateY` 仍是 0），没有真机肉眼复核过分行边界重算时是否有一帧闪烁，
+  以后要动这块先补个真机验证。
+- 小熊浮动范围里「功能性/数据可视化」那三类（nav-card 熊、bear-meter、
+  compare 头像）没有明确指示，按判断留在静止；后续若对话要求进一步扩围，
+  这三类是候选但都需要额外处理（bear-meter 100 个小图标各自浮动会很吵、
+  compare 头像与非小熊图片共用同一个 class 需要先拆出修饰类）。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   新增 .gb-line-mask / .gb-line-mask__inner / gm-line-up /
+                              --e-power4-out（含 reduced-motion 分支）；$build → 20260825-r26
+改  assets/customstyle.css   编译产物
+改  assets/main.js           新模块 lineReveal（wrapWords / groupLines / fonts.ready 门控）
+改  index.html               hero 熊 --still→浮动；nutrition 散熊新增浮动；
+                              3 处 __lead 换 data-line-reveal
+改  science.html             5 处 __lead 换 data-line-reveal
+改  pdp.html                 2 处 __lead 换 data-line-reveal
+改  how-gumi-works.html      4 处 __lead 换 data-line-reveal
+改  our-story.html           1 处 __lead 换 data-line-reveal
+改  reviews.html             3 处 __lead 换 data-line-reveal
+改  faq.html / get-in-touch.html / referral.html / privacy-policy.html
+                              各 1 处 __lead 换 data-line-reveal
+改  全部 11 页 + font-check   ?v= → r26
+改  tools/rwd.py             补 .gb-line-mask 排除规则，消除本轮新机制的假阳性
+```
+
+## 第二十六轮 — PP Palma 400/500/800 换上客户授权文件（2026-08-25）
+
+### 改了什么
+
+对话把已获客户授权的 PP Palma 字体文件同步进了 `assets/`（大写驼峰命名
+`PPPalma-Regular.woff2` / `PPPalma-FizzyMedium.woff2` / `PPPalma-FizzyHeavy.woff2`
++ 对应 `.woff`，与试用装的小写文件名区分）。三个 `@font-face` 的 `src` 从试用装/
+插值件改指向这三个新文件：
+
+- **400**：不再是第五轮那个"两个 FIZZY 主板插值出来的替身"，直接用客户给的
+  真身 plain-family Regular，`$pp-400-src` 那层间接变量连同它的三段式回退
+  （fizzy-light / fizzy-medium / interp）一并撤掉——存在的理由（插值件在客户端
+  画不出字、Regular 迟迟拿不到）已经不成立。
+- **500 / 800**：内容不变（同一个 Fizzy 裁切），纯粹从试用装文件换成客户的
+  正式授权文件，视觉零差异。
+- **300**（FizzyLight）：客户这次没有一并发来，继续用试用装文件
+  `pppalma-fizzy-light.woff2`（个人用途 EULA，不可商用），等客户补发。
+
+### 一个需要记录的取舍：400 变成全站唯一"变宽"的字重
+
+换真身前实测过：`PPPalma-Regular`（400）比隔壁 `PPPalma-FizzyMedium`（500）还宽
+4.7%（1119.8px vs 1069.3px，40px 同一句测试文本），几乎追平 800（1121.75px）。
+根因是 Fizzy 本身就是同一字重下更紧凑的裁切版本，plain family 天生更宽——这是
+两个裁切的固有差异，不是文件坏了，第五轮左右就记录过这个矛盾（当时的结论是
+"follow 设计字面上的 Regular 会让 400 读起来比 500 还散"，因此才改用插值顶替）。
+这次把取舍摆出来问了对话，**明确选择"直接换上真身，接受这个宽度不单调递增的
+代价"**，不是我自己的判断——接手的人如果发现 400 摸起来比 500"更松"，这是双方
+确认过的结果，不是回归。
+
+### 判据
+
+- 四个字重逐一 `FontFace().load()` 后实测宽度：300 = 1031.6px（试用装不变）、
+  400 = 1119.8px（真身）、500 = 1069.3px（真身）、800 = 1121.75px（真身）——
+  命中的确实是新文件，不是路径没生效。
+- hero 引导段（380px 容器）用真身 400 重新排版：仍是 2 行、每字符平均推进
+  9.09px（设计稿约 8.5px），比第一轮用插值/试用装替身时更贴近设计稿，不是
+  真身导致更糟。
+- `tools/rwd.py` 全站 11 页 × 10 档宽度回归：✅ 全绿——换上更宽的 400 字重后
+  没有新增的横向溢出/内容裁切/滚轮黑洞。
+- `font-check.html` 第 3/5 节的字重命中表、诊断素材列表同步更新，指向新文件；
+  历史插值诊断素材（`pppalma-*-interp.woff2` / `diag-a/b-*.woff2`）不再被
+  任何 `@font-face` 引用，只留给该页第 5 节做对照，未删除文件本身。
+
+### 遗留
+
+- 300（FizzyLight）还没拿到客户授权版，仍在用个人用途 EULA 的试用装文件——
+  上线前这一项必须补上，不能遗漏在"已经换过字体了"的印象里。
+- 400 变宽后，全站字重宽度已知不再单调递增（300 < 500 < 400 ≈ 800）；如果
+  上线后收到"正文看着比 Medium 松"一类反馈，先看这条记录，不必重新排查。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   400/500/800 三个 @font-face 的 src 改指向
+                              PPPalma-Regular/FizzyMedium/FizzyHeavy.woff2；
+                              撤掉 $pp-400-src 间接层；重写字体来源说明注释；
+                              $build → 20260825-r27
+改  assets/customstyle.css   编译产物
+改  font-check.html          EXPECT_BUILD → r27；WANT/REF 映射改指向新文件，
+                              旧插值件/诊断素材标注为"仅供对照"
+改  全部 11 页                ?v= → r27
+新  assets/PPPalma-Regular.woff(2) / PPPalma-FizzyMedium.woff(2) /
+    PPPalma-FizzyHeavy.woff(2)   对话同步进来的客户授权文件（.woff 目前未在
+                              代码中引用，随 .woff2 一起放着备用）
+```
+
+## 第二十七轮 — 补上一直没做的首单折扣弹窗（2026-08-25）
+
+### 改了什么
+
+对话反馈"缺了一个 pop up 弹窗"，查证后确认：`285:19373`（此前只记过它被错命名成
+"Homepage Desktop"，没意识到弹窗本身也没落地）+ 移动端 `285:18988`/`285:19179`
+是一个"邮箱换 20% 首单折扣码"弹窗，全站 HTML/JS 搜不到任何相关文案/class，
+且 `docs/PROJECT-STATUS.md` 的待办清单里也没有它——是真缺失，不是刻意排除的
+app 边界内容（订阅/评论/accordion 那三类才是）。稿里没写触发时机与出现范围，
+两点跟对话确认：**首页自动延迟弹出、只在首页**（不接站内其余 10 页）。
+
+新增 `.gb-promo-modal` 一整套（`assets/customstyle.scss` 紧跟在 `.gb-rv-modal`
+之后）+ `main.js` 的 `promoModal` 模块，只加进了 `index.html`：
+
+- **两个状态共用一份标记**：`[data-promo-panel="email"]` / `[data-promo-panel="code"]`
+  两个兄弟节点用 `hidden` 互斥切换，不重新渲染。表单 `submit` 时 `preventDefault`
+  切到揭码态——MVP 边界里这类邮箱收集通常走 Klaviyo/Justuno 一类的 app，这里没
+  真后端，只是把设计的第二个状态做成可演示的真交互，不是留空。折扣码沿用设计
+  本身的占位符 `12345678CODE`，没有编一个像真的出来。
+- **Copy code 接了真剪贴板**（`navigator.clipboard`，无该 API 时退化到临时
+  textarea + `execCommand`），点击后按钮文案 2s 内变"Copied!"。
+- **桌面双栏 1062×528**：左列图（`.gb-promo-panel__art`，bg `$c-cream`）、右列
+  表单内容（bg `$c-sand`），两列中间的锯齿分隔线是 Figma `285:19373` 的 "Union"
+  矢量重建的——半径/节距比例（≈0.592）跟站内一直没接上的 `assets/deco-scallop-card.svg`
+  基本吻合，大概率是同一批为这个弹窗导出、后来没接上的素材；这次没再导新图，
+  直接照 `.gb-scallop` 的写法转 90° 用 CSS `radial-gradient` 重建（圆心轴从 Y
+  换成 X，三份 Y 向副本 50%/-50%/150% 顶替原来的三份 X 向副本，防止圆在瓦片
+  接缝断开）。**桌面态只在 `≥1281`（`@include pc`）生效，768 以下的 `tablet`
+  区间沿用手机的整屏堆叠版**——设计只给了这两档，双栏在平板宽度会被挤到两列
+  都装不下文字，不如直接复用手机版。
+- **移动端整屏堆叠**：内容在上、小熊在下（跟设计的子节点顺序一致，第一版
+  实现搞反过、对照设计截图发现后用 flex `order` 修正），`.gb-promo-panel` 用
+  `justify-content:space-between` 让内容与小熊各自按自身高度撑开、多出来的
+  视口高度全部堆进中间那道 gap（build.txt 原文是两个子节点 + `justify:space-between`，
+  460+252+一份 gap 正好等于 744）。
+- **标题"Get 20% off / your first order!"背后的荧光笔涂鸦效果**复用现成的
+  `ink-outline()`（不是新写一套描边），半径按 Figma 各自的 stroke 值换算成
+  `em`（桌面 16/40=0.4em，手机 15/36≈0.4167em，两档数值不同不是笔误，就近
+  取各自的稿值）。
+- 熊图三张（`images/promo-bear.png` 真身照片、`promo-bear-glow-lg/sm.png` 光晕）
+  直接用 Figma 已导出的图层（`figma/assets-raw/`），没有重新调 API；四张图按
+  Figma bbox 的相对坐标绝对定位，桌面/手机各自一套数值。裁到 2× 用量宽度并配
+  `.webp`（`<picture>`），比原始导出小了一个数量级。
+- 手机 mockup 里 96px 高的假浏览器地址栏、mockup 底部那条 6 张商品卡的
+  "product row"，和真弹窗无关（对照桌面稿同一位置是一块 50% 黑的
+  `Rectangle 5087`，那才是真正的遮罩层规格）——没有照抄进实现，只用来定位。
+- 移动 mockup 里那个 475×333 的背景 "Union" 插画在截图里辨认不出明显效果，
+  没找到能确认的透明度/颜色依据，这次没做——遗留里记一下，别当作"忘了"。
+
+### 修掉的坑
+
+| 症状 | 根因 |
+|---|---|
+| `modal.open()` 打开弹窗后焦点圈落在 GUMI 小图标上 | 通用 `modal` 模块把首个可聚焦元素设为焦点，而 logo 当时是 `<a href="index.html">`——本来就在首页，点它等于什么也不做。改成纯装饰 `<span>`，焦点顺位自然落到关闭按钮，跟 nl-modal 的既有行为一致 |
+| 移动端小熊出现在顶部而不是设计里的底部 | HTML 里 `.gb-promo-panel__art` 写在 `.gb-promo-panel__content` 前面（桌面双栏需要"图在左"），移动端沿用同一份 DOM 顺序时忘了用 `order` 倒回来，对照设计截图才发现 |
+
+### 判据
+
+- 四张截图（桌面/手机 × email/code 两态）跟 Figma 参考截图逐一比对，熊的位置、
+  分隔线锯齿、标题荧光笔效果、双态切换均一致。
+- Playwright 端到端：5 秒自动弹出 → `sessionStorage` 写入 → 刷新同一个 session
+  不再弹出；ESC / 点遮罩 / 关闭按钮均可关闭；`prefers-reduced-motion` 下面板
+  直接 `transform:none` 出现，不播放滑入；剪贴板按钮读回真实复制到的文本。
+- `tools/rwd.py` 全站 11 页 × 10 档宽度回归：✅ 全绿；`pdp.html` 等其余 10 页
+  确认 DOM 里没有 `#promo-modal`、`promoModal.init()` 的提前 return 不产生报错。
+
+### 遗留
+
+- 移动 mockup 里的 475×333 背景插画（"Union"，跟分隔线撞了同名但不是同一个
+  东西）没做，辨认不出实际视觉效果，需要设计方确认要不要、是什么样子。
+- 弹窗的 5 秒延迟、"每 session 一次"都是没有稿子撑腰的自定值，跟营养标签
+  弹窗的开合时长一样，上线前可与设计方/客户核对是否需要改（比如改成滚动深度
+  触发、或退出意图触发）。
+- `assets/deco-scallop-card.svg` 依旧是全站零引用的孤立文件——这次确认了它
+  很可能是这个弹窗分隔线的原始导出，但因为改用 CSS 重建就没有实际接上它；
+  如果以后要接其他"深色满圆" scallop 场景，先看这个文件。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   新增 .gb-promo-modal 全套（含 divider 的
+                              radial-gradient 重建）；$build → 20260825-r28
+改  assets/customstyle.css   编译产物
+改  assets/main.js           新模块 promoModal（自动触发/状态切换/复制剪贴板）
+改  index.html               新增 .gb-promo-modal 弹窗标记；?v= → r28
+改  font-check.html          EXPECT_BUILD → r28（无 ?v=，见页内注释）
+改  其余 9 页                ?v= → r28（弹窗本身只在 index.html）
+新  images/promo-bear.png(.webp)、promo-bear-glow-lg.png(.webp)、
+    promo-bear-glow-sm.png(.webp)   从 figma/assets-raw 裁到 2× 用量宽度
+```
+
+---
+
+## 2026-08-25 第二十八轮：弹窗改淡入淡出 + 字体 layout shift + 标题入场 + 一批间距（`$build` = `20260825-r29`）
+
+按根目录 `修改任务文档.txt` 的七条做。
+
+### 改了什么
+
+1. **三个弹窗一律去掉滑动，改纯淡入淡出**（第 1 条）。`.gb-nl-panel` / `.gb-promo-panel`
+   原来是 `translateY(100vh) → 0`，`.gb-rv-panel` 是 `scale(.94) → 1`，现在三者统一只剩
+   `opacity` 一条通道，`will-change` 跟着从 transform 换成 opacity。进退场时长曲线保持
+   第十九轮定的非对称值（进 0.4s / 退 0.55s、0.5s）不动。变量 `$nl-slide*` / `$promo-slide*`
+   改名 `$nl-fade*` / `$promo-fade*` —— 名字说 slide 而效果是 fade 会误导后面的人。
+   连带删掉两条已成死代码的 `prefers-reduced-motion` 规则（面板已无 transform 可关）。
+
+2. **修掉字体换上时整页跳一下**（第 2 条）。这条是两个独立成因叠在一起，各修各的：
+
+   - **成因 A：`font-display: swap` 的固有代价。** swap 窗口里用系统字体排版，PP Palma
+     比 Arial 宽 12~14%，真字体一到位所有文本重排、下方内容整体位移。修法是加一组
+     度量对齐的回退字体 `"PP Palma Fallback"`（`local("Arial")` + `size-adjust` /
+     `ascent-override` / `descent-override`），插在 Figtree 之后、系统栈之前，四个字重
+     各一条规则。
+     ⚠ **`size-adjust` 必须拿站上真实文案去量。** 第一版用 "Handgloves ABC…abc…012…"
+     这种字母表样本算出 400 = 107.26%，看着对齐到 0.03%，实际正文照样差 7.09% ——
+     PP Palma 相对 Arial 的宽窄在大小写与数字之间并不一致，而字母表样本里大写和数字
+     的占比远高于真实句子。改成遍历全站 11 页、按字重收集真实文本、以字符数加权重算
+     （400 用了 15729 字符 / 516 段），正文差值收到 1.06%。
+   - **成因 B：`lineReveal` 的 500ms 兜底超时在慢网络上一定先跑。** 它按兜底字体的换行点
+     把段落分了行，真字体到位后每行变宽、每个遮罩里挤进两行，元素高度凭空涨一截
+     （实测 `.gb-hero__lead` 60→90、`.gb-science__lead` 56→84、`.gb-product__lead` 48→72，
+     而遮罩数还停在 2，动画会两行一起滑）。修法是 `document.fonts.ready` 到了以后
+     **重新分行一次**（`groupLines` 本就幂等，已揭示的段落走 `is-settled` 直接落终态，
+     不会重播入场）。这条是 [[line-split-webfont-race]] 那个坑在慢网络下的另一种现形。
+
+   顺带查明：**`$font-ui-stack` / `$font-display-stack` / `$font-hand-stack` 全站零引用**
+   （只有定义行没有使用行），所以 Inter / Lexend / Playpen Sans 三套 webfont 从来不会被
+   下载，它们的 `@font-face` 与 6 个 woff2 文件目前是死代码。本轮没删，记在遗留里。
+
+3. **标题补上与正文同一套入场动画**（第 3 条）。给 47 处模块级 h1/h2 加 `data-line-reveal`，
+   走既有的 `.gb-line-mask` 逐行上滑，与 `__lead` 段落同一套参数。
+   排除四类：卡片内标题（story-card / promo-card / highlight-card / science-card，沿用第一轮
+   「卡片仍走 wowo」的分界）、弹窗内标题（弹窗还没开 IntersectionObserver 就已触发，动画等于
+   白播，promo 那个还带描边会被遮罩裁）、富文本 `<h2>`（正文流里的小标题）、以及
+   science 的 `.gb-ingredients__title`（内容全裹在两个 span 里，`wrapWords` 只处理直接文本
+   节点，套上去没有任何效果）。
+   **遮罩要留下伸笔画的余量**：`overflow` 按行盒裁，而行盒不等于墨迹盒 —— 实测行高最紧的
+   `.gb-footer-cta__title`（36/40）墨迹伸出行盒底部 1.5px，直接套遮罩会把 "gummies" 的 g
+   削平。做法是 inner 加 `padding-bottom: 0.12em`、mask 用等量负 margin 从布局里抵消，
+   宿主再用 `display: flow-root` 拦住负 margin 折叠穿透。三者缺一：余量挂到 mask 的 padding
+   上会让起始态文字露在遮罩外；不建 BFC 则最后一行的负 margin 会跑出去吃掉下方间距。
+
+4. **`.gb-stats__deco-bear` 落回稿里的位置**（第 4 条最后一项）。需求方原话「应该在
+   gb-science 里面的 gb-scallop 上面」——即压在那道 cream→sand 的波浪之上、下半截探进
+   下面那块的地盘。之前它被迫整只缩在 `.gb-stats` 画面内（中心 103%→89.5%、手机
+   100.3%→91.5%），因为一探出 section 底边就被 `.gb-science` 的不透明底色按正常层叠盖住。
+   现在给 `.gb-stats` 一个 `z-index: $z-base` 让它整块压过下一节，熊就能待在稿里的位置。
+   定位改成按 **stats 底边** 反推（`bottom: calc(var(--sc-h) - 21px)`，手机 16.5px），不再用
+   相对 section 总高的百分比 —— 波浪恒定贴底边，用 bottom 就不受内容高度变化影响；
+   波浪高读 `--sc-h` 而不是写死 96 / 48，它是 clamp() 流体值。
+   两个偏移量是从设计截图实测的（非背景像素包围盒，两种判据取到同一个纵向结果）：
+   桌面波浪顶边 y2514 / 熊心 y2535，手机 y2488 / y2504.5。
+   **没有真的把节点搬进 `.gb-science`**：熊是 stats 的装饰、与 stats 内容呼应，且既有约定是
+   「波浪归上面那个 section」，搬父级还会让定位百分比全部重算（[[css-refactor-computed-style-judge]]
+   警告过这类改动的 diff 判据会失效）。用层级达到同样的视觉结果，风险小得多。
+
+5. **`.gb-pack-band__row` 的 21 个 `<picture>` 缩到 4 个**（第 5 条）。标记里每行只留两个，
+   铺满屏幕要几个由新的 `main.js / packBand` 按当前节距算出来再克隆补齐 —— 与
+   `.gb-bear-meter` 用 JS 生成 100 个小熊是同一个路子。原来两行写死 10 / 11 是照最宽情况配的：
+   桌面要铺 4385px、手机 2160px，而视口只有 1440 / 390，两端都大幅过量；现在按视口算出
+   4~9 个。
+   ⚠ 两处必须留神，都已写进代码注释：① 量宽度只能用 `<img>` 不能用 `<picture>` ——
+   站里 picture 一律 `display: contents`，它自己没有盒子、`offsetWidth` 恒为 0
+   （见 [[picture-display-contents-promotes-source]]）；② 第一行个数必须钉成偶数，只保证
+   「一奇一偶」不够 —— 若算出 5/6，错位量虽仍是半个节距，但两行角色对调、砖缝跟稿里反过来。
+
+6. **一批间距/尺寸**（第 4、6、7 条）：`.gb-header__toggle` gap 16→18（连 tablet 档的
+   `fluid(0,16px)` 一起）；`.gb-btn--primary` padding `0 40px`→`0 42px`；`.gb-usp__value`
+   桌面档补 `margin-left: 7px`；`.gb-hero__inner` padding 底 88→91（连 tight 档）；
+   `.gb-science__head` gap 16→14；`.gb-highlight-card__text` max-width 300→271；
+   `.gb-product__guarantees` gap 24→30 且 `span` 补 `max-width: 86%`；
+   `.gb-acc-icon::before/::after` width 14→16（负 margin 恒为 -width/2，同步改 -7→-8）；
+   `.gb-reviews__disclaimer` padding `0 20px`→`0`；`.gb-footer-cta__title` margin
+   38/30→40/23；`.gb-footer-cta__text` 补 `padding: 0 20px`；`.gb-footer__link-groups`
+   桌面档补 `margin-right: -2px`。
+   另 `10/10 would recommend.` 后加 `<br>`，12 处（index / pdp / how-gumi-works / our-story 各 3）。
+
+### 判据
+
+- **字体 layout shift**：本地 http server 把 woff2 响应压后 1200ms 模拟真实链路，
+  PerformanceObserver 收 CLS。A/B 同场对照（route 改写响应把本轮两处修复还原掉，
+  各跑 2~3 次取中位数）：
+
+  | 页面 | 修复前 | 修复后 | 降幅 |
+  |---|---|---|---|
+  | index.html | 0.06373 | 0.00242 | 96.2% |
+  | pdp.html | 0.04265 | 0.00003 | 99.9% |
+  | science.html | 0.04490 | 0 | 100% |
+  | reviews.html | 0.00338 | 0.00059 | 82.5% |
+  | how-gumi-works.html | 0.00372 | 0.00091 | 75.5% |
+  | our-story.html | 0.00302 | 0.00289 | 4.3% |
+
+  ⚠ **对照组必须每次开新 context**。第一版 A/B 让两组共用一个 browser，第二个 page 起
+  字体走缓存、根本没有 swap 窗口，测出 pdp「修复后反而差 8.5%」的假象；换独立 context
+  后同一份代码是 -99.9%。两个比对量共享同一污染源时，自洽 ≠ 正确
+  （[[probe-must-compare-against-invariant]]）。
+- **弹窗**：打开→关闭全程采样，三个面板 `transform` 恒为 `none`、`opacity` 轨迹在变。
+- **标题入场**：47 处逐一确认拆出了 `.gb-line-mask`、动画名是 `gm-line-up`；再对全站 11 页
+  滚一遍所有 `[data-line-reveal]`、等 1800ms，确认最终 `opacity: 1` 且 inner 回到
+  `translateY(0)`，未落终态 0 项。
+- **遮罩留白没有改动布局**：所有宿主高度仍等于 `行数 × line-height`（负 margin 若穿透会少
+  0.12em）；每行墨迹底都低于遮罩裁切底，`gb-footer-cta__title` 余量 2.81px。
+- **小熊位置**：5 档视口下熊心相对波浪顶边的偏移恒为 21 / 16.5px，与设计截图实测值一致。
+- **pack-band**：7 档视口下两侧都仍被裁（不露排头排尾）、两行一奇一偶，且行宽一半模节距
+  的相位与原来写死 10/11 的实现逐档相同。
+- **数值项**：22 条 computed-style 定向断言全过（含 `::before` / `::after`，以及
+  「桌面独有的值在 1024 档必须为 0」这类反向断言）。
+- `tools/rwd.py` 全站 11 页 × 10 档宽度回归：✅ 全绿。
+
+### 遗留
+
+- **`.gb-stats__deco-bear` 的素材比例与稿对不上**：设计截图里熊是 146×186（ratio 0.785），
+  而 `images/stats-bear-deco.png` 墨迹是 376×577（0.652），按同宽摆放会高出约 33px。
+  本轮只按需求改了位置，没动尺寸（要改得重新从 Figma 导素材）。需求方若觉得熊「偏瘦长」，
+  是这个原因。
+- **Inter / Lexend / Playpen Sans 三套 webfont 全站零引用**，`@font-face` 与对应的 6 个
+  woff2 是死代码。删之前要先确认设计里这几处（稿中 Inter 409 / Lexend 108 / Playpen 90 次）
+  是有意没实现，还是实现时漏了改 `font-family` —— 后者的话该补的是引用而不是删声明。
+- **`"PP Palma Fallback"` 的 `size-adjust` 与文案绑定**：换文案或换字体文件后要重算，
+  否则对齐度会漂。300 那档只有营养表那点数字撑样本（4025 字符），加权结果 91.86%
+  比 Arial 还窄，与其余三档方向相反 —— 是真实用途决定的，不是算错。
+- 需求方第 4 条原话「gb-stats__deco-bear 应该在 gb-science 里面的 gb-scallop 上面」按
+  **视觉层级**理解并实现；`.gb-science` 内实际只有底部一道 `--sand-to-lime` 波浪，与熊
+  相距整个 section，字面理解讲不通。若原意是要真把节点搬进 `.gb-science`，需回来重做。
+- 300（FizzyLight）仍是试用装文件，上线前必须补齐（沿用第二十六轮的遗留）。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   弹窗三处改 opacity + 变量改名；新增 PP Palma Fallback
+                              四条 @font-face；.gb-line-mask 留下伸余量 + flow-root；
+                              .gb-stats 加 z-index；.gb-stats__deco-bear 改按底边定位；
+                              12 处间距/尺寸；$build → 20260825-r29
+改  assets/customstyle.css    编译产物
+改  assets/main.js            lineReveal 字体到位后重新分行；新模块 packBand；
+                              modal 注释同步（不再是 slide）
+改  index.html                pack-band 21 个 <picture> → 4 个 + data-pack-band；
+                              标题 data-line-reveal；testimonial <br>；?v= → r29
+改  pdp.html / how-gumi-works.html / our-story.html
+                              标题 data-line-reveal；testimonial <br>；?v= → r29
+改  science.html / reviews.html / faq.html / get-in-touch.html / referral.html /
+    privacy-policy.html / shipping.html
+                              标题 data-line-reveal；?v= → r29
+改  font-check.html           EXPECT_BUILD → r29
 ```

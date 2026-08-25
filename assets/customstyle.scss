@@ -35,7 +35,7 @@
 // 都吃这个值 —— 预览走的是 file://，浏览器会把 css/js/woff2 缓存到下一次
 // 硬刷新为止，没有版本号的话"改了但页面没变"会被误判成"没改"。
 // build-check.html 会把这个值打出来，用来确认浏览器拿到的是哪一版。
-$build: "20260824-r25";
+$build: "20260825-r29";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -400,9 +400,10 @@ $mask-scallop-card: url("data:image/svg+xml,%3Csvg width='573' height='94' viewB
 // Font faces. The woff2 files sit right next to this file in assets/, so the
 // url()s are bare filenames — assets/ is flat and has no subdirectories.
 //
-// PP Palma is a commercial Pangram Pangram face with no licence on hand.
-// Figtree stands in for it. When the licensed files arrive, only $font-brand-stack
-// and the PP Palma src below need touching — never the per-component font-family.
+// PP Palma 是 Pangram Pangram 的商业字体。2026-08-25 客户已提供 Regular /
+// FizzyMedium / FizzyHeavy 三个字重的授权文件（同步进 assets/，大写驼峰命名
+// PPPalma-*.woff2，与试用装的小写文件名区分）；FizzyLight（300）尚未拿到授权
+// 版，暂时继续用试用装文件。Figtree 仍留作 fallback。
 
 
 // Family variables — the single switch point
@@ -415,106 +416,132 @@ $font-hand:       "Playpen Sans";
 
 $sans-fallback: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 
-$font-brand-stack: $font-brand, $font-brand-alt, $sans-fallback;
+// 度量对齐过的回退字体，见下方 @font-face 组。它排在 Figtree 之后、系统栈之前：
+// PP Palma 正常到位时它只在 swap 窗口里露面，PP Palma 与 Figtree 都拿不到时它
+// 才是最终渲染的那一个。
+$font-brand-metric: "PP Palma Fallback";
+
+$font-brand-stack: $font-brand, $font-brand-alt, $font-brand-metric, $sans-fallback;
 $font-ui-stack:    $font-ui, $sans-fallback;
 $font-display-stack: $font-display, $sans-fallback;
 $font-hand-stack:  $font-hand, cursive;
 
-// PP Palma — from the "Free For Personal Use v1.0" trial pack (EULA in the pack:
-// personal use only, NOT licensed for a commercial storefront). Swap in the
-// client's licensed files before launch; only the url()s below need touching.
+// PP Palma —— 300（FizzyLight）还是 "Free For Personal Use v1.0" 试用装文件
+// （EULA：仅限个人用途，不可用于商业站点），客户补发授权版后同样只需改这里的
+// url()。400 / 500 / 800 已经是客户提供的正式授权文件。
 //
-// The design uses four weights. Three map exactly onto trial files:
-//   300 -> PPPalma-FizzyLight    (249 uses)
-//   500 -> PPPalma-FizzyMedium   (747 uses)
-//   800 -> PPPalma-FizzyHeavy    (366 uses)
-// The fourth, 400 -> PPPalma-Regular (1914 uses, most of the body copy), is the
-// one weight the trial pack withholds, so it is INTERPOLATED — see
-// ../../../PP Palma .../make-regular-interp.py. It is built from the two FIZZY
-// masters at t = 0.50, not from the plain ones the design names; the note on
-// $pp-400-src below explains why.
+// 400 用的是真身 plain-family Regular，不再走插值。这里有个已确认的取舍：实测
+// Regular 比旁边的 500（Fizzy 裁切）还宽 4.7%（1119.8px vs 1069.3px，40px 同一
+// 句测试文本），因为 Fizzy 本身就是同一字重下更紧凑的裁切版本，plain family
+// 天生更宽——这是两个裁切的固有差异，不是文件坏了。已跟客户方确认按真身走，
+// 接受全站字重宽度不再单调递增这个代价，而不是继续用 Fizzy 插值顶替 400。
 //
-// 494 of 501 glyphs interpolate now. It used to be 490: the four that joined
-// them — j, ij, uni0237 (dotless j) and eng — were not really incompatible,
-// their masters just differed by one redundant point (Light draws j's stem with
-// an extra 1-unit segment at (336,0)->(335,0) that Medium does not). Any glyph
-// that misses interpolation keeps the MEDIUM outline, i.e. renders a full weight
-// step heavier than the text around it, and j is common enough in English
-// (juicer, enjoy, Join) to see. The script now drops sub-3-unit line segments
-// before comparing, but only when that is what makes the two compatible.
+// assets/ 下的 pppalma-light.woff2、pppalma-medium.woff2、
+// pppalma-regular-interp.woff2、pppalma-fizzy-regular-interp.woff2、
+// diag-a-resave.woff2、diag-b-rewrite.woff2 是 2026-08-20 那次「插值件在客户端
+// 渲染成等宽字体」事故排查时的诊断素材（细节见 font-check.html 第 5 节），
+// 现在已不再被任何 @font-face 引用，留着只为那个诊断页面的对照测试。
 //
-// The seven still falling back are Uogonek, ae, aeacute, ae.ss04, cent, dollar
-// and uni20B2 — genuinely different constructions (Light draws $ as three
-// contours, Medium as one). Of those only $ occurs on this site, once, in a
-// placeholder price.
-//
-// It is a close stand-in, not the real Regular — the genuine face carries its own
-// optical corrections. If it is ever judged too far off, $pp-400-src below swaps
-// 400 onto a real trial file with no code changes anywhere else: "light" is the
-// closer of the two on metrics (317.80 vs the design's 319.00 on the hero line,
-// against the interpolated file's 320.00), "medium" the closer on colour.
-//
-// No local() here, deliberately. Every OTF in the trial pack declares nameID 16
-// (typographic family) = "PP Palma", so on a machine that has the pack installed
-// `local("PP Palma")` matches the WHOLE family — all six weights plus the six
-// Fizzy cuts — and the platform hands back whichever face it likes. Chrome on
-// Windows resolves local() against family names, so the page renders one font
-// for the designer and another for everyone else, and only at weight 400, the
-// one face that carried the local(). Everything is served from url() now so the
-// result is the same on every machine.
-// The design names PPPalma-Regular at 400, but 300 / 500 / 800 are all FIZZY
-// cuts, and Fizzy is the tighter-spaced cut of the same drawing — the plain
-// family runs ~4% wider at the same weight. Following the design literally
-// therefore made 400 the one weight on the page that read as spaced out: it
-// measured WIDER than the 500 next to it (617 vs 603 on a 72-char line).
-// Pangram Pangram ships no Fizzy Regular, which is why the design had to name
-// the plain one; 400 is the exact midpoint of 300 and 500, so the stand-in is
-// interpolated from the two Fizzy masters at t = 0.50 on both axes and lands
-// at 595 — between FizzyLight 587 and FizzyMedium 603, weights now monotonic.
-// "regular-interp" is the older plain-family build, kept for comparison.
-// ⚠ 2026-08-20: BOTH interpolated builds render as a last-resort monospace on the
-// client's browser — the face loads, but no glyph in it is usable, so every
-// paragraph on the site falls back while the 300/500/800 headings stay correct.
-// That is exactly the "spacing looks blown out" report. It does NOT reproduce
-// on Linux Chrome here, and a two-src @font-face does not help either: the file
-// is accepted, it just paints nothing, so no fallback is ever triggered.
-// Until the interpolation is fixed (or the client sends the licensed Regular),
-// 400 points at a REAL trial file. fizzy-light keeps 400 inside the same Fizzy
-// cut as 300/500/800, at the cost of one weight step of colour.
-$pp-400-src: "fizzy-light" !default;   // "fizzy-light" | "fizzy-medium" | "fizzy-regular-interp" | "regular-interp"
-
+// 没写 local()：试用装每个 OTF 都把 nameID 16（typographic family）设成
+// "PP Palma"，如果本机装了这套试用装，local("PP Palma") 会把全部六个字重连
+// Fizzy 一起命中、交给系统挑一个，导致设计师本机和访客看到的不是同一个字重。
+// 全部走 url() 才能保证每台机器渲染一致。
 @font-face {
   font-family: "PP Palma";
-  src: url("pppalma-fizzy-light.woff2?v=#{$build}") format("woff2");
+  src: url("pppalma-fizzy-light.woff2?v=#{$build}") format("woff2");   // 300 —— 仍是试用装，待客户补发授权版
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
-// Single src on purpose. A second src looks like cheap insurance but buys
-// nothing here: the failure mode is not "file missing" — the browser ACCEPTS
-// the interpolated file and then paints no glyph from it, so the fallback in a
-// src list is never reached. The only real protection is pointing 400 at a file
-// that is known to render, which is what $pp-400-src does.
 @font-face {
   font-family: "PP Palma";
-  src: url("pppalma-#{$pp-400-src}.woff2?v=#{$build}") format("woff2");
-  font-weight: 400;                    // see $pp-400-src above
+  src: url("PPPalma-Regular.woff2?v=#{$build}") format("woff2");   // 400 —— 客户授权文件（真身，非插值）
+  font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("pppalma-fizzy-medium.woff2?v=#{$build}") format("woff2");
+  src: url("PPPalma-FizzyMedium.woff2?v=#{$build}") format("woff2");   // 500 —— 客户授权文件
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("pppalma-fizzy-heavy.woff2?v=#{$build}") format("woff2");
+  src: url("PPPalma-FizzyHeavy.woff2?v=#{$build}") format("woff2");   // 800 —— 客户授权文件
   font-weight: 800;
   font-style: normal;
   font-display: swap;
+}
+
+// PP Palma Fallback —— 度量对齐的系统字体，专治「字体换上时整页跳一下」。
+//
+// 症状与判据：本地 http server 把 woff2 响应压后 1200ms 模拟真实链路，
+// PerformanceObserver 在 ~1300ms（正好是字体到位那一刻）收到一整条 layout-shift，
+// 首页 CLS 0.064 / PDP 0.043 / Science 0.045 —— 位移源是 .gb-logo-scroll、
+// .gb-product__guarantees、.gb-page-hero__text 这些跟着文字宽高走的块。
+// 根因不是哪个模块写错了，是 `font-display: swap` 的固有代价：swap 窗口里用系统
+// 字体排版，PP Palma 比它宽 6~10%、行高也不同，真字体一到位所有文本重新排，
+// 下方内容整体位移。
+//
+// 修法是给系统字体套一层度量矫正，让 swap 窗口里的排版结果先对上 PP Palma，
+// 真字体到位时几乎没有可位移的量。三个描述符都是实测算的，不是抄来的经验值：
+//   size-adjust      = PP Palma 该字重的行宽 / Arial 行宽
+//   ascent-override  = (2010/2000) / size-adjust    ← 2010 / -510 / 2000 取自
+//   descent-override = ( 510/2000) / size-adjust      字体 OS/2 的 sTypoAscender 等
+//
+// ⚠ size-adjust 那个比值**必须拿站上真实文案去量，不能用字母表样本**。第一版
+//   用的是 "Handgloves ABC…abc…012…" 这种全字母表串，算出 400 = 107.26%，
+//   看着对齐到 0.03%，实际上正文照样差 7%（.gb-hero__lead 实测 fallback 比
+//   PP Palma 窄 7.09%）—— 因为 PP Palma 相对 Arial 的宽窄在大小写和数字之间
+//   并不一致，而字母表样本里大写与数字的占比远高于真实句子。现在这组值是遍历
+//   全站 11 页、按字重收集真实文本、以字符数加权算出来的（400 用了 15729 字符
+//   / 516 段，是正文主体；300 只有营养表那点数字，所以反而比 Arial 窄）。
+//   换文案或改字体后要重算，脚本思路见 round 28 记录。
+//
+// 四个字重各自的宽度不一样（Fizzy 裁切比 plain family 紧，且各字重的实际用途
+// 决定了文案特征不同），所以**一个字重一条规则**，不能合成一条。
+//
+// local() 里三个名字是同一套度量的三个常见身份（Windows/Mac 的 Arial、Mac 的
+// Helvetica、多数 Linux 发行版的 Liberation Sans），本机实测三者行宽完全相同
+// （4172.2）。都没有的机器上这条 @font-face 解析不出来，字体匹配自然落到
+// $sans-fallback，等于回到改动前的行为，不会更糟。
+@font-face {
+  font-family: "PP Palma Fallback";
+  src: local("Arial"), local("Helvetica"), local("Liberation Sans");
+  font-weight: 300;
+  size-adjust: 91.86%;
+  ascent-override: 109.41%;
+  descent-override: 27.76%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "PP Palma Fallback";
+  src: local("Arial"), local("Helvetica"), local("Liberation Sans");
+  font-weight: 400;
+  size-adjust: 113.89%;
+  ascent-override: 88.24%;
+  descent-override: 22.39%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "PP Palma Fallback";
+  src: local("Arial"), local("Helvetica"), local("Liberation Sans");
+  font-weight: 500;
+  size-adjust: 109.45%;
+  ascent-override: 91.82%;
+  descent-override: 23.30%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "PP Palma Fallback";
+  src: local("Arial"), local("Helvetica"), local("Liberation Sans");
+  font-weight: 800;
+  size-adjust: 105.14%;
+  ascent-override: 95.59%;
+  descent-override: 24.25%;
+  line-gap-override: 0%;
 }
 
 // Figtree — variable font, PP Palma stand-in
@@ -1095,9 +1122,9 @@ html.js {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 14px;
+    width: 16px;
     height: 2px;
-    margin: -1px 0 0 -7px;
+    margin: -1px 0 0 -8px;   // 负 margin 恒为 -width/2，改宽度必须同步改这里
     border-radius: 1px;
     background: currentColor;
   }
@@ -1151,7 +1178,7 @@ html.js {
 
 .gb-btn--primary {
   height: 40px;
-  padding: 0 40px;
+  padding: 0 42px;
   background: $c-green;
   color: $c-white;
 
@@ -1208,24 +1235,26 @@ html.js {
 
 // Nutritional label panel — Figma 336:31534 (Nutritional Information tab),
 // 336:34120 (Ingredient List tab), 336:28414 (mobile).
-// Note 401:31227: slides up from the bottom of the screen and slides back down
-// the same way on close, so both directions share one curve.
+// 批注 401:31227 原本要求「从屏幕底部上滑、原路滑回」，第二十八轮按需求方要求
+// 全站弹窗一律改成**纯淡入淡出**，不再有任何位移 —— 三个弹窗（nl / rv / promo）
+// 统一，见下方另外两处。位移撤掉后 translateY 那一路全部换成 opacity，
+// will-change 也跟着换，留着 transform 会白占一个合成层。
 // The design carries no timing, so 0.4s / the iOS sheet curve is a house choice.
-// 进场与退场不共用一组值（任务文档第 1 条）。进场那条是「起步快、末端缓」的 out
+// 进场与退场不共用一组值（第十九轮）。进场那条是「起步快、末端缓」的 out
 // 型曲线，倒过来播就是「一上来先冲掉大半行程」—— 面板还没看清就没了，观感即
 // 「关闭太快」，而不是时长真的短（进退场本来都是 0.4s）。退场改用对称的 in-out
-// 并加长到 0.55s：前三分之一几乎不动，收得住。
-$nl-slide:     0.4s;                             // 进场
-$nl-ease:      cubic-bezier(0.32, 0.72, 0, 1);
-$nl-slide-out: 0.55s;                            // 退场
-$nl-ease-out:  $ease-in-out;
+// 并加长到 0.55s：前三分之一几乎不动，收得住。淡入淡出同样吃这套非对称时长。
+$nl-fade:     0.4s;                             // 进场
+$nl-ease:     cubic-bezier(0.32, 0.72, 0, 1);
+$nl-fade-out: 0.55s;                            // 退场
+$nl-ease-out: $ease-in-out;
 
 .gb-nl-modal {
   position: fixed;
   inset: 0;
   z-index: $z-modal;
   visibility: hidden;
-  transition: visibility 0s linear $nl-slide-out;
+  transition: visibility 0s linear $nl-fade-out;
 
   &.is-open {
     visibility: visible;
@@ -1239,16 +1268,16 @@ $nl-ease-out:  $ease-in-out;
   background: rgba(0, 0, 0, 0.5);
   opacity: 0;
   // 基础态上的 transition 管的是「回到基础态」，也就是关闭
-  transition: opacity $nl-slide-out $nl-ease-out;
+  transition: opacity $nl-fade-out $nl-ease-out;
 
   .gb-nl-modal.is-open & {
     opacity: 1;
-    transition: opacity $nl-slide $nl-ease;
+    transition: opacity $nl-fade $nl-ease;
   }
 }
 
 // Positioning shell: the panel is centred on desktop and pinned to the bottom
-// edge on mobile, but travels from below the viewport in both cases.
+// edge on mobile. 它只管「停在哪」，出现方式是面板自己的淡入淡出。
 .gb-nl-modal__wrap {
   position: absolute;
   inset: 0;
@@ -1275,13 +1304,13 @@ $nl-ease-out:  $ease-in-out;
   border-radius: $r-xl;
   overflow: hidden;
   pointer-events: auto;
-  transform: translateY(100vh);
-  transition: transform $nl-slide-out $nl-ease-out;
-  will-change: transform;
+  opacity: 0;
+  transition: opacity $nl-fade-out $nl-ease-out;
+  will-change: opacity;
 
   .gb-nl-modal.is-open & {
-    transform: translateY(0);
-    transition: transform $nl-slide $nl-ease;
+    opacity: 1;
+    transition: opacity $nl-fade $nl-ease;
   }
 
   // Mobile frame is 698 tall inside a 743 page viewport -> 45px of page stays visible
@@ -1612,13 +1641,13 @@ $rv-in: 0.28s;
   border-radius: $r-xl;
   overflow: hidden;
   pointer-events: auto;
+  // 第二十八轮：原来还叠了 scale(0.94)→1 的放大，按需求方「所有弹窗只淡入淡出」
+  // 一并撤掉，这里现在与 nl / promo 两个弹窗同构，只有 opacity 一条通道。
   opacity: 0;
-  transform: scale(0.94);
-  transition: opacity $rv-in $ease-out, transform $rv-in $ease-out;
+  transition: opacity $rv-in $ease-out;
 
   .gb-rv-modal.is-open & {
     opacity: 1;
-    transform: scale(1);
   }
 }
 
@@ -1660,12 +1689,383 @@ $rv-in: 0.28s;
   &:active { transform: scale(0.94); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  // Only the transform is restated here. Durations are already flattened by the
-  // reset's !important block, which this could never outrank; transform is not
-  // a duration, so it has to be said locally.
-  .gb-rv-panel { transform: none; }
+// 第二十八轮撤掉 scale 之后，这里原本那条 `.gb-rv-panel { transform: none; }`
+// 就成了死代码（面板已经没有 transform 了），一并删掉。弹窗的时长本来就由
+// reset 的 !important 块压平，reduced-motion 下不需要再单独说什么。
+
+// Promo modal — "Get 20% off your first order" (Figma 285:18988/285:19179
+// mobile, 285:19373 desktop, all three mislabelled "Pop up"/"Homepage Desktop").
+// Never built in the first 25 rounds — the audit that caught the "285:19373 is
+// really a popup, not the homepage" naming trap only recorded the naming bug,
+// not that the popup itself was still missing. Homepage-only, auto-opens once
+// per session (house choice, no delay value in the design — see main.js).
+//
+// Two states share one markup: [data-promo-panel] siblings toggled by `hidden`
+// (email capture vs. the revealed-code panel); JS just flips which one is
+// visible, no re-render. The desktop frame only has the email state mocked —
+// the code state below is adapted from the mobile code-state frame onto the
+// desktop column width, same as Shipping's desktop layout being adapted from
+// Privacy Policy (no source for it either).
+// 第二十八轮：与 nl / rv 一起改成纯淡入淡出，不再从视口底部上滑。
+$promo-fade:     0.4s;
+$promo-ease:     cubic-bezier(0.32, 0.72, 0, 1);
+$promo-fade-out: 0.5s;
+
+.gb-promo-modal {
+  position: fixed;
+  inset: 0;
+  z-index: $z-modal;
+  visibility: hidden;
+  transition: visibility 0s linear $promo-fade-out;
+
+  &.is-open {
+    visibility: visible;
+    transition-delay: 0s;
+  }
 }
+
+.gb-promo-modal__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity $promo-fade-out $ease-in-out;
+
+  .gb-promo-modal.is-open & {
+    opacity: 1;
+    transition: opacity $promo-fade $promo-ease;
+  }
+}
+
+.gb-promo-modal__wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+
+  @include pc { padding: 24px; }
+}
+
+.gb-promo-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  // Content and art size by their own content/fixed height; space-between
+  // puts all of the viewport's leftover height into the one gap between
+  // them, matching the design's own two-child justify:space-between (build
+  // dump: content 460 + art 252 + one gap = the frame's 744 exactly).
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  background: $c-sand;
+  overflow: hidden;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity $promo-fade-out $ease-in-out;
+  will-change: opacity;
+
+  .gb-promo-modal.is-open & {
+    opacity: 1;
+    transition: opacity $promo-fade $promo-ease;
+  }
+
+  @include pc {
+    flex-direction: row;
+    justify-content: flex-start;
+    width: 1062px;
+    height: 528px;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: $r-xl;
+  }
+}
+
+// Bear art -------------------------------------------------------------
+// Bottom strip on mobile (bears sit under the form, per the design's own
+// child order); full-height left column on desktop. Positions below are
+// lifted straight from the Figma bboxes relative to this container — see
+// round 26 changelog for the numbers, not worth re-deriving by eye.
+.gb-promo-panel__art {
+  order: 2;   // mobile: art sits below the form — see .gb-promo-panel__content
+  position: relative;
+  flex-shrink: 0;
+  width: 100%;
+  height: 252px;
+  background: $c-white;
+  overflow: hidden;
+
+  @include pc {
+    order: 0;
+    width: 531px;
+    height: 100%;
+    background: $c-cream;
+  }
+}
+
+.gb-promo-panel__bear,
+.gb-promo-panel__bear-glow {
+  position: absolute;
+  display: block;
+  max-width: none;
+}
+
+.gb-promo-panel__bear-glow--lg { left: 65.49px;  top: 8.47px;   width: 173.82px; height: 209.68px; }
+.gb-promo-panel__bear--lg      { left: 5.76px;   top: -7.53px;  width: 282.06px; height: 237.54px; }
+.gb-promo-panel__bear-glow--sm { left: 191.59px; top: 79.51px;  width: 115.72px; height: 147.4px; }
+.gb-promo-panel__bear--sm      { left: 140px;    top: 52px;     width: 227.83px; height: 200.36px; }
+
+@include pc {
+  .gb-promo-panel__bear-glow--lg { left: 47.04px;  top: 86.84px;  width: 282.09px; height: 340.93px; }
+  .gb-promo-panel__bear--lg      { left: -49.9px;  top: 60.83px;  width: 457.76px; height: 385.51px; }
+  .gb-promo-panel__bear-glow--sm { left: 251.69px; top: 202.36px; width: 187.81px; height: 239.67px; }
+  .gb-promo-panel__bear--sm      { left: 167.96px; top: 157.62px; width: 369.74px; height: 325.16px; }
+}
+
+// The vertical scalloped seam between the two desktop columns (285:19373's
+// "Union" vector). It is the exact same full-circle-per-tile wave family as
+// the unused assets/deco-scallop-card.svg (radius:period ratio matches to
+// within rounding — that file was very likely exported for this component
+// and never wired up) — rebuilt here as a repeating radial-gradient instead
+// of shipping another SVG, same technique as .gb-scallop just rotated: the
+// circle's fixed axis is X instead of Y, and three Y-copies (50/-50/150%)
+// stand in for .gb-scallop's three X-copies so circles that straddle a tile
+// seam still paint whole. Desktop only — mobile's bears sit on a plain strip.
+.gb-promo-panel__divider {
+  display: none;
+
+  @include pc {
+    display: block;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 126px;
+    height: 764px;
+    transform: translate(-50%, -50%);
+    background-image:
+      radial-gradient(circle 63px at 50% 50%,   $c-sand 99.5%, transparent 100%),
+      radial-gradient(circle 63px at 50% -50%,  $c-sand 99.5%, transparent 100%),
+      radial-gradient(circle 63px at 50% 150%,  $c-sand 99.5%, transparent 100%);
+    background-size: 100% 106.36px;
+    background-repeat: repeat-y;
+    background-position: center top;
+    pointer-events: none;
+  }
+}
+
+// Content --------------------------------------------------------------
+.gb-promo-panel__content {
+  order: 1;
+  position: relative;
+  flex-shrink: 0;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+
+  @include pc { order: 0; width: 531px; height: 100%; }
+}
+
+.gb-promo-panel__head {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.gb-promo-panel__logo {
+  display: inline-flex;
+  height: 24px;
+
+  svg { height: 100%; width: auto; }
+}
+
+.gb-promo-panel__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: $c-white;
+  border-radius: 50%;
+  color: $c-green;
+  transition: trans(background-color);
+
+  svg { width: 20px; height: 20px; }
+
+  @include hover { background: $c-lime-100; }
+}
+
+.gb-promo-panel__body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  padding: 0 40px 40px;
+  text-align: center;
+
+  @include pc {
+    justify-content: center;
+    padding: 0 64px 32px;
+  }
+}
+
+.gb-promo-panel__title {
+  max-width: 310px;
+  font-family: $font-brand-stack;
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 40px;
+  letter-spacing: -0.36px;
+  color: $c-green;
+  text-shadow: ink-outline(0.4167em, $c-lime);
+
+  @include pc {
+    max-width: 403px;
+    font-size: 40px;
+    line-height: 48px;
+    letter-spacing: -0.4px;
+    text-shadow: ink-outline(0.4em, $c-lime);
+  }
+}
+
+.gb-promo-panel__lead {
+  max-width: 310px;
+  font-family: $font-brand-stack;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: $c-gray-700;
+  margin-top: -8px;   // pulls it back under __title's own gap:32 without a nested wrapper
+
+  @include pc {
+    max-width: 403px;
+    font-size: 18px;
+    line-height: 28px;
+    letter-spacing: -0.36px;
+  }
+}
+
+.gb-promo-panel__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 20px;
+  width: 100%;
+  max-width: 310px;
+
+  @include pc { max-width: 403px; }
+}
+
+.gb-promo-panel__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gb-promo-panel__field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 10px 14px;
+  background: $c-white;
+  border: 1px solid rgba(1, 19, 7, 0.1);
+  border-radius: $r-sm;
+
+  &--code { border-style: dashed; justify-content: center; }
+}
+
+.gb-promo-panel__field-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: $c-gray-600;
+}
+
+.gb-promo-panel__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: $font-brand-stack;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -0.32px;
+  color: $c-ink;
+
+  &::placeholder { color: $c-gray-700; }
+}
+
+.gb-promo-panel__code {
+  font-family: $font-brand-stack;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -0.32px;
+  color: $c-ink;
+  text-align: center;
+}
+
+// Redeem now / Copy code — same pill shape as .gb-btn but its own sizing
+// (44 mobile / 52 desktop with different padding isn't one of the existing
+// .gb-btn--* steps).
+.gb-promo-panel__submit,
+.gb-promo-panel__copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 40px;
+  background: $c-green;
+  border: 1px solid $c-green;
+  border-radius: $r-pill;
+  font-family: $font-brand-stack;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: $c-white;
+  cursor: pointer;
+  transition: trans(background-color, color, border-color, transform);
+
+  &:active { transform: translateY(1px); }
+  @include hover { background: $c-lime; border-color: $c-lime; color: $c-green-900; }
+
+  @include pc {
+    height: 52px;
+    padding: 0 64px;
+    line-height: 28px;
+    letter-spacing: 0.48px;
+  }
+}
+
+.gb-promo-panel__dismiss {
+  font-family: $font-brand-stack;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: $c-gray-600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: trans(color);
+
+  @include hover { color: $c-green; }
+
+  @include pc { font-size: 16px; line-height: 24px; letter-spacing: -0.32px; }
+}
+
+// 第二十八轮：面板改纯淡入淡出后，这里原本那条
+// `@media (prefers-reduced-motion: reduce) { .gb-promo-panel { transform: none } }`
+// 已无对应的 transform 可关，与 .gb-rv-panel 那条一起删掉。
 
 // ==========================================================================
 // 原 components/_motion.scss
@@ -1794,6 +2194,90 @@ $rv-in: 0.28s;
   transform: none;
 }
 
+// Line reveal ----------------------------------------------------------------
+// The other half of "全站文字出现效果" (notes 401:29596 / 216:5903), never built
+// in round 1 — the word-scatter pop above is reserved for the STATISTICS
+// numbers; running copy on the reference site goes through GSAP SplitText
+// {type:"lines", mask:"lines"} instead: each visual line gets its own
+// overflow:hidden mask, and the line's own box tweens y:100%→0% inside it, so
+// the line looks like it is revealed by a hard edge sliding up rather than
+// fading in. Params transcribed from the same chunk: duration 1.4,
+// ease power4.out, stagger .15 (150ms/line), ScrollTrigger top 95% once.
+// power4.out(t) = 1-(1-t)^5, sampled the same way as the back.out curves above.
+:root {
+  --e-power4-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --e-power4-out: linear(0.0000 0%, 0.1846 4%, 0.3409 8%, 0.4723 12%, 0.5818 16%, 0.6723 20%, 0.7464 24%, 0.8065 28%, 0.8546 32%, 0.8926 36%, 0.9222 40%, 0.9449 44%, 0.9620 48%, 0.9745 52%, 0.9835 56%, 0.9898 60%, 0.9940 64%, 0.9966 68%, 0.9983 72%, 0.9992 76%, 0.9997 80%, 0.9999 84%, 1.0000 88%, 1.0000 92%, 1.0000 96%, 1.0000 100%);
+}
+
+// main.js wraps each visual line in .gb-line-mask > .gb-line-mask__inner and
+// stamps --line-i for the stagger. Whitespace inside a line stays a real text
+// node; only the line-break points get new elements, same discipline as the
+// word split above.
+[data-line-reveal] {
+  opacity: 0;
+}
+
+// --line-descend 是留给下伸笔画（g / y / p 的尾巴）的余量。mask 的 overflow
+// 按行盒裁，而行盒不等于墨迹盒：canvas TextMetrics 实测全站标题里行高最紧的
+// .gb-footer-cta__title（36/40）墨迹伸出行盒底部 1.5px，直接套 mask 会把
+// "gummies" 的 g 削平。其余标题与正文都还有 1~10px 余量，为一个特例单开规则
+// 不如把余量做进 mask 本身。
+//
+// 余量给 inner 的 padding-bottom（于是它在裁切区之内不被裁），mask 再用等量
+// 负 margin 从布局里抵消 —— 行距与改动前逐像素一致。
+// ⚠ 余量不能改挂到 mask 的 padding 上：translateY(100%) 的 100% 参照 inner 自身
+//   高度，padding 在 mask 上时这个行程只有一个内容盒高，起始态的文字会停在
+//   mask 的 padding 区里露出来，遮罩就漏了。挂在 inner 上才能让 100% 把余量
+//   一起算进行程。
+// ⚠ 负 margin 会从最后一行穿透出去（父元素没有 padding/border 时 margin 折叠
+//   会带着它跑到 h2/p 外面，把下方间距吃掉 0.12em），所以宿主要建 BFC，见
+//   .is-split[data-line-reveal] 的 display:flow-root。
+$line-descend: 0.12em;
+
+.gb-line-mask {
+  display: block;
+  overflow: hidden;
+  margin-bottom: -$line-descend;
+}
+
+.gb-line-mask__inner {
+  display: block;
+  padding-bottom: $line-descend;
+  transform: translateY(100%);
+  will-change: transform;
+}
+
+.is-split[data-line-reveal] {
+  opacity: 1;
+  // 拦住上面那条负 margin，别让它折叠穿透到宿主外面去改动相邻间距
+  display: flow-root;
+}
+
+.is-revealed .gb-line-mask__inner {
+  animation: gm-line-up 1.4s var(--e-power4-out) both;
+  animation-delay: calc(var(--line-i, 0) * 150ms);
+}
+
+// A viewport resize re-splits lines because the wrap points moved. A line that
+// already finished revealing must not replay the slide-up on every resize, so
+// JS re-splits under .is-settled instead of .is-revealed, which drops the new
+// nodes straight into the end state with no animation.
+.is-settled .gb-line-mask__inner {
+  animation: none;
+  transform: translateY(0);
+}
+
+@keyframes gm-line-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+// Script off or still parsing: text must never be stuck invisible
+.no-js [data-line-reveal],
+[data-line-reveal]:not(.is-split) {
+  opacity: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .gb-float-art {
     animation: gm-fade-in 0.4s ease-out 0.2s both;
@@ -1806,6 +2290,20 @@ $rv-in: 0.28s;
   .is-popped .gb-pop-word {
     animation: gm-fade-in 0.4s ease-out both;
     animation-delay: calc(var(--pop-i, 0) * 20ms);
+  }
+
+  // Reference's own fallback is a plain opacity fade with no line motion at
+  // all; matched to the pop-word fallback's small stagger for consistency
+  // rather than reproducing the reference's literal "one fade, no stagger".
+  .gb-line-mask__inner {
+    transform: none;
+    opacity: 0;
+  }
+
+  .is-revealed .gb-line-mask__inner,
+  .is-settled .gb-line-mask__inner {
+    animation: gm-fade-in 0.4s ease-out both;
+    animation-delay: calc(var(--line-i, 0) * 20ms);
   }
 }
 
@@ -2165,7 +2663,7 @@ $rv-in: 0.28s;
 .gb-header__toggle {
   display: inline-flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   justify-self: start;
   color: $c-green;
   font-family: $font-brand-stack;
@@ -2186,7 +2684,7 @@ $rv-in: 0.28s;
     .gb-header__toggle-label, .gb-icon-chevron { display: none; }
     .gb-icon-menu { display: block; }
   }
-  @include tablet { gap: fluid(0, 16px); }
+  @include tablet { gap: fluid(0, 18px); }
 }
 
 .gb-header.is-open .gb-header__toggle {
@@ -2610,8 +3108,8 @@ body.is-menu-open {
 
 .gb-footer-cta__title {
   max-width: 625px;
-  margin-top: 38px;
-  margin-bottom: 30px;
+  margin-top: 40px;
+  margin-bottom: 23px;
   font-size: 36px;
   line-height: 40px;
   letter-spacing: -0.36px;
@@ -2622,6 +3120,7 @@ body.is-menu-open {
   max-width: 625px;
   margin-top: -6px;
   margin-bottom: 32px;
+  padding: 0 20px;
   font-size: 18px;
   line-height: 28px;
   letter-spacing: -0.36px;
@@ -2788,6 +3287,8 @@ body.is-menu-open {
     gap: 32px;
   }
   @include tablet { gap: fluid(32px, 24px); }
+  // 稿里最后一列的字比版心右缘还出去 2px，桌面稿独有
+  @include pc { margin-right: -2px; }
 }
 
 .gb-footer__link-group {
@@ -3141,9 +3642,9 @@ body.is-menu-open {
   width: 100%;
   max-width: $w-design;
   margin: 0 auto;
-  padding: 56px 110px 88px;
+  padding: 56px 110px 91px;
 
-  @include tight { gap: 48px; padding: 56px 60px 88px; }
+  @include tight { gap: 48px; padding: 56px 60px 91px; }
   @include stack { padding: 48px 40px 72px; }
 
   @include narrow {
@@ -3265,6 +3766,9 @@ body.is-menu-open {
   // Split into two layers: "6g" puts the unit in its own inline box, and that
   // box paints its halo after the 6 is already down. See ink-split().
   @include ink-split(0.1551em, $c-lime);   // Figma: 5px @ 32.24px
+
+  // 稿里数字相对标签不是正居中，往右偏 7px；只有桌面稿这么画
+  @include pc { margin-left: 7px; }
 }
 
 // PP Palma renders the unit smaller; the design sets it explicitly
@@ -3442,6 +3946,10 @@ body.is-menu-open {
 
 .gb-stats {
   position: relative;
+  // 抬一层，好让 .gb-stats__deco-bear 探出底边的那半只熊压在下一块
+  // （.gb-science，不透明底色）之上 —— 稿里它就是骑在两块交界的波浪上的。
+  // $z-base 是 1，离 header 的 100 还很远，不会盖住吸顶栏。
+  z-index: $z-base;
   background: $c-cream;
   padding: 96px 0 calc(120px + var(--sc-h));
 
@@ -3714,20 +4222,33 @@ body.is-menu-open {
 
 // 波浪右侧那只小熊（对话反馈：这里一直缺了它）。稿里的对应节点没能在本地
 // figma/nodes/ 里查到（大概率是设计稿在首次拉取之后又改过），只能按设计截图
-// 反推坐标，都是相对 .gb-stats 自身量出来的百分比。素材是 bear-gummy-glow.png
-// 裁掉透明边距后的版本（figma/nodes 里同一张图当年做过 promo-art 合成源）。
-// 用 translate(-50%,-50%) 钉中心点，量出来的宽高哪怕有点误差，视觉中心也不会偏。
-// ⚠ 熊心的 y 不能按截图原样填：.gb-stats 自己没有 overflow，熊只要探出 section
-// 底边，就会被下一个 section（.gb-science，不透明底色）的正常层叠盖住下半截——
-// 截图量出来的中心本来在 103%，收到 89.5%（手机 100.3%→91.5%）才能让熊全须
-// 全尾留在 .gb-stats 自己的画面里，比稿子里那处略往上，是这个限制换来的。
+// 反推坐标。素材是 bear-gummy-glow.png 裁掉透明边距后的版本（figma/nodes 里
+// 同一张图当年做过 promo-art 合成源）。用 translate 钉中心点，量出来的宽高
+// 哪怕有点误差，视觉中心也不会偏。
+//
+// 第二十八轮：熊按需求方要求落回稿里的位置（原话「应该在 gb-science 里面的
+// gb-scallop 上面」——即压在那道 cream→sand 的波浪之上、下半截探进下面那块
+// 的地盘，而不是像之前那样整只缩在 .gb-stats 自己的画面里）。
+//
+// 之前缩上去是因为 .gb-stats 没有 overflow，熊一探出 section 底边就被下一个
+// section（.gb-science，不透明底色）按正常层叠盖住下半截；当时的解法是把中心
+// 从 103% 收到 89.5%（手机 100.3%→91.5%）。现在改成给 .gb-stats 一个
+// z-index 让它整块压过 .gb-science（见那条规则），熊就能待在稿里的位置。
+//
+// 位置改成按 **stats 底边** 反推，不再用相对 section 总高的百分比：波浪恒定贴在
+// 底边，熊要对齐的也是波浪，用 bottom 就不受 section 内容高度变化影响。
+// 设计截图实测（非背景像素包围盒，两种判据取到同一个纵向结果）：
+//   桌面 1440：波浪顶边 y2514，熊心 y2535  → 熊心在波浪顶边下方 21px
+//   手机  390：波浪顶边 y2488，熊心 y2504.5 → 16.5px
+// 于是「熊心距 stats 底边」= 波浪高 − 该偏移。波浪高读 --sc-h 而不是写死
+// 96 / 48 —— 它是 clamp() 流体值，写死会在中间宽度上错位。
 .gb-stats__deco-bear {
   position: absolute;
   left: 81.25%;
-  top: 89.5%;
+  bottom: calc(var(--sc-h) - 21px);
   width: 10.1%;
   aspect-ratio: 387 / 583;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, 50%);
   pointer-events: none;
 
   img { display: block; width: 100%; height: 100%; object-fit: contain; }
@@ -3736,7 +4257,7 @@ body.is-menu-open {
   // tablet 档了——跟 .gb-stats__bear 自己的位置百分比是同一个做法。
   @include narrow {
     left: 69.2%;
-    top: 91.5%;
+    bottom: calc(var(--sc-h) - 16.5px);
     width: 25.6%;
   }
 }
@@ -3781,7 +4302,7 @@ body.is-menu-open {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   text-align: center;
 }
 
@@ -4032,7 +4553,7 @@ body.is-menu-open {
 }
 
 .gb-highlight-card__text {
-  max-width: 300px;
+  max-width: 271px;
   font-size: 16px;
   line-height: 24px;
   letter-spacing: -0.32px;
@@ -4468,7 +4989,7 @@ body.is-menu-open {
 .gb-product__guarantees {
   display: flex;
   justify-content: center;
-  gap: 24px;
+  gap: 30px;
 }
 
 .gb-product__guarantee {
@@ -4484,6 +5005,9 @@ body.is-menu-open {
   text-align: center;
 
   svg { width: 34px; height: 32px; color: $c-cream; }
+
+  // 文案比图标窄一档，稿里三条保证的两行断点就是这么来的
+  span { max-width: 86%; }
 }
 
 // Accordion. Rows are the design's own labels; what opens under them is the
@@ -4876,7 +5400,7 @@ body.is-menu-open {
 .gb-reviews__disclaimer {
   max-width: 626px;
   margin-top: 48px;
-  padding: 0 20px;
+  padding: 0;
   font-size: 14px;
   line-height: 22px;
   letter-spacing: -0.28px;

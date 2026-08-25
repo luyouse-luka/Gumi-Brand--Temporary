@@ -54,6 +54,10 @@ PROBE = """() => {
     if (a.right <= 0 || a.left >= W) continue;
     // SVG 的 textPath 沿路径排字，boundingClientRect 本来就跟墨迹对不上
     if (el.ownerSVGElement || el.tagName === 'svg') continue;
+    // .gb-line-mask 是逐行上滑入场的遮罩：揭示前内容 translateY(100%) 蹲在
+    // overflow:hidden 框外本来就该看不见（opacity 仍是 1，上面那条挡不住它），
+    // 不是溢出 bug。150ms 的探测时机也来不及等它滚入视口触发揭示。
+    if (cl.classList.contains('gb-line-mask')) continue;
     const dx = Math.max(0, b.left - a.left, a.right - b.right);
     const dy = Math.max(0, b.top - a.top, a.bottom - b.bottom);
     if (dx > 2 || dy > 2)

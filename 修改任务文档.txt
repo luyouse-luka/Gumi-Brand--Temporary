@@ -1,11 +1,9 @@
-1. gb-nl-modal 关闭消失的速度太快了
-2. gb-product__accordion 去掉gap，给gb-product__acc-row或者gb-product__acc-item加上padding-b，这样点击details下方不会出现点不到的情况。同时尽量还原设计，以及点击之后模块之间的间距，gb-faq__list同样如此
-3.gb-acc-icon 去掉hover放大的效果，点击的active状态改为竖向的横线旋转，这里不用svg的icon表示，采用css用样式代替
-4. input的去掉:focus-visible {
-    outline-offset: 2px;
-    outline: rgb(0, 86, 53) solid 2px;
-} 的效果，并且改为修改border-color 的颜色
-
-5. header需要sticky在顶部
-6. gb-cta-band__head svg出现了被裁的情况
-7. gb-footer-cta-wrap 的gb-scallop gb-scallop--to-lime应该是透明的
+1. 所有的pop up 出现消失的效果去掉滑动出现，改为直接淡入淡出
+2. 字体有layout shift的bug 修复
+3. 标题没有动画效果，需同步其他文本
+4. gb-header__toggle gap: 18px; .gb-btn--primary     padding: 0 42px;.gb-usp__value pc端magin-left 7px; .gb-hero__inner     padding: 56px 110px 91px;gb-stats__deco-bear 应该在gb-science里面的gb-scallop上面； .gb-science__head     gap: 14px; .gb-highlight-card__text     max-width: 271px;
+5. gb-pack-band__row 我觉得在dom里写了这么多picture 过于呆板，最好只写四个 采用其他办法保持现在的布局模式
+6. gb-product__guarantee span     max-width: 86%;.gb-product__guarantees    gap: 30px;
+7.  .gb-acc-icon::before, .gb-acc-icon::after     width: 16px; gb-testimonial__lead 的10/10 would recommend. 加 br； 
+.gb-reviews__disclaimer padding 0 ； .gb-footer-cta__title     margin-top: 40px;
+    margin-bottom: 23px;.gb-footer-cta__text     padding: 0 20px; .gb-footer__link-groups pc端     margin-right: -2px;

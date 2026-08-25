@@ -255,6 +255,264 @@
   function rand(min, max) { return min + Math.random() * (max - min); }
 
   /* ---------------------------------------------------------------------
+   * lineReveal — per-line entrance for running copy, the other half of the
+   * cravburgers.shop reference (notes 401:29596 / 216:5903). popText above is
+   * the word-scatter pop, reserved for the STATISTICS numbers; this is their
+   * GSAP SplitText {type:"lines", mask:"lines"} used everywhere else: each
+   * visual line gets its own overflow:hidden mask and slides up inside it
+   * (y:100%→0%, once revealed the mask never plays again). Timing lives in
+   * customstyle.scss; this only measures lines and builds the mask spans.
+   *
+   * Text stays readable if this never runs: [data-line-reveal] falls back to
+   * opacity:1 in CSS when .is-split never gets added.
+   * ------------------------------------------------------------------- */
+  var LINE_ROOT_MARGIN = "0px 0px -5% 0px"; /* ScrollTrigger "top 95%" */
+  var LINE_RESIZE_DEBOUNCE = 200;
+
+  var lineReveal = {
+    init: function () {
+      var els = document.querySelectorAll("[data-line-reveal]");
+      if (!els.length) return;
+      this.els = els;
+      var self = this;
+
+      /* Splitting into lines measures offsetTop, which depends on the real
+         brand font's metrics. Running before the webfont has swapped in
+         measures the fallback font instead and bakes in the wrong wrap
+         points -- above-the-fold text (the hero lead) is revealed almost
+         immediately, so it never gets a later resize to self-correct. Wait
+         for the swap, but never block longer than one frame's worth of
+         patience: a font that never resolves must not leave the page unsplit.
+
+         而 500ms 这个兜底超时在慢网络上是**一定**会先跑的，所以光有它不够：
+         第二十八轮实测（字体响应压后 1500ms）里 .gb-hero__lead / .gb-science__lead /
+         .gb-product__lead 三段都是按兜底字体的换行点分了 2 行，真字体一到位每行
+         变宽、每个遮罩里挤进两行，元素高度从 60 涨到 90 —— 一次凭空的 30px 位移，
+         而且遮罩数还停在 2，动画会两行一起滑。所以字体到位后必须**重新分行**一次。
+         groupLines 本来就是幂等的（先把旧遮罩拆回去再按当前换行点重建），已经
+         揭示过的段落会走 is-settled 直接落终态，不会把入场动画重播一遍。 */
+      var started = false;
+      var refined = false;
+
+      var start = function () {
+        if (started) return;
+        started = true;
+        self.runInitialSplit();
+      };
+
+      var refine = function () {
+        if (refined) return;
+        refined = true;
+        if (!started) { start(); return; }   // 字体够快，第一次就是拿真字体量的
+        for (var n = 0; n < self.els.length; n++) {
+          try { self.split(self.els[n]); } catch (e) { /* leave last-good state */ }
+        }
+      };
+
+      if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === "function") {
+        document.fonts.ready.then(refine, refine);
+        window.setTimeout(start, 500);
+      } else {
+        start();
+      }
+
+      /* Wrap points move with viewport width, so a resize has to re-group
+         words into fresh lines. split() itself skips already-revealed
+         elements straight to the settled end state -- see groupLines(). */
+      var timer;
+      window.addEventListener("resize", function () {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(function () {
+          for (var n = 0; n < self.els.length; n++) {
+            try { self.split(self.els[n]); } catch (e) { /* leave last-good state */ }
+          }
+        }, LINE_RESIZE_DEBOUNCE);
+      });
+    },
+
+    runInitialSplit: function () {
+      var els = this.els;
+      for (var i = 0; i < els.length; i++) {
+        try { this.split(els[i]); } catch (e) { els[i].setAttribute("data-line-failed", ""); }
+      }
+
+      if (!("IntersectionObserver" in window)) {
+        for (var j = 0; j < els.length; j++) els[j].classList.add("is-revealed");
+        return;
+      }
+
+      var io = new IntersectionObserver(function (entries, obs) {
+        for (var k = 0; k < entries.length; k++) {
+          if (!entries[k].isIntersecting) continue;
+          entries[k].target.classList.add("is-revealed");
+          obs.unobserve(entries[k].target);
+        }
+      }, { rootMargin: LINE_ROOT_MARGIN, threshold: 0 });
+
+      for (var m = 0; m < els.length; m++) io.observe(els[m]);
+    },
+
+    split: function (root) {
+      if (!root.classList.contains("is-word-split")) {
+        this.wrapWords(root);
+        root.classList.add("is-word-split");
+      }
+      this.groupLines(root);
+      root.classList.add("is-split");
+    },
+
+    /* Same discipline as popText.walk: only text nodes become spans,
+       whitespace stays a real text node, element children are left alone.
+       [data-line-reveal] hosts are plain-copy <p> elements with no nested
+       markup, so this only needs to look at root's direct children. */
+    wrapWords: function (root) {
+      var kids = Array.prototype.slice.call(root.childNodes);
+      for (var i = 0; i < kids.length; i++) {
+        var child = kids[i];
+        if (child.nodeType !== 3 || !child.nodeValue.trim()) continue;
+        var parts = child.nodeValue.split(/(\s+)/);
+        var frag = document.createDocumentFragment();
+        for (var p = 0; p < parts.length; p++) {
+          if (!parts[p]) continue;
+          if (/^\s+$/.test(parts[p])) { frag.appendChild(document.createTextNode(parts[p])); continue; }
+          var span = document.createElement("span");
+          span.className = "gb-line-word";
+          span.style.display = "inline-block";
+          span.textContent = parts[p];
+          frag.appendChild(span);
+        }
+        root.replaceChild(frag, child);
+      }
+    },
+
+    /* Unwraps any existing .gb-line-mask back to its flat children, measures
+       each .gb-line-word's offsetTop to find the current wrap points, then
+       re-wraps each run of same-top nodes in a fresh mask. Safe to call
+       repeatedly -- every resize does. */
+    groupLines: function (root) {
+      var wasRevealed = root.classList.contains("is-revealed") || root.classList.contains("is-settled");
+
+      var masks = root.querySelectorAll(".gb-line-mask");
+      for (var u = 0; u < masks.length; u++) {
+        var mask = masks[u];
+        var inner = mask.firstChild;
+        while (inner && inner.firstChild) mask.parentNode.insertBefore(inner.firstChild, mask);
+        mask.parentNode.removeChild(mask);
+      }
+
+      var nodes = Array.prototype.slice.call(root.childNodes);
+      var lines = [];
+      var current = null;
+      var lastTop = null;
+
+      for (var i = 0; i < nodes.length; i++) {
+        var node = nodes[i];
+        var isWord = node.nodeType === 1 && node.classList.contains("gb-line-word");
+        if (!isWord) {
+          if (current) current.push(node);
+          continue;
+        }
+        var top = node.offsetTop;
+        if (lastTop === null || Math.abs(top - lastTop) > 1) {
+          current = [];
+          lines.push(current);
+          lastTop = top;
+        }
+        current.push(node);
+      }
+
+      for (var l = 0; l < lines.length; l++) {
+        var maskEl = document.createElement("span");
+        maskEl.className = "gb-line-mask";
+        var innerEl = document.createElement("span");
+        innerEl.className = "gb-line-mask__inner";
+        innerEl.style.setProperty("--line-i", l);
+        for (var n = 0; n < lines[l].length; n++) innerEl.appendChild(lines[l][n]);
+        maskEl.appendChild(innerEl);
+        root.appendChild(maskEl);
+      }
+
+      if (wasRevealed) {
+        root.classList.remove("is-revealed");
+        root.classList.add("is-settled");
+      }
+    }
+  };
+
+  /* ---------------------------------------------------------------------
+   * packBand — 营养区那条斜着铺过去的包装袋。
+   *
+   * 标记里每行只留两个 <picture>（任务文档第 5 条：DOM 里写 21 个同样的
+   * <picture> 太呆板），铺满屏幕要几个由这里按当前节距算出来再克隆补齐 ——
+   * 跟 .gb-bear-meter 用 JS 生成 100 个小熊是同一个路子。
+   *
+   * 原来两行写死 10 / 11 个，是照最宽的情况配的：桌面要铺 4385px、手机 2160px，
+   * 而视口分别只有 1440 / 390，两端都大幅过量。节距 --pack-w / --pack-gap 都是
+   * fluid()，随视口连续变化，个数本来就该跟着算。
+   *
+   * ⚠ 量宽度只能用 offsetWidth：.gb-pack-band 整条转了 -6.556°，
+   *   getBoundingClientRect() 给的是旋转后的外接盒，拿它算节距会偏大
+   *   （同一类坑见 memory figma-rotated-frame-bbox-is-not-the-artwork）。
+   * ⚠ 两行个数必须一奇一偶：稿里的砖缝错位就是靠行宽差一个节距、
+   *   再由 align-items:center 各自居中得来的，两行一样多就对齐了。
+   * ------------------------------------------------------------------- */
+  var PACK_BAND_TILT = 6.556;   // deg，与 .gb-pack-band 的 rotate 保持一致
+
+  var packBand = {
+    init: function () {
+      var band = document.querySelector("[data-pack-band]");
+      if (!band) return;
+      var rows = band.querySelectorAll(".gb-pack-band__row");
+      if (!rows.length) return;
+      this.rows = rows;
+
+      var self = this;
+      this.fill();
+
+      var timer;
+      window.addEventListener("resize", function () {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(function () { self.fill(); }, 200);
+      }, { passive: true });
+    },
+
+    fill: function () {
+      var seed = this.rows[0].firstElementChild;
+      if (!seed) return;
+      /* ⚠ 量的必须是 <img> 不是 <picture>：站里 picture 一律 display:contents
+         （见 helpers 里那条规则），它自己没有盒子，offsetWidth 恒为 0，真正的
+         flex 项是里面那个 img。computed width 是求值后的 used value，比
+         offsetWidth 多带小数（388.25 vs 388），累到十几个袋子上差得出来。
+         也不能去读 --pack-w：自定义属性的 computed 是没求值的 clamp() 串。 */
+      var probe = (seed.querySelector && seed.querySelector("img")) || seed;
+      var packW = parseFloat(window.getComputedStyle(probe).width) || probe.offsetWidth;
+      if (!packW) return;                    // 还没布局出来，等 resize 再来
+      var gap = parseFloat(window.getComputedStyle(this.rows[0]).columnGap) || 0;
+      var pitch = packW + gap;
+      if (pitch <= 0) return;
+
+      // 斜着铺，水平方向要多盖住转过去的那两角；+2 保证两侧一定被裁掉、
+      // 不会露出排头排尾（稿里就是被裁的）
+      var span = window.innerWidth / Math.cos(PACK_BAND_TILT * Math.PI / 180);
+      var base = Math.ceil(span / pitch) + 2;
+      /* 第一行钉成偶数，跟原来写死的 10 / 11 相位一致：两行都靠 align-items:center
+         居中，偶数行的中线落在两个袋子中间那道缝上、奇数行落在正中那个袋子上，
+         错开的正好是半个节距。只保证「一奇一偶」是不够的 —— 若算出 5 / 6，
+         错位量虽然还是半个节距，但两行的角色对调了，砖缝跟稿里反过来。 */
+      if (base % 2) base++;
+
+      for (var i = 0; i < this.rows.length; i++) this.setCount(this.rows[i], base + i);
+    },
+
+    setCount: function (row, n) {
+      var seed = row.firstElementChild;
+      if (!seed) return;
+      while (row.children.length > n) row.removeChild(row.lastElementChild);
+      while (row.children.length < n) row.appendChild(seed.cloneNode(true));
+    }
+  };
+
+  /* ---------------------------------------------------------------------
    * accordion — 同组只开一项（任务文档第 4 条）。
    *
    * 主力是原生的 <details name="…">：同名的一组里，浏览器自己保证只有一项展开，
@@ -284,8 +542,9 @@
   /* ---------------------------------------------------------------------
    * modal — the nutritional label panel (note 401:31227). Opened by any
    * [data-modal="<id>"], closed by [data-modal-close], the overlay or Escape.
-   * The element stays in the DOM so the closing slide plays in reverse;
-   * visibility is delayed in CSS rather than switched to display: none.
+   * The element stays in the DOM so the closing fade plays out (round 28
+   * dropped the slide-up in favour of a plain cross-fade); visibility is
+   * delayed in CSS rather than switched to display: none.
    * ------------------------------------------------------------------- */
   var FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
@@ -376,6 +635,80 @@
           }
         });
       }
+    }
+  };
+
+  /* ---------------------------------------------------------------------
+   * promoModal — "Get 20% off your first order" (Figma 285:18988/19373,
+   * both mislabelled — see round 26 changelog). Markup only exists on
+   * index.html, so "does #promo-modal exist" already scopes this to the
+   * homepage; no page-detection needed. Auto-opens once per tab session —
+   * the delay and the once-per-session rule are house choices, the design
+   * carries no trigger spec at all.
+   * ------------------------------------------------------------------- */
+  var promoModal = {
+    DELAY: 5000,
+    SEEN_KEY: "gb-promo-seen",
+
+    init: function () {
+      var el = document.getElementById("promo-modal");
+      if (!el) return;
+      this.bindForm(el);
+      this.bindCopy(el);
+
+      var seen;
+      try { seen = sessionStorage.getItem(this.SEEN_KEY); } catch (e) { seen = null; }
+      if (seen) return;
+
+      var self = this;
+      window.setTimeout(function () {
+        modal.open(el);
+        try { sessionStorage.setItem(self.SEEN_KEY, "1"); } catch (e) {}
+      }, this.DELAY);
+    },
+
+    bindForm: function (el) {
+      var form = el.querySelector("[data-promo-form]");
+      if (!form) return;
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        // No app wired up to send this to yet (MVP boundary: email-capture
+        // popups like this are normally a Klaviyo/Justuno-style app) — this
+        // just plays the design's second state so the interaction is real.
+        el.querySelector('[data-promo-panel="email"]').hidden = true;
+        var code = el.querySelector('[data-promo-panel="code"]');
+        code.hidden = false;
+        var first = code.querySelector("button, [href], input, [tabindex]");
+        if (first) first.focus();
+      });
+    },
+
+    bindCopy: function (el) {
+      var btn = el.querySelector("[data-promo-copy]");
+      var codeEl = el.querySelector("[data-promo-code]");
+      if (!btn || !codeEl) return;
+      btn.addEventListener("click", function () {
+        var text = codeEl.textContent;
+        var flash = function () {
+          var was = btn.textContent;
+          btn.textContent = "Copied!";
+          window.setTimeout(function () { btn.textContent = was; }, 2000);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(flash, flash);
+          return;
+        }
+        // Fallback for contexts without the async Clipboard API (older
+        // Safari, non-secure origins): a temporary offscreen textarea.
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.cssText = "position:fixed;top:-9999px;left:-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); } catch (e) {}
+        ta.remove();
+        flash();
+      });
     }
   };
 
@@ -809,8 +1142,9 @@
     // module after it with it, silently -- the page renders and simply stops
     // responding from that point on. Failing one module is the smaller loss.
     var modules = [["wowo", wowo], ["header", header], ["bearMeter", bearMeter],
-                   ["popText", popText], ["modal", modal], ["slider", slider],
-                   ["gallery", gallery], ["accordion", accordion],
+                   ["packBand", packBand],
+                   ["popText", popText], ["lineReveal", lineReveal], ["modal", modal], ["promoModal", promoModal],
+                   ["slider", slider], ["gallery", gallery], ["accordion", accordion],
                    ["smoothScroll", smoothScroll], ["enquiryPrefill", enquiryPrefill]];
     for (var i = 0; i < modules.length; i++) {
       try {
@@ -821,7 +1155,9 @@
     }
   });
 
-  window.gumi = { wowo: wowo, header: header, bearMeter: bearMeter, popText: popText,
-                  modal: modal, slider: slider, gallery: gallery, accordion: accordion,
+  window.gumi = { wowo: wowo, header: header, bearMeter: bearMeter, packBand: packBand,
+                  popText: popText,
+                  lineReveal: lineReveal, modal: modal, promoModal: promoModal, slider: slider,
+                  gallery: gallery, accordion: accordion,
                   smoothScroll: smoothScroll, enquiryPrefill: enquiryPrefill };
 })();

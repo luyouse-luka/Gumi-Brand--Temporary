@@ -1,34 +1,70 @@
 @font-face {
   font-family: "PP Palma";
-  src: url("pppalma-fizzy-light.woff2?v=20260824-r25") format("woff2");
+  src: url("pppalma-fizzy-light.woff2?v=20260825-r29") format("woff2");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("pppalma-fizzy-light.woff2?v=20260824-r25") format("woff2");
+  src: url("PPPalma-Regular.woff2?v=20260825-r29") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("pppalma-fizzy-medium.woff2?v=20260824-r25") format("woff2");
+  src: url("PPPalma-FizzyMedium.woff2?v=20260825-r29") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("pppalma-fizzy-heavy.woff2?v=20260824-r25") format("woff2");
+  src: url("PPPalma-FizzyHeavy.woff2?v=20260825-r29") format("woff2");
   font-weight: 800;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
+  font-family: "PP Palma Fallback";
+  src: local("Arial"), local("Helvetica"), local("Liberation Sans");
+  font-weight: 300;
+  size-adjust: 91.86%;
+  ascent-override: 109.41%;
+  descent-override: 27.76%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "PP Palma Fallback";
+  src: local("Arial"), local("Helvetica"), local("Liberation Sans");
+  font-weight: 400;
+  size-adjust: 113.89%;
+  ascent-override: 88.24%;
+  descent-override: 22.39%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "PP Palma Fallback";
+  src: local("Arial"), local("Helvetica"), local("Liberation Sans");
+  font-weight: 500;
+  size-adjust: 109.45%;
+  ascent-override: 91.82%;
+  descent-override: 23.3%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "PP Palma Fallback";
+  src: local("Arial"), local("Helvetica"), local("Liberation Sans");
+  font-weight: 800;
+  size-adjust: 105.14%;
+  ascent-override: 95.59%;
+  descent-override: 24.25%;
+  line-gap-override: 0%;
+}
+@font-face {
   font-family: "Figtree";
-  src: url("figtree-variable-latin.woff2?v=20260824-r25") format("woff2");
+  src: url("figtree-variable-latin.woff2?v=20260825-r29") format("woff2");
   font-weight: 300 900;
   font-style: normal;
   font-display: swap;
@@ -36,7 +72,7 @@
 }
 @font-face {
   font-family: "Figtree";
-  src: url("figtree-variable-latin-ext.woff2?v=20260824-r25") format("woff2");
+  src: url("figtree-variable-latin-ext.woff2?v=20260825-r29") format("woff2");
   font-weight: 300 900;
   font-style: normal;
   font-display: swap;
@@ -44,7 +80,7 @@
 }
 @font-face {
   font-family: "Inter";
-  src: url("inter-variable-latin.woff2?v=20260824-r25") format("woff2");
+  src: url("inter-variable-latin.woff2?v=20260825-r29") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -52,7 +88,7 @@
 }
 @font-face {
   font-family: "Inter";
-  src: url("inter-variable-latin-ext.woff2?v=20260824-r25") format("woff2");
+  src: url("inter-variable-latin-ext.woff2?v=20260825-r29") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -60,7 +96,7 @@
 }
 @font-face {
   font-family: "Lexend";
-  src: url("lexend-variable-latin.woff2?v=20260824-r25") format("woff2");
+  src: url("lexend-variable-latin.woff2?v=20260825-r29") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -68,7 +104,7 @@
 }
 @font-face {
   font-family: "Lexend";
-  src: url("lexend-variable-latin-ext.woff2?v=20260824-r25") format("woff2");
+  src: url("lexend-variable-latin-ext.woff2?v=20260825-r29") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -76,7 +112,7 @@
 }
 @font-face {
   font-family: "Playpen Sans";
-  src: url("playpen-sans-600-latin.woff2?v=20260824-r25") format("woff2");
+  src: url("playpen-sans-600-latin.woff2?v=20260825-r29") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -84,14 +120,14 @@
 }
 @font-face {
   font-family: "Playpen Sans";
-  src: url("playpen-sans-600-latin-ext.woff2?v=20260824-r25") format("woff2");
+  src: url("playpen-sans-600-latin-ext.woff2?v=20260825-r29") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 :root {
-  --build: "20260824-r25";
+  --build: "20260825-r29";
 }
 
 *, *::before, *::after {
@@ -197,7 +233,7 @@ select:focus-visible {
 }
 
 body {
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 16px;
   font-weight: 400;
   line-height: 24px;
@@ -205,7 +241,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-weight: 800;
   color: #005635;
 }
@@ -619,9 +655,9 @@ html.js .wowo.animated {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 14px;
+  width: 16px;
   height: 2px;
-  margin: -1px 0 0 -7px;
+  margin: -1px 0 0 -8px;
   border-radius: 1px;
   background: currentColor;
 }
@@ -644,7 +680,7 @@ html.js .wowo.animated {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 16px;
   font-weight: 500;
   line-height: 24px;
@@ -659,7 +695,7 @@ html.js .wowo.animated {
 
 .gb-btn--primary {
   height: 40px;
-  padding: 0 40px;
+  padding: 0 42px;
   background: #005635;
   color: #ffffff;
 }
@@ -775,13 +811,13 @@ html.js .wowo.animated {
   border-radius: 24px;
   overflow: hidden;
   pointer-events: auto;
-  transform: translateY(100vh);
-  transition: transform 0.55s cubic-bezier(0.65, 0, 0.35, 1);
-  will-change: transform;
+  opacity: 0;
+  transition: opacity 0.55s cubic-bezier(0.65, 0, 0.35, 1);
+  will-change: opacity;
 }
 .gb-nl-modal.is-open .gb-nl-panel {
-  transform: translateY(0);
-  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  opacity: 1;
+  transition: opacity 0.4s cubic-bezier(0.32, 0.72, 0, 1);
 }
 @media (max-width: 768px) {
   .gb-nl-panel {
@@ -818,7 +854,7 @@ html.js .wowo.animated {
 }
 
 .gb-nl-panel__title {
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 30px;
   font-weight: 800;
   line-height: 36px;
@@ -960,7 +996,7 @@ html.js .wowo.animated {
 }
 
 .gb-nl-block__title {
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 24px;
   font-weight: 800;
   line-height: 30px;
@@ -988,7 +1024,7 @@ html.js .wowo.animated {
 }
 
 .gb-nl-macro__value {
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 20px;
   font-weight: 800;
   line-height: 24px;
@@ -1113,12 +1149,10 @@ body.is-modal-open {
   overflow: hidden;
   pointer-events: auto;
   opacity: 0;
-  transform: scale(0.94);
-  transition: opacity 0.28s cubic-bezier(0.33, 1, 0.68, 1), transform 0.28s cubic-bezier(0.33, 1, 0.68, 1);
+  transition: opacity 0.28s cubic-bezier(0.33, 1, 0.68, 1);
 }
 .gb-rv-modal.is-open .gb-rv-panel {
   opacity: 1;
-  transform: scale(1);
 }
 
 .gb-rv-panel__video {
@@ -1163,11 +1197,418 @@ body.is-modal-open {
   transform: scale(0.94);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .gb-rv-panel {
-    transform: none;
+.gb-promo-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  visibility: hidden;
+  transition: visibility 0s linear 0.5s;
+}
+.gb-promo-modal.is-open {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.gb-promo-modal__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.gb-promo-modal.is-open .gb-promo-modal__overlay {
+  opacity: 1;
+  transition: opacity 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.gb-promo-modal__wrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+@media (min-width: 1281px) {
+  .gb-promo-modal__wrap {
+    padding: 24px;
   }
 }
+
+.gb-promo-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  background: #f5f1e9;
+  overflow: hidden;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+  will-change: opacity;
+}
+.gb-promo-modal.is-open .gb-promo-panel {
+  opacity: 1;
+  transition: opacity 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@media (min-width: 1281px) {
+  .gb-promo-panel {
+    flex-direction: row;
+    justify-content: flex-start;
+    width: 1062px;
+    height: 528px;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 24px;
+  }
+}
+
+.gb-promo-panel__art {
+  order: 2;
+  position: relative;
+  flex-shrink: 0;
+  width: 100%;
+  height: 252px;
+  background: #ffffff;
+  overflow: hidden;
+}
+@media (min-width: 1281px) {
+  .gb-promo-panel__art {
+    order: 0;
+    width: 531px;
+    height: 100%;
+    background: #faf9f8;
+  }
+}
+
+.gb-promo-panel__bear,
+.gb-promo-panel__bear-glow {
+  position: absolute;
+  display: block;
+  max-width: none;
+}
+
+.gb-promo-panel__bear-glow--lg {
+  left: 65.49px;
+  top: 8.47px;
+  width: 173.82px;
+  height: 209.68px;
+}
+
+.gb-promo-panel__bear--lg {
+  left: 5.76px;
+  top: -7.53px;
+  width: 282.06px;
+  height: 237.54px;
+}
+
+.gb-promo-panel__bear-glow--sm {
+  left: 191.59px;
+  top: 79.51px;
+  width: 115.72px;
+  height: 147.4px;
+}
+
+.gb-promo-panel__bear--sm {
+  left: 140px;
+  top: 52px;
+  width: 227.83px;
+  height: 200.36px;
+}
+
+@media (min-width: 1281px) {
+  .gb-promo-panel__bear-glow--lg {
+    left: 47.04px;
+    top: 86.84px;
+    width: 282.09px;
+    height: 340.93px;
+  }
+  .gb-promo-panel__bear--lg {
+    left: -49.9px;
+    top: 60.83px;
+    width: 457.76px;
+    height: 385.51px;
+  }
+  .gb-promo-panel__bear-glow--sm {
+    left: 251.69px;
+    top: 202.36px;
+    width: 187.81px;
+    height: 239.67px;
+  }
+  .gb-promo-panel__bear--sm {
+    left: 167.96px;
+    top: 157.62px;
+    width: 369.74px;
+    height: 325.16px;
+  }
+}
+.gb-promo-panel__divider {
+  display: none;
+}
+@media (min-width: 1281px) {
+  .gb-promo-panel__divider {
+    display: block;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 126px;
+    height: 764px;
+    transform: translate(-50%, -50%);
+    background-image: radial-gradient(circle 63px at 50% 50%, #f5f1e9 99.5%, transparent 100%), radial-gradient(circle 63px at 50% -50%, #f5f1e9 99.5%, transparent 100%), radial-gradient(circle 63px at 50% 150%, #f5f1e9 99.5%, transparent 100%);
+    background-size: 100% 106.36px;
+    background-repeat: repeat-y;
+    background-position: center top;
+    pointer-events: none;
+  }
+}
+
+.gb-promo-panel__content {
+  order: 1;
+  position: relative;
+  flex-shrink: 0;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+@media (min-width: 1281px) {
+  .gb-promo-panel__content {
+    order: 0;
+    width: 531px;
+    height: 100%;
+  }
+}
+
+.gb-promo-panel__head {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.gb-promo-panel__logo {
+  display: inline-flex;
+  height: 24px;
+}
+.gb-promo-panel__logo svg {
+  height: 100%;
+  width: auto;
+}
+
+.gb-promo-panel__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #ffffff;
+  border-radius: 50%;
+  color: #005635;
+  transition: background-color 0.2s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.gb-promo-panel__close svg {
+  width: 20px;
+  height: 20px;
+}
+@media (hover: hover) {
+  .gb-promo-panel__close:hover {
+    background: #f4fce7;
+  }
+}
+
+.gb-promo-panel__body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  padding: 0 40px 40px;
+  text-align: center;
+}
+@media (min-width: 1281px) {
+  .gb-promo-panel__body {
+    justify-content: center;
+    padding: 0 64px 32px;
+  }
+}
+
+.gb-promo-panel__title {
+  max-width: 310px;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 40px;
+  letter-spacing: -0.36px;
+  color: #005635;
+  text-shadow: 0.139em 0em 0 #b5ed61, 0.12em 0.069em 0 #b5ed61, 0.069em 0.12em 0 #b5ed61, 0em 0.139em 0 #b5ed61, -0.069em 0.12em 0 #b5ed61, -0.12em 0.069em 0 #b5ed61, -0.139em 0em 0 #b5ed61, -0.12em -0.069em 0 #b5ed61, -0.069em -0.12em 0 #b5ed61, 0em -0.139em 0 #b5ed61, 0.069em -0.12em 0 #b5ed61, 0.12em -0.069em 0 #b5ed61, 0.278em 0em 0 #b5ed61, 0.268em 0.072em 0 #b5ed61, 0.241em 0.139em 0 #b5ed61, 0.196em 0.196em 0 #b5ed61, 0.139em 0.241em 0 #b5ed61, 0.072em 0.268em 0 #b5ed61, 0em 0.278em 0 #b5ed61, -0.072em 0.268em 0 #b5ed61, -0.139em 0.241em 0 #b5ed61, -0.196em 0.196em 0 #b5ed61, -0.241em 0.139em 0 #b5ed61, -0.268em 0.072em 0 #b5ed61, -0.278em 0em 0 #b5ed61, -0.268em -0.072em 0 #b5ed61, -0.241em -0.139em 0 #b5ed61, -0.196em -0.196em 0 #b5ed61, -0.139em -0.241em 0 #b5ed61, -0.072em -0.268em 0 #b5ed61, 0em -0.278em 0 #b5ed61, 0.072em -0.268em 0 #b5ed61, 0.139em -0.241em 0 #b5ed61, 0.196em -0.196em 0 #b5ed61, 0.241em -0.139em 0 #b5ed61, 0.268em -0.072em 0 #b5ed61, 0.417em 0em 0 #b5ed61, 0.41em 0.072em 0 #b5ed61, 0.392em 0.143em 0 #b5ed61, 0.361em 0.208em 0 #b5ed61, 0.319em 0.268em 0 #b5ed61, 0.268em 0.319em 0 #b5ed61, 0.208em 0.361em 0 #b5ed61, 0.143em 0.392em 0 #b5ed61, 0.072em 0.41em 0 #b5ed61, 0em 0.417em 0 #b5ed61, -0.072em 0.41em 0 #b5ed61, -0.143em 0.392em 0 #b5ed61, -0.208em 0.361em 0 #b5ed61, -0.268em 0.319em 0 #b5ed61, -0.319em 0.268em 0 #b5ed61, -0.361em 0.208em 0 #b5ed61, -0.392em 0.143em 0 #b5ed61, -0.41em 0.072em 0 #b5ed61, -0.417em 0em 0 #b5ed61, -0.41em -0.072em 0 #b5ed61, -0.392em -0.143em 0 #b5ed61, -0.361em -0.208em 0 #b5ed61, -0.319em -0.268em 0 #b5ed61, -0.268em -0.319em 0 #b5ed61, -0.208em -0.361em 0 #b5ed61, -0.143em -0.392em 0 #b5ed61, -0.072em -0.41em 0 #b5ed61, 0em -0.417em 0 #b5ed61, 0.072em -0.41em 0 #b5ed61, 0.143em -0.392em 0 #b5ed61, 0.208em -0.361em 0 #b5ed61, 0.268em -0.319em 0 #b5ed61, 0.319em -0.268em 0 #b5ed61, 0.361em -0.208em 0 #b5ed61, 0.392em -0.143em 0 #b5ed61, 0.41em -0.072em 0 #b5ed61;
+}
+@media (min-width: 1281px) {
+  .gb-promo-panel__title {
+    max-width: 403px;
+    font-size: 40px;
+    line-height: 48px;
+    letter-spacing: -0.4px;
+    text-shadow: 0.133em 0em 0 #b5ed61, 0.115em 0.067em 0 #b5ed61, 0.067em 0.115em 0 #b5ed61, 0em 0.133em 0 #b5ed61, -0.067em 0.115em 0 #b5ed61, -0.115em 0.067em 0 #b5ed61, -0.133em 0em 0 #b5ed61, -0.115em -0.067em 0 #b5ed61, -0.067em -0.115em 0 #b5ed61, 0em -0.133em 0 #b5ed61, 0.067em -0.115em 0 #b5ed61, 0.115em -0.067em 0 #b5ed61, 0.267em 0em 0 #b5ed61, 0.258em 0.069em 0 #b5ed61, 0.231em 0.133em 0 #b5ed61, 0.189em 0.189em 0 #b5ed61, 0.133em 0.231em 0 #b5ed61, 0.069em 0.258em 0 #b5ed61, 0em 0.267em 0 #b5ed61, -0.069em 0.258em 0 #b5ed61, -0.133em 0.231em 0 #b5ed61, -0.189em 0.189em 0 #b5ed61, -0.231em 0.133em 0 #b5ed61, -0.258em 0.069em 0 #b5ed61, -0.267em 0em 0 #b5ed61, -0.258em -0.069em 0 #b5ed61, -0.231em -0.133em 0 #b5ed61, -0.189em -0.189em 0 #b5ed61, -0.133em -0.231em 0 #b5ed61, -0.069em -0.258em 0 #b5ed61, 0em -0.267em 0 #b5ed61, 0.069em -0.258em 0 #b5ed61, 0.133em -0.231em 0 #b5ed61, 0.189em -0.189em 0 #b5ed61, 0.231em -0.133em 0 #b5ed61, 0.258em -0.069em 0 #b5ed61, 0.4em 0em 0 #b5ed61, 0.394em 0.069em 0 #b5ed61, 0.376em 0.137em 0 #b5ed61, 0.346em 0.2em 0 #b5ed61, 0.306em 0.257em 0 #b5ed61, 0.257em 0.306em 0 #b5ed61, 0.2em 0.346em 0 #b5ed61, 0.137em 0.376em 0 #b5ed61, 0.069em 0.394em 0 #b5ed61, 0em 0.4em 0 #b5ed61, -0.069em 0.394em 0 #b5ed61, -0.137em 0.376em 0 #b5ed61, -0.2em 0.346em 0 #b5ed61, -0.257em 0.306em 0 #b5ed61, -0.306em 0.257em 0 #b5ed61, -0.346em 0.2em 0 #b5ed61, -0.376em 0.137em 0 #b5ed61, -0.394em 0.069em 0 #b5ed61, -0.4em 0em 0 #b5ed61, -0.394em -0.069em 0 #b5ed61, -0.376em -0.137em 0 #b5ed61, -0.346em -0.2em 0 #b5ed61, -0.306em -0.257em 0 #b5ed61, -0.257em -0.306em 0 #b5ed61, -0.2em -0.346em 0 #b5ed61, -0.137em -0.376em 0 #b5ed61, -0.069em -0.394em 0 #b5ed61, 0em -0.4em 0 #b5ed61, 0.069em -0.394em 0 #b5ed61, 0.137em -0.376em 0 #b5ed61, 0.2em -0.346em 0 #b5ed61, 0.257em -0.306em 0 #b5ed61, 0.306em -0.257em 0 #b5ed61, 0.346em -0.2em 0 #b5ed61, 0.376em -0.137em 0 #b5ed61, 0.394em -0.069em 0 #b5ed61;
+  }
+}
+
+.gb-promo-panel__lead {
+  max-width: 310px;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: #4d4d4d;
+  margin-top: -8px;
+}
+@media (min-width: 1281px) {
+  .gb-promo-panel__lead {
+    max-width: 403px;
+    font-size: 18px;
+    line-height: 28px;
+    letter-spacing: -0.36px;
+  }
+}
+
+.gb-promo-panel__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 20px;
+  width: 100%;
+  max-width: 310px;
+}
+@media (min-width: 1281px) {
+  .gb-promo-panel__stage {
+    max-width: 403px;
+  }
+}
+
+.gb-promo-panel__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gb-promo-panel__field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1px solid rgba(1, 19, 7, 0.1);
+  border-radius: 8px;
+}
+.gb-promo-panel__field--code {
+  border-style: dashed;
+  justify-content: center;
+}
+
+.gb-promo-panel__field-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: #666666;
+}
+
+.gb-promo-panel__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -0.32px;
+  color: #011307;
+}
+.gb-promo-panel__input::placeholder {
+  color: #4d4d4d;
+}
+
+.gb-promo-panel__code {
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -0.32px;
+  color: #011307;
+  text-align: center;
+}
+
+.gb-promo-panel__submit,
+.gb-promo-panel__copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 40px;
+  background: #005635;
+  border: 1px solid #005635;
+  border-radius: 999px;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.2s cubic-bezier(0.33, 1, 0.68, 1), color 0.2s cubic-bezier(0.33, 1, 0.68, 1), border-color 0.2s cubic-bezier(0.33, 1, 0.68, 1), transform 0.2s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.gb-promo-panel__submit:active,
+.gb-promo-panel__copy:active {
+  transform: translateY(1px);
+}
+@media (hover: hover) {
+  .gb-promo-panel__submit:hover,
+  .gb-promo-panel__copy:hover {
+    background: #b5ed61;
+    border-color: #b5ed61;
+    color: #004128;
+  }
+}
+@media (min-width: 1281px) {
+  .gb-promo-panel__submit,
+  .gb-promo-panel__copy {
+    height: 52px;
+    padding: 0 64px;
+    line-height: 28px;
+    letter-spacing: 0.48px;
+  }
+}
+
+.gb-promo-panel__dismiss {
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: #666666;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color 0.2s cubic-bezier(0.33, 1, 0.68, 1);
+}
+@media (hover: hover) {
+  .gb-promo-panel__dismiss:hover {
+    color: #005635;
+  }
+}
+@media (min-width: 1281px) {
+  .gb-promo-panel__dismiss {
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: -0.32px;
+  }
+}
+
 :root {
   --e-back-235: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --e-back-235: linear(0.0000 0%, 0.2098 4%, 0.3943 8%, 0.5550 12%, 0.6933 17%, 0.8107 21%, 0.9086 25%, 0.9885 29%, 1.0519 33%, 1.1001 38%, 1.1347 42%, 1.1571 46%, 1.1687 50%, 1.1711 54%, 1.1657 58%, 1.1538 62%, 1.1370 67%, 1.1168 71%, 1.0945 75%, 1.0717 79%, 1.0498 83%, 1.0302 88%, 1.0144 92%, 1.0038 96%, 1.0000 100%);
@@ -1254,6 +1695,56 @@ body.is-modal-open {
   transform: none;
 }
 
+:root {
+  --e-power4-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --e-power4-out: linear(0.0000 0%, 0.1846 4%, 0.3409 8%, 0.4723 12%, 0.5818 16%, 0.6723 20%, 0.7464 24%, 0.8065 28%, 0.8546 32%, 0.8926 36%, 0.9222 40%, 0.9449 44%, 0.9620 48%, 0.9745 52%, 0.9835 56%, 0.9898 60%, 0.9940 64%, 0.9966 68%, 0.9983 72%, 0.9992 76%, 0.9997 80%, 0.9999 84%, 1.0000 88%, 1.0000 92%, 1.0000 96%, 1.0000 100%);
+}
+
+[data-line-reveal] {
+  opacity: 0;
+}
+
+.gb-line-mask {
+  display: block;
+  overflow: hidden;
+  margin-bottom: -0.12em;
+}
+
+.gb-line-mask__inner {
+  display: block;
+  padding-bottom: 0.12em;
+  transform: translateY(100%);
+  will-change: transform;
+}
+
+.is-split[data-line-reveal] {
+  opacity: 1;
+  display: flow-root;
+}
+
+.is-revealed .gb-line-mask__inner {
+  animation: gm-line-up 1.4s var(--e-power4-out) both;
+  animation-delay: calc(var(--line-i, 0) * 150ms);
+}
+
+.is-settled .gb-line-mask__inner {
+  animation: none;
+  transform: translateY(0);
+}
+
+@keyframes gm-line-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.no-js [data-line-reveal],
+[data-line-reveal]:not(.is-split) {
+  opacity: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .gb-float-art {
     animation: gm-fade-in 0.4s ease-out 0.2s both;
@@ -1264,6 +1755,15 @@ body.is-modal-open {
   .is-popped .gb-pop-word {
     animation: gm-fade-in 0.4s ease-out both;
     animation-delay: calc(var(--pop-i, 0) * 20ms);
+  }
+  .gb-line-mask__inner {
+    transform: none;
+    opacity: 0;
+  }
+  .is-revealed .gb-line-mask__inner,
+  .is-settled .gb-line-mask__inner {
+    animation: gm-fade-in 0.4s ease-out both;
+    animation-delay: calc(var(--line-i, 0) * 20ms);
   }
 }
 @keyframes gm-fade-in {
@@ -1428,7 +1928,7 @@ body.is-modal-open {
   color: #005635;
 }
 .gb-arc-text text {
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.24px;
@@ -1525,10 +2025,10 @@ body.is-modal-open {
 .gb-header__toggle {
   display: inline-flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   justify-self: start;
   color: #005635;
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 16px;
   font-weight: 500;
   line-height: 24px;
@@ -1560,7 +2060,7 @@ body.is-modal-open {
 }
 @media (min-width: 576px) and (max-width: 1280px) {
   .gb-header__toggle {
-    gap: clamp(0px, 0px + 16 * (100vw - 576px) / 705, 16px);
+    gap: clamp(0px, 0px + 18 * (100vw - 576px) / 705, 18px);
   }
 }
 
@@ -1755,7 +2255,7 @@ body.is-modal-open {
   width: 100%;
   padding-bottom: 18px;
   color: #005635;
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 16px;
   font-weight: 500;
   line-height: 24px;
@@ -2139,8 +2639,8 @@ a.gb-header__link::after {
 
 .gb-footer-cta__title {
   max-width: 625px;
-  margin-top: 38px;
-  margin-bottom: 30px;
+  margin-top: 40px;
+  margin-bottom: 23px;
   font-size: 36px;
   line-height: 40px;
   letter-spacing: -0.36px;
@@ -2151,6 +2651,7 @@ a.gb-header__link::after {
   max-width: 625px;
   margin-top: -6px;
   margin-bottom: 32px;
+  padding: 0 20px;
   font-size: 18px;
   line-height: 28px;
   letter-spacing: -0.36px;
@@ -2395,6 +2896,11 @@ a.gb-header__link::after {
 @media (min-width: 576px) and (max-width: 1280px) {
   .gb-footer__link-groups {
     gap: clamp(24px, 32px + -8 * (100vw - 576px) / 705, 32px);
+  }
+}
+@media (min-width: 1281px) {
+  .gb-footer__link-groups {
+    margin-right: -2px;
   }
 }
 
@@ -2879,12 +3385,12 @@ a.gb-header__link::after {
   width: 100%;
   max-width: 1440px;
   margin: 0 auto;
-  padding: 56px 110px 88px;
+  padding: 56px 110px 91px;
 }
 @media (max-width: 1200px) {
   .gb-hero__inner {
     gap: 48px;
-    padding: 56px 60px 88px;
+    padding: 56px 60px 91px;
   }
 }
 @media (max-width: 1024px) {
@@ -3050,7 +3556,7 @@ a.gb-header__link::after {
 }
 
 .gb-usp__value {
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 32px;
   font-weight: 800;
   line-height: 37px;
@@ -3069,6 +3575,11 @@ a.gb-header__link::after {
   color: transparent;
   text-shadow: 0.052em 0em 0 #b5ed61, 0.045em 0.026em 0 #b5ed61, 0.026em 0.045em 0 #b5ed61, 0em 0.052em 0 #b5ed61, -0.026em 0.045em 0 #b5ed61, -0.045em 0.026em 0 #b5ed61, -0.052em 0em 0 #b5ed61, -0.045em -0.026em 0 #b5ed61, -0.026em -0.045em 0 #b5ed61, 0em -0.052em 0 #b5ed61, 0.026em -0.045em 0 #b5ed61, 0.045em -0.026em 0 #b5ed61, 0.103em 0em 0 #b5ed61, 0.1em 0.027em 0 #b5ed61, 0.09em 0.052em 0 #b5ed61, 0.073em 0.073em 0 #b5ed61, 0.052em 0.09em 0 #b5ed61, 0.027em 0.1em 0 #b5ed61, 0em 0.103em 0 #b5ed61, -0.027em 0.1em 0 #b5ed61, -0.052em 0.09em 0 #b5ed61, -0.073em 0.073em 0 #b5ed61, -0.09em 0.052em 0 #b5ed61, -0.1em 0.027em 0 #b5ed61, -0.103em 0em 0 #b5ed61, -0.1em -0.027em 0 #b5ed61, -0.09em -0.052em 0 #b5ed61, -0.073em -0.073em 0 #b5ed61, -0.052em -0.09em 0 #b5ed61, -0.027em -0.1em 0 #b5ed61, 0em -0.103em 0 #b5ed61, 0.027em -0.1em 0 #b5ed61, 0.052em -0.09em 0 #b5ed61, 0.073em -0.073em 0 #b5ed61, 0.09em -0.052em 0 #b5ed61, 0.1em -0.027em 0 #b5ed61, 0.155em 0em 0 #b5ed61, 0.153em 0.027em 0 #b5ed61, 0.146em 0.053em 0 #b5ed61, 0.134em 0.078em 0 #b5ed61, 0.119em 0.1em 0 #b5ed61, 0.1em 0.119em 0 #b5ed61, 0.078em 0.134em 0 #b5ed61, 0.053em 0.146em 0 #b5ed61, 0.027em 0.153em 0 #b5ed61, 0em 0.155em 0 #b5ed61, -0.027em 0.153em 0 #b5ed61, -0.053em 0.146em 0 #b5ed61, -0.078em 0.134em 0 #b5ed61, -0.1em 0.119em 0 #b5ed61, -0.119em 0.1em 0 #b5ed61, -0.134em 0.078em 0 #b5ed61, -0.146em 0.053em 0 #b5ed61, -0.153em 0.027em 0 #b5ed61, -0.155em 0em 0 #b5ed61, -0.153em -0.027em 0 #b5ed61, -0.146em -0.053em 0 #b5ed61, -0.134em -0.078em 0 #b5ed61, -0.119em -0.1em 0 #b5ed61, -0.1em -0.119em 0 #b5ed61, -0.078em -0.134em 0 #b5ed61, -0.053em -0.146em 0 #b5ed61, -0.027em -0.153em 0 #b5ed61, 0em -0.155em 0 #b5ed61, 0.027em -0.153em 0 #b5ed61, 0.053em -0.146em 0 #b5ed61, 0.078em -0.134em 0 #b5ed61, 0.1em -0.119em 0 #b5ed61, 0.119em -0.1em 0 #b5ed61, 0.134em -0.078em 0 #b5ed61, 0.146em -0.053em 0 #b5ed61, 0.153em -0.027em 0 #b5ed61;
   pointer-events: none;
+}
+@media (min-width: 1281px) {
+  .gb-usp__value {
+    margin-left: 7px;
+  }
 }
 
 .gb-usp__unit {
@@ -3228,6 +3739,7 @@ a.gb-header__link::after {
 }
 .gb-stats {
   position: relative;
+  z-index: 1;
   background: #faf9f8;
   padding: 96px 0 calc(120px + var(--sc-h));
 }
@@ -3399,7 +3911,7 @@ a.gb-header__link::after {
   }
 }
 .gb-stat__value {
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 47px;
   font-weight: 800;
   line-height: 51px;
@@ -3591,10 +4103,10 @@ a.gb-header__link::after {
 .gb-stats__deco-bear {
   position: absolute;
   left: 81.25%;
-  top: 89.5%;
+  bottom: calc(var(--sc-h) - 21px);
   width: 10.1%;
   aspect-ratio: 387/583;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, 50%);
   pointer-events: none;
 }
 .gb-stats__deco-bear img {
@@ -3606,7 +4118,7 @@ a.gb-header__link::after {
 @media (max-width: 768px) {
   .gb-stats__deco-bear {
     left: 69.2%;
-    top: 91.5%;
+    bottom: calc(var(--sc-h) - 16.5px);
     width: 25.6%;
   }
 }
@@ -3672,7 +4184,7 @@ a.gb-header__link::after {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   text-align: center;
 }
 
@@ -3798,7 +4310,7 @@ a.gb-header__link::after {
 .gb-science-card__value {
   display: inline-block;
   align-self: flex-start;
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 56px;
   font-weight: 800;
   line-height: 44px;
@@ -3970,7 +4482,7 @@ a.gb-header__link::after {
 }
 
 .gb-highlight-card__text {
-  max-width: 300px;
+  max-width: 271px;
   font-size: 16px;
   line-height: 24px;
   letter-spacing: -0.32px;
@@ -4219,7 +4731,7 @@ a.gb-header__link::after {
   border-radius: 72px;
   background: transparent;
   box-shadow: 0 1.3px 12.9px rgba(0, 0, 0, 0.08);
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 18px;
   font-weight: 500;
   line-height: 28px;
@@ -4359,7 +4871,7 @@ a.gb-header__link::after {
   background: #005635;
   border-radius: 72px;
   color: #ffffff;
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 18px;
   font-weight: 500;
   line-height: 28px;
@@ -4407,7 +4919,7 @@ a.gb-header__link::after {
 .gb-product__guarantees {
   display: flex;
   justify-content: center;
-  gap: 24px;
+  gap: 30px;
 }
 
 .gb-product__guarantee {
@@ -4426,6 +4938,9 @@ a.gb-header__link::after {
   width: 34px;
   height: 32px;
   color: #faf9f8;
+}
+.gb-product__guarantee span {
+  max-width: 86%;
 }
 
 .gb-product__accordion {
@@ -4448,7 +4963,7 @@ a.gb-header__link::after {
   width: 100%;
   padding-top: 20px;
   border-top: 1px solid rgba(1, 19, 7, 0.05);
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 16px;
   line-height: 24px;
   letter-spacing: -0.32px;
@@ -4880,7 +5395,7 @@ a.gb-header__link::after {
 .gb-reviews__disclaimer {
   max-width: 626px;
   margin-top: 48px;
-  padding: 0 20px;
+  padding: 0;
   font-size: 14px;
   line-height: 22px;
   letter-spacing: -0.28px;
@@ -5272,7 +5787,7 @@ a.gb-header__link::after {
   position: absolute;
   width: calc(var(--w) * var(--art-scale));
   rotate: var(--r);
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: calc(17.6px * var(--art-scale));
   font-weight: 500;
   line-height: 1.028;
@@ -5521,7 +6036,7 @@ a.gb-header__link::after {
   position: absolute;
   left: 0;
   top: 62px;
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 24.5px;
   font-weight: 800;
   line-height: 32.7px;
@@ -5763,7 +6278,7 @@ a.gb-header__link::after {
   width: 100%;
   padding-top: 20px;
   border-top: 1px solid rgba(1, 19, 7, 0.05);
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 16px;
   line-height: 24px;
   letter-spacing: -0.32px;
@@ -6812,7 +7327,7 @@ a.gb-header__link::after {
   background: #ffffff;
   border: 1px solid #cccccc;
   border-radius: 8px;
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 16px;
   line-height: 24px;
   letter-spacing: -0.32px;
@@ -6866,7 +7381,7 @@ a.gb-header__link::after {
   border: 0;
   background: transparent;
   padding-right: 20px;
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 16px;
   line-height: 24px;
   letter-spacing: -0.32px;
@@ -6889,7 +7404,7 @@ a.gb-header__link::after {
   min-width: 0;
   border: 0;
   background: transparent;
-  font-family: "PP Palma", "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 16px;
   line-height: 24px;
   letter-spacing: -0.32px;
