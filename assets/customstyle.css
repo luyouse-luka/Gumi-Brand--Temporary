@@ -1,27 +1,27 @@
 @font-face {
   font-family: "PP Palma";
-  src: url("pppalma-fizzy-light.woff2?v=20260825-r31") format("woff2");
+  src: url("pppalma-fizzy-light.woff2?v=20260825-r34") format("woff2");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("PPPalma-Regular.woff2?v=20260825-r31") format("woff2");
+  src: url("PPPalma-Regular.woff2?v=20260825-r34") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("PPPalma-FizzyMedium.woff2?v=20260825-r31") format("woff2");
+  src: url("PPPalma-FizzyMedium.woff2?v=20260825-r34") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("PPPalma-FizzyHeavy.woff2?v=20260825-r31") format("woff2");
+  src: url("PPPalma-FizzyHeavy.woff2?v=20260825-r34") format("woff2");
   font-weight: 800;
   font-style: normal;
   font-display: swap;
@@ -64,7 +64,7 @@
 }
 @font-face {
   font-family: "Figtree";
-  src: url("figtree-variable-latin.woff2?v=20260825-r31") format("woff2");
+  src: url("figtree-variable-latin.woff2?v=20260825-r34") format("woff2");
   font-weight: 300 900;
   font-style: normal;
   font-display: swap;
@@ -72,7 +72,7 @@
 }
 @font-face {
   font-family: "Figtree";
-  src: url("figtree-variable-latin-ext.woff2?v=20260825-r31") format("woff2");
+  src: url("figtree-variable-latin-ext.woff2?v=20260825-r34") format("woff2");
   font-weight: 300 900;
   font-style: normal;
   font-display: swap;
@@ -80,7 +80,7 @@
 }
 @font-face {
   font-family: "Inter";
-  src: url("inter-variable-latin.woff2?v=20260825-r31") format("woff2");
+  src: url("inter-variable-latin.woff2?v=20260825-r34") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -88,7 +88,7 @@
 }
 @font-face {
   font-family: "Inter";
-  src: url("inter-variable-latin-ext.woff2?v=20260825-r31") format("woff2");
+  src: url("inter-variable-latin-ext.woff2?v=20260825-r34") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -96,7 +96,7 @@
 }
 @font-face {
   font-family: "Lexend";
-  src: url("lexend-variable-latin.woff2?v=20260825-r31") format("woff2");
+  src: url("lexend-variable-latin.woff2?v=20260825-r34") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -104,7 +104,7 @@
 }
 @font-face {
   font-family: "Lexend";
-  src: url("lexend-variable-latin-ext.woff2?v=20260825-r31") format("woff2");
+  src: url("lexend-variable-latin-ext.woff2?v=20260825-r34") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -112,7 +112,7 @@
 }
 @font-face {
   font-family: "Playpen Sans";
-  src: url("playpen-sans-600-latin.woff2?v=20260825-r31") format("woff2");
+  src: url("playpen-sans-600-latin.woff2?v=20260825-r34") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -120,14 +120,14 @@
 }
 @font-face {
   font-family: "Playpen Sans";
-  src: url("playpen-sans-600-latin-ext.woff2?v=20260825-r31") format("woff2");
+  src: url("playpen-sans-600-latin-ext.woff2?v=20260825-r34") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 :root {
-  --build: "20260825-r31";
+  --build: "20260825-r34";
 }
 
 *, *::before, *::after {
@@ -1325,68 +1325,25 @@ body.is-modal-open {
   }
 }
 
-.gb-promo-panel__bear,
-.gb-promo-panel__bear-glow {
+.gb-promo-panel__bears {
   position: absolute;
   z-index: 1;
   display: block;
   max-width: none;
+  left: calc(50% - 212px);
+  top: -37px;
+  width: 384.83px;
+  height: 296.49px;
 }
-
-.gb-promo-panel__bear-glow--lg {
-  left: 65.49px;
-  top: 8.47px;
-  width: 173.82px;
-  height: 209.68px;
-}
-
-.gb-promo-panel__bear--lg {
-  left: 5.76px;
-  top: -7.53px;
-  width: 282.06px;
-  height: 237.54px;
-}
-
-.gb-promo-panel__bear-glow--sm {
-  left: 191.59px;
-  top: 79.51px;
-  width: 115.72px;
-  height: 147.4px;
-}
-
-.gb-promo-panel__bear--sm {
-  left: 140px;
-  top: 52px;
-  width: 227.83px;
-  height: 200.36px;
-}
-
 @media (min-width: 1281px) {
-  .gb-promo-panel__bear-glow--lg {
-    left: 47.04px;
-    top: 86.84px;
-    width: 282.09px;
-    height: 340.93px;
-  }
-  .gb-promo-panel__bear--lg {
-    left: -49.9px;
-    top: 60.83px;
-    width: 457.76px;
-    height: 385.51px;
-  }
-  .gb-promo-panel__bear-glow--sm {
-    left: 251.69px;
-    top: 202.36px;
-    width: 187.81px;
-    height: 239.67px;
-  }
-  .gb-promo-panel__bear--sm {
-    left: 167.96px;
-    top: 157.62px;
-    width: 369.74px;
-    height: 325.16px;
+  .gb-promo-panel__bears {
+    left: -86.84px;
+    top: 13px;
+    width: 624.54px;
+    height: 481.17px;
   }
 }
+
 .gb-promo-panel__divider {
   display: none;
 }
@@ -1395,7 +1352,7 @@ body.is-modal-open {
     display: block;
     position: absolute;
     left: calc(100% - 42px);
-    top: 50%;
+    top: 52%;
     width: 126px;
     height: 764px;
     transform: translateY(-50%);
@@ -1414,6 +1371,7 @@ body.is-modal-open {
   max-height: 100%;
   display: flex;
   flex-direction: column;
+  gap: 64px;
   overflow-y: auto;
 }
 @media (min-width: 1281px) {
@@ -1427,17 +1385,19 @@ body.is-modal-open {
 .gb-promo-panel__head {
   position: relative;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  height: 64px;
 }
 
 .gb-promo-panel__logo {
-  display: inline-flex;
+  position: absolute;
+  left: 50%;
+  top: 20px;
+  transform: translateX(-50%);
+  display: block;
   height: 24px;
 }
 .gb-promo-panel__logo svg {
+  display: block;
   height: 100%;
   width: auto;
 }
@@ -1473,7 +1433,7 @@ body.is-modal-open {
   flex-direction: column;
   align-items: center;
   gap: 32px;
-  padding: 0 40px 40px;
+  padding: 0 40px;
   text-align: center;
 }
 @media (min-width: 1281px) {
@@ -1492,6 +1452,8 @@ body.is-modal-open {
   letter-spacing: -0.36px;
   color: #005635;
   text-shadow: 0.139em 0em 0 #b5ed61, 0.12em 0.069em 0 #b5ed61, 0.069em 0.12em 0 #b5ed61, 0em 0.139em 0 #b5ed61, -0.069em 0.12em 0 #b5ed61, -0.12em 0.069em 0 #b5ed61, -0.139em 0em 0 #b5ed61, -0.12em -0.069em 0 #b5ed61, -0.069em -0.12em 0 #b5ed61, 0em -0.139em 0 #b5ed61, 0.069em -0.12em 0 #b5ed61, 0.12em -0.069em 0 #b5ed61, 0.278em 0em 0 #b5ed61, 0.268em 0.072em 0 #b5ed61, 0.241em 0.139em 0 #b5ed61, 0.196em 0.196em 0 #b5ed61, 0.139em 0.241em 0 #b5ed61, 0.072em 0.268em 0 #b5ed61, 0em 0.278em 0 #b5ed61, -0.072em 0.268em 0 #b5ed61, -0.139em 0.241em 0 #b5ed61, -0.196em 0.196em 0 #b5ed61, -0.241em 0.139em 0 #b5ed61, -0.268em 0.072em 0 #b5ed61, -0.278em 0em 0 #b5ed61, -0.268em -0.072em 0 #b5ed61, -0.241em -0.139em 0 #b5ed61, -0.196em -0.196em 0 #b5ed61, -0.139em -0.241em 0 #b5ed61, -0.072em -0.268em 0 #b5ed61, 0em -0.278em 0 #b5ed61, 0.072em -0.268em 0 #b5ed61, 0.139em -0.241em 0 #b5ed61, 0.196em -0.196em 0 #b5ed61, 0.241em -0.139em 0 #b5ed61, 0.268em -0.072em 0 #b5ed61, 0.417em 0em 0 #b5ed61, 0.41em 0.072em 0 #b5ed61, 0.392em 0.143em 0 #b5ed61, 0.361em 0.208em 0 #b5ed61, 0.319em 0.268em 0 #b5ed61, 0.268em 0.319em 0 #b5ed61, 0.208em 0.361em 0 #b5ed61, 0.143em 0.392em 0 #b5ed61, 0.072em 0.41em 0 #b5ed61, 0em 0.417em 0 #b5ed61, -0.072em 0.41em 0 #b5ed61, -0.143em 0.392em 0 #b5ed61, -0.208em 0.361em 0 #b5ed61, -0.268em 0.319em 0 #b5ed61, -0.319em 0.268em 0 #b5ed61, -0.361em 0.208em 0 #b5ed61, -0.392em 0.143em 0 #b5ed61, -0.41em 0.072em 0 #b5ed61, -0.417em 0em 0 #b5ed61, -0.41em -0.072em 0 #b5ed61, -0.392em -0.143em 0 #b5ed61, -0.361em -0.208em 0 #b5ed61, -0.319em -0.268em 0 #b5ed61, -0.268em -0.319em 0 #b5ed61, -0.208em -0.361em 0 #b5ed61, -0.143em -0.392em 0 #b5ed61, -0.072em -0.41em 0 #b5ed61, 0em -0.417em 0 #b5ed61, 0.072em -0.41em 0 #b5ed61, 0.143em -0.392em 0 #b5ed61, 0.208em -0.361em 0 #b5ed61, 0.268em -0.319em 0 #b5ed61, 0.319em -0.268em 0 #b5ed61, 0.361em -0.208em 0 #b5ed61, 0.392em -0.143em 0 #b5ed61, 0.41em -0.072em 0 #b5ed61;
+  padding-top: 0.5px;
+  margin-bottom: -0.5px;
 }
 @media (min-width: 1281px) {
   .gb-promo-panel__title {
@@ -1500,6 +1462,8 @@ body.is-modal-open {
     line-height: 48px;
     letter-spacing: -0.4px;
     text-shadow: 0.133em 0em 0 #b5ed61, 0.115em 0.067em 0 #b5ed61, 0.067em 0.115em 0 #b5ed61, 0em 0.133em 0 #b5ed61, -0.067em 0.115em 0 #b5ed61, -0.115em 0.067em 0 #b5ed61, -0.133em 0em 0 #b5ed61, -0.115em -0.067em 0 #b5ed61, -0.067em -0.115em 0 #b5ed61, 0em -0.133em 0 #b5ed61, 0.067em -0.115em 0 #b5ed61, 0.115em -0.067em 0 #b5ed61, 0.267em 0em 0 #b5ed61, 0.258em 0.069em 0 #b5ed61, 0.231em 0.133em 0 #b5ed61, 0.189em 0.189em 0 #b5ed61, 0.133em 0.231em 0 #b5ed61, 0.069em 0.258em 0 #b5ed61, 0em 0.267em 0 #b5ed61, -0.069em 0.258em 0 #b5ed61, -0.133em 0.231em 0 #b5ed61, -0.189em 0.189em 0 #b5ed61, -0.231em 0.133em 0 #b5ed61, -0.258em 0.069em 0 #b5ed61, -0.267em 0em 0 #b5ed61, -0.258em -0.069em 0 #b5ed61, -0.231em -0.133em 0 #b5ed61, -0.189em -0.189em 0 #b5ed61, -0.133em -0.231em 0 #b5ed61, -0.069em -0.258em 0 #b5ed61, 0em -0.267em 0 #b5ed61, 0.069em -0.258em 0 #b5ed61, 0.133em -0.231em 0 #b5ed61, 0.189em -0.189em 0 #b5ed61, 0.231em -0.133em 0 #b5ed61, 0.258em -0.069em 0 #b5ed61, 0.4em 0em 0 #b5ed61, 0.394em 0.069em 0 #b5ed61, 0.376em 0.137em 0 #b5ed61, 0.346em 0.2em 0 #b5ed61, 0.306em 0.257em 0 #b5ed61, 0.257em 0.306em 0 #b5ed61, 0.2em 0.346em 0 #b5ed61, 0.137em 0.376em 0 #b5ed61, 0.069em 0.394em 0 #b5ed61, 0em 0.4em 0 #b5ed61, -0.069em 0.394em 0 #b5ed61, -0.137em 0.376em 0 #b5ed61, -0.2em 0.346em 0 #b5ed61, -0.257em 0.306em 0 #b5ed61, -0.306em 0.257em 0 #b5ed61, -0.346em 0.2em 0 #b5ed61, -0.376em 0.137em 0 #b5ed61, -0.394em 0.069em 0 #b5ed61, -0.4em 0em 0 #b5ed61, -0.394em -0.069em 0 #b5ed61, -0.376em -0.137em 0 #b5ed61, -0.346em -0.2em 0 #b5ed61, -0.306em -0.257em 0 #b5ed61, -0.257em -0.306em 0 #b5ed61, -0.2em -0.346em 0 #b5ed61, -0.137em -0.376em 0 #b5ed61, -0.069em -0.394em 0 #b5ed61, 0em -0.4em 0 #b5ed61, 0.069em -0.394em 0 #b5ed61, 0.137em -0.376em 0 #b5ed61, 0.2em -0.346em 0 #b5ed61, 0.257em -0.306em 0 #b5ed61, 0.306em -0.257em 0 #b5ed61, 0.346em -0.2em 0 #b5ed61, 0.376em -0.137em 0 #b5ed61, 0.394em -0.069em 0 #b5ed61;
+    padding-top: 0;
+    margin-bottom: 0;
   }
 }
 
@@ -1511,7 +1475,6 @@ body.is-modal-open {
   line-height: 24px;
   letter-spacing: -0.32px;
   color: #4d4d4d;
-  margin-top: -8px;
 }
 @media (min-width: 1281px) {
   .gb-promo-panel__lead {
@@ -1526,7 +1489,6 @@ body.is-modal-open {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 20px;
   width: 100%;
   max-width: 310px;
 }
@@ -1534,6 +1496,15 @@ body.is-modal-open {
   .gb-promo-panel__stage {
     max-width: 403px;
   }
+}
+
+.gb-promo-panel__state {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.gb-promo-panel__state[hidden] {
+  display: none;
 }
 
 .gb-promo-panel__form {
@@ -1557,16 +1528,12 @@ body.is-modal-open {
   justify-content: center;
 }
 
-.gb-promo-panel__field-icon {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  color: #666666;
-}
-
 .gb-promo-panel__input {
   flex: 1 1 auto;
   min-width: 0;
+  padding: 0;
+  background: none;
+  border: 0;
   font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   font-size: 16px;
   font-weight: 400;
@@ -1783,8 +1750,27 @@ body.is-modal-open {
     transform: translateY(0);
   }
 }
+[data-line-reveal] > .gb-ink-halo {
+  opacity: 0;
+}
+
+.is-revealed > .gb-ink-halo {
+  animation: gm-fade-in 0.35s cubic-bezier(0.33, 1, 0.68, 1) both;
+  animation-delay: calc(var(--line-base, 0) * 150ms + 1.05s);
+}
+
+.is-settled > .gb-ink-halo {
+  animation: none;
+  opacity: 1;
+}
+
 .no-js [data-line-reveal],
 [data-line-reveal]:not(.is-split) {
+  opacity: 1;
+}
+
+.no-js [data-line-reveal] > .gb-ink-halo,
+[data-line-reveal]:not(.is-split) > .gb-ink-halo {
   opacity: 1;
 }
 
@@ -1834,30 +1820,33 @@ body.is-modal-open {
   --wave-amp: calc(var(--wave-w) * 0.24008);
   --wave-bg: transparent;
   --wave-fg: #ffffff;
+  --wave-under: var(--wave-fg);
   position: relative;
-  height: var(--wave-h);
-  background-color: var(--wave-bg);
-  background-image: radial-gradient(circle var(--wave-r) at 50% var(--wave-r), var(--wave-fg) 99.5%, transparent 100%), radial-gradient(circle var(--wave-r) at -50% var(--wave-r), var(--wave-fg) 99.5%, transparent 100%), radial-gradient(circle var(--wave-r) at 150% var(--wave-r), var(--wave-fg) 99.5%, transparent 100%);
-  background-size: var(--wave-w) 100%;
-  background-repeat: repeat-x;
-  background-position: center top;
+  height: calc(var(--wave-h) + 1px);
+  margin-bottom: -1px;
+  background-color: var(--wave-under);
+  background-image: radial-gradient(circle var(--wave-r) at 50% var(--wave-r), var(--wave-fg) 99.5%, transparent 100%), radial-gradient(circle var(--wave-r) at -50% var(--wave-r), var(--wave-fg) 99.5%, transparent 100%), radial-gradient(circle var(--wave-r) at 150% var(--wave-r), var(--wave-fg) 99.5%, transparent 100%), linear-gradient(var(--wave-bg), var(--wave-bg));
+  background-size: var(--wave-w) 100%, var(--wave-w) 100%, var(--wave-w) 100%, 100% var(--wave-amp);
+  background-repeat: repeat-x, repeat-x, repeat-x, no-repeat;
+  background-position: center top, center top, center top, left top;
 }
 
 .gb-scallop--lg {
   --wave-w: var(--sc-lg-w);
   --wave-band: var(--sc-lg-band);
   --wave-h: var(--sc-lg-h);
-  height: var(--wave-h);
+  height: calc(var(--wave-h) + 1px);
 }
 
 .gb-scallop--down {
-  background-image: radial-gradient(circle var(--wave-r) at 50% calc(100% - var(--wave-r)), var(--wave-bg) 99.5%, transparent 100%), radial-gradient(circle var(--wave-r) at -50% calc(100% - var(--wave-r)), var(--wave-bg) 99.5%, transparent 100%), radial-gradient(circle var(--wave-r) at 150% calc(100% - var(--wave-r)), var(--wave-bg) 99.5%, transparent 100%);
-  background-color: var(--wave-fg);
+  background-image: radial-gradient(circle var(--wave-r) at 50% calc(100% - 1px - var(--wave-r)), var(--wave-bg) 99.5%, transparent 100%), radial-gradient(circle var(--wave-r) at -50% calc(100% - 1px - var(--wave-r)), var(--wave-bg) 99.5%, transparent 100%), radial-gradient(circle var(--wave-r) at 150% calc(100% - 1px - var(--wave-r)), var(--wave-bg) 99.5%, transparent 100%);
+  background-color: var(--wave-under);
 }
 
 .gb-scallop--to-lime {
   --wave-bg: transparent;
   --wave-fg: #b5ed61;
+  --wave-under: transparent;
 }
 
 .gb-scallop--mint-to-lime {
@@ -1932,6 +1921,7 @@ body.is-modal-open {
 
 .gb-scallop--bleed {
   --wave-bg: transparent;
+  --wave-under: transparent;
 }
 
 .gb-scallop--edge {
@@ -7774,7 +7764,7 @@ a.gb-header__link::after {
   color: #808080;
 }
 .gb-rich-text li + li {
-  margin-top: 8px;
+  margin-top: 0;
 }
 @media (max-width: 767px) {
   .gb-rich-text li {

@@ -258,7 +258,8 @@
   /* ---------------------------------------------------------------------
    * lineReveal — per-line entrance for running copy, the other half of the
    * cravburgers.shop reference (notes 401:29596 / 216:5903). popText above is
-   * the word-scatter pop, reserved for the STATISTICS numbers; this is their
+   * the word-scatter pop the notes reserve for the STATISTICS numbers; round 33
+   * moved those here as well, so popText currently has no hosts. This is their
    * GSAP SplitText {type:"lines", mask:"lines"} used everywhere else: each
    * visual line gets its own overflow:hidden mask and slides up inside it
    * (y:100%→0%, once revealed the mask never plays again). Timing lives in

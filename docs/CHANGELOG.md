@@ -3044,3 +3044,323 @@ science 两页判定 `.gb-page-hero__lead--lg` 的 16→18 是假信号，全站
 新  tools/r31check.py         本轮 51 条 computed-style 断言
 新  tools/measure.py          临时探针：按宽度打印选择器的 computed 值与矩形
 ```
+
+## 2026-08-26 第三十一轮：promo-modal 按稿重做 + 小熊改整体导出（`$build` = `20260825-r32`）
+
+反馈「`gb-promo-modal` 的样式没有还原设计包括内部的元素，小熊图片的导出也错误，
+需要整体导出一张图」。逐节点比对 336:27146（桌面）/ 285:19012（手机 email 态）/
+285:19204（手机 code 态）后确认两件事都成立，本轮全部做掉。
+
+### 改了什么
+
+**小熊：四张拼图 → 一张整体导出**
+
+1. **旧实现是把「旋转后的外接盒」当画框、图正着放**，所以两只熊都不倾斜、
+   两团光晕跟熊完全分家飘在旁边。Figma 里这两组各自带变换：
+   | 节点 | 变换 | 旧实现取的值 |
+   |---|---|---|
+   | Group 38585（大熊组） | 旋转 7.163° | 只取了组内两个子节点的 bbox |
+   | └ Gumi Bear Side 1 | det = −1，**镜像**+旋转 | 457.76×385.51（旋转后外接盒） |
+   | └ Vector（光晕） | 水平镜像 | 282.09×340.93（同上） |
+   | Group 38584（小熊组） | 无旋转 | — |
+   | └ Gumi Bear Side 1 | 旋转 18.484° | 369.74×325.16（旋转后外接盒） |
+   同一个坑第二十轮的四支箭头踩过一次（见 CHANGELOG 第二十轮）。
+2. **改成一张 `images/promo-bears.png` / `.webp`**，画框 = 两个组的**并集 bbox**
+   624.54×481.17（Image frame 自己的坐标系）。桌面按 `left:-86.84 top:13` 原尺寸摆，
+   手机是**同一个框 ×0.61618**——这个比例不是我定的，是稿子自己的：两组的尺寸比
+   （327.58/531.64）与两组之间的位移比（157/254.8）都是 0.6162，所以一张图两端通用。
+3. **图是本地复现的，不是 Figma 渲染端点导出的** —— `/v1/images` 在第一次请求后
+   就 429 了（账号级，`retry-after` 241986s ≈ 2.8 天）。改走 memory 里记的那条路：
+   `/v1/files/:key/images` 拿 image fill 原图（不受渲染端点限流）+ 节点的
+   `fillGeometry` / `strokeGeometry` 路径，拼成 SVG 用 Chromium 渲染成透明 PNG。
+   光晕的 OUTSIDE 描边直接画 `strokeGeometry`（与 fill 同色），SVG 的 stroke 是
+   center 对齐、表达不了 OUTSIDE。
+   ⚠ **判据是限流前抢到的那一张**：桌面 Image frame（336:27147）的官方导出图还在手上，
+   把本地渲染结果按同样坐标合成到 cream 底上逐像素比 ——
+   光晕纯色掩膜的 bbox **逐位相同**（x[75.5,441.0] y[97.5,443.5]）、质心差 0.06px、
+   IoU 0.978，残差全在抗锯齿边缘（>64 的像素占 0.02%）。
+4. 手机版的水平锚点写成 `left: calc(50% - 212px)` 而不是稿里的 `-17px` ——
+   在 390 上两者等价，但这套堆叠布局一直用到 1280，锚左边缘会让两只熊在平板上
+   全堆到屏幕最左侧。改成锚中心后偏移量恒为稿里的 −19.6。
+
+**弹窗内部：逐节点对齐**
+
+5. **`__head` 56 → 64**。稿里这一行的高度由 32 的关闭按钮 + 16 padding 决定，
+   而 logo 是 `layoutPositioning: ABSOLUTE`（居中，y 20），根本不参与撑高。
+   旧实现拿 logo 的 24 去撑，整行矮 8px，下面所有东西跟着上移。
+6. **补上 head 与正文之间的 64 gap**（336:27155 / 285:19013 都是 `VERTICAL gap=64`）。
+   旧实现没有这个 gap，靠桌面 `justify-content:center` 把正文推回大致位置，
+   手机则直接紧贴。加上之后桌面 `body` 正好是稿里的 400（528 − 64 − 64），
+   内部 96+32+56+32+152+32 = 400 一格不差；手机正好 332。
+7. **手机 `__body` 去掉 `padding-bottom: 40`** —— 285:19021 的 padding 只有左右 40，
+   底部那 40 是多加的，把正文块顶高了。
+8. **`__lead` 去掉 `margin-top: -8px`**：稿里 title→lead 就是 body 自己的 gap 32，
+   那个负 margin 把它压成了 24。
+9. **补上 form 与「No thanks」之间的 20px**（Frame 427319585 的 `gap=20`）。
+   旧标记里这两个是同一个无样式 `div` 的兄弟，中间没有任何间距，而 `__stage`
+   身上的 gap:20 落在了两个互斥（`hidden`）的状态容器之间，等于空转。
+   新增 `.gb-promo-panel__state` 承接这个 20。
+   ⚠ 它必须自己写 `&[hidden]{display:none}` —— `[hidden]` 是 UA 的 display:none，
+   作者写的任何 display 都压得过它（见 memory `hidden-attr-vs-author-display`）。
+10. **删掉输入框里的信封图标**：336:27169 与 285:19028 的 `icon` / `mail` / `Help icon`
+    三个实例 `visible` 全是 **false**，稿上根本没有图标（Content 宽 375 = 403−28，
+    正好只有左右各 14 的 padding）。截图上也看得出来，是当初照着组件默认态补的。
+11. **`__input` 补自己的 reset**：全局那条只管 `font/color/margin`，所以浏览器默认的
+    边框和白底一直露在 `__field` 里面，看起来像框里又套了一个框。
+
+### 判据
+
+- **`tools/r32check.py`（新）42 条断言全过**：桌面 email + 手机 email + 手机 code
+  三张稿逐元素比 x/y/w/h（容差 1px），另含 logo 居中、图标数为 0、input 无边框无底色、
+  art 区只有一张 `promo-bears.*`、分隔线只在 ≥1281 出现。
+  ⚠ **判据本身做过破坏性自检**：把 head 改回 56、把熊的锚点挪 38px，22 条断言变红；
+  还原后全绿。第一次自检时替换字符串没匹配上编译产物的格式（expanded 不是压缩），
+  破坏根本没注入却报了全绿 —— 锚点断言是后补的。
+- **`tools/r32diff.py`（新）把 390 的实现叠在自己的稿子上逐行比**（email 比 285:18988、
+  code 比 285:19179，两张 390×840 导出裁掉顶部 96 的假浏览器栏）。结构断言与它不能互相顶替 ——
+  第二十七轮那只跑到面板另一头的手机小熊，当时所有结构断言都是绿的。
+  结果：**除标题/副标各自的第一行外，每一行的墨迹左右边缘都是 0 偏差**
+  （title l2 x[52,335]、lead l2 x[87,302] 逐位相同），全panel 平均差 4.95（抗锯齿量级）。
+  ⚠ **写这个脚本时踩了两个探针坑，都写进它的文件头了**：
+  ① `.click()` 之后指针停在按钮上，而 code 态的 Copy 按钮正好继承同一个位置 →
+  整颗药丸拍成了 lime 的 hover 态（那一带平均差 141）；
+  ② 弹窗切态时会把焦点移进新状态，键盘/脚本提交会画出一圈 `:focus-visible` 轮廓，
+  稿上没有。实测：鼠标点击 `fv=false` 无环、键盘 Enter `fv=true` 有环 —— 后者是对的
+  无障碍行为，不是 bug。改成鼠标提交 + 移开指针 + blur 后，那两带的差异全部消失。
+- **标题第一行比稿子偏右 5px、副标第一行偏右 2px，是稿子的问题不是实现的**：
+  两处 TEXT 的换行前都多了一个空格（`'Get 20% off '` / `'Enter your email address below '`，
+  U+2028 之前）。Figma 居中时把它算进行宽、把可见文字往左推，CSS 则会折叠行尾空格。
+  36px 的空格半宽正好 5px、16px 的正好 2px，与实测偏移逐一对上。**没有复现这个空格**——
+  它是不可见字符的副作用，不是像 compare 那 3px 一样看得出来的手摆。要照抄的话
+  在 `<br>` 前加一个 `&nbsp;` 即可。⚠ **第三十二轮按用户要求改成复现了**。
+- **`dismiss` 那行右边缘窄 3px（199→196，1.5%）**：它是弹窗里唯一的 14px 文本，
+  Figma 与 Chromium 对这个字号的字距舍入不同并在 30 个字形上累积；36 和 16 两个字号
+  都是 0 偏差。r32diff 对这一行的容差因此是 ±4 而不是 ±2。
+  ⚠ **这条第三十二轮证伪了：字距没有差，是探针容差取错造成的假象，见下一轮。**
+- 熊图几何见上面第 3 条的像素比对。
+- `tools/rwd.py` 全站 12 页 × 14 档宽度：✅ 全绿。
+- **narrow 档 7 档视口**（360×640 / 360×744 / 390×744 / 414×896 / 575 / 767 / 768）：
+  无页面横向溢出、熊的**墨迹**始终在 art 内且左右留白对称（360 时 67.8/66.1、
+  414 时 94.8/93.1）、正文不压到熊区。⚠ 探针一开始把 `__bears` 的**盒子**
+  左边缘为负（390 时 −17，正是稿值）报成越界 —— 盒子含透明边距且被 `overflow:hidden`
+  裁掉，要判的是墨迹不是盒子。
+- 平板档（768 / 1024 / 1280）与 1440 各截图核对，两态都拍了。
+
+### 遗留
+
+- **手机端在比 744 更高的视口上，正文与小熊之间会空出一大块**。稿子 285:19012 是
+  390×744（浏览器栏之下的整块可用高度），content 460 + gap 32 + art 252 = 744 严丝合缝；
+  视口更高时 `space-between` 把余量全给了中间那个 gap。真机（iPhone 15 Pro 约 744）
+  不会出现，但 headless 840 的截图里很显眼。要改成「正文吸收余量」得先定一条稿里没有的规则。
+- **平板档（768–1280）走的是手机那套全屏堆叠布局**，是第二十七轮定的（双栏只在 ≥1281）。
+  1062 的双栏其实塞得进 1280，若要改是独立一轮的事。
+- 桌面 code 态（揭码后）稿子里没有，仍是拿手机 code 态往 531 的列宽上套；
+  `__body` 的 `justify-content:center` 只在这个态里起作用（email 态内容正好 400，是空操作）。
+- 折扣码仍是稿里的占位符 `12345678CODE`，邮箱收集没有真后端（MVP 边界）。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   promo-panel：art 四图规则 → 单张 __bears；head 高 64；
+                              logo 改绝对居中；content 补 gap 64；body 去手机底 padding
+                              并恢复桌面 center；lead 去负 margin；新增 __state（gap 20
+                              + [hidden] 自防）；删 __field-icon；__input 补 reset；
+                              $build → 20260825-r32
+改  assets/customstyle.css    编译产物
+改  index.html                art 区四个 <picture> → 一个；删输入框信封 svg；
+                              两个状态容器加 .gb-promo-panel__state；?v= → r32
+改  *.html（其余 10 页）       ?v= → r32
+改  font-check.html           EXPECT_BUILD → r32
+新  images/promo-bears.png    两组小熊的整体导出，624.54×481.17 @2x（1249×962）
+新  images/promo-bears.webp   同上，102KB（旧的三张 webp 合计 120KB）
+删  images/promo-bear.png / .webp
+删  images/promo-bear-glow-lg.png / .webp
+删  images/promo-bear-glow-sm.png / .webp
+新  tools/r32check.py         本轮 42 条定向断言（比 Figma 数值）
+新  tools/r32diff.py          390 两态叠在设计稿上逐行比墨迹（比实际绘制结果）
+```
+
+---
+
+## 2026-08-26 第三十二轮：390 弹窗按稿逐像素对齐（`$build` = `20260825-r33`）
+
+需求：「需要对齐 390 的设计进行设计稿还原」。上一轮已把结构做对，这一轮只处理
+**叠在设计稿上还看得见的偏差**，判据全部是墨迹逐行比对，不是元素盒。
+
+### 改了什么
+
+1. **标题、副标各自的第一行补回稿里的尾随空格**（`<br>` 前加 `&nbsp;`）。
+   上一轮查明稿子在 U+2028 之前多打了一个空格、Figma 居中时把它算进行宽，当时判定
+   「不复现」；本轮按要求复现。普通空格会被 CSS 折叠，必须用 `&nbsp;`。
+   结果：title l1 由 dx+5/+5 → **+0/+1**，lead l1 由 +2/+3 → **+1/+1**。
+
+2. **标题补 0.5px 半行距修正**（`padding-top: .5px` + `margin-bottom: -.5px`）。
+   PP Palma 的 ascent+descent 恰是 **1.25em**，手机端 `line-height:40 / font-size:36`
+   于是半行距 = (40−45)/2 = **−2.5px**；Figma 把它取整成 −2 再排版，墨迹因此比
+   Chromium 低 1px —— **盒子 y=128、高 80 完全正确，错的只是盒内文字的位置**。
+   负 margin 抵掉 padding，flow 高度仍是稿子给的 80，`r32check` 无需改。
+   桌面 `48 / 40` 的半行距 = −1 本来就是整数，`@include pc` 里显式归零。
+   结果：title l1/l2 由 dy−2/−1 → **dy−1/+0**，标题带 `>32` 像素数 3558 → 1401。
+
+3. **`tools/r32diff.py` 重写**：从「5 条只比 x 的文字带」扩成 **10 条带、x/y 双轴、
+   两态各跑一遍**，容差统一 ±1px（Figma 与 Skia 对抗锯齿边缘的分歧上限）。
+   新增 logo / 输入框占位符 / 按钮药丸 / 按钮文字 / dismiss / 下划线六条带 ——
+   本轮的标题 bug 正是**盒子全对、墨迹偏 1px**，只比 x 的旧脚本抓不到。
+
+### 判据
+
+| | 上一轮 | 本轮 |
+|---|---|---|
+| email 态整面板平均差 | 4.95 | **2.05** |
+| code 态整面板平均差 | 4.83 | **1.93** |
+| `>32` 像素占比 | 3.65% / 3.44% | **1.55% / 1.34%** |
+| 超 ±1px 的带 | title l1 +5、lead l1 +2、dismiss −3 | **无** |
+
+- `tools/r32diff.py` 10 条带 × 2 态：全部 |dx|,|dy| ≤ 1。
+- `tools/r32check.py` 42 条数值断言：绿（标题盒高 80.5，TOL 1.0 内）。
+- 桌面 1440 单独核对：标题 rect 仍 y=248 h=96，墨迹与青柠贴纸逐位相同，面板平均差 2.15。
+- `tools/rwd.py` 全站 12 页 × 14 档：✅ 全绿。
+- **破坏性自检两次**：抽掉 `padding-top` → 4 条红；抽掉 `&nbsp;` → 2 条红。
+  两次都先 `assert` 锚点串存在再替换，避免「没改到却报绿」。
+
+### 两条上一轮结论的更正
+
+- **`dismiss` 窄 3px 是假的**。真因是探针拿 `(77,77,77)` 容差 30 去量 **#666** 的文字，
+  两边抗锯齿边缘被非对称地切掉。放宽到 `(102,102,102)` 容差 45 后，稿与实现
+  同为 x[95,295]、y[444,455]，**逐位相同**。上一轮为它放宽到 ±4 的容差已收回。
+- **差点误删 dismiss 的下划线**。节点自身 `style.textDecoration` 是 `None`，
+  照着读会判定「稿里没有下划线」；实际它在 `characterStyleOverrides` →
+  `styleOverrideTable["3"].textDecoration = "UNDERLINE"` 里。稿子那条线是
+  0.755px 的软线（两行灰阶合成），Chromium 只能画整像素，实测
+  `text-underline-offset: 2px` 落在 y457、`1px` 落在 y456，而稿子的重心在 457.17 ——
+  **现行的 2px 就是最优解**，`text-decoration-thickness` 给小数也不会变（dsf=1 下会吸附）。
+  改动已全部回退，这一条**没有产生任何代码变更**。
+
+### 遗留
+
+- 上一轮的四条遗留（>744 高视口的留白、平板走手机布局、桌面 code 态无稿、占位折扣码）原样保留。
+- **半行距修正只做了这一个标题**。全站凡 `line-height < 1.25em` 的标题都有同样的 1px，
+  要不要统一处理是独立一轮的事 —— 会牵动多个模块的视觉基线。
+- ⚠ **0.5px 这个值绑在「ascent+descent = 1.25em」上**，换成客户授权的 PP Palma 后
+  必须重量一次（canvas `fontBoundingBoxAscent/Descent`）：度量一变，该补的就不是 0.5 了。
+
+### 文件清单
+
+```
+改  index.html                 promo 标题/副标 <br> 前补 &nbsp;；?v= → r33
+改  assets/customstyle.scss    .gb-promo-panel__title 补 padding-top .5px / margin-bottom -.5px
+                               （pc 内归零）；$build → 20260825-r33
+改  assets/customstyle.css     编译产物
+改  *.html（其余 10 页）        ?v= → r33
+改  font-check.html            EXPECT_BUILD → r33
+改  tools/r32diff.py           重写：10 条带、x/y 双轴、±1px、两态
+改  docs/CHANGELOG.md          本条 + 第三十一轮两处结论标注
+改  docs/PROJECT-STATUS.md     进度行
+```
+
+---
+
+## 2026-08-26 第三十三轮：任务文档 5 项 + 对话追加 2 项（`$build` = `20260825-r34`）
+
+### 改了什么
+
+1. **`.gb-promo-panel__divider` `top` 50% → 52%**（任务 1，直接给值）。
+
+2. **privacy-policy 末尾三段改成列表**（任务 2）。
+   ⚠ **需求说的是 `ul`，稿子里是 `ol`** —— 326:83399 渲染出来是 `1. 2. 3.`，
+   按 铁律「数值以源数据为准」落成 `<ol>`。要真的改成圆点，把标签换掉即可。
+   稿里这段是**一个** TEXT 节点（326:83429）用 `\n` 分四段，`style` 里没有任何列表标记 ——
+   **是从截图像素认出来的**，节点数据认不出来。
+   几何逐条对上：序号墨迹 x=23/24、续行 x=44/45（= `padding-left: 24px`），
+   **列表内行距恒 24px（= line-height），项间没有额外间隔** ——
+   `li + li` 的 `margin-top` 因此由第三十轮凭空补的 8px 改成 **0**。
+
+3. **波浪在 Windows 分数缩放下的发丝缝**（任务 3）。**只在 dsf 1.25/1.5/1.75 出现，
+   1.0 和 2.0 干净** —— 所以之前整数缩放的全站扫描一条都扫不出来。
+   两个成因叠在一起，缺一不可（实测：只修一个残留 18~45，两个都修才归零）：
+   - **背景图会比盒子矮不到一个设备像素**，垫在下面的 `background-color`（上方色块）
+     漏出来成一条亮线。改成**用 `background-color` 预铺下方色**（`--wave-under`），
+     上方色改由一条高 `--wave-amp` 的 `linear-gradient` 显式画到圆弧闭合线为止。
+     `background-color` 没有这个缺口，圆弧几何一点没动。
+   - **盒子与下一区块要多叠一个像素**：`height: calc(var(--wave-h) + 1px)` +
+     `margin-bottom: -1px`。那一像素处本来就是实心 `--wave-fg`，负 margin 把布局拉回去。
+     `--down` 的圆弧锚在底边，多出来的像素会拖着整条波浪下移，所以它的圆心改钉在
+     `calc(100% - 1px - var(--wave-r))`。
+   ⚠ **`--wave-bg` 是透明的三种（`--to-lime` ×7 / `--bleed` ×2 / 裸类）不能预铺**，
+   否则会在波浪上方糊一条整色带（第二十七轮踩过）；它们显式设 `--wave-under: transparent`，
+   保留原状。这三种的配色对比都低，看不出来。
+
+4. **banner 小熊去掉放大入场与上下浮动，改纯淡入**（任务 4）：
+   `gb-float-art` → `gb-float-art gb-float-art--still`（`gm-art-fade-in 0.7s`，只动 opacity）。
+   ⚠ **这是对第二十五轮「全站小熊恢复浮动，波浪上的除外」的反转**，也是这只熊的第三次翻转。
+   回退办法：把 `gb-float-art--still` 去掉即可。附带好处是 LCP —— 这只熊是首页 LCP 元素
+   （399,727 px²），透明元素不算 LCP 候选，淡入 0.7s+0.2s 比原来 1.5s+0.5s 早约 1.1s。
+
+5. **nutrition 散熊去掉浮动**（任务 5）：直接摘掉 `gb-float-art`。
+   它的入场动画本来就看不见（CSS 在页面加载即播，2.0s 播完，而这个模块在首屏之下），
+   所以只留下无限浮动那一项可见效果，整类摘掉等价于「只去掉浮动」。
+   ⚠ 同样是第二十五轮那条规则的反转（那轮才给它加上）。
+
+6. **`.gb-stat` 的文字动效由词语弹跳改为行揭示**（对话追加）：
+   `data-pop-text` / `data-pop-atom` 全部撤掉，四张卡的三个 `<p>` 各挂 `data-line-reveal`。
+   ⚠ **参考站笔记（401:29596 / 216:5903）明写词语弹跳是留给统计数字的**，
+   这条是对笔记的偏离，不是还原。撤掉后 `popText` 与 `.gb-pop-word` **全站零使用者**，
+   代码保留没删，两处注释已改成「当前无使用者」。
+   ⚠ **`.gb-ink-halo` 需要单独处理**：它是绝对定位的副本，行揭示的切分不会把它收进遮罩，
+   于是数字还在遮罩里往上滑、青柠光晕已经整块杵在那儿。改成**等滑完再贴上**
+   （`gm-fade-in .35s`，延迟 1.05s）。已验证首帧只有数字在滑、收尾光晕在位。
+
+7. **`gb-product__title` / `gb-product__lead` 去掉行揭示**（对话追加）：
+   两页各两处 `data-line-reveal` 摘掉。它们的父级 `.gb-product__info` 本来就有
+   `wowo fadeInUp delay-in-1`，去掉后仍有整栏淡入，不会变成硬切。
+
+### 判据
+
+- **波浪**：`306` 个波浪实例（11 页 × 2 宽 × dsf 1.25/1.5/1.75）**残留 0 条**。
+  破坏性自检：把 `--wave-under` 改回 `var(--wave-bg)` → 立刻报出 8 条（先 `assert` 锚点串存在）。
+- **波浪没改几何**：改前改后整页截图逐页比（4 页 × 3 宽 × dsf 1/2）——
+  **页高全部不变**，像素差 4~84，且每一项都落在「同代码连拍两次」的噪声基线之内
+  （噪声源是还在浮动的 `.gb-stats__bear-art` 和跑马灯，最大 176,566 px）。
+  ⚠ 一开始拿「改前 vs 改后有差异」当结论是错的，必须先量同代码噪声。
+- **入场动效收尾**：11 页 × 2 档，滚完全页再等 2.6s，`[data-line-reveal]` 宿主 /
+  `.gb-line-mask__inner` / `.gb-ink-halo` / `.wowo` / `.gb-float-art` **全部 opacity=1、
+  transform 归位**。破坏性自检：停掉光晕规则 → 报 8 条。
+  ⚠ 探针第一版把 `display:none` 的元素也算进去，`.gb-ingredients__desktop-only`
+  在 390 恒为 opacity 0 被误报 —— 隐藏元素上的负向断言恒真，已加 `offsetParent` 过滤。
+- `tools/rwd.py` 全站 12 页 × 14 档、`tools/r32check.py` 42 条、`tools/r32diff.py` 10 条带：见下方运行结果。
+- privacy 列表：与稿逐行比，序号 x、续行 x、行距 24 全对；唯一差 4px 见遗留第 1 条。
+
+### 遗留
+
+1. **富文本段间距实现是 20px，稿子是 16px**。privacy + shipping 两页 **103 个** 16/24 正文
+   节点的 `paragraphSpacing` 全是 16，实现里 `.gb-rich-text p` 的 `margin-bottom` 是
+   第三十轮定的 20 —— 段落之间、以及本轮新列表与上一段之间都因此多 4px。
+   **本轮没动**（需求只点名那三段改列表，改这个会动两整页的纵向节奏）。改法是一个数。
+2. **`--to-lime`（7 处）/ `--bleed`（2 处）保留发丝缝**，原因见上；配色对比低，肉眼看不出。
+3. **`--down`（10 处）的顶边同理未处理** —— 它的错配边在上方，现有 10 处配色
+   （mint→white / mint→cream）都是低对比。要修就是把 3 的两招在顶边镜像一遍。
+4. **1440 档两个 case 残留 R≈10**（满值 181，约 4%），已在肉眼阈下，没有继续追。
+5. 词语弹跳（`popText` + `.gb-pop-word` + `gm-pop`）成为**零使用者的死代码**，按笔记保留。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss    .gb-promo-panel__divider top 52%；.gb-rich-text li+li margin 0；
+                               .gb-scallop 改 --wave-under 预铺 + 显式上方色条 + 多 1px 叠边；
+                               .gb-scallop--lg 高度同步；--down 圆心钉 -1px；
+                               --to-lime / --bleed 补 --wave-under: transparent；
+                               [data-line-reveal] > .gb-ink-halo 三条（含 no-js 兜底）；
+                               word-pop 注释标注「无使用者」；$build → 20260825-r34
+改  assets/customstyle.css     编译产物
+改  assets/main.js             lineReveal 头部注释同步（popText 当前无宿主）
+改  index.html                 hero 熊 → gb-float-art--still；nutrition 熊摘掉 gb-float-art；
+                               4 张 gb-stat 由 data-pop-text/atom 改 3×data-line-reveal；
+                               gb-product__title/__lead 去 data-line-reveal；?v= → r34
+改  pdp.html                   gb-product__title/__lead 去 data-line-reveal；?v= → r34
+改  privacy-policy.html        末三段 <p> → <ol><li>；?v= → r34
+改  *.html（其余 8 页）         ?v= → r34
+改  font-check.html            EXPECT_BUILD → r34
+改  docs/CHANGELOG.md          本条
+改  docs/PROJECT-STATUS.md     进度行
+新  tools/revealcheck.py       11 页 × 2 档：所有入场效果收尾必须回到 opacity 1
+```

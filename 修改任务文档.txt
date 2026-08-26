@@ -1,47 +1,5 @@
-
-1. .gb-nl-tab     padding: 9px 3px 11px; 
-2. gb-nl-modal 样式需要还原设计，包括波浪的位置和样式以及手机 端的样式
-3. gb-icon-chevron 旋转缺少过渡效果， .gb-btn--primary     padding: 0 42px;.gb-header__toggle gap: 18px;
-4. .gb-nav-card__tag     padding: 1px 6px;     margin-bottom: 10px;
-5. .gb-header.is-open 背景色消失的很突兀，和gb-header__panel 收起的动画曲线不匹配
-6. 我之前就以声明简短注释，去掉中文注释，去掉多余英文注释，尽量用极简的话代替
-响应式中 
-gb-hero__inner 1380的情况下padding-left padding-right 改为 .gb-hero__bear left: 62%; 1200px以下 left: 50%;
-响应式的情况下 尽量保持各模块的左右padding都一样，比如.gb-header__bar的padding-l和padding-r
-
-检查响应式不够合理 在break point的情况下出现了一些元素重叠的情况，而且768以下的时候gb-hero__text加上最大宽度575px；.gb-hero__btn margin 0 auto；并且竖向排列的时候，gb-hero__art gb-float-art是绝对定位到模块的下方并且模块流出了这个距离，查看手机端设计
-
-需要重新定位 手机端为575以下，移动端 767以下 平板为1280 - 767， 1280以上为pc端，但是一般情况下 平板端会到1200才变化 
-比如类似这种card 到 991以下变为一行2个 767以下变为一行1个去掉最大宽度
-
-响应式不合理需要再次检查全站，很多模块都提前了breakpoint。.gb-footer__link-groups 响应式的需要靠左对齐
-
-
-1. gb-nl-modal 手机端需要还原设计NUTRITIONAL LABEL
- 做成一个从屏幕底部往上滑出来的面板。 关掉的时候，就按原来滑上来的路径反向滑回去。
-2. gb-promo-card__body 因为加上padding 所以影响了    flex: 1 1 50%;的样式
-3. gb-arc-text gb-promo-card__arc 需要还原设计
-4. pdp.html gb-reviews并没有gb-testimonials， gb-reviews__disclaimer     margin-top: 48px 去掉; 给gb-testimonials 设置margin-b 48px。去掉
-5. gb-vs__bear 缺少倾斜角度； .gb-vs__row + .gb-vs__row padding-top: 13px;
-6. 检查字体样式 有些有ls有些没有ls 不能统一的给body 加ls 
-7. .gb-vs__value pc端padding-r 1px
-8. .gb-footer-cta__text     margin-top: 0;
-
-
-9. gb-science gb-science--cream padding-b 改为96px 
-gb-science gb-science--cream gb-science--tight     gap: 22px; 
-.gb-compare__row grid-template-columns: 1fr 109px 92px;gb-compare__avatar 导出的小熊图案太小了； .gb-faq-image__body     justify-content: flex-start;
-
-10 gb-page-hero__text 内部的元素应该依次出现
-11. how-gumi-works.html 的gb-page-hero__lead文本改为This is a placeholder subheading.
-12. gb-dosed__text gb-dosed__title的text stroke 与文本不服符； .gb-dosed__body     gap: 34px;.gb-cta-band__head     gap: 26px; .gb-cta-band__content paddign-t 54px 
-
-.gb-faq--plain padding-t 94px 第一个faq-item 去掉padding-t 和border-t，.gb-acc-body    padding-top: 10px;     --acc-gap: 24px;  .gb-acc-body__text font-family: PP Palma;
-font-weight: 400;
-font-style: Regular;
-font-size: 18px;
-leading-trim: NONE;
-line-height: 28px;
-letter-spacing: -2%;
- 13. .gb-page-hero--center     padding: 64px 0 calc(70px + var(--sc-h)；.gb-field__phone select     padding-right: 23px;.gb-form__note ls 0；
- 14. .gb-rich-text     gap: 0;.gb-rich-text p     margin-bottom: 20px;gb-rich-text 内部需要去掉div的这些容器，这里类似编辑器的样式需要还原设计，同时完善编辑器样式 比如ul ol blockquote等虽不需体现，但需补css
+1.  .gb-promo-panel__divider         top: 52%; 
+2. gb-rich-text 底部的最后的三个p在设计中是一个ul，需要改回
+3. 波浪形状在某些宽度下 由于渲染原因上下会有一条线的间隙
+4. banner 的gb-hero__bear 去掉刷新进入的放大效果和上下浮动的效果改为fadein
+5, gb-nutrition__bears gb-float-art 去掉上下浮动的效果

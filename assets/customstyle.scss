@@ -32,7 +32,7 @@
 // font url()s read it. Previewing over file:// caches css/js/woff2 until a hard
 // refresh, so without it a real change reads as "nothing happened".
 // font-check.html prints the value the browser actually got.
-$build: "20260825-r31";
+$build: "20260825-r34";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -1774,9 +1774,7 @@ $promo-fade-out: 0.5s;
 
 // Bear art -------------------------------------------------------------
 // Bottom strip on mobile (bears sit under the form, per the design's own
-// child order); full-height left column on desktop. Positions below are
-// lifted straight from the Figma bboxes relative to this container — see
-// round 26 changelog for the numbers, not worth re-deriving by eye.
+// child order); full-height left column on desktop.
 .gb-promo-panel__art {
   // 285:18988 does not paint this strip flat: the panel's sand runs 71px into it
   // and hands over to $c-cream along a scalloped edge ("Image/Union", 474.9x333.2
@@ -1833,24 +1831,30 @@ $promo-fade-out: 0.5s;
   }
 }
 
-.gb-promo-panel__bear,
-.gb-promo-panel__bear-glow {
+// Both bear groups (336:27148 + 336:27151) as ONE flat export. Each group
+// carries its own rotation/mirror in Figma, so placing bear and glow
+// separately by their rotated bounding boxes left every piece upright and
+// the glows detached. Box below is the two groups' union bbox in the Image
+// frame's own coordinates; mobile is that same box at 0.61618, which is
+// exactly the ratio the mobile board uses.
+.gb-promo-panel__bears {
   position: absolute;
   z-index: 1;                // over the mobile wave, see .gb-promo-panel__art
   display: block;
   max-width: none;
-}
+  // 50% - 212 lands on the board's -17 at 390 and keeps the same offset from
+  // centre on the wider viewports that still use this stacked layout
+  left: calc(50% - 212px);
+  top: -37px;
+  width: 384.83px;
+  height: 296.49px;
 
-.gb-promo-panel__bear-glow--lg { left: 65.49px;  top: 8.47px;   width: 173.82px; height: 209.68px; }
-.gb-promo-panel__bear--lg      { left: 5.76px;   top: -7.53px;  width: 282.06px; height: 237.54px; }
-.gb-promo-panel__bear-glow--sm { left: 191.59px; top: 79.51px;  width: 115.72px; height: 147.4px; }
-.gb-promo-panel__bear--sm      { left: 140px;    top: 52px;     width: 227.83px; height: 200.36px; }
-
-@include pc {
-  .gb-promo-panel__bear-glow--lg { left: 47.04px;  top: 86.84px;  width: 282.09px; height: 340.93px; }
-  .gb-promo-panel__bear--lg      { left: -49.9px;  top: 60.83px;  width: 457.76px; height: 385.51px; }
-  .gb-promo-panel__bear-glow--sm { left: 251.69px; top: 202.36px; width: 187.81px; height: 239.67px; }
-  .gb-promo-panel__bear--sm      { left: 167.96px; top: 157.62px; width: 369.74px; height: 325.16px; }
+  @include pc {
+    left: -86.84px;
+    top: 13px;
+    width: 624.54px;
+    height: 481.17px;
+  }
 }
 
 // The vertical scalloped seam between the two desktop columns (285:19373's
@@ -1874,7 +1878,7 @@ $promo-fade-out: 0.5s;
     // Centring it in the column instead parked the whole wave in open cream,
     // 260px away from the seam it is supposed to be cutting.
     left: calc(100% - 42px);
-    top: 50%;
+    top: 52%;
     width: 126px;
     height: 764px;
     transform: translateY(-50%);
@@ -1897,25 +1901,30 @@ $promo-fade-out: 0.5s;
   max-height: 100%;
   display: flex;
   flex-direction: column;
+  gap: 64px;                 // 285:19013 / 336:27155 both space head to body by 64
   overflow-y: auto;
 
   @include pc { order: 0; width: 531px; height: 100%; }
 }
 
+// 336:27156 — 64 tall: 16 padding around the 32 close button. The logo is
+// layoutPositioning:ABSOLUTE on the board, centred at y 20, so it does not
+// set the row height.
 .gb-promo-panel__head {
   position: relative;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  height: 64px;
 }
 
 .gb-promo-panel__logo {
-  display: inline-flex;
+  position: absolute;
+  left: 50%;
+  top: 20px;
+  transform: translateX(-50%);
+  display: block;
   height: 24px;
 
-  svg { height: 100%; width: auto; }
+  svg { display: block; height: 100%; width: auto; }
 }
 
 .gb-promo-panel__close {
@@ -1938,15 +1947,20 @@ $promo-fade-out: 0.5s;
   @include hover { background: $c-lime-100; }
 }
 
+// Frame 427319586: 32 gap, side padding only on mobile (40) / 64 + 32 bottom
+// on desktop. Content adds up to the board's own 332 / 400, so it must NOT be
+// re-centred — that would swallow the 64 gap above it.
 .gb-promo-panel__body {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 32px;
-  padding: 0 40px 40px;
+  padding: 0 40px;
   text-align: center;
 
+  // email state adds up to exactly 400, so centring is a no-op there; it only
+  // does anything in the revealed-code state, which has no board of its own
   @include pc {
     justify-content: center;
     padding: 0 64px 32px;
@@ -1962,6 +1976,11 @@ $promo-fade-out: 0.5s;
   letter-spacing: -0.36px;
   color: $c-green;
   text-shadow: ink-outline(0.4167em, $c-lime);
+  // PP Palma's ascent+descent is 1.25em, so here half-leading is (40-45)/2 =
+  // -2.5px. Figma rounds it to -2 and paints the ink 1px lower; 0.5px puts it
+  // back, the negative margin keeps the 80px the board gives the box.
+  padding-top: 0.5px;
+  margin-bottom: -0.5px;
 
   @include pc {
     max-width: 403px;
@@ -1969,6 +1988,9 @@ $promo-fade-out: 0.5s;
     line-height: 48px;
     letter-spacing: -0.4px;
     text-shadow: ink-outline(0.4em, $c-lime);
+    // (48 - 50) / 2 is already whole, so nothing to correct here
+    padding-top: 0;
+    margin-bottom: 0;
   }
 }
 
@@ -1980,7 +2002,6 @@ $promo-fade-out: 0.5s;
   line-height: 24px;
   letter-spacing: -0.32px;
   color: $c-gray-700;
-  margin-top: -8px;   // pulls it back under __title's own gap:32 without a nested wrapper
 
   @include pc {
     max-width: 403px;
@@ -1994,11 +2015,20 @@ $promo-fade-out: 0.5s;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 20px;
   width: 100%;
   max-width: 310px;
 
   @include pc { max-width: 403px; }
+}
+
+// Frame 427319585 — input+button block to the "No thanks" line. ⚠ [hidden]
+// is a UA display:none that any author display beats, so restate it here.
+.gb-promo-panel__state {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  &[hidden] { display: none; }
 }
 
 .gb-promo-panel__form {
@@ -2020,16 +2050,12 @@ $promo-fade-out: 0.5s;
   &--code { border-style: dashed; justify-content: center; }
 }
 
-.gb-promo-panel__field-icon {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  color: $c-gray-600;
-}
-
 .gb-promo-panel__input {
   flex: 1 1 auto;
   min-width: 0;
+  padding: 0;
+  background: none;
+  border: 0;                 // the global reset only covers font/colour/margin
   font-family: $font-brand-stack;
   font-size: 16px;
   font-weight: 400;
@@ -2194,6 +2220,8 @@ $promo-fade-out: 0.5s;
 // --pop-r. Whitespace stays as real text nodes so wrapping is unaffected.
 // data-pop-stagger="30" on the element overrides the 55ms step; long copy
 // otherwise runs for word-count x 55ms before the last word lands.
+// ⚠ NO USERS since round 33 -- the statistics numbers this was built for now go
+// through the line reveal instead. Kept because the notes still ask for it.
 .gb-pop-word {
   display: inline-block;
   transform-origin: 50% 90%;
@@ -2221,8 +2249,9 @@ $promo-fade-out: 0.5s;
 
 // Line reveal ----------------------------------------------------------------
 // The other half of the site-wide text entrance (notes 401:29596 / 216:5903).
-// The word-scatter pop above is reserved for the STATISTICS numbers; running copy
-// on the reference site goes through GSAP SplitText {type:"lines", mask:"lines"}
+// The notes reserve the word-scatter pop above for the STATISTICS numbers, but
+// round 33 moved those here too, so this is now the only text entrance in use.
+// Running copy on the reference site goes through GSAP SplitText {type:"lines", mask:"lines"}
 // instead: each visual line gets its own overflow:hidden mask and tweens
 // y:100%→0% inside it, so a hard edge slides the line up rather than fading it in.
 // Params transcribed from the same chunk: duration 1.4, ease power4.out,
@@ -2296,9 +2325,32 @@ $line-descend: 0.12em;
   to   { transform: translateY(0); }
 }
 
+// .gb-ink-halo is an absolutely positioned duplicate of the copy, so the line
+// splitter leaves it outside the masks: it cannot ride up inside a mask, and
+// fading it alongside the slide leaves a full-size lime blob over a half-risen
+// number. It waits for the slide to finish and then stickers on.
+[data-line-reveal] > .gb-ink-halo {
+  opacity: 0;
+}
+
+.is-revealed > .gb-ink-halo {
+  animation: gm-fade-in 0.35s #{$ease-out} both;
+  animation-delay: calc(var(--line-base, 0) * 150ms + 1.05s);
+}
+
+.is-settled > .gb-ink-halo {
+  animation: none;
+  opacity: 1;
+}
+
 // Script off or still parsing: text must never be stuck invisible
 .no-js [data-line-reveal],
 [data-line-reveal]:not(.is-split) {
+  opacity: 1;
+}
+
+.no-js [data-line-reveal] > .gb-ink-halo,
+[data-line-reveal]:not(.is-split) > .gb-ink-halo {
   opacity: 1;
 }
 
@@ -2390,17 +2442,32 @@ $line-descend: 0.12em;
   --wave-amp: calc(var(--wave-w) * 0.24008);
   --wave-bg: transparent;   // the block above
   --wave-fg: #{$c-white};   // the block below, i.e. the colour of the arcs
+  // What fills the box under everything else. At a fractional device pixel
+  // ratio (Windows 125/150% scaling) a background IMAGE stops a fraction of a
+  // device row short of its box and whatever is underneath leaks out as a
+  // hairline; background-color has no such shortfall. So the box is pre-filled
+  // with the block BELOW and the block ABOVE is drawn as an explicit strip down
+  // to --wave-amp, the line where the arcs close up and take over.
+  // ⚠ A pair whose --wave-bg is transparent has to set this to transparent as
+  //   well, or the strip it needs left see-through gets filled in.
+  --wave-under: var(--wave-fg);
 
   position: relative;
-  height: var(--wave-h);
-  background-color: var(--wave-bg);
+  // Same hairline, other half: one more pixel of overlap with the next block.
+  // Down there the wave is solid --wave-fg already and the margin pulls the
+  // layout back, so nothing moves. Measured on --to-green, the one pair with
+  // enough contrast to see it, but every wave has it.
+  height: calc(var(--wave-h) + 1px);
+  margin-bottom: -1px;
+  background-color: var(--wave-under);
   background-image:
     radial-gradient(circle var(--wave-r) at 50%   var(--wave-r), var(--wave-fg) 99.5%, transparent 100%),
     radial-gradient(circle var(--wave-r) at -50%  var(--wave-r), var(--wave-fg) 99.5%, transparent 100%),
-    radial-gradient(circle var(--wave-r) at 150%  var(--wave-r), var(--wave-fg) 99.5%, transparent 100%);
-  background-size: var(--wave-w) 100%;
-  background-repeat: repeat-x;
-  background-position: center top;
+    radial-gradient(circle var(--wave-r) at 150%  var(--wave-r), var(--wave-fg) 99.5%, transparent 100%),
+    linear-gradient(var(--wave-bg), var(--wave-bg));
+  background-size: var(--wave-w) 100%, var(--wave-w) 100%, var(--wave-w) 100%, 100% var(--wave-amp);
+  background-repeat: repeat-x, repeat-x, repeat-x, no-repeat;
+  background-position: center top, center top, center top, left top;
 }
 
 // Size and direction are independent in the design, so they are independent
@@ -2424,7 +2491,7 @@ $line-descend: 0.12em;
   --wave-band: var(--sc-lg-band);
   --wave-h: var(--sc-lg-h);
 
-  height: var(--wave-h);
+  height: calc(var(--wave-h) + 1px);   // see .gb-scallop
 }
 
 // Direction ----------------------------------------------------------------
@@ -2433,10 +2500,10 @@ $line-descend: 0.12em;
 // the block above bulges down into the block below.
 .gb-scallop--down {
   background-image:
-    radial-gradient(circle var(--wave-r) at 50%   calc(100% - var(--wave-r)), var(--wave-bg) 99.5%, transparent 100%),
-    radial-gradient(circle var(--wave-r) at -50%  calc(100% - var(--wave-r)), var(--wave-bg) 99.5%, transparent 100%),
-    radial-gradient(circle var(--wave-r) at 150%  calc(100% - var(--wave-r)), var(--wave-bg) 99.5%, transparent 100%);
-  background-color: var(--wave-fg);
+    radial-gradient(circle var(--wave-r) at 50%   calc(100% - 1px - var(--wave-r)), var(--wave-bg) 99.5%, transparent 100%),
+    radial-gradient(circle var(--wave-r) at -50%  calc(100% - 1px - var(--wave-r)), var(--wave-bg) 99.5%, transparent 100%),
+    radial-gradient(circle var(--wave-r) at 150%  calc(100% - 1px - var(--wave-r)), var(--wave-bg) 99.5%, transparent 100%);
+  background-color: var(--wave-under);
 }
 
 // Colour pairs. --wave-bg is always the block ABOVE the divider and --wave-fg
@@ -2446,7 +2513,7 @@ $line-descend: 0.12em;
 // page's last section. Hard-coding mint put a stray mint band above the footer on
 // the 6 pages that end white, so the base is transparent and the five pages that
 // really do end mint use the named variant below.
-.gb-scallop--to-lime       { --wave-bg: transparent;      --wave-fg: #{$c-lime}; }
+.gb-scallop--to-lime       { --wave-bg: transparent;      --wave-fg: #{$c-lime}; --wave-under: transparent; }
 .gb-scallop--mint-to-lime  { --wave-bg: #{$c-lime-150};   --wave-fg: #{$c-lime}; }
 .gb-scallop--to-green      { --wave-bg: #{$c-lime};     --wave-fg: #{$c-green-900}; }
 .gb-scallop--to-white      { --wave-bg: #{$c-lime-150}; --wave-fg: #{$c-white}; }
@@ -2477,6 +2544,7 @@ $line-descend: 0.12em;
 // leaks into the next module.
 .gb-scallop--bleed {
   --wave-bg: transparent;
+  --wave-under: transparent;   // see .gb-scallop: nothing may pre-fill the strip
 }
 
 // Section-owned bottom edge -------------------------------------------------
@@ -7272,7 +7340,8 @@ body.is-menu-open {
   letter-spacing: -0.36px;
   color: #808080;
 
-  + li { margin-top: 8px; }
+  // 326:83429 runs the list at a flat 24px pitch: no gap between items.
+  + li { margin-top: 0; }
 
   @include narrow { font-size: 16px; line-height: 24px; letter-spacing: -0.32px; }
   @include tablet { font-size: fluid(16px, 18px); line-height: fluid(24px, 28px); letter-spacing: fluid(-0.32px, -0.36px); }
