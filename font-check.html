@@ -59,7 +59,7 @@
 // 整段推迟到 DOMContentLoaded：main.js 的模块也是在那时候才 init 的，
 // 解析期跑的话「Lenis 实例在不在」这类探针必然读到 null，报假红。
 function run() {
-  var EXPECT_BUILD = "20260825-r34";
+  var EXPECT_BUILD = "20260826-r38";
   var DIR = "assets/";
   var rows = function (id, arr) {
     document.getElementById(id).innerHTML = "<tbody>" + arr.join("") + "</tbody>";

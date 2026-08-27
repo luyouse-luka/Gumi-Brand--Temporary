@@ -1,5 +1,17 @@
-1.  .gb-promo-panel__divider         top: 52%; 
-2. gb-rich-text 底部的最后的三个p在设计中是一个ul，需要改回
-3. 波浪形状在某些宽度下 由于渲染原因上下会有一条线的间隙
-4. banner 的gb-hero__bear 去掉刷新进入的放大效果和上下浮动的效果改为fadein
-5, gb-nutrition__bears gb-float-art 去掉上下浮动的效果
+
+
+手机端修改
+1..gb-hero__lead        padding: 0 10px;
+2. 箭头大小和样式没有还原设计
+3. .gb-stats__deco-bear         top: -22.34px; width: 20.92%; 并且如果用百分比表示在767以下太大了，直接固定宽高
+
+.gb-nutrition padding-b 27px
+.gb-product padding-t 52px；gb-product__stage border -radus 16px；.gb-product__gallery        gap: 16px;
+.gb-product__media     gap: 16px; .gb-product__inner     gap: 32px; .gb-product__guarantee-note border-r 8px；    padding: 8px 20px; .gb-product--lg padding-b 50px； .gb-reviews__rating svg     width: 103px;
+    height: 20px;.gb-reviews__inner         gap: 48px; .gb-reel__play     width: 64px;
+    height: 40px；.gb-testimonial svg     width: 103px;    height: 20px; gb-testimonials padding-t0；.gb-testimonial flex auto；gap 30px；margin-b 0；.gb-reviews__disclaimer padding: 0 20px;.gb-reviews padding: 64px 0 78px;.gb-deco-bear--a         width: 154px;
+        top: -60px;
+        left: 11%; gb-arc-text gb-footer-cta__arc 需要还原手机端设计
+上述就是我对照设计截图仍对比出的差距，
+因此虽然检查过几轮还原检查 但是仍不理想，我需要你对照手机端设计 再次检查全站设计还原 不仅对照节点数据 而且仍需对照截图
+

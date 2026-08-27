@@ -322,9 +322,30 @@
 
       /* Wrap points move with viewport width, so a resize has to re-group
          words into fresh lines. split() itself skips already-revealed
-         elements straight to the settled end state -- see groupLines(). */
+         elements straight to the settled end state -- see groupLines().
+ 
+         Re-grouping is debounced, but UNMASKING cannot be: .gb-line-mask is
+         display:block, so while the old masks stand each line is its own block
+         and re-wraps inside itself instead of the paragraph re-wrapping as a
+         whole. Drag a window narrower and "never felt this good." breaks after
+         "this" and leaves "good." stranded on a third line, because the mask
+         from the old width is still there deciding where the line ends. That
+         lasts as long as the debounce, and a continuous drag keeps resetting it.
+         So: flatten now, re-group when the drag stops.
+         tools/wraptruth.py is the check — it reads the same page with JS off as
+         the invariant, because comparing one split state against another split
+         state is two readings of the same fault.
+ 
+         Only hosts that have already played: an unrevealed one is hidden inside
+         its masks, so its wrap points are not visible anyway, and dropping the
+         masks would flash the copy in ahead of its own entrance. */
       var timer;
       window.addEventListener("resize", function () {
+        for (var f = 0; f < self.els.length; f++) {
+          var el = self.els[f];
+          if (!el.classList.contains("is-revealed") && !el.classList.contains("is-settled")) continue;
+          try { self.flatten(el); } catch (e) { /* leave last-good state */ }
+        }
         window.clearTimeout(timer);
         timer = window.setTimeout(function () {
           for (var n = 0; n < self.els.length; n++) {
@@ -395,9 +416,10 @@
        each .gb-line-word's offsetTop to find the current wrap points, then
        re-wraps each run of same-top nodes in a fresh mask. Safe to call
        repeatedly -- every resize does. */
-    groupLines: function (root) {
-      var wasRevealed = root.classList.contains("is-revealed") || root.classList.contains("is-settled");
-
+    /* Drops the per-line masks and puts the words back as flat children, which
+       is the only state in which the browser wraps the paragraph AS A PARAGRAPH.
+       groupLines() starts with this; resize calls it on its own — see init(). */
+    flatten: function (root) {
       var masks = root.querySelectorAll(".gb-line-mask");
       for (var u = 0; u < masks.length; u++) {
         var mask = masks[u];
@@ -405,6 +427,12 @@
         while (inner && inner.firstChild) mask.parentNode.insertBefore(inner.firstChild, mask);
         mask.parentNode.removeChild(mask);
       }
+    },
+
+    groupLines: function (root) {
+      var wasRevealed = root.classList.contains("is-revealed") || root.classList.contains("is-settled");
+
+      this.flatten(root);
 
       var nodes = Array.prototype.slice.call(root.childNodes);
       var lines = [];

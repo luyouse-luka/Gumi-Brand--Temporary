@@ -3364,3 +3364,664 @@ science 两页判定 `.gb-page-hero__lead--lg` 的 16→18 是假信号，全站
 改  docs/PROJECT-STATUS.md     进度行
 新  tools/revealcheck.py       11 页 × 2 档：所有入场效果收尾必须回到 opacity 1
 ```
+
+## 2026-08-26 第三十四轮：index 手机端对照 228:5932 全面还原（`$build` = `20260826-r35`）
+
+任务文档给了三条 hero 数值，外加一句「先对照 index 主页的手机端设计，检查还原」。
+三条数值按源数据落地（其中两条与给的数不同，见下），检查部分把整页 144 个 TEXT 节点
+与实现逐一对齐，另找出 20 处偏差。
+
+### 先建对照工具（`tools/`，不进交付）
+
+手上原有的脚本都是「专项断言」（r19/r20/r31/r32check），一轮一份、写死数值。这轮要的是
+**全页扫描**，所以新写四支通用的：
+
+- `figmob.py` — dump 一块 board 的可见流内节点树，坐标换算成 board 相对。丢掉
+  `visible:false`（228:5932 留着整套没用上的变体：第二个 CTA 按钮、一行 overline 星标）。
+- `mobgeo.py` — 同一页在某个宽度下的实际布局树。入场动效先钉到终态再量：`.wowo` /
+  `[data-line-reveal]` / `.gb-float-art` 都带 transform，而 `getBoundingClientRect` 报的是
+  变换后的盒子，不钉就是量在动画的随机一帧上。（只对量几何安全，截图不能这么干，
+  见 `kill-animations-blanks-reveal-blocks`。）
+- `mobdiff.py` — 把两边按**文档顺序做 LCS 对齐**后比 type token / 宽 / 高。
+  ⚠ 不能按文本查字典：这页同一个字符串出现很多次（三条一模一样的 testimonial、三个
+  `95%`），字典匹配会把它们随机配对，然后报出属于另一个元素的差异 —— 第一版就是这么
+  把 stats 的 `60+`（fs 40）配到了 hero USP 的 `60+`（fs 32.24）上。
+  另外两处必须先折叠，否则两边根本对不齐：`[data-line-reveal]` 宿主要吸收整棵子树
+  （lineReveal 把文案拆成逐词 span，最内层文本宿主是词不是行）；`aria-hidden` 的
+  ink-halo 副本要丢掉（它把每个标题的文本翻倍，`.gb-usp__value` 会读成 `60+60+`）。
+- `resizeline.py` / `masktrap.py` — 见下方「关于 `<br>` 与整行揭示」。
+
+### 任务文档三条：两条按源数据落成了别的值
+
+1. **`.gb-hero__text` gap 24 → 16**（narrow，tablet 配 `fluid(16px, 24px)`）。
+   任务给的是 15。稿里 237:14468 是一个 **gap 16** 的 Text frame（标题+副标），
+   外层 237:15247 的 24 是 section 自己在 Text / Buttons / USPs 之间的节奏 —— 实现把
+   两个 gap 都写成了 24，副标以下整块低 8px。**按 16 落地**：改完 lead / btn / USPs
+   的 y 与稿逐位相同（264 / 340 / 416）。
+   ⚠ tablet 必须同步补 gap 的 `fluid`，否则 767→768 会从 16 直跳 24。
+2. **`.gb-usp__value` 的 `margin-left: 7px` 从 `@include pc` 提到基础规则**。
+   原来标着「desktop only」，但 332:16427（桌面）与 237:14948（手机）是**同一个组件
+   的两个实例**，尺寸逐位相同 —— 不是桌面专属，是手机漏了。7px 加在居中的 flex 项上
+   实际位移 3.5px，稿里的偏移是 +2.83（21 / 6g）与 +5.01（60+ 的框更宽），7 是覆盖两者
+   的折中值，沿用桌面既有取值不另算。
+3. **`.gb-usps` 不加 `margin-top: 2px`，改成把数字框撑到稿的高度**。
+   任务给的是给 `.gb-usps` 加 2px。但 USPs 与上方按钮的间距**本来就已经是稿的 24**，
+   加 2 会变成 26。真正短的是数字那一格：稿 237:14948 是一个 **40 高的 frame** 套着
+   37.2 的行盒，实现只有行盒的 37 —— 于是 label 高了 3px、整个 USP 89 而不是 92，
+   数字墨迹也比稿高约 2.4px（这 2.4 就是任务里那个「2」的来源）。
+   改法是 `line-height: 37px → 40px`（全档，桌面同样短 3）。
+   ⚠ **不能用 padding 撑**：`ink-split()` 的 halo 是 `position:absolute; top:0`，
+   对的是 padding box，加 padding 会让青柠描边和数字分家。
+   ⚠ 连带 `.gb-usp__unit` 补 `line-height: 0` —— 不补的话 `6g` 的 `g` 会把行盒再撑高
+   4px（`small-inline-grows-line-box-downward` 那个坑，第二十轮给 `+` 补过一次）。
+   改完三列 value 齐 40、USPs 390 档 92 / 1440 档 96，与两块稿逐位相同。
+
+### 手机档漏写：桌面值直接渗过来（7 处）
+
+都是同一个病因 —— 值写在基础规则里，narrow 没覆盖，于是手机拿的是桌面稿的数：
+
+| 选择器 | 手机稿 | 实现（=桌面稿） |
+|---|---|---|
+| `.gb-testimonial__text` | ls **0** | -0.32 |
+| `.gb-highlight-card__text` | ls **0**、measure **294** | -0.32、271 |
+| `.gb-product__guarantee-note` / `__guarantee` | lh **20** | 22 |
+| `.gb-product__sub-title` | lh **26**（比桌面**大**） | 24 |
+| `.gb-reviews__rating` | fs **12** / lh **18** | 14 / 22 |
+| `.gb-reviews__disclaimer` | fs **12** / lh **18** | 14 / 22 |
+| `.gb-product__guarantees` / `__guarantee` | gap **16** / 宽 **106** | 30 / 120 |
+
+最后一条不只是数值不对：桌面的 `120×3 + 30×2 = 420` 塞不进 350 的版心，flex 把每项
+压到约 96，`span { max-width: 86% }` 再砍一刀到 83 —— 「Aussie Based Support Team」
+因此比稿多断一行。改回 106/16 后行数与稿一致。
+
+另外 **`.gb-science-card__value` 补 `letter-spacing: 0`**（两块稿都是 0）。它自己没写
+字距，被基础层那条裸 `p { letter-spacing: -0.32px }` 命中了 —— 在 56px 上很明显。
+
+### 几何（6 处）
+
+- `.gb-stats__grid` 删掉 narrow 的 `gap: 24`，回到 stack 档的 **32**（稿 243:28609 是
+  158+32+158 铺满 350）。
+- `.gb-stat__value` narrow lh 44 → **48**（稿 243:28613 同样是「框比行盒高」），
+  `.gb-stat__unit` narrow 补 `line-height: 0`，`.gb-stat__label` narrow 补 `margin-top: -2px`
+  —— 稿里「数字→label」是 10 而列本身是 12，-2 买回差额，不必为此把列拆成两层嵌套 flex。
+  ⚠ **桌面档没动**：那里 `.gb-stat` 是绝对定位，`top%` 里带着客户点名的手工补偿
+  （见 `.gb-stat--ingredients` 上方注释），改行高要连带重算那几个百分比，留作遗留。
+- `.gb-nutrition__top` narrow gap 32 → **48**、padding-bottom 48 → **64**（稿 236:10399）。
+- `.gb-nutrition__cards` narrow gap 24 → **32**（稿 236:10404；桌面横排才是 24）。
+- `.gb-highlight-card` narrow padding `24/24/36` → **`20/20/32`**（稿 236:10405）。
+- `.gb-highlight-card__body` 新增 `padding-inline: 8px`（**全档**）。稿 228:8955 / 285:21047
+  两端都把文字块再往里收 8，实现一直没有 —— 补上之后桌面标题宽度也从 362.66 落到
+  稿的 346.67，是顺带修好的。
+
+### 换行：新增 `.gb-br-narrow`（4 处）
+
+稿里有几处是 **U+2028 硬换行**，而桌面稿同一句是连排的。宽度做不到这件事：
+`.gb-nutrition__title` 就算按稿限到 350 的 measure，「in」照样挤得进第一行（自然换行
+4/2，稿是 3/3）。所以加一个只在 ≤767 显形的 `<br class="gb-br-narrow">`：
+
+- `.gb-nutrition__title`（236:10402）
+- `.gb-stat__label` 的「Green / benefits」（243:28662；桌面 341:47367 是一行）
+- `.gb-footer__tagline` 两处（**11 页**都改；桌面 313:9427 是两行，手机稿是三行）
+
+### 内容：science 卡 2 / 3 的正文照稿改回
+
+实现里三张卡都用第一张的长文案，注释写着「设计里三张卡文案相同」——**这句是错的**。
+稿里只有 eyebrow（都是没改过的组件默认值 `Easy Habit`）和 `95%` 是重复的，正文
+第二张是 `No Fillers, No Nasties`、第三张是 `Made for Aussies`。已按稿落回。
+
+### 关于 `<br>` 与整行揭示（用户中途提的疑问，实测未复现）
+
+疑问是：换行不对可能不是缺 `<br>`，而是 resize 时宽度变了、而文案是整行揭示的，
+所以分行被冻结。查证结果是 **lineReveal 本来就带 resize 重分行**（200ms debounce，
+`groupLines` 会先把旧 mask 拆平再按当前 `offsetTop` 重新分组），三支探针都没复现：
+
+- `resizeline.py`：「直接以 390 打开」对「1440 打开→滚完全页→resize 到 390」，
+  20 个 `[data-line-reveal]` 宿主的行数、mask 数、每行文本**逐一相同**。
+  先滚完全页是必要的 —— `groupLines` 对已揭示的宿主走 `is-settled` 另一条分支，
+  不滚的话首屏以下根本走不到那条路径。
+- `masktrap.py`：1200/900/700/500/390 五档，各在 **debounce 未到的 80ms** 和重建后
+  各测一次 `scrollHeight > clientHeight`，**0 条被 mask 裁掉**。
+- `<br class="gb-br-narrow">` 与遮罩不冲突：`wrapWords` 只处理文本节点，`<br>` 原样留在
+  DOM 里，`groupLines` 按 `offsetTop` 分组时它自然落在两个 mask 之间。
+
+拖拽过程中那 200ms 内看到的仍是旧分行，这是 debounce 的固有取舍，停下即纠正。
+如果实际看到的是别的现象（具体哪个模块、什么宽度），按这三支探针的口径再复现一次即可。
+
+### 判据
+
+- `tools/mobdiff.py`：type-token 差异 **18 → 2**，剩的两条正是本轮有意改的 40 / 48 框高
+  （`gb-usp__value` lh 37.2→40、`gb-stat__value` lh 44→48）；高度差异 21 → 17，
+  两条 `HARD-BREAK-IN-BOARD` 清零，其余 17 条是量测口径差（稿是 TEXT 节点，实现元素带
+  padding 或就是按钮本身）。
+- `tools/rwd.py` 12 页 × 14 档：✅ 全绿。
+- `tools/revealcheck.py`：11 页 × 2 档，入场动效收尾全部 opacity=1、transform 归位。
+- `tools/r32check.py`：42 条断言全过（promo 弹窗本轮没碰，确认没被基础规则改动波及）。
+- 桌面未退化：1440 下 hero USPs 96（稿 96）、highlight-card 410.66/362.66/346.66
+  （稿 410.67/362.67/346.67）。
+
+### 遗留
+
+1. **stats 桌面档的数字框仍是 51（稿 56）、gap 12（稿 10）**。手机已改。桌面要动就得
+   连带重算 `.gb-stat--*` 的 `top%` —— 那几个百分比里含客户点名的 5.5%，不是随手改的数。
+2. **稿自身不一致**：stats 四个数字里只有 `21`（243:28628）是 ls 0，另外三个都是 -0.4。
+   实现统一用 -0.4，没为单个节点开特例。
+3. **science 三张卡的 eyebrow 都是 `Easy Habit`**，是组件默认值没改过的痕迹，属 WIP 占位，
+   未动（正文已按稿落回，见上）。
+4. `.gb-product__guarantee span { max-width: 86% }` 是第二十八轮桌面档的要求，手机沿用；
+   宽度改回 106 后行数已与稿一致，故未在 narrow 覆盖它。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss    hero__text gap；usp__value lh 40 + margin-left 全档；usp__unit lh 0；
+                               testimonial__text / highlight-card__text 的 narrow 字距与 measure；
+                               product__guarantee-note / __guarantee / __sub-title / __guarantees 的 narrow；
+                               reviews__rating / __disclaimer 的 narrow 字号行高；
+                               science-card__value 补 ls 0；stats__grid 删 narrow gap；
+                               stat__value / __unit / __label 的 narrow；nutrition__top / __cards 的 narrow；
+                               highlight-card padding + 新增 __body padding-inline；
+                               footer-cta__text narrow padding；新增 .gb-br-narrow；$build → 20260826-r35
+改  assets/customstyle.css     编译产物
+改  index.html                 nutrition__title / stat__label 补 gb-br-narrow；science 卡 2/3 正文；?v= → r35
+改  *.html（其余 10 页）        footer__tagline 补两处 gb-br-narrow；?v= → r35
+改  font-check.html            EXPECT_BUILD → 20260826-r35
+新  tools/figmob.py            dump board 的可见流内节点树
+新  tools/mobgeo.py            某宽度下的实际布局树（入场动效先钉终态）
+新  tools/mobdiff.py           board ↔ 页面按文档顺序 LCS 对齐后比 token / 宽 / 高
+新  tools/resizeline.py        「直接打开」对「resize 过来」的分行一致性
+新  tools/masktrap.py          resize debounce 窗口内 line-mask 是否裁掉文字
+改  docs/CHANGELOG.md          本条
+改  docs/PROJECT-STATUS.md     进度行
+```
+
+## 2026-08-26 第三十五轮：任务文档 8 项（`$build` = `20260826-r36`）
+
+需求方换了一份 8 条的手机端清单，其中两条是结构质疑（波浪该归谁）、一条是上一轮我判
+「没复现」的入场折行问题被重申。先说这一条。
+
+### 1. `is-word-split` / `is-split` 的折行确实是坏的，上一轮的验证方法有缺陷
+
+需求方原话：「换行不对不一定是 br 的原因，是因为 resize 屏幕的时候宽度不够了，目前文本
+采用的整行出现，所以出现了这个情况」。
+
+上一轮我拿「直接以 390 打开」对「1440 打开→resize 到 390」比，20 个宿主 0 差异，据此
+判为只有 debounce 窗口的瞬时现象。**这个判据本身是错的**：两边都已经被 lineReveal 拆过，
+是同一个污染源的两次读数，自洽 ≠ 正确（[[probe-must-compare-against-invariant]]）。
+
+换成真正的不变量——**同一页面关掉 JavaScript**，此时每个 `[data-line-reveal]` 都是未拆分
+的普通段落，按整段自然折行。`tools/wraptruth.py` 三读对比（自然 / 稳定态 / debounce 窗口内），
+6 档宽度 × 20 个宿主：
+
+| | 修复前 | 修复后 |
+|---|---|---|
+| 稳定态不一致 | 0 | 0 |
+| **resize 期间不一致** | **70 / 120** | **0 / 120** |
+
+机制：`.gb-line-mask` 是 `display: block`。旧遮罩还在时，每一行是一个独立的块，**块内部
+各自折行，而不是整段重折**。1440 拉窄再拉回，`Eating your greens / never felt this good.`
+会变成 `… / never felt this / good.`——决定断点的是上一个宽度留下的遮罩。这个状态持续到
+debounce 结束，而连续拖拽会一直把计时器重置。
+
+修法：把 `groupLines` 开头那段拆平循环提成 `lineReveal.flatten()`，resize 时**立刻**对已播过
+的宿主调用它（不 debounce），重组仍然延后。只处理 `is-revealed` / `is-settled` 的宿主——
+未播的还藏在遮罩里，折行看不见，拆平反而会让文案抢在入场前闪出来。
+
+### 2. 波浪与装饰熊改归下面那个 section（第 4、8 条）
+
+第十八轮定的约定是「波浪归上面那个 section」。稿里不是这样：波浪是 section 之间的独立节点，
+组件名就叫 **`Spacer Top`**，而 `Review Section`（236:11294）和 `PDP`（243:22224 / 316:27135）
+干脆把自己那道包在了内部——**归下面**。桌面稿同构（`Spacer Desktop` 341:47307 在 science 前，
+310:8425 是 PDP 的首个子节点）。
+
+- `--cream-to-sand` + `.gb-stats__deco-bear`：`.gb-stats` → `.gb-science`
+- `--lime-to-white --bleed`：`.gb-nutrition` → `.gb-product--lg`
+- 新增 `.gb-scallop--edge-top`（`bottom: 100%`），绘制矩形与 `--edge` 在上一节里时**逐像素相同**
+- **`.gb-stats` 的 `z-index: $z-base` 可以删了**：第二十八轮加它是为了让熊探出 stats 底边后
+  不被 `.gb-science` 的不透明底盖住；熊现在本来就是 `.gb-science` 的孩子，天然画在后面
+
+⚠ **占位空间没有跟着搬**，仍留在上一节的 `padding-bottom`。`--sc-h` 与 `--sc-lg-h` 因边界而异，
+而 `.gb-science` / `.gb-product` 被多页复用、上游波浪尺寸不同，一刀切地加顶部预留会重复占位。
+
+第 8 条的另一问：**`.gb-product--lg` 是波浪尺寸轴的修饰类**（第十九轮引入的四个正交修饰之一）。
+section 自己负责给波浪留出高度，`--lg` 表示「我底下那道是大瓦片」，所以 `padding-bottom` 读
+`--sc-lg-h` 而不是 `--sc-h`。它说的是下边那道，与这轮搬进来的上边那道无关。
+
+### 3. 两只熊：稿在手机端都加了一层镜像（第 3、4 条）
+
+肉眼判断软糖熊朝向不可靠，Figma 的 `absoluteBoundingBox` 对旋转节点又会说谎
+（[[figma-rotated-frame-bbox-is-not-the-artwork]]）。判据用 `tools/bearmatch.py`：从设计截图
+抠出轮廓，与素材做 IoU。
+
+| | 原样 | 镜像 | 结论 |
+|---|---|---|---|
+| 中央熊 稿桌面 vs `stats-bear.png` | **0.750** | 0.484 | 桌面对，实现没错 |
+| 中央熊 稿手机 vs `stats-bear.png` | 0.476 | **0.695** | **手机要镜像** |
+| 装饰熊 稿手机 vs 稿桌面 | 0.467 | **0.944** | **手机要镜像** |
+| 装饰熊 稿桌面 vs `stats-bear-deco.png` | 0.658 | 0.601 | 最佳 **0.841 @ +18°** |
+
+对应稿里的 `332:16221` 与 `243:28564`——两个矩阵都是 `[-1,0;0,1]`，桌面没有对应层。
+装饰熊的 `+18.52°`（243:28567 / 341:47524）实现里一直没做，素材本身是未旋转态。
+
+装饰熊同时改了尺寸与定位：渲染光晕稿里是 1440 的 146×186、390 的 96×123，实现原来是
+145×219 / 100×150（既往遗留「熊偏瘦长」就是这个）。现在 151×185 / 99.7×122。
+中心锚在 **section 分界线**而不是波浪顶边——两块稿和实现只有这条线是一致的。
+
+### 4. stats 网格的四条箭头（第 3 条）
+
+`.gb-stats__arrow` 在 `@include stack` 里被 `display: none`，手机端整组消失；连带**手机网格比稿
+矮 128px**（717.42 vs 稿 845.34），因为稿里那块空白正是箭头占的。
+
+手机稿的四条箭头旋转角与桌面不同（+95.71 / +75 镜像 / −135 镜像 / −60，桌面是 −19.19 /
+−51.05 / +127.29 / +141.03），且**其中两条带镜像，不只是转角**。SVG 里烘焙的是桌面变换，
+所以在 `<span>` 上叠 `matrix = M_手机 × M_桌面⁻¹`。left/top 用墨迹中心
+（`translate(-50%,-50%)` 在矩阵之后跑，所以它们就是中心），width 反解自
+`aabb_w = |a|W + |c|H`、`aabb_h = |b|W + |d|H`——两式各自解出的宽度相差 4% 以内，这是自检。
+
+`overflow: hidden` 从 `.gb-stats__bear` 移到 `.gb-stats__bear-art`：箭头是前者的另一批孩子，
+挂在前者上会把它们一起裁掉；挂在后者上照样拦住 184.8% 宽的画面越出 390 视口。
+
+### 5. 数值项（第 1、2、6、7 条）
+
+需求方给的值先与稿核对，作用域按稿判定——**有三条如果照字面落到基础规则会砸掉桌面**：
+
+| 项 | 稿桌面 | 稿手机 | 处理 |
+|---|---|---|---|
+| `.gb-highlight-card` 圆角 | 24（341:46409） | 16（236:10405） | narrow only |
+| `__media` 圆角 | `[16,16,8,8]`（285:21045） | `[8,8,0,0]`（228:8968） | narrow only |
+| `__lip` 宽 | 573/362.67 = **158%** | 444.41/310 = **143.36%** | narrow only |
+| `.gb-pack-band` left | **50.00%**（341:46422） | **75.75%**（228:9018） | narrow only |
+
+与稿不同、按需求方的数落的，逐条记下原因：
+
+- **`.gb-science` padding-top 53**（稿 64）。稿的 64 是从一道 **36 高**的 Spacer Top 底下起算的，
+  而实现的小波浪在 390 下渲染成 **48.03**（见「遗留」）。53 是对着这道更高的波浪配的。
+- **`.gb-science-card__body` gap 19**（稿盒间距 12）。稿的 `427319601` 是 **56 高的帧包着 44 的
+  行盒**，实现只有裸 44，所以实际显示出来的是 12 + 6 的半行距 = 18。与上一轮 USP 37→40 同源。
+- **`.gb-science__inner` gap 46 / `__cards` gap 31**（稿 48 / 32）。原实现是 32 / 24——**手机档
+  从来没给过自己的值**，拿的是桌面数，两个都错。需求方的数比稿小 1~2。
+- **`.gb-highlight-card__text` max-width 283**（稿 294）。三段手机文案最宽的墨迹 270.91，
+  283 与 294 折行完全相同。
+- **`.gb-logo-scroll__item` 106×44 / viewport padding 4**。`Social Proof`（341:47384）**只存在于
+  桌面稿**，手机端没有设计源，这两个数是需求方定的（正好是桌面 193×80 的 55%）。
+  ⚠ 循环速度是「节距 / 15s」，节距从 669 缩到 408 后条带会明显变慢，需要的话要一起调时长。
+
+对上稿的：`.gb-science__head` gap 16 + 左对齐（228:8166 itemSpacing 16、两个 TEXT 都是
+`textAlignHorizontal: LEFT`；桌面靠对称 padding 居中，所以只给 narrow）、
+`.gb-highlight-card` 圆角 16、`__media` `[8,8,0,0]`、`__lip` 143.36%、`.gb-pack-band` 75.75%。
+
+顺带：`228:8167` 有**两个 U+2028**（`Lab-tested. ⏎Aussie approved. ⏎No funny business.`），
+桌面只有一个，补了一处 `gb-br-narrow`。
+
+### 判据
+
+- `tools/wraptruth.py`：120 次读数，稳定态 0 不一致、**resize 期间 70 → 0**
+- `tools/r36check.py`（新）：8 条任务 50+ 条 computed-style / 几何断言，390 + 1440 全过，
+  含「桌面必须没变」的反向断言（圆角 24、lip 158%、pack 50%、标题仍居中、`gb-br-narrow` 不显形）
+- `tools/bearmatch.py`（新）：轮廓 IoU，见上表
+- `tools/rwd.py` 12 页 × 14 档：✅ 全绿；`revealcheck.py`：入场全部 opacity=1、transform 归位
+- `tools/r31check.py` 51 条、`tools/r32check.py` 42 条全过
+- `resizeline.py` 0/20、`masktrap.py` 5 档 0 裁切
+- 几何：手机 stats 网格 **845.4**（稿 845.34）；装饰熊 390 **99.7×122**（稿 96×123）、
+  1440 **151×185**（稿 146×186）；两档 `scrollWidth - clientWidth` **= 0**
+- `r19check` 8 条、`r20check` 1 条失败——**在 HEAD 基线上同样失败**，是既往遗留
+  （`gb-sec-edge` 第十九轮就删了），本轮没引入新失败
+
+### 遗留
+
+- **小波浪在手机端高了 12px。** 所有稿的手机 Spacer 一律 **36** 且 `clipsContent: true`；
+  设计截图实测振幅 35、节距 145、槽底正好落在 section 分界，几乎没有实心带。
+  实现 `--sc-band: clamp(13.3px, 1.63vw, 23.4px)` 在 390 被钉在 13.3，`--sc-h` 算出 **48.03**。
+  桌面 23.4 是对的（96 = 72.55 + 23.45），大波浪手机也是对的（35.27 ≈ 36），**只有小波浪的
+  clamp 下界错**。正确的下界约 1.2，但 390→1.2 / 1440→23.4 不是一条 vw 直线，改它等于重设
+  波浪的断点体系，会动全站 11 页每个 section 的 `padding-bottom` 与页面总高——本轮没动。
+  这也是第 6 条 `padding-t 53`（≈ 64 − 12）的由来：波浪修好后 53 应改回稿的 64。
+- **`images/stats-bear-deco.png` 与中央熊素材不是同一份导出。** 墨迹比 0.654，中央熊 0.787；
+  IoU 最佳 0.841（+18°），而中央熊素材镜像后能到 0.861。需求方这次只点了旋转，没换素材。
+- **手机稿的 science lead 比实现多一句**：`228:8168` 结尾是 `… to prove it. Based on similar
+  studies on this type of formulation.`，桌面稿（I341:46642;316:29451）没有这句。看着像
+  和 95% 那组数字配套的免责说明。只有一块稿有的文案属于内容决定，没擅自补，请需求方确认。
+- 768–1024 那一段仍然没有箭头：那里跑的是手机两列网格但列宽接近桌面，熊槽固定 208，
+  箭头挂在熊上会离它指的文案很远，而没有任何一块稿覆盖这个区间。
+- 上一轮的 stats 桌面档数字框 51（稿 56）/ gap 12（稿 10）、稿自身 `21` 字距不一致、
+  science 三卡 eyebrow 都是 `Easy Habit`，均沿用未动。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss    scallop 新增 --edge-top；stats 去 z-index；stats__note narrow；
+                               stats__arrow narrow 四条 matrix + 位置；stats__bear narrow 留白；
+                               bear-art 接管 overflow；bear-img narrow 镜像；
+                               stats__deco-bear 重写（迁 gb-science / 旋转 / 镜像 / 尺寸 / 锚点）；
+                               hero__title narrow padding；hero__bear narrow left+width；
+                               logo-scroll__item / __viewport narrow；
+                               science padding-top / __head / __inner / __cards / card__body narrow；
+                               highlight-card 圆角 + __media 圆角 + __lip 宽 + __text measure（均 narrow）；
+                               nutrition__bears-img left 51.5%；pack-band narrow left；
+                               $build → 20260826-r36
+改  assets/customstyle.css     编译产物
+改  assets/main.js             lineReveal 抽出 flatten()；resize 先拆平再 debounce 重组
+改  index.html                 两道波浪 + 装饰熊迁入下方 section 并改 --edge-top；
+                               science 标题补 gb-br-narrow；?v= → r36
+改  *.html（其余 10 页）        ?v= → r36
+改  font-check.html            EXPECT_BUILD → 20260826-r36
+新  tools/fignode.py           按 id dump 节点子树（绝对几何 + 变换矩阵）
+新  tools/bearmatch.py         设计截图轮廓 vs 素材的 IoU（镜像 / 逐角度）
+新  tools/wraptruth.py         折行不变量：JS 关闭的自然折行 vs 遮罩折行
+新  tools/r36check.py          本轮 8 条任务的定向断言
+改  docs/CHANGELOG.md          本条
+改  docs/PROJECT-STATUS.md     进度行
+```
+
+## 2026-08-26 第三十六轮：任务文档 21 项 + 全站手机端对稿复查（`$build` = `20260826-r37`）
+
+需求方给了一份 21 条的手机端清单，外加一句总要求：「虽然检查过几轮还原检查但仍不理想，
+我需要你对照手机端设计再次检查全站设计还原，不仅对照节点数据，而且仍需对照截图」。
+21 条全部落地，其中三条的**做法**与字面给的不同（下面逐条记原因）；总要求那部分把
+11 页都对了一遍稿，另找出 6 类偏差。
+
+### 0. 先说清一件事：这轮有两处判据本身是坏的，修完才看见问题
+
+**箭头「大小没还原」是真的，而上一轮的判据看不出来。** 第三十五轮把四条箭头的元素盒
+solve 到与 `absoluteRenderBounds` 一致（59.5×65.3 对稿 60.1×64.7，±2px），据此判为已还原。
+但把设计导出与实现截图并排放大后，箭头明显更短更细——**renderBounds 不是画出来的墨迹**：
+它带着 OUTSIDE 描边的斜接外扩，比导出里真正的墨迹大 9~55%（逐条不同）。元素盒对上了，
+盒子里画的东西没对上。
+
+改判据：`tools/arrowfit.py` 直接在两张 PNG 上量青柠墨迹，从每条箭头自己的中心做**连通域
+洪泛**（熊的光晕也是青柠，且伸进每个箭头的窗口，不隔离就是在量光晕），按比值反解 width。
+left/top 两侧都锚在**熊槽**上（板 `332:16221` 207.82×254 @ (90.64,1854)，实现 208×257.42），
+否则 stats 区在页面上的整体下移会被算进箭头自己的偏移里。迭代一轮后收敛：
+
+| 箭头 | 稿墨迹 | 修前 | 修后 | width |
+|---|---|---|---|---|
+| --1 | 52×64 | 39×48 | 53×63 | 26.79% → 35.72% |
+| --2 | 46×70 | 30×45 | 45×68 | 24.82% → 38.33% |
+| --3 | 24×75 | 22×69 | 24×74 | 35.48% → 38.63% |
+| --4 | 32×75 | 28×66 | 32×75 | 34.25% → 39.03% |
+
+描边另算：SVG 里烘的是**桌面**的 OUTSIDE 1.78036（居中化 3.56071），跟着缩到手机尺寸就成了
+1.70px，而手机板自己是 OUTSIDE **1.1499**（居中化 2.2998），细 26%——看起来像"小一号"而不是
+"细一点"。narrow 下给 path 加 `vector-effect: non-scaling-stroke` + `stroke-width: 2.2998px`，
+把线宽从变换里摘出来。
+
+**`tools/hardbreaks.py` 第一版恒报全绿。** 它把 `<br>` 换成 U+2028 当标记，再把两边正规化后
+比较——而 Python 的 `\s` **包含 U+2028**，`WS.sub(" ", s)` 把标记连同硬换行一起压成空格，
+硬断和软断变成同一个字符串。换成 `\x00` 后，立刻报出 **18 处**该断没断的地方。
+（`[[negative-assert-needs-liveness-guard]]` 的教科书案例：修之前的"全绿"是假的。）
+
+### 1. 任务文档：三条没有照字面做
+
+- **`.gb-hero__lead padding: 0 10px`** → 改成 `<br class="gb-br-narrow">` + `&nbsp;`。
+  给的 padding 是在逼折行：稿 `237:14478` 是 U+2028 硬断成
+  `Real fruit, real veg, real vitamins,` / `hiding in a gumi bear.`，而实现在 350 的量里
+  `hiding` 挤得进第一行（实测）。padding 能挤出同样的结果，但盒子从稿的 350.26 变成 330.26，
+  且折行点靠字体度量——换上授权版 PP Palma（比试用宽 4.7%）就可能再变。第三十四轮已经为
+  同类问题立了 `.gb-br-narrow`，这里照用。U+2028 前稿里多打了一个空格且这行居中，所以带
+  `&nbsp;`（见 `[[figma-centred-text-counts-trailing-space]]`）。
+- **`.gb-testimonial svg 103×20`** → 落 **100×20**。103×20.6 是 `.gb-reviews__rating` 和
+  PDP 星条的尺寸（`191:2387` / `187:12721`），testimonial 里那条是
+  `187:12732;183:4814`，**100×20**（5×20，itemSpacing 0）。两处都改了，各按各的数。
+- **`.gb-nutrition padding-b 27px`** → 写成 `calc(var(--sc-lg-h) - 9px)`。27 这个数是对的，
+  来路是稿 `Frame 992568` 的 **itemSpacing -9**：波浪 36 高但上压 9px 到 pack band 上，
+  只有 36-9=27 露在这一节下面。但写成定值会在 767/768 断点上从 27 跳到 68——波浪本身
+  是跟着视口长的。改成相对波浪高度表达后交接连续，代价是 390 处 26.27 而非 27（0.73px）。
+
+### 2. 任务文档：其余 18 条
+
+`.gb-stats__deco-bear` top -22.34 / width 钉成 **81.6px**（需求方点名「百分比在 767 以下太大」——
+20.92% 到 767 就是 160px，而这只熊只画在 390 板上）；`.gb-product` padding-top **52**
+（= `243:22226` paddingTop 32 + `191:2214` paddingTop 20，实现没有内层那个 frame，两者并成一个）；
+`__stage` radius 16、`__gallery` / `__media` gap 16（`191:2214` itemSpacing）、`__inner` gap 32、
+`__guarantee-note` radius 8 + padding 8/20、`--lg` padding-bottom `calc(50px + --sc-lg-h)`；
+`.gb-reviews` padding `64 0 78`、`__inner` gap **48**（板上手机也是 48，narrow 的 32 是错的，
+连 tablet 插值一起删）、`__rating svg` 103×20、`__disclaimer` padding 0 20；`.gb-reel__play`
+**64×40**（`183:5446`，原来是桌面的 85×53）；`.gb-testimonials` padding-top 0 / gap 30 /
+margin-bottom **0**（那 48 与 `__inner` 的 gap 重复计一次）；`.gb-deco-bear--a` 154 / -60 / 11%。
+
+**`.gb-testimonial` 的 `flex: 1 1 300px` 是个真 bug**：`@include stack` 把这一列改成 column
+之后，flex-basis 就是**高度**，于是每张卡被撑到 300 高而板上是 196，文案浮在一个空盒子里。
+narrow 只是最明显的一档，768–1024 同样中招，所以改在 `stack` 上（`flex: auto`）。
+桌面 >1024 仍是 row，300px 是宽度，不动。
+
+**`.gb-footer-cta__arc` 改双 viewBox（11 页）**，遗留清掉。板上 `236:11723` 是 278.28×46.38 的框，
+里面是手机椭圆（237.05×131.41 → rx 118.525 / ry 65.705），左内缩 20.61、上内缩 17.13。
+原来是把桌面的 452×51 整体缩到 237，弧被压成近正圆、字号一起缩水。做法照
+`.gb-promo-card__arc` / `.gb-dosed__arc`：markup 出两份，`--pc` / `--mob` 切。
+
+### 3. 对稿复查另找出的 6 类
+
+- **`.gb-deco-bear--b` 停在 CTA 按钮上。** 板 `313:10011` 把这只熊放在 **Footer** 上而不是
+  CTA 上：墨迹 188.34×165.68、离右缘 28.28、顶边在 wrapper 顶下方 472（即挂出这一块的底）。
+  实现是 160 宽 / right 0 / top 300，正好横在 "Start Your Greens" 上。
+- **our-story 与 how-gumi-works 少一条 testimonial。** 两块板的 `187:12731` 都是 **880 高
+  = 4 条**；index 的是 652 = 3 条，因为它的第 4 条 `visible: false`。**是设计师逐页定的，
+  不是 WIP 残留**，所以补齐（文案照抄，四条本来就同文）。补完 `gb-reviews--cream` 1828.3
+  对板 1827.6。
+- **18 处该硬断没断的行**（见第 0 节）。桌面板同一句也断的走普通 `<br>`（hero USP
+  `Vitamins ⏎ & Minerals`、两条 `.gb-highlight-card__text`、五页的 `30 Day ⏎ Money Back
+  Guarantee`）；桌面是平的走 `gb-br-narrow`（pdp `Quality you ⏎ can trust`、reviews
+  `Recommended ⏎ by experts`、faq / how-gumi-works 的页头标题、shipping 第一个表头）。
+  居中且 U+2028 前有空格的都带 `&nbsp;`。
+- **`.gb-dosed__title` 两块板断在不同位置**（桌面 2 行、手机 3 行，断点不重合），单靠
+  `gb-br-narrow` 表达不了，新增反向的 **`.gb-br-wide`**（narrow 下隐藏）。
+- **shipping 两个表的列宽都不对。** 板 `326:83143` 是 88/262、`326:83187` 是 203/147，
+  实现是内容自适应，量出来 60/289 和 260/90。第一个表头加 `<br>` 之后第一列塌到 60、
+  正文行跟着断成两行，整表从 397 涨到 584（板 376）——所以列宽和 `<br>` 必须一起做：
+  narrow 下 `table-layout: fixed` + 百分比列宽 + `th/td` padding 10（10+24+10 = 板的 44 行高），
+  第二个表用新修饰类 `.gb-rich-table--even`。改完 384 / 360 对板 376 / 352（差的 8 是 8 条
+  1px 分隔线——板上那是 RECTANGLE，不占布局高度）。
+- **767/768 交接上有三处跳变**（`.gb-testimonials` gap 30→24、`.gb-reviews__disclaimer`
+  padding 20→0、`.gb-nutrition` padding-bottom 27→68），都是只改了 narrow 没配 tablet 斜坡。
+  补 `fluid()` 后连续。
+
+### 判据
+
+- **桌面没被动到**（需求方明确「只改手机端」）：1440 快照按**矩形多重集 + body 总高**比
+  （新增了 svg / br / 一条 testimonial，路径式 diff 的兄弟下标会整体错位，见
+  `[[css-refactor-computed-style-judge]]`）。**9 页 0 处矩形消失、body 高不变**；
+  index 唯一 1 处是 hero USP label 盒宽 110→90.3（加 `<br>` 后收成最长行的宽度，
+  中心 300.0→300.05 不变）；our-story / how-gumi-works +28 是补第 4 条 testimonial
+  在 1440 挤窄了每张卡。
+- `tools/arrowfit.py`：四条箭头墨迹比值收敛到 1.00±0.03
+- `tools/hardbreaks.py`：11 页 34 ok / 6 missing（6 条全是成分辐射图 PNG **图片内**的
+  文字，非 DOM，误报）
+- `tools/pagefit.py`（新）：分段高度对稿，faq -6.2 / get-in-touch -10 / science -212 …
+- `tools/rwd.py` 12 页 × 14 档 ✅ 全绿；`revealcheck.py` 入场全部 opacity=1、transform 归位
+- `r31check` 51 条、`r32check` 42 条、`r36check` 全过（r36 的 `390 deco centre above seam`
+  基线 9.34 → 22.34，需求方这轮点名改的）
+- 767/768 逐属性对读：14 项 0 跳变
+
+### 遗留
+
+- **shipping / privacy-policy 两页的板上没有 footer CTA**（另外 9 页都有 1504/1564 的
+  `Footer Section CTA`），实现两页都有。删一个 CTA 是内容决策不是还原，**未动，请需求方定**。
+  这两页的页脚本来就有一条挂着的冲突（第十四轮：它们用的是另一版页脚组件 16/24/600/ls 0）。
+- **`.gb-product__app-slot` 高 0**，板上 `Quantity` 84 + `Subscription` 512 共约 596 在这里
+  —— 第二十二轮有意删掉的订阅 app 占位框，`pagefit` 里 index/pdp/our-story/how-gumi-works
+  约 -400 的缺口都是它，**不是还原问题**。
+- **小波浪在手机端仍高 12px**（`--sc-band` clamp 下界，第三十五轮记的那条），`.gb-stats`
+  的 12.1 和 `.gb-science` padding-top 53（本该是板的 64）都还挂在这条上。
+- index hero 标题与 `Clean ⏎ Ingredients` 靠宽度折出了与板相同的行数，没有硬断兜底；
+  前者的 3 行来自 `padding: 0 25px`，换授权字体后要重验。
+- `images/stats-bear-deco.png` 与中央熊不是同一份导出（第三十五轮遗留，未动）。
+- 中央熊墨迹看着比板上大一圈（槽 208×257.42 对板 207.82×254 是对的），素材本身的问题，未查。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss    stats__arrow narrow 描边 + 四条 width/left/top 重解；
+                               stats__deco-bear narrow top/width（改定值 px）；
+                               nutrition padding-bottom narrow+tablet；
+                               product padding-top 52 + tablet 起点；product--lg padding-bottom；
+                               product__stage/​__gallery/​__media/​__inner/​__guarantee-note 的 narrow+tablet；
+                               reviews padding-bottom；reviews__inner 去 narrow/tablet；
+                               reviews__rating svg；reviews__disclaimer padding；
+                               reel__play 64×40；testimonials padding/gap/margin；
+                               testimonial stack flex:auto + svg 100×20；
+                               deco-bear--a / --b 的 narrow；footer-cta__arc 改 --pc/--mob；
+                               新增 .gb-br-wide；rich-table narrow 列宽/行高 + .gb-rich-table--even；
+                               $build → 20260826-r37
+改  assets/customstyle.css     编译产物
+改  index.html                 hero__lead 硬断；usp__label / highlight-card ×2 / 30 Day 硬断；
+                               footer-cta arc 双 svg；?v= → r37
+改  pdp.html                   promo-card__title / 30 Day 硬断；arc 双 svg
+改  reviews.html               expert__title / 30 Day 硬断；arc 双 svg
+改  faq.html                   page-hero__title 硬断；arc 双 svg
+改  how-gumi-works.html        page-hero__title / dosed__title（双向断点）/ 30 Day 硬断；
+                               补第 4 条 testimonial；arc 双 svg
+改  our-story.html             30 Day 硬断；补第 4 条 testimonial；arc 双 svg
+改  shipping.html              第一个表头硬断；第二个表加 .gb-rich-table--even；arc 双 svg
+改  science / get-in-touch / referral / privacy-policy.html   arc 双 svg；?v= → r37
+改  font-check.html            EXPECT_BUILD → 20260826-r37
+改  tools/r36check.py          deco 基线 9.34 → 22.34
+新  tools/fq.py                任意 board 按 name/text/id 查节点（含旋转/描边/override）
+新  tools/shotcmp.py           设计导出与实现截图分段并排（先走一遍页面再截，否则 wowo 不播）
+新  tools/arrowfit.py          箭头墨迹连通域反解 width/left/top
+新  tools/pagefit.py           11 页分段高度对稿
+新  tools/hardbreaks.py        全站 U+2028 是否落地（⚠ 标记不能用 U+2028，\s 会吃掉）
+改  docs/CHANGELOG.md          本条
+改  docs/PROJECT-STATUS.md     进度行 + 待决事项
+```
+
+---
+
+## 2026-08-26 第三十七轮：其余 10 页的截图逐区块对稿（`$build` = `20260826-r38`）
+
+第三十六轮把需求方任务文档的 21 条做完了，但他同时要的「对照手机端设计再次检查全站还原，
+不仅对照节点数据，而且仍需对照截图」只做了数值层，**截图逐区块比对仅覆盖 index**。
+这一轮把剩下 10 页做完，共改 16 处 —— 其中 6 处是数值层根本发现不了的
+（描边被啃、整块缩 15%、组件整个缺失），另有 11 处判定为桌面/手机稿冲突或稿自身痕迹，
+只记录不改，见 `PROJECT-STATUS.md`「第三十七轮新增的待决事项」。
+
+### 0. 工具：`pagescan.py` 重写成显式锚点
+
+上一轮留下的版本按文档顺序把 build 的 `<section>` 和 board 的顶层帧配对，**结果全是错位的**：
+board 的 children 不按 y 排序（index 上 `Frame 992545@2442` 排在 `Footer@10040` 后面），
+而且板子里夹着 build 折进上一个 section 的 `Spacer Top`（波浪）。改成：
+
+```bash
+python3 tools/pagescan.py science.html --list --depth 2          # 两侧块各自排序打印，人工读出配对
+python3 tools/pagescan.py science.html --pairs ".gb-compare=3162" --h 900
+```
+
+`--pairs` 一次启动浏览器跑完一页的所有锚点，超过 `--h` 的区块自动切成多片。board 的 y 直接
+取自 `absoluteBoundingBox.y − root.y`，**已经含了那 96px 的假浏览器栏，不要再加**。
+
+### 1. 数值层查不出、只有看图才发现的六处
+
+- **`.gb-vs__table` 整块缩了 15%（PDP）**。narrow 下它有 `margin-inline: auto`，而
+  auto margin 会让 flex 子项退出交叉轴 stretch → 表格 shrink-to-fit 成 298.8，而不是可用的 350。
+  下面所有 `/351` 的百分比（青柠卡、GUMI logo、小熊、THE OTHERS、抹茶堆）跟着一起缩，
+  值列窄到「60+ ingredients, dosed to matter」和「Often padded, rarely disclosed」都折行。
+  补一行 `width: 100%` 就全对上了：表格 x=20 w=350，两列 87 + 22 + 241。
+- **`.gb-dosed__title` 的青柠描边被自己的入场动效啃出洞（how-gumi-works）**。它同时有
+  `ink-outline()` 和 `data-line-reveal`，而 `lineReveal` 的 `wrapWords` 把每个词包成 span，
+  **inline 子元素是独立的绘制单位** —— 后一个词的字形压在前一个词的光晕上。改用
+  `ink-split()`（整串的光晕画在一个绝对定位副本上）。这里有个恰好成立的巧合：`wrapWords`
+  只处理直接文本节点，所以 `.gb-ink-halo` 里的文案不会被拆词，光晕天然是一整条。
+  与 `.gb-stat__value` 是同一套组合。
+- **Reviews 专家卡轮播没有导航箭头**。稿 `324:64961` 的 `Frame 992460` 是两个 32px 青柠圆
+  （`#b5ed61` 底 + `#005635` 2px 箭头），桌面板没有（三张卡并排放得下）。补 `.gb-expert__nav`，
+  接现成的 `slider` 模块（`data-slider` / `data-slider-track` / `data-slider-prev|next`），
+  桌面 `display: none`。
+- **Reviews 页头的五颗星是灰的**。`.gb-page-hero__overline` 的 SVG 用 `currentColor`，
+  继承了那行小字的 `$c-gray-700`。两块板的星都是 `#85c947`，只有那行字是灰的。
+- **PDP 上多出三条 testimonial**。稿里 `Container 187:12730` 在**手机和桌面两块板上都是
+  `visible: false`**（PDP 下面另有评论 app 区），实例高度 863.6 正好等于去掉它之后的和。
+  删掉后 `.gb-reviews` 内容 736 对稿 735.6。桌面同步少 358（板上那块是 308 + 48 的 gap）。
+- **`.gb-science-card--nutrient` 的 `50%` 没有描边**。上一轮的注释写着「桌面板有、手机板
+  没有」——**查反了**：`324:58062` 和桌面的 `316:29208` 都是 `#b5ed61 7px OUTSIDE`。
+  半径是绝对值，不能跟着字号的 em 走（narrow 是 36px 面），narrow / tablet 都显式写 7px。
+
+### 2. 间距与几何（都是 narrow 档，桌面未动）
+
+| 位置 | 原 | 稿 | 后果 |
+|---|---|---|---|
+| `.gb-promo-card__body` gap | 8 | **32** | 稿把 Content / Footer 拆成两帧、中间无 gap，按钮上方的空隙是 Content 自己的 padding-bottom；错当成 Footer 的 gap 8 |
+| `.gb-promo-card--white .gb-promo-card__stack` gap | 12 | **32** | 旧注释写「手机板根本没有白卡」，实际 `324:53799` 的第二张就是 |
+| `.gb-promo-card__main` gap | 24 | **32** | 同上，arc / 标题 / 引导句 / 列表在手机板上是一帧里的四个同级项 |
+| `.gb-dosed__text` gap | 24 | **32** | — |
+| `.gb-dosed__block` gap | 32（写在 `@include stack` 里） | **48** | 顺手把数值从布局阈值挪进值档 + tablet 斜坡 |
+| `.gb-cta-band__plate` padding-block | 24 | **3.75** | 板 507.5 裹着 500 的内容帧，只露 3.75 |
+| `.gb-cta-band__content` | 内容撑开 464 | **min-height 500 + space-between** | `Frame 992591` 是 FIXED 500，itemSpacing 108 是下限、实际间距 144 |
+| `.gb-science-card--nutrient .gb-science-card__body` gap | 19 | **12** | 19 是为 stat 卡那个 56 高的数字帧补的半行距，nutrient 卡没有那个帧 |
+| `.gb-ingredients__body > * + *` | gap 16 | **+16 = 32** | 稿把文案和「后面那个东西」（science 是手风琴、reviews 是按钮）分成两个 Container |
+| `.gb-form__disclaimer`（referral） | 14/20/-0.28 | **16/24/-0.32** | 用了桌面板的字号，手机板是正文号，四行 24 |
+
+改完的逐像素结果：promo 两张卡 **755 / 848** 对稿 755 / 848；dosed 的 arc/标题/引导句/图
+**64 / 125 / 229 / 421** 对稿 64 / 125 / 229 / 421；cta-band 的板/内容/弧/标题/按钮
+**507.5 / 500 / 2122 / 2190 / 2442** 对稿 507.5 / 500 / 2121.8 / 2189.8 / 2441.8。
+
+### 3. Shipping 的表格原来是一张真网格
+
+`326:83143` 每个单元格都是 `#cccccc 0.5 CENTER` 描边 + `10/12` 内边距，表头单元格填
+`#f3f3f3`，**第 2/4/6 行整行也填 `#f3f3f3`**。实现只有一条 `border-bottom`，没有竖线、
+没有斑马、没有左右内边距。补齐后两张表 **377 / 353** 对稿 376 / 352（差的 1px 是外框）。
+padding 取 **9.5** 不是 10：描边是 CENTER，占在 44 的行高之内，`(44 − 24 − 1) / 2 = 9.5`。
+新增 `$c-gray-050: #f3f3f3`。桌面没有 shipping 稿，那边的单线样式原样留着。
+
+### 4. 一处文案范围
+
+get-in-touch 的同意行，稿 `326:80318` 的 `characterStyleOverrides` 只给
+**`privacy policy`** 这 14 个字符加了下划线，实现把 `friendly` 也包进 `<a>` 了。
+
+### 判据
+
+- `tools/rwd.py` 12 页 × 14 档 ✅ 全绿
+- `tools/revealcheck.py` ✅ 全部 opacity=1、transform 归位
+- `tools/r31check.py` ✅ 52 条（`.gb-dosed__title` 那条改判 `> .gb-ink-halo`，
+  并补一条 `text-shadow: none` 钉住 ink-split 的分层 —— 直接删掉旧断言就是把判据改松了）
+- `tools/r32check.py` ✅ 42 条 / `tools/r36check.py` ✅ / `tools/hardbreaks.py` 34 ok，
+  6 条 MISSING 仍是成分辐射图 PNG 里的文字，误报
+- **桌面 1440 矩形多重集 + body 总高**（基线 `tools/snap/r37`，本轮 `tools/snap/r38`）：
+  9 页 0 处矩形消失、body 高不变；三页有变化且都可解释 ——
+  how-gumi-works **+5**（两个 `.gb-ink-halo` 副本）、reviews **+9**（expert 导航，桌面隐藏）、
+  get-in-touch **1 换 1**（`<a>` 的宽度随文字范围变）、pdp **body 8192.7 → 7834.7**
+  （删掉两块板都隐藏的 testimonial，−358 = 308 + 48）
+- `tools/pagefit.py`：referral −42 → −26、how-gumi-works −476 → −428、shipping +546 → +532。
+  ⚠ **pdp 从 −1509 变成 −2157 是对的**：原来的「接近」是两个错误在互相抵消 —— 评论 app 空槽
+  少 1800，而多出来的三条 testimonial 又补回 749。逐块看，`.gb-reviews` 从超出 749 变成超出 47。
+
+### 遗留
+
+11 条判定为**桌面稿与手机稿冲突**或**稿自身的 WIP 痕迹**，一条没改，全部列进
+`PROJECT-STATUS.md`「第三十七轮新增的待决事项」A~D 四组。要点：
+
+- **六处文案两块板不一样**，实现一律取的桌面版（PDP promo 卡、science compare 引导句、
+  FAQ 页 CTA 整块、referral 按钮、referral `Sign in`、reviews 页 FAQ 标题）。其中
+  **referral 的 `Send Message` 大概率是复制未改**（同一块里就写着「Already have an
+  account? Sign in」，桌面那句还和 get-in-touch 的按钮一字不差），建议改成 `Sign up`；
+  **FAQ 页那处还有副作用** —— `Start Your Greens` 在手机 270 宽的按钮里折成两行。
+- **两处占位数量不一样**：产品图缩略图手机 6 / 桌面 5（实现 5，补到 6 要连 `gallery` 的
+  `slides.length` 一起改，否则桌面能滑到一张看不见的第六张）、FAQ 手风琴手机 8 / 桌面 6。
+- **`.gb-vs__row` 每行多 2px**：稿是 12 + 0 高的 Line + 12 = 24，实现是 12 + 1 + 13 = 26。
+  两块板都是 24，桌面同样偏，改了会动桌面，未改。
+- **Reviews 专家卡轮播的初始位置**：稿画的是第二张居中，实现从第一张开始，没启用
+  `data-slider-centre`。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss    新增 $c-gray-050；
+                               page-hero__overline svg 补 color；
+                               promo-card__body / --white stack / __main 的 narrow+tablet gap；
+                               vs__table narrow 补 width:100%；
+                               science-card--nutrient 新增 __body gap + __value 补 ink-outline(7px)；
+                               ingredients__body > * + * 的 narrow margin-top；
+                               新增 .gb-expert__nav；
+                               dosed__title 改 ink-split；dosed__text / dosed__block 的 gap；
+                               cta-band__plate padding-block / cta-band__content min-height+space-between；
+                               form__disclaimer narrow+tablet；
+                               rich-table narrow 全边框 + 表头/斑马底色 + 9.5/12 内边距；
+                               $build → 20260826-r38
+改  assets/customstyle.css     编译产物
+改  pdp.html                   删掉三条 testimonial（两块板都 visible:false）
+改  reviews.html               expert 接 slider（inner + track）+ 补两个导航按钮
+改  how-gumi-works.html        两处 dosed__title 加 .gb-ink-halo 副本
+改  get-in-touch.html          同意行的 <a> 缩到只包 privacy policy
+改  全部 11 页 + font-check.html   ?v= / EXPECT_BUILD → r38
+改  tools/pagescan.py          重写：--list 两侧块排序打印 / --pairs 显式锚点批量出图
+改  tools/r31check.py          dosed__title 的描边断言改判 .gb-ink-halo（52 条）
+改  docs/CHANGELOG.md          本条
+改  docs/PROJECT-STATUS.md     第三十七轮待决事项 A~D
+```

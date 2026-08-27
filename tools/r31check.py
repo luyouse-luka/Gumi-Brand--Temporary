@@ -36,7 +36,10 @@ C = [
     ("science.html", 1440, ".gb-compare__avatar--bear", "transform", lambda v: v.startswith("matrix(1.16138")),
     ("science.html", 1440, ".gb-faq-image__body", "justify-content", "flex-start"),
     ("how-gumi-works.html", 1440, ".gb-dosed__body", "gap", "34px"),
-    ("how-gumi-works.html", 390, ".gb-dosed__title", "text-shadow", lambda v: "15px" in v or "14.99" in v),
+    # The halo moved onto its own layer (ink-split) so data-line-reveal's word
+    # spans stop biting holes in it -- the radius is now on .gb-ink-halo.
+    ("how-gumi-works.html", 390, ".gb-dosed__title > .gb-ink-halo", "text-shadow", lambda v: "15px" in v or "14.99" in v),
+    ("how-gumi-works.html", 390, ".gb-dosed__title", "text-shadow", "none"),
     ("our-story.html", 1440, ".gb-cta-band__head", "gap", "26px"),
     ("our-story.html", 1440, ".gb-cta-band__content", "padding-top", "54px"),
     ("faq.html", 1440, ".gb-faq--plain", "padding-top", "94px"),
