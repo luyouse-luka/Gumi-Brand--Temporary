@@ -813,6 +813,9 @@ AA 让 logo 完全没有反馈，与公约相反。其次是 O / Q / T / V / W /
   它用到的样式以「Vendor — Swiper」分区写在 `customstyle.scss` 里，没有第二个样式表。
   **全站每一个轮播都跑在它上面**：产品图廊（5 页，fade）、reels 横轨（4 页，**10 张卡跑
   `loop`**）、expert 卡片轨（1 页，3 张卡跑 `rewind`，≥992 销毁后变三列网格）。
+- **第三十八～五十五轮已在 2026-08-31 一次提交并推送**：`59ad586`（`551f77b..59ad586`，
+  59 files / +16740 −4801）。工作区干净。
+  ⚠ 提交信息里写明了第五十五轮验证不完整，**补跑之后请另起一条提交**。
 - git 远端 `github.com/luyouse-luka/Gumi-Brand--Temporary`（private，临时同步仓库），分支 `main`。
   推送走 SSH 别名 **`github-luyouse-user`** —— 裸用 `github.com` 会走 devmtc-1 那把 key 认证失败。
 - **推送等明确指令**，共用环境绝不全量、绝不 `--delete`。
