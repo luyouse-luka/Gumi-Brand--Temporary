@@ -4,7 +4,7 @@
 > 项目定位与已确立的规范在 [PROJECT-STATUS.md](PROJECT-STATUS.md)；
 > 改动史在 [CHANGELOG.md](CHANGELOG.md)（近 10 轮）+ [CHANGELOG-ARCHIVE.md](CHANGELOG-ARCHIVE.md)（第一～三十轮），**两份一起 grep**。
 >
-> 状态：`$build` = **`20260831-r58`**（第五十六轮），已编译；⚠ **验证不完整**
+> 状态：`$build` = **`20260831-r58`**（第五十七轮未升版：只加了 favicon，CSS/JS 未动），已编译；⚠ **验证不完整**
 > （第五十五轮被叫停，`rwd.py` 等七项至今未跑，清单见 CHANGELOG 第五十五轮「未跑」一节，
 > **下一轮第一件事是补跑**）。
 > 本文 2026-08-27 由 R41-HANDOFF / R37-HANDOFF / AUDIT-HANDOFF 三份合并而成，原文在 [archive/](archive/)。
@@ -60,6 +60,11 @@ npx sass@1.77.8 assets/customstyle.scss assets/customstyle.css --no-source-map
   `r40check` / `r52check` / `r56check` 三处判据都写了「这是终版」。
   ⚠ 另注意 `tablet` 档**也**有 `margin-left: 0`（r57 补的）—— r51 漏了它，
   那一档一直在往右挂（768 +30.7 / 1024 +37.2 / 1280 +43.7）。**不要以为是多余的。**
+- **favicon 的底色是 `#004128`（`$c-green-900`），不是品牌绿 `#005635`** ——
+  它抄的是 footer 那套现成锁定组合（青柠字标 + footer 实测底色），**不是配错了**。
+  字形四条 path 与 `index.html` 的 `.gb-footer__logo` 逐字节相同，改 logo 记得同步重跑
+  `images/favicon.svg` 的生成（判据 `r59check` 会当场报红）。
+  ⚠ 16px 标签页上四个字母读不出来是**已知的**（待决 AY），不是渲染坏了。
 - **两张 promo 卡的竖向波浪都不是对称骑缝的**：绿卡 `right: -95px`（咬痕 31，第五十一轮），
   白卡 `left: -100px`（咬痕 26，第五十六轮）。板上是对称的 −63（咬痕 63），
   **两次都是需求方点名推出去的**，别按板改回去。
@@ -363,7 +368,7 @@ cd /home/ly/project/Gumi-Brand
 npx sass@1.77.8 assets/customstyle.scss assets/customstyle.css --no-source-map
 
 # 逐轮定向断言（全部应通过）
-for s in r31check r32check r36check r39check r40check r41check r42check r43check r44check r45check r48check r50check r52check r53check r55check r56check r57check r58check; do python3 tools/$s.py; done
+for s in r31check r32check r36check r39check r40check r41check r42check r43check r44check r45check r48check r50check r52check r53check r55check r56check r57check r58check r59check; do python3 tools/$s.py; done
 
 python3 tools/rwd.py           # 12 页 × 14 档：横向溢出 / 文字被裁 / 可滚容器是否登记给 Lenis（约五分钟，必跑）
 python3 tools/revealcheck.py   # 入场动效收尾（约两分钟）
@@ -409,6 +414,7 @@ python3 tools/r42rect.py r41m 390
 | `r56check.py` | 第五十四轮三条（promo 列表正居中、弹窗只在 ≤767 全屏 + 768–1280 的 390×744 卡片 + 波浪节距钉回板值、询问类型的 button + ul 下拉：结构 / ARIA / 键盘 / 表单取值 / 预填 / 无横向溢出） | 动 promo 卡 / promo 弹窗 / 表单控件之后 |
 | `r57check.py` | 第五十五轮（国家码的 `bare` 变体：结构 / 排版 / ARIA / 列表挂在框底 4px / 层叠 / focus-within / 键盘 / 表单取值 / 两控件互不干扰） | 动 `.gb-field__phone` / `selectBox` 之后 |
 | `r58check.py` | 第五十六轮（白卡 `lip--v` 六档咬痕恒 26、盒子仍 126、不越出卡片；绿卡对照组仍 31；手机档改画 `lip--h` 且仍在 −48） | 动 `.gb-promo-card__lip*` 之后 |
+| `r59check.py` | 第五十七轮 favicon（三个文件存在且合规 / 四条 path 与 footer logo 逐字节相同 / 底色取实测 / 渲染不是空方块 / 12 页各三条 link 且 ico 在 svg 前） | 动 favicon 或 `.gb-footer__logo` 之后 |
 | `r53check.py` | §1 手机抽屉关闭时不得横跳（**必须保留真实滚动条**，gap=0 时 abort）；§2 reels 的 `loop` 无缝（两侧必须**真的溢出**，且走 8 张后再量一次；另钉「卡数 > 2 倍可见张数」这条 loop 的前提） | 动 `header` / 锁滚动 / 抽屉时长；**动 reels 卡数或 `data-slider-*` 之后** |
 | `pagescan.py` | 设计导出与实现左右并排出图 | 对稿复查（见「三」） |
 | `fq.py` | 查稿节点：box / ink / 旋转矩阵 / 布局 / 填充 / 描边 / 字号行高字距 / characterStyleOverrides | 取任何数值之前 |
@@ -700,6 +706,7 @@ for fa in sorted(glob.glob(f"{A}/*.1440.json")):
 | ~~I（重开）~~ | ~~promo 列表的居中语义~~ — **五十五轮终版：pc 居中 / 手机端不居中，关闭** | 五十四 |
 | **AT** | **768–1280 的弹窗形态（需求方回「糊了」，要重问：这一档想要什么形态）** | 五十四 |
 | **AX** | **手机端的 `lip--h` 要不要跟着 `lip--v` 一起变浅（−65 是换算值不是板值）** | 五十六 |
+| **AY** | **favicon 版式无稿背书；16px 下四个字母读不出，要不要改成单个 `G`** | 五十七 |
 | ~~AU~~ | ~~「手机端」阈值~~ — 五十五轮需求方选择忽略，维持 ≤767 ✅ | 五十四 |
 | ~~AV~~ | ~~国家码 `<select>`~~ — 五十五轮「一起改」，已落地 ✅ | 五十四 |
 | ~~AW~~ | ~~typeahead~~ — 五十五轮需求方选择忽略 ✅ | 五十四 |
@@ -709,7 +716,7 @@ for fa in sorted(glob.glob(f"{A}/*.1440.json")):
 **M 已在第四十三轮关闭**：版心搬回 `__inner`、两个正方形各加 520 上限。
 **S 已在第四十五轮关闭**：九宫格 `border-image`，纯 CSS，不换图不依赖 JS。
 剩下的 K / L / N / O / P / Q / T / U / V / W / X / Y / AA / AC / AD / AG / AH /
-AK–AP / AT / AX 都是一句话就能定的，一起问。**AT 要重问**（第五十四轮没讲清楚，
+AK–AP / AT / AX / AY 都是一句话就能定的，一起问。**AT 要重问**（第五十四轮没讲清楚，
 需求方回「糊了」）—— 问法只有一句：**768–1280 这一档的邮件弹窗想要什么形态？**
 **AG / AA 最值得先问** —— AG 是全站轮播丢了无限循环（要恢复只能加卡，是内容决策）；
 AA 让 logo 完全没有反馈，与公约相反。其次是 O / Q / T / V / W / AD / AH
@@ -797,15 +804,21 @@ AA 让 logo 完全没有反馈，与公约相反。其次是 O / Q / T / V / W /
 
 ---
 
-## 八、工作区状态（第五十六轮末）
+## 八、工作区状态（第五十七轮末）
 
-- `$build` = `20260831-r58`，全站 **38** 处 `?v=` 与 `font-check.html` 的 `EXPECT_BUILD` 一致。
-  第五十六轮**没有动过 HTML 结构**（只有 `?v=`）。
-- ⚠ **验证仍不完整**（第五十五轮被叫停的那一批至今没补）。
-  第五十六轮已跑全过：`r58check`（44 条）+ 双向判据（改前 6 条红，css md5 一致）
-  + `r31` / `r40` / `r44` / `r52` / `r55` / `r56` / `r57`。
+- `$build` 仍是 `20260831-r58` —— 第五十七轮只加了 favicon，`customstyle.scss` 与
+  `main.js` 一个字没动，破缓存那条规矩针对的是 CSS/JS，**这轮没有升版是对的**。
+  全站 **38** 处 `?v=`（样式表）+ **36** 处（12 页 × 3 条 favicon 链接）都是 `20260831-r58`，
+  下次升版一条 `sed` 会一起换掉。
+- ⚠ **验证仍不完整**（第五十五轮被叫停的那批至今没补）。
+  第五十七轮已跑：`r59check`（96 条）+ 四组活性自检（删文件 / 改 path / 漏挂一页 /
+  换底色，每组都报红）。本轮只往 `<head>` 加了三行 `<link>` 和三个图片文件，
+  CSS / JS / DOM 结构未动，不影响布局判据。
   **仍未跑：`rwd.py` / `r53check` / `scrolllock` / `revealcheck` / `hardbreaks` /
   `platecheck` / `seamcheck` / `font-check.html` / 全站矩形波及比对。**
+- `images/favicon.svg` 是**生成物**：由 `index.html` 里 `.gb-footer__logo` 的四条 path +
+  该 logo 背后实测的底色拼出来，`favicon.ico` / `favicon-180.png` 又是从这份 svg 渲染的。
+  **改 logo 就要重跑生成**（`r59check` 的「逐字节相同」会报红提醒）。
 - 三个页面**运行时**会多出 DOM 节点（`selectBox` 建出来的下拉，每个控件 10 个上下）：
   `get-in-touch`（两个：国家码 + 询问类型）、`referral`（一个：国家码）。
   `cssnap.py diff` 对这两页无效，用 `r42rect.py`。
@@ -813,12 +826,15 @@ AA 让 logo 完全没有反馈，与公约相反。其次是 O / Q / T / V / W /
 - `assets/main.js` 现在是 **15 个模块**（`selectBox` 注册在 `enquiryPrefill` 之后 ——
   顺序有意义，它要读到预填好的 `selectedIndex`）。`selectBox` 有两个变体：
   默认（询问类型，自带 44 高的白盒）与 `bare`（国家码，无盒子，`.gb-field__phone` 画边框）。
+- ⚠ **`<head>` 里那段内联脚本不能挪进 `main.js`**：它是 `.wowo{opacity:0}` 的存活门，
+  一要在首帧之前挂上 `html.js`（否则 FOUC），二要在 `main.js` 死掉时撤门 ——
+  而 `main.js` 死了就跑不到自己。见 [[reveal-gate-must-track-module-liveness]]。
 - `assets/swiper-bundle.min.js` 是 vendor 原件（Swiper 11.2.6，MIT，154KB），**不要改它**；
   它用到的样式以「Vendor — Swiper」分区写在 `customstyle.scss` 里，没有第二个样式表。
   **全站每一个轮播都跑在它上面**：产品图廊（5 页，fade）、reels 横轨（4 页，**10 张卡跑
   `loop`**）、expert 卡片轨（1 页，3 张卡跑 `rewind`，≥992 销毁后变三列网格）。
-- **提交历史（2026-08-31 全部已推送）**：`59ad586`（第三十八～五十五轮，59 files /
-  +16740 −4801）→ `5daa99a`（补记推送状态）→ `7e08ff6`（第五十六轮 r58）。工作区干净。
+- **提交历史（2026-08-31 全部已推送）**：`59ad586`（第三十八～五十五轮）→ `5daa99a`
+  → `7e08ff6`（r58）→ `5573b60`。**第五十七轮（favicon）见本次提交。**
 - git 远端 `github.com/luyouse-luka/Gumi-Brand--Temporary`（private，临时同步仓库），分支 `main`。
   推送走 SSH 别名 **`github-luyouse-user`** —— 裸用 `github.com` 会走 devmtc-1 那把 key 认证失败。
 - **推送等明确指令**，共用环境绝不全量、绝不 `--delete`。

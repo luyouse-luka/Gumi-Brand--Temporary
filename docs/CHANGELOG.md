@@ -3660,3 +3660,94 @@ select 那套排版（16 / 24 / −0.32 / `$c-gray-700`）。
   **没动**。要按同一比例跟过去的话是 `bottom: -65px` 左右，但那是**换算出来的数、不是稿上的**，
   且需求只点名了 `lip--v`。**要不要一起变浅？要的话给个数还是按比例换算？**
 - **AT** 仍待重问（768–1280 的邮件弹窗形态）。
+
+---
+
+## 第五十七轮（2026-08-31）— 全站补上 favicon
+
+需求（对话追加）：**网站的 favicon 换成设计里的 GUMI logo。**
+改前**全站 12 页一个 `rel="icon"` 都没有**，浏览器标签页只有默认的空白图标。
+
+### 素材不是我画的，是站上现成的锁定组合
+
+设计源里**没有 favicon 帧**（`figma/assets-raw/` 与 `figma/nodes/` 都搜不到 logo / favicon /
+mark 命名的素材，只有 `Logo` 这种字标帧，比例 2.4:1 不是方的）。所以问题变成
+「用哪一套现成的组合」，而不是「画一个」。
+
+站上有两套 GUMI 字标：header 的 `#005635` 绿字（浅底），footer 的 **`#B5ED61` 青柠字**。
+后者背后的底色**是实测出来的**（顺着 `.gb-footer__logo` 往上找第一个非透明背景）：
+`rgb(0, 65, 40)` = **`#004128`** = `$c-green-900`，**不是** `$c-green` 的 `#005635` ——
+第一版按 `#005635` 做了，判据当场报红，改成实测值。
+
+于是 favicon = **`#004128` 方底 + footer 那四条 path 原封不动的青柠字标**。
+颜色和字形全部来自稿，唯一由我定的是版式：64 的方画布、字标占 78% 宽居中
+（给 iOS 的圆角遮罩留安全区）、**不做圆角**（iOS / Android 自己会遮，浏览器标签页不需要）。
+
+### 产出三个文件（`images/`，与本项目「图片放顶层 images/」的约定一致）
+
+| 文件 | 用途 |
+|---|---|
+| `images/favicon.svg` | 现代浏览器标签页，矢量 |
+| `images/favicon.ico` | 老浏览器与「保存到桌面」，内含 16 / 32 / 48 三档 |
+| `images/favicon-180.png` | iOS 主屏图标（`apple-touch-icon`，**必须不透明**，iOS 会把它合成到底色上） |
+
+PNG / ICO 都是**从这份 SVG 渲染出来的**（headless chromium 截图 → Pillow 写多档 ico），
+不是另画一份，改 SVG 重跑即可同步。
+
+### 挂载
+
+12 页（11 个交付页 + `font-check.html`）的 `<head>` 里、`customstyle.css` 那条之前插入三行：
+
+```html
+<link rel="icon" href="images/favicon.ico?v=20260831-r58" sizes="32x32">
+<link rel="icon" href="images/favicon.svg?v=20260831-r58" type="image/svg+xml">
+<link rel="apple-touch-icon" href="images/favicon-180.png?v=20260831-r58">
+```
+
+⚠ **顺序有意义**：浏览器取**最后一条它认得的 `rel="icon"`**，所以 `.ico` 在前、`.svg` 在后，
+认得 SVG 的（现在所有主流浏览器）拿矢量，不认得的退回 `.ico`。
+
+⚠ **`$build` 没有升**：`customstyle.scss` 与 `main.js` 一个字没动，破缓存那条规矩针对的是
+CSS/JS。三条链接带上当前的 `?v=20260831-r58`，下次升版时会跟着一起被 `sed` 替换掉。
+
+### 验证
+
+- **新判据 `tools/r59check.py`，96 条全过**，分六节：
+  - **文件**：三个都在、非空、`apple-touch-icon` 是 180×180 **且完全不透明**、
+    `.ico` 里确实有 16/32/48 三档
+  - **出处**（这节是重点）：favicon 里的四条 `d` 与 `index.html` 里
+    `.gb-footer__logo` 的四条**逐字节相同** —— 证明是搬过来的不是重画的。
+    ⚠ 先断言「footer logo 还在」，否则选择器取空会让比对恒真
+  - **配色**：底色取 footer logo 背后**实测**的 `rgb(0, 65, 40)`，不是 grep CSS 文本
+    （第一版就是 grep 错了规则，把 `.gb-footer` 当成了上色的那一层）
+  - **渲染**：角落像素等于底色、青柠像素占比落在合理区间（**空方块会被抓出来**）、
+    iOS 圆角会遮掉的那 12×12 角落里没有画东西
+  - **挂载**：12 页各三条、`.ico` 在 `.svg` 前、每个 href 在盘上都找得到、三条都在样式表之前
+  - **浏览器**：三个文件都能在 chromium 里解码，SVG 的 viewBox 是正方（否则标签页图标会被压扁）
+- **活性自检跑了四组，每组都报红**（判据不是恒真的）：
+  删掉 svg → 2 红；改一条 path 里的一个数 → 「逐字节相同」报红；
+  某页漏挂一条 → 该页两条断言报红；底色换成 `#005635` → 配色那条报红。
+- **没跑别的**：本轮只往 `<head>` 加了三行 `<link>` 和三个新图片文件，
+  CSS / JS / DOM 结构一个字没动，不影响任何布局判据。
+  第五十五轮欠的那批（`rwd.py` / `r53check` / `scrolllock` / `revealcheck` / `hardbreaks` /
+  `platecheck` / `seamcheck` / `font-check` / 矩形波及比对）**仍然欠着**。
+
+### 文件清单
+
+```
+新  images/favicon.svg          64x64，#004128 底 + footer 那四条 path 的青柠字标
+新  images/favicon.ico          从 svg 渲染，含 16/32/48
+新  images/favicon-180.png      从 svg 渲染，apple-touch-icon，不透明
+改  全部 12 页（11 交付页 + font-check）  <head> 里加三条 <link>
+新  tools/r59check.py           本轮判据（96 条）
+新  tools/_apply_r59_html.py    挂载脚本（幂等：已挂过的页会跳过）
+```
+
+### 待裁决
+
+- **AY. favicon 的版式是我定的** —— 稿里没有 favicon 帧。字形与两个颜色都来自 footer 的
+  现成锁定组合，但**方底、78% 的字标宽、不做圆角**这三项没有稿背书。
+  另外**四个字母在 16px 的标签页上基本读不出来**（只看得出是一块深绿底 + 一抹青柠），
+  这是所有多字母字标做 favicon 的通病。**要不要改成只取一个 `G`？** 那样 16px 下认得出，
+  但不再是完整字标。
+- **AX**（手机端 `lip--h` 要不要跟着变浅）与 **AT**（768–1280 的弹窗形态）仍待回复。
