@@ -1,7 +1,7 @@
 # Gumi Brand — 性能审计报告（第 4 线）
 
 > 审计日期 2026-08-20 · 范围：`file://` 静态阶段的 11 个交付页
-> 依据 [AUDIT-HANDOFF.md](../AUDIT-HANDOFF.md) 第 6 节（性能）与第 7 节（判据纪律）
+> 依据 [AUDIT-HANDOFF.md](../archive/AUDIT-HANDOFF.md) 第 6 节（性能）与第 7 节（判据纪律）
 > **本轮只出报告，未改动任何项目文件。** 唯一新增文件是本文件。
 
 ---

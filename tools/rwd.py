@@ -36,6 +36,19 @@ PROBE = """() => {
   const clipperOf = el => {
     for (let n = el.parentElement; n && n !== de; n = n.parentElement) {
       const c = getComputedStyle(n);
+      // A horizontal rail nearer than any clipper means the content is reachable
+      // by swiping: its off-screen cards are the point of the rail, not a defect
+      // (.gb-expert__cards, .gb-reels). Order matters — the clipper test below
+      // still wins when the hidden box is the closer of the two. Deliberately
+      // only the x axis: overflow-x:hidden forces the other axis to auto, so
+      // testing y here would excuse a genuinely clipped box that happens to
+      // overflow vertically by a few pixels.
+      if (/auto|scroll/.test(c.overflowX) && n.scrollWidth > n.clientWidth + 1) return null;
+      // 第五十轮起横轨跑在 Swiper 上：它用 transform 平移而不是滚动，所以
+      // scrollWidth 不再溢出，上面那条认不出它。.swiper 的 overflow:hidden 就是
+      // 轨道的取景框，框外那几张卡是滑进来的内容，不是缺陷 —— 与上面同一条豁免，
+      // 只是换了实现。豁免只认容器本身带 .swiper，卡片内部再被裁照报不误。
+      if (n.classList.contains('swiper')) return null;
       if (/hidden|clip/.test(c.overflowX) || /hidden|clip/.test(c.overflowY)) return n;
     }
     return null;

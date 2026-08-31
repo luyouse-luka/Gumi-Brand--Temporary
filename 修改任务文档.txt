@@ -1,17 +1,36 @@
 
+1. 类似gb-nutrition__cards 的card 从3-》2-》1， 的breakpoint 1200以下变2个  575一下变一个，比如还有gb-testimonials 
+2. .gb-product__info 1200px以下padding 0；767以下 .gb-product__cta 加上最大宽度；
+3.  .gb-promo-card 767px以下加上最大宽度575px
+4. .gb-promo-card--green .gb-promo-card__lip--v     right: -95px;
+5. gb-promo-card__stack 767px以下    max-width: 100%; .gb-promo-card__lip--h 767px以下     left: 50.5%;
+6. gb-promo-card gb-promo-card--white gb-promo-art__img 767px以下 top: -8%; 
+7. .gb-promo-card__list 767px以下 去掉    margin: 0 auto;
 
-手机端修改
-1..gb-hero__lead        padding: 0 10px;
-2. 箭头大小和样式没有还原设计
-3. .gb-stats__deco-bear         top: -22.34px; width: 20.92%; 并且如果用百分比表示在767以下太大了，直接固定宽高
 
-.gb-nutrition padding-b 27px
-.gb-product padding-t 52px；gb-product__stage border -radus 16px；.gb-product__gallery        gap: 16px;
-.gb-product__media     gap: 16px; .gb-product__inner     gap: 32px; .gb-product__guarantee-note border-r 8px；    padding: 8px 20px; .gb-product--lg padding-b 50px； .gb-reviews__rating svg     width: 103px;
-    height: 20px;.gb-reviews__inner         gap: 48px; .gb-reel__play     width: 64px;
-    height: 40px；.gb-testimonial svg     width: 103px;    height: 20px; gb-testimonials padding-t0；.gb-testimonial flex auto；gap 30px；margin-b 0；.gb-reviews__disclaimer padding: 0 20px;.gb-reviews padding: 64px 0 78px;.gb-deco-bear--a         width: 154px;
-        top: -60px;
-        left: 11%; gb-arc-text gb-footer-cta__arc 需要还原手机端设计
-上述就是我对照设计截图仍对比出的差距，
-因此虽然检查过几轮还原检查 但是仍不理想，我需要你对照手机端设计 再次检查全站设计还原 不仅对照节点数据 而且仍需对照截图
+1. gb-promo-card 在响应式的gb-promo-art会和gb-promo-card__art的波浪重叠，需要即时调整波浪距离图片的距离
+2. .gb-promo-card__list 响应式的时候需要保持maring 0 auto
+3. gb-vs__table 响应式的全宽 
+4， 在gb-promo-modal 弹窗刚出现的时候 gb-promo-panel__close会出现一个深色的边框需要去掉
+5.  gb-promo-modal 需要到手机端才改为全屏的 
+6. .gb-bear-meter 手机端改为max-width 100% ；gb-header__nav  gb-btn gb-btn--lg 需要加上一个最大宽度
+7. gb-footer__newsletter 767以下加上最大宽度max-width: 340px;.gb-deco-bear--b top 改为用百分比表示
+8. gb-science-card__value 50%的时候，0内有白色的斑点 没有被text-shadow完全覆盖，包括50和%之前存在着一点白色斑点 
 
+
+
+1. gb-science gb-science--cream gb-science--tight gb-science__cards     margin-top: 26px;gb-science-card__text margin-t 6px； 手机端gb-science-card__value的响应式改为font-family: PP Palma;
+font-weight: 800;
+font-style: Fizzy Heavy;
+font-size: 36px;
+leading-trim: NONE;
+line-height: 40px;
+letter-spacing: -1%;
+2. .gb-faq-image__body 响应式去掉    padding-inline: 32px;
+
+3. gb-reviews gb-reviews--cream 多了一个gb-testimonial 文本内容对齐pc端
+4. gb-field gb-field__input gb-field__input--select改为 ul 的那种点击下拉，旋转箭头的效果
+5. gb-form__check 点击input勾选没有过渡效果。gb-form__check的input 隐藏 用gb-form__check的伪元素表示勾选状态
+6. gb-form__note a 加上下划线
+7. .gb-form__disclaimer 手机端margin: 16px 0 -2px;
+8. gb-rich-page 加上wowo fadeinup

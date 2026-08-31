@@ -110,13 +110,18 @@ async def main():
 
     # --- 3 stats ---
     eq("390 .gb-stats__note margin-top", m["noteMarginTop"], "-16px")
-    eq("1440 .gb-stats__note margin-top untouched", d["noteMarginTop"], "-30px")
+    # 第四十九轮改成 -34（需求方点名）。这条本来是「桌面端别动」的守卫，
+    # 值跟着新需求走，守卫本身留着 —— 手机的 -16 不许被顺手带走。
+    eq("1440 .gb-stats__note margin-top (r50 client-set -34)", d["noteMarginTop"], "-34px")
     eq("390 arrows visible (243:28620/32/41/53)", m["arrowDisplay"], "block")
     eq("1440 arrows visible", d["arrowDisplay"], "block")
     if "matrix(-1" not in m["bearImgXform"]:
         FAILS.append(f"390 .gb-stats__bear-img must be mirrored (332:16221): {m['bearImgXform']}")
     eq("1440 .gb-stats__bear-img not mirrored", d["bearImgXform"], "none")
-    eq("390 bear slot opens the arrow gaps", m["bearMargin"], ["65px", "63px"])
+    # r39: client re-measured off the screenshot -- 78/48 instead of 65/63, and
+    # the margin moved from narrow onto the stack tier so the arrows, which now
+    # show from 1024 down, have the same room to hang in there.
+    eq("390 bear slot opens the arrow gaps", m["bearMargin"], ["78px", "48px"])
     # board Benefits 243:28608 is 845.34 tall
     eq("390 .gb-stats__grid height vs board 845.34", m["gridH"], 845.34, tol=2)
     eq("390 the clip is on the art, not the slot", m["bearArtOverflow"], "hidden")

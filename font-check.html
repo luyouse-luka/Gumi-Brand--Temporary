@@ -59,7 +59,7 @@
 // 整段推迟到 DOMContentLoaded：main.js 的模块也是在那时候才 init 的，
 // 解析期跑的话「Lenis 实例在不在」这类探针必然读到 null，报假红。
 function run() {
-  var EXPECT_BUILD = "20260826-r38";
+  var EXPECT_BUILD = "20260831-r57";
   var DIR = "assets/";
   var rows = function (id, arr) {
     document.getElementById(id).innerHTML = "<tbody>" + arr.join("") + "</tbody>";
@@ -140,10 +140,17 @@ function run() {
        return svg.width === "40px" && svg.height === "40px" &&
               parseFloat(getComputedStyle(el).columnGap) === 10;
      })],
-    ["reels 拖动态关掉 snap（第十一轮）",
-     probe('<div class="gb-reels is-dragging"></div>', function (el) {
+    ["reels 的平移交给 Swiper，轨道自己不再 snap（第十一轮 → 第五十轮改造）",
+     probe('<div class="gb-reels swiper"></div>', function (el) {
        var cs = getComputedStyle(el);
-       return cs.scrollSnapType === "none" && cs.cursor === "grabbing";
+       // 原判据探的是 .is-dragging 的 scroll-snap-type + cursor:grabbing。第五十轮
+       // 全站轮播改 Swiper 之后，拖拽与惯性都归它管，轨道自己的 scroll-snap、
+       // overflow、is-dragging 全撤了 —— 那条断言从此恒假（同 PROJECT-STATUS 待决 G
+       // 的两条，一起在第五十二轮改写）。overflow 现在由 .swiper 提供；
+       // column-gap 留着但不排任何版：.swiper 是 display:block，它在那儿只是
+       // main.js 读 spaceBetween 的唯一出处。
+       return cs.scrollSnapType === "none" && cs.overflowX === "hidden" &&
+              parseFloat(cs.columnGap) > 0;
      })],
     ["reel 视频弹窗外壳 .rv-modal（第十一轮）",
      probe('<div class="gb-rv-modal"><div class="gb-rv-panel"></div></div>', function (el) {
@@ -171,12 +178,20 @@ function run() {
            '<img class="gb-nutrition__bears-img"></div></div>', function (el) {
        return getComputedStyle(el.querySelector("img")).position === "absolute";
      })],
-    ["产品图库改叠放淡入（第十六轮）",
-     probe('<div class="gb-product__stage"><div class="gb-product__image is-active"></div>' +
-           '<div class="gb-product__image"></div></div>', function (el) {
-       var a = getComputedStyle(el.children[0]), b = getComputedStyle(el.children[1]);
-       return a.position === "absolute" && a.opacity === "1" && b.opacity === "0" &&
-              a.transitionProperty === "opacity";
+    ["产品图库改由 Swiper 叠放淡入（第十六轮 → 第四十九轮改造）",
+     probe('<div class="gb-product__stage swiper swiper-fade"><div class="swiper-wrapper">' +
+           '<div class="swiper-slide swiper-slide-active gb-product__image"></div>' +
+           '<div class="swiper-slide gb-product__image"></div></div></div>', function (el) {
+       var sl = el.querySelectorAll(".swiper-slide");
+       var a = getComputedStyle(sl[0]), b = getComputedStyle(sl[1]);
+       // 原判据探的是自己写的 position:absolute + opacity 交叉淡入。第四十九轮把这
+       // 两件事交给了 Swiper，slide 上再也看不到 opacity 规则（时长是 Swiper 写成
+       // 行内样式的），那条断言从此恒假。这里改验站内 vendor 分区真正提供的那部分：
+       // 淡入的属性与曲线、以及只有 active 那张接收指针事件。
+       // ⚠ 别因为「slide 上看不到 opacity 规则」就补一条回去（见 HANDOFF 一·1）。
+       return getComputedStyle(el).overflow === "hidden" &&
+              a.transitionProperty === "opacity" && a.pointerEvents === "auto" &&
+              b.pointerEvents === "none" && a.cursor === "grab";
      })],
     ["手风琴同组排他 details[name]（第十六轮）",
      document.querySelectorAll("details[name]").length >= 0 &&
@@ -221,9 +236,9 @@ function run() {
        } catch (e) { return true; }   // file:// 下 cssRules 可能被当跨域，见 memory
        return declared === 0 || seen === declared;
      })()],
-    ["hero 小熊去掉放大、改纯淡入（第十七轮）",
-     probe('<div class="gb-hero__art gb-float-art gb-float-art--still"></div>', function (el) {
-       return getComputedStyle(el).animationName === "gm-art-fade-in";
+    ["hero 小熊：淡入 + 上下浮动（第十七轮去掉浮动，第三十九轮按需求加回）",
+     probe('<div class="gb-hero__art gb-float-art gb-float-art--hero"></div>', function (el) {
+       return getComputedStyle(el).animationName === "gm-art-fade-in, gm-art-float";
      })],
     ["装饰熊：定位挂在包裹 div 上，图片撑满（第十七轮）",
      probe('<div class="gb-deco-bear gb-deco-bear--a"><img></div>', function (el) {
@@ -231,26 +246,32 @@ function run() {
        return box.position === "absolute" && img.display === "block" &&
               Math.abs(parseFloat(img.width) - parseFloat(box.width)) < 1;
      })],
-    ["波浪归属：section 自带下边缘形状（第十八轮）",
+    ["波浪归属：section 自带下边缘形状（第十八轮，判据第五十二轮改写）",
      probe('<section class="gb-product gb-product--lg">' +
            '<div class="gb-scallop gb-scallop--edge gb-scallop--lg gb-scallop--white-to-mint"></div></section>',
        function (el) {
          var sec = getComputedStyle(el), w = getComputedStyle(el.firstElementChild);
-         var spacer = getComputedStyle(el, "::after");
-         // 高度由宿主的 ::after 占位块留出（不能用 border —— Chromium 会把 border
-         // 宽度取整到整数 px，每道波浪差 ~1px）；波浪绝对定位贴 padding box 底。
-         // 尺寸只写在 section 上，波浪继承 —— 占位块与波浪必须逐像素等高。
+         // 第十九轮把留高度的方案从 ::after 换成了
+         // padding-bottom: calc(既有值 + var(--sc-lg-h))，所以这里比的是
+         // section 的 padding-bottom 与波浪高度，不再有 ::after 可探
+         // （旧判据从第十九轮起一直恒假，见 PROJECT-STATUS 待决 G）。
+         // 容差 1.2：--wave-under 用 height +1px / margin-bottom -1px 叠边补
+         // Windows 分数缩放下的发丝缝，波浪因此比它占的位置高约 1px。
          return w.position === "absolute" && parseFloat(w.bottom) === 0 &&
-                parseFloat(spacer.height) > 30 &&
-                Math.abs(parseFloat(spacer.height) - parseFloat(w.height)) < 0.05;
+                parseFloat(w.height) > 30 &&
+                parseFloat(sec.paddingBottom) >= parseFloat(w.height) - 1.2;
        })],
-    ["裁切型宿主也不用特例：占位块在 padding box 内（第十八轮）",
+    ["裁切型宿主也不用特例：高度同样由 padding 留（第十八轮，判据第五十二轮改写）",
      probe('<section class="gb-nutrition">' +
            '<div class="gb-scallop gb-scallop--edge gb-scallop--lg gb-scallop--lime-to-white gb-scallop--bleed"></div></section>',
        function (el) {
          var sec = getComputedStyle(el), w = getComputedStyle(el.firstElementChild);
+         // 原判据要求 padding-bottom 恰好是 0（第十八轮那套 ::after 占位的写法）。
+         // 第十九轮换成 padding 留高度之后它就一直是假的 —— 裁切型宿主走的是
+         // 同一套机制，所以这里要的正是「padding-bottom 留出了波浪的高度」。
          return sec.overflow === "hidden" && parseFloat(sec.borderBottomWidth) === 0 &&
-                parseFloat(sec.paddingBottom) === 0 &&
+                parseFloat(w.bottom) === 0 &&
+                parseFloat(sec.paddingBottom) >= parseFloat(w.height) - 1.2 &&
                 w.backgroundColor === "rgba(0, 0, 0, 0)";   // --bleed：条带透明
        })],
     ["pack band 居中屏幕、两行同轴（第十七轮）",

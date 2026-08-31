@@ -2,7 +2,7 @@
 
 > 审计日期 2026-08-20，对象 `assets/scss/` 36 个 partial（6025 行）+ 产物 `assets/css/style.css`（163,351 B，r15）。
 > **本轮只出报告，未改动任何项目文件。** 唯一写入的是本文件。
-> 参照 [AUDIT-HANDOFF.md](../AUDIT-HANDOFF.md) 第 3.4 / 4.2 / 4.4 / 7 节。
+> 参照 [AUDIT-HANDOFF.md](../archive/AUDIT-HANDOFF.md) 第 3.4 / 4.2 / 4.4 / 7 节。
 
 ---
 

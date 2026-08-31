@@ -1,5 +1,6 @@
 @use "sass:list";
 @use "sass:math";
+@use "sass:string";
 
 // ============================================================================
 // Gumi Brand — customstyle.scss
@@ -32,7 +33,7 @@
 // font url()s read it. Previewing over file:// caches css/js/woff2 until a hard
 // refresh, so without it a real change reads as "nothing happened".
 // font-check.html prints the value the browser actually got.
-$build: "20260826-r38";
+$build: "20260831-r57";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -119,7 +120,11 @@ $r-pill: 999px;
 $t-fast:      0.15s;   // icons, underlines — small areas
 $t-base:      0.2s;    // button / link colour, the default
 $t-slow:      0.3s;    // card lift + shadow, larger area so slower
-$t-panel:     0.35s;   // header drawer: height / background / chevron must match
+$t-panel:     0.35s;   // header dropdown: height / background / chevron must match
+// Mobile drawer. Lifted from funkyfood's .header-mobile-menu at the client's
+// request — the slide is long and heavily eased, quite unlike $t-panel.
+$t-drawer:    0.7s;
+$ease-drawer: cubic-bezier(0.77, 0, 0.175, 1);
 // easeOutCubic. The default `ease` is flat at both ends and reads as no transition.
 $ease-out:    cubic-bezier(0.33, 1, 0.68, 1);
 $ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
@@ -365,9 +370,54 @@ $mask-scallop-box: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUAAAAFACA
 //               Both are the node's own fillGeometry, so this needs no export
 //               endpoint and no bitmap; preserveAspectRatio='none' lets the
 //               shape follow the plate the way the old PNG did.
-$mask-scallop-band: url("data:image/svg+xml,%3Csvg width='1280.0' height='392.957' viewBox='0 0 1280.0 392.957' preserveAspectRatio='none' fill='none' xmlns='http://www.w3.org/2000/svg'%3E %3Cpath d='M1221.12 0C1253.64 -0 1280 26.3636 1280 58.8848C1280 77.4205 1271.44 93.9551 1258.05 104.749C1271.44 115.543 1280 132.078 1280 150.614C1280 169.15 1271.44 185.685 1258.05 196.479C1271.44 207.272 1280 223.807 1280 242.343C1280 260.879 1271.44 277.413 1258.05 288.207C1271.44 299.001 1280 315.537 1280 334.072C1280 366.593 1253.64 392.957 1221.12 392.957C1204.02 392.957 1188.62 385.669 1177.87 374.031C1167.11 385.669 1151.71 392.956 1134.62 392.956C1117.52 392.956 1102.12 385.67 1091.37 374.033C1080.61 385.67 1065.22 392.956 1048.12 392.956C1030.18 392.956 1014.12 384.937 1003.32 372.29C992.522 384.937 976.461 392.956 958.525 392.956C940.591 392.956 924.531 384.938 913.73 372.292C902.93 384.938 886.87 392.956 868.936 392.956C851 392.956 834.939 384.937 824.139 372.29C813.338 384.937 797.277 392.956 779.342 392.956C761.408 392.956 745.347 384.938 734.547 372.292C723.747 384.938 707.686 392.956 689.752 392.956C671.599 392.956 655.366 384.742 644.564 371.828C633.763 384.742 617.529 392.956 599.377 392.956C581.374 392.956 565.258 384.877 554.457 372.146C543.656 384.877 527.54 392.956 509.537 392.956C491.454 392.956 475.274 384.805 464.473 371.976C453.671 384.805 437.492 392.956 419.408 392.956C401.323 392.956 385.143 384.803 374.342 371.973C363.54 384.803 347.36 392.956 329.275 392.956C311.192 392.956 295.013 384.805 284.211 371.976C273.409 384.805 257.23 392.956 239.146 392.956C221.062 392.956 204.882 384.803 194.08 371.973C183.278 384.803 167.098 392.956 149.014 392.956C130.93 392.956 114.751 384.805 103.949 371.976C93.1475 384.805 76.9683 392.957 58.8848 392.957C26.3638 392.957 0.000186992 366.593 0 334.072C-0 315.537 8.564 299.001 21.9512 288.207C8.5642 277.413 0 260.878 0 242.343C0 223.807 8.5639 207.271 21.9512 196.478C8.56431 185.684 0 169.149 0 150.613C0.000147242 132.078 8.56416 115.543 21.9512 104.749C8.56418 93.9551 0 77.4201 0 58.8848C-0 26.3636 26.3636 0 58.8848 0C76.9682 0 93.1475 8.15157 103.949 20.9805C114.751 8.15163 130.93 0 149.014 0C167.098 0 183.278 8.15235 194.08 20.9824C204.882 8.15237 221.062 0 239.146 0C257.23 0 273.409 8.15161 284.211 20.9805C295.013 8.15163 311.192 0 329.275 0C347.36 0 363.54 8.15235 374.342 20.9824C385.143 8.15237 401.324 0 419.408 0C437.492 0 453.671 8.15161 464.473 20.9805C475.274 8.15163 491.454 0 509.537 0C527.54 0 543.656 8.07864 554.457 20.8086C565.258 8.07866 581.374 0 599.377 0C617.529 0 633.763 8.21431 644.564 21.1279C655.366 8.21433 671.6 0 689.752 0C707.686 0 723.747 8.01743 734.547 20.6631C745.347 8.01745 761.408 0 779.342 0C797.277 0 813.338 8.01883 824.139 20.666C834.939 8.01885 851.001 0 868.936 0C886.869 0 902.93 8.01743 913.73 20.6631C924.531 8.01745 940.592 0 958.525 0C976.46 0 992.522 8.01883 1003.32 20.666C1014.12 8.01885 1030.18 0 1048.12 0C1065.22 0 1080.61 7.28735 1091.37 18.9248C1102.13 7.28738 1117.52 0 1134.62 0C1151.72 0 1167.11 7.2862 1177.87 18.9219C1188.62 7.28557 1204.02 0.0001 1221.12 0Z' fill='%23000'/%3E %3C/svg%3E");
+// CTA plate — the scalloped board behind "Nutrition that fits the life you're living."
+//
+// The outline is a Union of circles: lobes of a FIXED radius centred on the
+// lines r in from each edge, at a fixed pitch, unioned with the inner rectangle.
+// Both boards are built that way; only the numbers differ (read off the two
+// fillGeometry paths Figma exported):
+//
+//   board             r         pitch x   pitch y   lobes x / y
+//   1280 x 392.957    58.8848   89.4023   91.7291   14 / 4
+//   350.852 x 507.512 39.9189   67.7535   61.0963    5 / 8
+//
+// ⚠ This used to be ONE flattened outline per board, stretched onto the box with
+// `mask-size: 100% 100%`. That is wrong at every width except the board's own:
+// the plate runs 0.69 (390) to 3.26 (1440) in aspect while each outline is a
+// single fixed drawing, so 767 pulled the mobile lobes 2.07x wide and 768
+// squashed the desktop ones to 0.44x. Measurements in PROJECT-STATUS 待决 S.
+//
+// A nine-slice fixes it with no JS: the four corners are painted at their drawn
+// size and never scale, and each edge repeats ONE lobe period with `round`,
+// which rescales the tile only enough to fit a whole number of periods. So the
+// tile is a 2x2-lobe mini-plate and the LOBE COUNT follows the box instead of
+// the lobe shape following the box. At both board widths `round` lands on the
+// board's own lobe count with under 0.4% of scaling.
+//
+// The colour is baked into the tile because border-image replaces the
+// background (a background underneath would show through the valleys) --
+// it is interpolated from $c-green so it still tracks the variable.
+$plate-r-pc:  58.8848;
+$plate-px-pc: 89.4023;
+$plate-py-pc: 91.7291;
+$plate-r-mob:  39.9189;
+$plate-px-mob: 67.7535;
+$plate-py-mob: 61.0963;
 
-$mask-scallop-band-mobile: url("data:image/svg+xml,%3Csvg width='350.852' height='507.512' viewBox='0 0 350.852 507.512' preserveAspectRatio='none' fill='none' xmlns='http://www.w3.org/2000/svg'%3E %3Cpath d='M310.933 0C332.979 0.0001 350.851 17.8726 350.852 39.9189C350.852 52.1793 345.322 63.1461 336.623 70.4688C345.322 77.7912 350.851 88.7591 350.852 101.02C350.852 113.28 345.322 124.248 336.623 131.57C345.322 138.893 350.851 149.861 350.852 162.121C350.851 174.381 345.322 185.348 336.623 192.671C345.322 199.993 350.851 210.961 350.852 223.222C350.852 235.482 345.322 246.449 336.623 253.771C345.322 261.094 350.851 272.062 350.852 284.322C350.852 296.583 345.322 307.55 336.623 314.873C345.322 322.196 350.851 333.163 350.852 345.424C350.852 357.629 345.371 368.553 336.74 375.875C345.372 383.197 350.851 394.122 350.852 406.327C350.852 418.634 345.281 429.637 336.525 436.96C345.281 444.282 350.851 455.286 350.852 467.593C350.852 489.639 332.979 507.512 310.933 507.512C296.642 507.512 284.108 500.001 277.056 488.713C270.003 500.001 257.47 507.512 243.18 507.512C228.889 507.512 216.355 500 209.303 488.712C202.251 500 189.717 507.512 175.426 507.512C161.135 507.512 148.601 500.001 141.549 488.713C134.497 500.001 121.963 507.512 107.672 507.512C93.3812 507.512 80.8471 500.001 73.7949 488.713C66.7427 500.001 54.2094 507.512 39.9189 507.512C17.8724 507.512 0 489.639 0 467.593C0.000180713 455.287 5.5703 444.282 14.3252 436.96C5.57032 429.637 0 418.633 0 406.327C0.00012673 394.122 5.47926 383.197 14.1104 375.875C5.47958 368.553 0 357.629 0 345.424C0.000189213 333.164 5.52894 322.196 14.2275 314.873C5.52903 307.55 0 296.583 0 284.322C0.00019837 272.062 5.52829 261.094 14.2266 253.771C5.52862 246.449 0 235.482 0 223.222C0.000147928 210.962 5.5283 199.993 14.2266 192.671C5.52858 185.348 0.00010778 174.381 0 162.121C0.000127308 149.861 5.52905 138.893 14.2275 131.57C5.52909 124.248 0 113.28 0 101.02C0.000261438 88.7593 5.52893 77.7912 14.2275 70.4688C5.52924 63.1461 0 52.1791 0 39.9189C0.000228856 17.8726 17.8725 0 39.9189 0C54.2089 0 66.7426 7.51071 73.7949 18.7979C80.8472 7.51055 93.3817 0 107.672 0C121.962 0 134.497 7.51111 141.549 18.7988C148.601 7.51111 161.135 0 175.426 0C189.716 0 202.251 7.51113 209.303 18.7988C216.355 7.51113 228.889 0 243.18 0C257.47 0 270.003 7.51077 277.056 18.7979C284.108 7.51055 296.642 0 310.933 0Z' fill='%23000'/%3E %3C/svg%3E");
+// 瓣与瓣相交处（「谷」）离边有多深。缩放无关：瓣被平铺缩放 s 时间距也是 p·s，
+// 在 d = r - r*sqrt(1 - (p/2r)^2) 里约掉了，所以每档是一个常数。
+@function scallop-valley($r, $p) {
+  @return $r - math.sqrt($r * $r - math.div($p, 2) * math.div($p, 2));
+}
+
+@function scallop-tile($r, $px, $py) {
+  $fill: "%23" + string.slice("#{$c-green}", 2);
+  $w: 2 * $r + $px;
+  $h: 2 * $r + $py;
+  $x2: $r + $px;
+  $y2: $r + $py;
+  @return url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='#{$w}' height='#{$h}' fill='#{$fill}'%3E%3Crect x='#{$r}' y='#{$r}' width='#{$px}' height='#{$py}'/%3E%3Ccircle cx='#{$r}' cy='#{$r}' r='#{$r}'/%3E%3Ccircle cx='#{$x2}' cy='#{$r}' r='#{$r}'/%3E%3Ccircle cx='#{$r}' cy='#{$y2}' r='#{$r}'/%3E%3Ccircle cx='#{$x2}' cy='#{$y2}' r='#{$r}'/%3E%3C/svg%3E");
+}
 
 $mask-scallop-card: url("data:image/svg+xml,%3Csvg width='573' height='94' viewBox='0 0 573 94' fill='none' xmlns='http://www.w3.org/2000/svg'%3E %3Cpath d='M525.811 0C551.873 0.00011568 573 21.0423 573 46.9993C573 72.9565 551.873 93.9999 525.811 94C509.027 94 494.292 85.2717 485.926 72.1253C477.56 85.2714 462.825 93.9998 446.042 94C429.258 94 414.522 85.2716 406.156 72.1253C397.79 85.2716 383.055 94 366.271 94C349.486 93.9998 334.749 85.2704 326.384 72.1223C318.018 85.27 303.283 93.9999 286.499 94C269.715 94 254.981 85.2722 246.615 72.1267C238.248 85.2719 223.515 94 206.732 94C189.948 94 175.213 85.2717 166.847 72.1253C158.481 85.2714 143.746 93.9998 126.963 94C110.177 94 95.4398 85.2706 87.0743 72.1223C78.7086 85.2701 63.9736 94 47.1888 94C21.1271 93.9999 0.000217693 72.9578 0 47.0007C0 21.0435 21.1269 0.000104648 47.1888 0C63.973 0 78.7084 8.72927 87.0743 21.8762C95.4399 8.72844 110.178 0 126.963 0C143.746 0.000173821 158.481 8.72767 166.847 21.8733C175.213 8.72733 189.949 0 206.732 0C223.514 5.06545e-05 238.248 8.72715 246.615 21.8718C254.981 8.72684 269.716 0 286.499 0C303.283 7.45002e-05 318.018 8.72906 326.384 21.8762C334.75 8.72869 349.486 0.000195701 366.271 0C383.054 0 397.79 8.72744 406.156 21.8733C414.522 8.72744 429.258 0 446.042 0C462.825 0.000201632 477.56 8.72767 485.926 21.8733C494.292 8.72735 509.028 0 525.811 0Z' fill='%23000'/%3E %3C/svg%3E");
 
@@ -673,6 +723,12 @@ table { border-collapse: collapse; border-spacing: 0; }
 
 :focus-visible { outline: 2px solid $c-green; outline-offset: 2px; }
 
+// The dialog itself takes initial focus (main.js), which is what keeps the close
+// button from painting a ring the moment the modal appears. A container is not
+// an interactive control, so it gets no ring of its own.
+[role="dialog"][tabindex="-1"]:focus,
+[role="dialog"][tabindex="-1"]:focus-visible { outline: none; }
+
 // Inputs are the exception: focus is a border colour change. A dark green outline
 // on the footer's dark green ground is invisible anyway, and every input already
 // carries a border. ⚠ Checkboxes/radios are NOT included — native controls have no
@@ -711,6 +767,76 @@ select {
   // narrow → tablet, never by mobile → tablet.
   @include tablet { --pad-x: #{fluid($pad-x-mobile, $pad-x-desktop)}; }
   @include narrow { --pad-x: #{$pad-x-mobile}; }
+}
+
+// ==========================================================================
+// Vendor — Swiper 11.2.6 (MIT, swiperjs.com)
+// ==========================================================================
+
+// Only the core layout and the fade effect, transcribed from swiper-bundle.css.
+// The bundle's own stylesheet is 18KB of navigation / pagination / eleven other
+// effects this build never renders, and assets/ takes no subdirectories, so the
+// used rules live here instead of a second file.
+// Placed above the components on purpose: .gb-product__stage restates `overflow`
+// and `border-radius` at the same specificity and has to win.
+
+.swiper {
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  overflow: hidden;
+  list-style: none;
+  padding: 0;
+  z-index: 1;
+  display: block;
+}
+
+.swiper-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  display: flex;
+  transition-property: transform;
+  transition-timing-function: var(--swiper-wrapper-transition-timing-function, initial);
+  box-sizing: content-box;
+}
+
+.swiper-android .swiper-slide,
+.swiper-ios .swiper-slide,
+.swiper-wrapper { transform: translate3d(0, 0, 0); }
+
+.swiper-horizontal { touch-action: pan-y; }
+.swiper-vertical   { touch-action: pan-x; }
+
+.swiper-slide {
+  flex-shrink: 0;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transition-property: transform;
+  display: block;
+}
+
+// Fade: the slides stack and only the active one takes pointer events. Swiper
+// writes transition-duration inline from its `speed` option; the curve is ours,
+// so the cross-fade keeps the ease it had before the swap.
+.swiper-fade .swiper-slide {
+  pointer-events: none;
+  transition-property: opacity;
+  transition-timing-function: $ease-out;
+}
+.swiper-fade .swiper-slide .swiper-slide { pointer-events: none; }
+.swiper-fade .swiper-slide-active { pointer-events: auto; }
+.swiper-fade .swiper-slide-active .swiper-slide-active { pointer-events: auto; }
+
+// Swiper sets .swiper-backface-hidden on the container by default, so this rule
+// is not optional decoration -- leaving it out makes the class inert and the
+// build quietly diverge from the vendor stylesheet. It follows the translate3d
+// rule above for the same reason it does in the bundle: it has to win.
+.swiper-backface-hidden .swiper-slide {
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 // ==========================================================================
@@ -1066,6 +1192,13 @@ html.js {
   line-height: 28px;
   letter-spacing: -0.36px;      // -2% of 18
   color: $c-gray-700;
+
+  @include narrow { font-size: 16px; line-height: 24px; letter-spacing: -0.32px; }
+  @include tablet {
+    font-size: fluid(16px, 18px);
+    line-height: fluid(24px, 28px);
+    letter-spacing: fluid(-0.32px, -0.36px);
+  }
 }
 
 // The component's `image 15` — a grey rectangle, exactly like the reels and the
@@ -1226,6 +1359,11 @@ $nl-ease-out: $ease-in-out;
   z-index: $z-modal;
   visibility: hidden;
   transition: visibility 0s linear $nl-fade-out;
+  // How long the exit runs. main.js holds the scroll lock this long after
+  // `is-open` drops: give the scrollbar back while the panel is still on screen
+  // and this fixed box -- whose containing block is the viewport -- narrows by
+  // the scrollbar width under it, sliding the centred panel sideways mid-fade.
+  --modal-exit: #{$nl-fade-out};
 
   &.is-open {
     visibility: visible;
@@ -1443,6 +1581,9 @@ $nl-ease-out: $ease-in-out;
   display: flex;
   flex-direction: column;
   gap: 20px;
+
+  @include narrow { gap: 24px; }
+  @include tablet { gap: fluid(24px, 20px); }
 }
 
 .gb-nl-facts {
@@ -1529,6 +1670,12 @@ $nl-ease-out: $ease-in-out;
 
 // Ingredient List pane -----------------------------------------------------
 // Rule weights are the Figma line strokes: 4.05 top, 1.93 section, 0.64 rows.
+// The phone board (336:31181) is the desktop table (336:34136) multiplied by
+// 0.741529 throughout — the type (9.5368 / 12.861) and all three rule weights
+// (3 / 4.0457, 1.4305 / 1.9292, 0.4768 / 0.6431) land on that same factor, so
+// the paddings and column widths follow it rather than being guessed.
+// Figma's "line-height 100%" on these nodes is its auto leading, which for
+// PP Palma is 1.26 — the node itself reports 12.0163px, not 9.54.
 .gb-nl-table {
   width: 100%;
   border-collapse: collapse;
@@ -1538,12 +1685,26 @@ $nl-ease-out: $ease-in-out;
   line-height: 16.2px;
   text-align: left;
 
+  @include narrow { font-size: 9.54px; line-height: 12.02px; }
+  @include tablet { font-size: fluid(9.54px, 12.9px); line-height: fluid(12.02px, 16.2px); }
+
   caption {
     padding: 8px 0 6px;
     border-top: 4.05px solid $c-lime;
     border-bottom: 1.93px solid $c-lime;
     font-weight: 500;
     text-align: left;
+
+    @include narrow {
+      padding: 5.93px 0 4.45px;
+      border-top-width: 3px;
+      border-bottom-width: 1.43px;
+    }
+    @include tablet {
+      padding: fluid(5.93px, 8px) 0 fluid(4.45px, 6px);
+      border-top-width: fluid(3px, 4.05px);
+      border-bottom-width: fluid(1.43px, 1.93px);
+    }
   }
 
   th,
@@ -1551,18 +1712,47 @@ $nl-ease-out: $ease-in-out;
     padding: 7px 0;
     border-bottom: 0.64px solid $c-lime;
     font-weight: inherit;
+
+    @include narrow { padding: 5.19px 0; border-bottom-width: 0.48px; }
+    @include tablet { padding: fluid(5.19px, 7px) 0; border-bottom-width: fluid(0.48px, 0.64px); }
   }
 
-  td { width: 72px; }
+  // ⚠ The columns are the one thing that does NOT follow the 0.7415 factor. The
+  // phone board's row frame (336:31186) is 427.72 wide inside a 350 container,
+  // and its SPACE_BETWEEN runs in that oversized box — so the value group lands
+  // at 278.95 from the left, not at 350 - 148.77. Scaling the desktop widths
+  // instead puts both numbers ~77 too far left. Measured off the board:
+  // "15 g" starts at 278.95 and "5%" at 331.28, i.e. 52.33 + 18.72 of the 350.
+  td {
+    width: 72px;
 
-  td:last-child { width: 128px; }
+    @include narrow { width: 52.33px; }
+    @include tablet { width: fluid(52.33px, 72px); }
+  }
+
+  td:last-child {
+    width: 128px;
+
+    @include narrow { width: 18.72px; }
+    @include tablet { width: fluid(18.72px, 128px); }
+  }
 
   tbody tr:last-child th,
-  tbody tr:last-child td { border-bottom-width: 1.93px; }
+  tbody tr:last-child td {
+    border-bottom-width: 1.93px;
+
+    @include narrow { border-bottom-width: 1.43px; }
+    @include tablet { border-bottom-width: fluid(1.43px, 1.93px); }
+  }
 }
 
 // Design indents sub-rows with three leading spaces; HTML collapses those
-.gb-nl-table .gb-nl-table__sub { padding-left: 11px; }
+.gb-nl-table .gb-nl-table__sub {
+  padding-left: 11px;
+
+  @include narrow { padding-left: 8.16px; }
+  @include tablet { padding-left: fluid(8.16px, 11px); }
+}
 
 .gb-nl-notes {
   margin-top: 8px;
@@ -1570,6 +1760,13 @@ $nl-ease-out: $ease-in-out;
   font-size: 13.1px;
   font-weight: 300;
   line-height: 17px;
+
+  @include narrow { margin-top: 5.93px; font-size: 9.71px; line-height: 12.61px; }
+  @include tablet {
+    margin-top: fluid(5.93px, 8px);
+    font-size: fluid(9.71px, 13.1px);
+    line-height: fluid(12.61px, 17px);
+  }
 }
 
 // html is the scroll container here (the reset puts overflow-x on it),
@@ -1582,8 +1779,12 @@ $nl-ease-out: $ease-in-out;
 html.is-modal-open,
 body.is-modal-open {
   overflow: hidden;
-  padding-right: var(--scrollbar-w, 0px);
 }
+
+// The scrollbar goes away once, so the freed width is padded back ONCE. html is
+// the scrolling element and its padding already narrows body; padding body too
+// spends the width twice and pulls a centred layout left by half a scrollbar.
+html.is-modal-open { padding-right: var(--scrollbar-w, 0px); }
 
 // Reel video lightbox ------------------------------------------------------
 // The design has no lightbox for the reels — the cards are grey Video
@@ -1600,6 +1801,11 @@ $rv-in: 0.28s;
   z-index: $z-modal;
   visibility: hidden;
   transition: visibility 0s linear $rv-in;
+  // How long the exit runs. main.js holds the scroll lock this long after
+  // `is-open` drops: give the scrollbar back while the panel is still on screen
+  // and this fixed box -- whose containing block is the viewport -- narrows by
+  // the scrollbar width under it, sliding the centred panel sideways mid-fade.
+  --modal-exit: #{$rv-in};
 
   &.is-open {
     visibility: visible;
@@ -1656,8 +1862,13 @@ $rv-in: 0.28s;
   height: 100%;
   background: $c-gray-200;
   color: $c-ink;
+  // Client-set. The design has no hover for this placeholder (it has no
+  // lightbox at all), so the colour is the house accent -- see PROJECT-STATUS.
+  transition: trans(color);
 
   svg { width: 85px; height: 53px; }
+
+  @include hover { color: $c-green; }
 }
 
 .gb-rv-panel__close {
@@ -1708,6 +1919,11 @@ $promo-fade-out: 0.5s;
   z-index: $z-modal;
   visibility: hidden;
   transition: visibility 0s linear $promo-fade-out;
+  // How long the exit runs. main.js holds the scroll lock this long after
+  // `is-open` drops: give the scrollbar back while the panel is still on screen
+  // and this fixed box -- whose containing block is the viewport -- narrows by
+  // the scrollbar width under it, sliding the centred panel sideways mid-fade.
+  --modal-exit: #{$promo-fade-out};
 
   &.is-open {
     visibility: visible;
@@ -1736,6 +1952,8 @@ $promo-fade-out: 0.5s;
   justify-content: center;
   pointer-events: none;
 
+  // Client-set: the panel floats from 768 up, so the gutter starts there too.
+  @include tablet { padding: 24px; }
   @include pc { padding: 24px; }
 }
 
@@ -1760,6 +1978,20 @@ $promo-fade-out: 0.5s;
   .gb-promo-modal.is-open & {
     opacity: 1;
     transition: opacity $promo-fade $promo-ease;
+  }
+
+  // Client-set: full-screen is for phones only. 768-1280 has no board, and
+  // shrinking the desktop card is not an option -- its two 531 columns carry the
+  // bear art at px offsets solved for that width, so a narrower column crops it.
+  // This tier shows the PHONE board at its own size instead: 285:19373 is
+  // 390x744 and every value in the stacked layout (art 252, the bears, the 71
+  // wave inset) is already solved for 390, space-between included -- 744 - 460 -
+  // 252 is the board's own 32 gap. Width and tier are decision AT.
+  @include tablet {
+    width: 390px;
+    height: 744px;
+    max-height: 100%;
+    border-radius: $r-xl;
   }
 
   @include pc {
@@ -1820,6 +2052,13 @@ $promo-fade-out: 0.5s;
     bottom: 0;
     background: $c-cream;
   }
+
+  // The card is pinned to the phone board's 390 in this tier, so its wave has to
+  // be pinned with it: --sc-w is a viewport ramp, and an unpinned one draws a
+  // desktop-scale wave inside a phone-size card (1280 measured a 268.8 pitch
+  // against the board's 144.85). 144.64 is the ramp's own floor, i.e. the value
+  // every phone width already resolves to.
+  @include tablet { --sc-w: 144.64px; }
 
   @include pc {
     order: 0;
@@ -2184,21 +2423,33 @@ $promo-fade-out: 0.5s;
 // ⚠ The idle float belongs to the STATISTICS bear only. The footer CTA's two
 // decorative bears are plain `wowo fadeIn delay-in-1 / delay-in-3` now, so the
 // --sm / --d2 variants and their keyframes were deleted rather than kept "in case".
-// Two users left: .gb-hero__art (--still, entry only) and .gb-stats__bear (--d1).
+// Two users left: .gb-hero__art (--hero, fade + drift) and .gb-stats__bear (--d1).
 
-// Entry only, no idle drift. The hero bear uses this: notes 401:29596 / 216:5903
-// ask for the float on the STATISTICS bear, and the client asked for the banner
-// to hold still. Opacity only — the old translate/scale/rotate entry is gone.
+// Entry only, no idle drift. NO USERS since round 39 — the hero bear moved to
+// --hero below. Kept as the way back if the client reverses again.
 //
-// ⚠ Cost to know about: this bear is the homepage LCP element (399,727 px²). A
-//   transparent element is not an LCP candidate, so LCP lands when the fade ends.
-//   0.7s duration / 0.2s delay keeps that at ~0.9s. To trade back, point this at
-//   `gm-art-in-opaque` (the transform version, keyframes still present).
+// ⚠ Cost to know about: the hero bear is the homepage LCP element (399,727 px²).
+//   A transparent element is not an LCP candidate, so LCP lands when the fade
+//   ends. 0.7s duration / 0.2s delay keeps that at ~0.9s. To trade back, point
+//   this at `gm-art-in-opaque` (the transform version, keyframes still present).
 //   The animation goes on .gb-hero__art (the div around <picture>), never the
 //   <img> — the image carries its own rotate(7.92deg) and the two would collide.
 .gb-float-art--still {
   animation: gm-art-fade-in 0.7s #{$ease-out} 0.2s both;
   animation-composition: replace;
+}
+
+// Hero bear: the fade-in above plus the idle drift. Round 8 removed the float
+// here and round 33 cut the entry down to a fade; the client asked for the
+// drift back in round 39 knowing both. Two separate animations rather than one
+// keyframe set, so the LCP note above still holds — opacity is done at 0.9s no
+// matter how long the float runs. The float starts as the fade lands.
+.gb-float-art--hero {
+  animation:
+    gm-art-fade-in 0.7s #{$ease-out} 0.2s both,
+    gm-art-float 5s var(--e-sine-io) 0.9s infinite;
+  animation-composition: replace, add;
+  will-change: transform, opacity;
 }
 
 @keyframes gm-art-fade-in {
@@ -2756,7 +3007,7 @@ $line-descend: 0.12em;
   // panel; on mobile the panel slides instead, so match that one there.
   transition: background-color $t-panel $ease-in-out;
 
-  @include narrow { transition: background-color $t-slow $ease-out; }
+  @include narrow { transition: background-color $t-drawer $ease-drawer; }
 
   &.is-open { background: $c-cream; }
 }
@@ -2812,14 +3063,13 @@ $line-descend: 0.12em;
   }
 }
 
+// Client-set: no hover. The house rule wants every clickable thing to react,
+// so this link is a deliberate exception -- logged in PROJECT-STATUS.
 .gb-header__logo {
   justify-self: center;
   display: block;
-  transition: trans(opacity);
 
   svg { width: 124px; height: 32px; }
-
-  @include hover { opacity: 0.75; }
 
   @include narrow {
     svg { width: 93px; height: 24px; }
@@ -2878,24 +3128,71 @@ $line-descend: 0.12em;
 
   .gb-header.is-open & { grid-template-rows: 1fr; }
 
-  // Mobile: a full-width drawer anchored under the header rather than a
-  // dropdown. top: 100% keeps it glued to the bar instead of a fixed offset.
+  // Mobile: a full-viewport drawer, not a dropdown under the bar. Board
+  // 283:14915 starts it at the very top of the viewport, over the announcement
+  // strip and the account / cart icons, and gives it its own close + logo row —
+  // so it is fixed rather than anchored to the header, and --drawer-h is gone.
+  // The header is sticky, not transformed, so it is not a containing block for
+  // this fixed child.
   @include narrow {
-    position: absolute;
-    top: 100%;
-    // Once sticky, the header's distance to the viewport top changes with scroll
-    // (it drops to zero when the announcement bar leaves), so the drawer's usable
-    // height has to be measured — main.js writes --drawer-h on open and on resize.
-    // The fallback is the at-top case.
-    height: var(--drawer-h, calc(100svh - #{$h-announcement-mobile + $h-header-mobile}));
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100svh;
+    z-index: $z-overlay;           // over .gb-header__bar, under the modals
     border-radius: 0;
+    border-bottom: 0;
     display: block;
     transform: translateX(-100%);
-    transition: transform $t-slow $ease-out;
+    transition: transform $t-drawer $ease-drawer;
+    // main.js holds the scroll lock this long on close. Only the phone tier
+    // needs it: the lock itself is scoped to `narrow`, and above it this is a
+    // dropdown that never locks anything. ⚠ The slide is $t-drawer, NOT the
+    // $t-panel the desktop dropdown uses.
+    --modal-exit: #{$t-drawer};
     overflow-y: auto;
+    overscroll-behavior: contain;  // the page under it is locked; don't chain
 
     .gb-header.is-open & { transform: translateX(0); }
   }
+}
+
+// Mobile only: the drawer covers the bar, so it carries its own close button
+// and logo. Board 283:14915 puts the close at the left gutter and the logo
+// optically centred — the same three-column grid as .gb-header__bar.
+.gb-header__panel-bar {
+  display: none;
+
+  @include narrow {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    // 9 (the inner's padding-top) + 12 + 24 icon + 12 = the board's 64 bar, and
+    // puts the close icon's centre 33 from the top against the board's 32.
+    padding: 12px 0;
+  }
+}
+
+.gb-header__panel-close {
+  justify-self: start;
+  display: block;
+  color: $c-green;
+  transition: trans(opacity, transform);
+
+  svg { display: block; width: 24px; height: 24px; }
+
+  @include hover { opacity: 0.6; }
+  &:active { transform: scale(0.92); }
+}
+
+.gb-header__panel-logo {
+  justify-self: center;
+  display: block;
+  transition: trans(opacity);
+
+  svg { display: block; width: 93px; height: 24px; }
+
+  @include hover { opacity: 0.75; }
 }
 
 // Bare clipping layer: padding on the grid item would keep the 0fr row open
@@ -2918,11 +3215,11 @@ $line-descend: 0.12em;
   @include narrow {
     flex-direction: column;
     align-items: stretch;
-    gap: 32px;
-    padding-top: 24px;
+    gap: 15px;
+    padding-top: 9px;
     padding-bottom: 40px;
   }
-  @include tablet { padding-top: fluid(24px, 32px); padding-bottom: fluid(40px, 32px); }
+  @include tablet { padding-top: fluid(9px, 32px); padding-bottom: fluid(40px, 32px); }
 }
 
 .gb-header__nav {
@@ -2932,6 +3229,12 @@ $line-descend: 0.12em;
   width: 304px;
 
   @include narrow { width: 100%; order: 2; }
+
+  // The drawer is full-bleed, so without a cap this button ran the whole 727 at
+  // 767. No board value exists (390 draws it at the full 350); 520 is the same
+  // cap .gb-product__cta carries, and 390 stays under it either way. Left-
+  // aligned on purpose -- an auto margin would centre it away from the links.
+  .gb-btn.gb-btn--lg { max-width: 520px; }
 }
 
 .gb-header__links {
@@ -3137,9 +3440,18 @@ a.gb-header__link {
   @include tablet { width: fluid(32px, 37px); height: fluid(32px, 37px); }
 }
 
-// Locks the page while the mobile panel is open
+// Locks the page while the mobile drawer is open. Same shape as the modal lock
+// below: html carries the scroll, and killing the scrollbar widens the viewport
+// unless the freed width is padded back in. main.js measures --scrollbar-w while
+// the bar is still on screen.
+html.is-menu-open,
 body.is-menu-open {
   @include narrow { overflow: hidden; }
+}
+
+// Padded once, on the scrolling element only -- see the modal lock.
+html.is-menu-open {
+  @include narrow { padding-right: var(--scrollbar-w, 0px); }
 }
 
 // ==========================================================================
@@ -3182,9 +3494,14 @@ body.is-menu-open {
 
 // Right-anchored: a left percentage plus a fixed width overshoots the viewport
 // between 1200 and 1440. 3.41% is the same gap the Figma frame leaves.
+// Client-set: top as a percentage. ⚠ It resolves against .gb-footer-cta-wrap,
+// whose height is the CTA copy block rather than a design constant, so the bear
+// now moves with the copy. Both values are anchored on their own board and are
+// exact there (1440: 408/573.94; 390: 457/524.02); away from the boards the bear
+// drifts -- measured -7.4 at 1281 and up to +56 at 320. See PROJECT-STATUS AK.
 .gb-deco-bear--b {
   right: 3.41%;
-  top: 408px;
+  top: 71.087%;
   width: 440px;
 
   @include tight { width: 340px; }
@@ -3195,7 +3512,11 @@ body.is-menu-open {
   // 188.34 x 165.68, 28.28 clear of the right edge, and its top lands 472 below
   // the wrapper's own top -- i.e. it hangs out of the bottom of this block. It
   // used to sit at 300 and 160 wide, which parked it across the CTA button.
-  @include narrow { width: 188px; right: 28px; top: 472px; }
+  // right as a percentage on the client's ask (28 / 390 = 7.18%), matching what
+  // --a and the base rule already do.
+  @include narrow { width: 188px; right: 7.18%; top: 87.211%; }
+  // px here on purpose: fluid() interpolates with calc() and a percentage cannot
+  // be ramped that way. 768-1280 therefore keeps the old absolute ramp.
   @include tablet { top: fluid(300px, 408px); }
 }
 
@@ -3205,8 +3526,13 @@ body.is-menu-open {
   padding: 96px 0;
   text-align: center;
 
-  @include narrow { padding: 64px 0; }
-  @include tablet { padding: fluid(64px, 96px) fluid(0, 0); }
+  // Board I236:12187;236:11720 runs 64 top and bottom. 52 is that 64 less the
+  // 12 the small scallop above still overshoots by on 390 (the standing
+  // --sc-band clamp item), the same correction .gb-science' padding-top makes.
+  // 78 is client-set off the screenshot. tablet re-anchored on both so 767/768
+  // stays continuous -- the scallop is still 12 over at 768, so 52 holds there.
+  @include narrow { padding: 52px 0 78px; }
+  @include tablet { padding: fluid(52px, 96px) 0 fluid(78px, 96px); }
 }
 
 .gb-footer-cta__inner {
@@ -3243,6 +3569,11 @@ body.is-menu-open {
   line-height: 40px;
   letter-spacing: -0.36px;
   color: $c-green;
+
+  // 236:11722 sets 32 between the title frame and the supporting text; 23 is
+  // the desktop figure and was never given a mobile value of its own.
+  @include narrow { margin-bottom: 32px; }
+  @include tablet { margin-bottom: fluid(32px, 23px); }
 }
 
 .gb-footer-cta__text {
@@ -3287,6 +3618,12 @@ body.is-menu-open {
   background: $c-green-900;
   color: $c-lime-200;
   padding: 64px 0 48px;
+
+  // Board I236:12187;236:10665;187:3984 is 64 / 48. 52 is that 64 less the 12
+  // the scallop above overshoots by on 390, same correction as .gb-footer-cta.
+  // ⚠ 24 is client-set and halves the board's own 48 -- logged in PROJECT-STATUS.
+  @include narrow { padding: 52px 0 24px; }
+  @include tablet { padding: fluid(52px, 64px) 0 fluid(24px, 48px); }
 }
 
 .gb-footer__inner {
@@ -3331,13 +3668,21 @@ body.is-menu-open {
   @include tablet { font-size: fluid(16px, 18px); line-height: fluid(24px, 28px); letter-spacing: fluid(-0.32px, -0.36px); }
 }
 
+// The board stacks the footer as five Containers 48 apart (187:3984 itemSpacing
+// 48). The build groups them differently -- brand / middle / social / bottom on
+// .gb-footer__inner, with the newsletter inside middle -- so the 48 is made up
+// as inner's 32 plus a 16 margin on whichever child opens each gap. .gb-footer__
+// inner is a column at every width, so social and bottom ramp their 16 -> 0
+// against inner's own 32 -> 48 and read 48 throughout; the newsletter's is
+// narrow-only because middle is a wrapping row above 767 (see there).
 .gb-footer__middle {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 40px 80px;
 
-  @include narrow { flex-direction: column; gap: 32px; }
+  // 48 is the board's own gap between the newsletter Container and the links one
+  @include narrow { flex-direction: column; gap: 48px; }
 }
 
 .gb-footer__newsletter {
@@ -3348,7 +3693,10 @@ body.is-menu-open {
   flex-shrink: 0;
 
   @include stack { width: 340px; }
-  @include narrow { width: 100%; }
+  // narrow only: above 767 .gb-footer__middle is a wrapping ROW and this margin
+  // would drop the newsletter 16 below the link columns beside it instead of
+  // opening the gap above the block. 767/768 already re-lays that whole row.
+  @include narrow { width: 100%; max-width: 340px; margin-top: 16px; }   // client-set
 }
 
 .gb-footer__label {
@@ -3412,17 +3760,16 @@ body.is-menu-open {
   justify-content: flex-end;
   gap: 22px;
 
-  // Below 1024 .gb-footer__middle wraps and this block gets a full row of its
-  // own; flex-end then parks it against the right edge with a ~260px hole on the
-  // left. At 1024 itself the box is exactly filled, so this is a no-op there.
-  @include stack { justify-content: flex-start; }
-
   @include narrow {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 32px;
   }
-  @include tablet { gap: fluid(32px, 24px); }
+  // .gb-footer__middle wraps below 1281 and this block takes a row of its own;
+  // flex-end parks it against the right edge with a ~260px hole on the left.
+  // Reversed twice (r39 to flex-end, r42 back) -- read the changelog before
+  // flipping again. Narrow needs no rule: two 1fr tracks leave no free space.
+  @include tablet { justify-content: flex-start; gap: fluid(32px, 24px); }
   // The board runs the last column 2px past the content edge — desktop only
   @include pc { margin-right: -2px; }
 }
@@ -3434,7 +3781,11 @@ body.is-menu-open {
   width: 194px;
 
   @include tight { width: auto; min-width: 140px; }
-  @include narrow { min-width: 0; }
+  // Client-set 12, which matches the 12 between the links themselves
+  // (187:4014 itemSpacing). The board's mobile columns carry no heading of
+  // their own, so its 16 on 187:4012 sits on a single child and never renders.
+  @include narrow { min-width: 0; gap: 12px; }
+  @include tablet { gap: fluid(12px, 16px); }
 }
 
 .gb-footer__links {
@@ -3470,6 +3821,11 @@ body.is-menu-open {
   display: flex;
   flex-direction: column;
   gap: 16px;
+
+  // Opens .gb-footer__inner's 32 out to the board's 48; ramps to 0 as that gap
+  // reaches 48 on its own at 1280.
+  @include narrow { margin-top: 16px; }
+  @include tablet { margin-top: fluid(16px, 0px); }
 }
 
 .gb-footer__social-list {
@@ -3492,6 +3848,10 @@ body.is-menu-open {
   display: flex;
   flex-direction: column;
   gap: 32px;
+
+  // Same 32 + 16 = the board's 48, see .gb-footer__social
+  @include narrow { margin-top: 16px; }
+  @include tablet { margin-top: fluid(16px, 0px); }
 }
 
 .gb-footer__divider {
@@ -3570,7 +3930,13 @@ body.is-menu-open {
   margin-inline: auto;
   padding-inline: 110px;
 
-  @include stack { gap: 48px; padding-inline: var(--pad-x); }
+  // Below 1281 the board's 110 gutter and 84 gap both hand over to a ramp, so
+  // the two columns stop being squeezed by the chrome around them. The ramp
+  // meets the phone values at 768 and the board values at 1281, so neither
+  // boundary steps — the old `stack` version jumped the gutter 110 → 49.9 at
+  // 1025 and left 1025–1280 on the full desktop chrome, which is exactly the
+  // band the client called crowded.
+  @include tablet { gap: fluid(24px, 84px); padding-inline: var(--pad-x); }
   @include narrow {
     flex-direction: column-reverse;
     align-items: stretch;
@@ -3579,15 +3945,23 @@ body.is-menu-open {
   }
 }
 
+// The two columns share one basis pair, 566 : 570, straight off the board. At
+// 1440 they add up with the gap to exactly the 1220 content box, so nothing
+// grows or shrinks there; below it they give way together instead of one of
+// them eating the other. `width` is gone from both — a width alongside a
+// shrinkable basis is what made this rigid in the first place.
 .gb-page-hero__text {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  width: 566px;
-  flex: 0 1 566px;
+  flex: 1 1 566px;
+  min-width: 0;
 
-  @include stack { width: auto; flex: 1 1 auto; }
-  @include narrow { gap: 16px; }
+  // ⚠ The inner turns column-reverse here, so the main axis is vertical and that
+  // 566 basis would be read as a HEIGHT — it inflated the hero by ~390px on
+  // science / reviews before this line went in. The media below already had its
+  // own `flex: none` for the same reason.
+  @include narrow { flex: none; gap: 16px; }
   @include tablet { gap: fluid(16px, 24px); }
 }
 
@@ -3646,18 +4020,26 @@ body.is-menu-open {
 
 // The design ships a plain #d9d9d9 rectangle here — no photography exists yet,
 // so the placeholder stays a placeholder (docs/PROJECT-STATUS.md, content rule).
+// ⚠ This used to be `flex: 0 0 570px` down to 1025 and `flex: 1 1 0` below it,
+// which broke in both directions: above 1024 the rigid 570 starved the text
+// (243.8 wide at 1100, a six-line title), and below it a basis of 0 against the
+// text's `auto` collapsed the picture to 119.8 x 90.3 — the image was all but
+// gone at 1024. One shrinkable basis, paired with the text's, fixes both.
 .gb-page-hero__media {
-  flex: 0 0 570px;
-  width: 570px;
+  flex: 1 1 570px;
   aspect-ratio: 570 / 430;
   border-radius: 26px;
   background: $c-gray-200;
   overflow: hidden;
 
-  @include stack { flex: 1 1 0; width: auto; }
+  // Client-set cap. 390 is unaffected (350 content), so this only bites on the
+  // 571-767 band; auto margins centre it there because the inner is stretch and
+  // a definite width would otherwise park it hard left.
   @include narrow {
     flex: none;
     width: 100%;
+    max-width: 570px;
+    margin-inline: auto;
     aspect-ratio: 350 / 264;
     border-radius: $r-lg;
   }
@@ -3719,12 +4101,6 @@ body.is-menu-open {
   }
 }
 
-// 324:70523 sets this line in the coral the cross marks use; 324:69636 leaves
-// it near-black. Each board keeps its own colour until the designer settles it.
-.gb-page-hero__lead--coral-mobile {
-  @include narrow { color: $c-coral; }
-}
-
 // Text-only variant (FAQ / Get in Touch / Referral / Privacy). The copy is
 // centred and there is no media column.
 .gb-page-hero--text {
@@ -3736,10 +4112,11 @@ body.is-menu-open {
 // sets its own heading size on mobile (36/40, not the 30/36 the other boards
 // use). faq / get-in-touch / privacy-policy / referral / shipping use this.
 .gb-page-hero--center {
-  padding: 64px 0 calc(70px + var(--sc-h));
+  --hero-wave: var(--sc-h);
+  padding: 64px 0 calc(70px + var(--hero-wave));
 
-  @include narrow { padding: 32px 0 calc(64px + var(--sc-h)); }
-  @include tablet { padding: fluid(32px, 64px) fluid(0, 0) calc(fluid(64px, 70px) + var(--sc-h)); }
+  @include narrow { padding: 32px 0 calc(64px + var(--hero-wave)); }
+  @include tablet { padding: fluid(32px, 64px) fluid(0, 0) calc(fluid(64px, 70px) + var(--hero-wave)); }
 
   .gb-page-hero__inner { justify-content: center; }
 
@@ -3765,15 +4142,10 @@ body.is-menu-open {
   }
 }
 
-// how-gumi-works / our-story use the same --center layout with the large scallop.
-// The two axes are independent (same relationship as --lg and --down on the wave
-// itself), so a separate modifier overrides padding-bottom and nothing else.
-.gb-page-hero--center.gb-page-hero--lg {
-  padding-bottom: calc(96px + var(--sc-lg-h));
-
-  @include narrow { padding-bottom: calc(64px + var(--sc-lg-h)); }
-  @include tablet { padding-bottom: calc(fluid(64px, 96px) + var(--sc-lg-h)); }
-}
+// how-gumi-works / our-story run the same --center padding over the large
+// scallop. Only the wave size differs, so this carries no values of its own --
+// the section cannot read the wave's size off its own child.
+.gb-page-hero--lg { --hero-wave: var(--sc-lg-h); }
 
 // A line break the mobile board draws (U+2028) where the desktop board runs the
 // line on. Width alone cannot reproduce it: 236:10402's 350 measure still fits
@@ -4149,6 +4521,20 @@ body.is-menu-open {
 .gb-logo-scroll__img--wellbeing { height: 36px; }   // design ink 158x36
 .gb-logo-scroll__img--vogue     { height: 40px; }   // design ink 143x40
 
+// Mobile takes one slot-sized box for all three instead of a per-logo height.
+// Sized by ink height, the widest wordmark stays its full 166 (ABC) against the
+// client's 106 slot and the 30px seam cannot absorb the 60 of overhang, so the
+// logos overlapped their neighbours. contain is load-bearing: 106x44 applied
+// raw would stretch all three (ink ratios 4.88 / 4.39 / 3.58), so each fits to
+// 106 wide and keeps its own height, centred on the shared line as before.
+@include narrow {
+  .gb-logo-scroll__img {
+    width: 106px;
+    height: 44px;
+    object-fit: contain;
+  }
+}
+
 @keyframes logo-scroll {
   from { transform: translateX(0); }
   to   { transform: translateX(-100%); }   // exactly one group, seam included
@@ -4277,6 +4663,12 @@ body.is-menu-open {
   .gb-stat--benefits    { order: 5; }
 }
 
+// Client-set off the 390 screenshot: the 6g column drops 24 against 10+ beside
+// it. The grid is align-items:start, so this moves that one column only.
+@include narrow {
+  .gb-stat--fibre { margin-top: 24px; }
+}
+
 .gb-stat__value {
   font-family: $font-brand-stack;
   font-size: 47px;
@@ -4369,18 +4761,19 @@ body.is-menu-open {
 
   svg { width: 100%; height: auto; display: block; }
 
-  // 768-1024 runs the mobile two-column grid at desktop-ish widths: the bear
-  // slot stays 208px while the columns grow, so bear-anchored arrows drift far
-  // from the copy they point at. No board covers that band -- stay hidden.
-  @include stack { display: none; }
-
+  // 768-1024 runs the mobile two-column grid at desktop-ish widths and no board
+  // covers that band, so these used to stay hidden there. Client asked for them
+  // from 1024 down: the arrows are anchored on the BEAR SLOT, which holds at
+  // 208 x 257.42 across the whole stack tier, so the mobile geometry transfers
+  // unchanged -- only the columns beside it are wider.
+  //
   // The SVGs carry the DESKTOP stroke (Figma OUTSIDE 1.78036, doubled to 3.56071
   // because SVG only centres strokes). Scaling one down to the mobile ink size
   // scales its stroke with it -- 1.70px rendered against the board's own
   // OUTSIDE 1.1499 (= 2.2998 centred), i.e. 26% too thin, which reads as a
   // smaller, weaker arrow rather than a thinner one. non-scaling-stroke takes
   // the width out of the transform so the value below IS the rendered width.
-  @include narrow {
+  @include stack {
     display: block;
 
     path {
@@ -4421,7 +4814,7 @@ body.is-menu-open {
 // from each arrow's centre so the bear's glow is not measured with it), and left/
 // top are anchored on the BEAR SLOT on both sides so the stats block's own drift
 // down the page does not fold into the offset.
-@include narrow {
+@include stack {
   // 243:28620  ink 52 x 64 measured
   .gb-stats__arrow--1 {
     left: 8.60%;   top: -10.94%;  width: 35.72%;
@@ -4467,17 +4860,17 @@ body.is-menu-open {
     order: 3;
     grid-column: 1 / -1;
     justify-self: center;
-    width: 208px;
-    margin: 0 auto;
-  }
 
-  // 243:28608 gives the bear 109 of clear above and 107 below, and that space is
-  // what the four arrows hang in -- with them hidden the mobile grid came out
-  // 128 short of the board's 845.34. The grid's own 32 row gap covers part of it;
-  // the rest is split 50.6/49.4 the way the board splits it, which lands the grid
-  // on 845.4. (The board's own copy blocks are a touch shorter than the build's,
-  // so matching its two clearances literally overshot the total by 24.)
-  @include narrow { margin: 65px auto 63px; }
+    // 243:28608 gives the bear 109 of clear above and 107 below, and that space
+    // is what the four arrows hang in. Was 65/63 -- the board's own 50.6/49.4
+    // split of what its 32 row gap leaves, which landed the grid on 845.4
+    // against the board's 845.34. The client re-measured off the screenshot and
+    // asked for 78/48 (2px tighter in total, and it moves the split upward).
+    // On the stack tier rather than narrow because the arrows now show from
+    // 1024 down and need the same room to hang in there.
+    width: 208px;
+    margin: 78px auto 48px;
+  }
 }
 
 // Only the photo floats: an inner wrapper takes .gb-float-art, the four arrows
@@ -4507,13 +4900,14 @@ body.is-menu-open {
   // the desktop board has no counterpart for, so 390 draws the mirror image.
   // tools/bearmatch.py scores the board outline against images/stats-bear.png:
   // desktop 0.750 as-is / 0.484 mirrored, mobile 0.476 as-is / 0.695 mirrored.
-  // No left correction needed -- the ink sits 5.4 / 6.1 from the slot's two
-  // edges, so flipping about the centre moves it 0.7px.
-  @include narrow { transform: scaleX(-1); }
+  // The mirror alone moves the ink 0.7px, so this used to keep the desktop -46.2.
+  // Client-set -39.2 off the screenshot: +7% of the 208 slot = 14.6px right,
+  // which re-centres the mirrored artwork in the slot.
+  @include narrow { left: -39.2%; transform: scaleX(-1); }
 }
 
 .gb-stats__note {
-  margin-top: -30px;
+  margin-top: -34px;   // client-set
   max-width: 640px;
   font-size: 20px;
   line-height: 30px;
@@ -4557,14 +4951,23 @@ body.is-menu-open {
   position: absolute;
   left: 81.28%;
   top: -59.61px;
-  width: 7.36%;
-  aspect-ratio: 387 / 583;
+  // Client-set: px, not the 7.36% this used to be. The percentage was read off
+  // 1440 (7.36% = 106) and kept growing past it -- 141 at 1920. Height is the
+  // 387/583 slot ratio applied to that width, which is why aspect-ratio is gone.
+  width: 106px;
+  height: 159.68px;
   transform: translate(-50%, -50%) rotate(18.52deg);
   pointer-events: none;
 
   img { display: block; width: 100%; height: 100%; object-fit: contain; }
 
-  // fluid() is px-only, so percentages get no tablet tier.
+  // Both ends are px now, so this tier can finally ramp -- pinning pc alone
+  // would step 94 -> 106 across 1280/1281.
+  @include tablet {
+    width: fluid(81.6px, 106px);
+    height: fluid(122.93px, 159.68px);
+  }
+
   // Width is a fixed px here, not a percentage: narrow runs to 767 and 20.92%
   // of that is 160px against the board's own 81.6 -- the bear is only drawn on
   // the 390 board, so it does not grow with the viewport.
@@ -4572,6 +4975,7 @@ body.is-menu-open {
     left: 69.36%;
     top: -22.34px;
     width: 81.6px;
+    height: 122.93px;
     transform: translate(-50%, -50%) scaleX(-1) rotate(18.52deg);
   }
 }
@@ -4602,7 +5006,9 @@ body.is-menu-open {
   background: $c-cream;
   padding-bottom: 96px;
 
-  @include narrow { padding-bottom: 64px; }
+  // Client-set 64 on top, which overrides .gb-science's own 53 (that 53 was the
+  // board's 64 minus the 11 the build's taller wave adds back).
+  @include narrow { padding-top: 64px; padding-bottom: 64px; }
   @include tablet { padding-bottom: fluid(64px, 96px); }
 }
 
@@ -4615,8 +5021,12 @@ body.is-menu-open {
   // Client-specified. 324:56865 section 2 has itemSpacing 48 like section 1;
   // this pulls the card row up to the heading on the tight board only.
   .gb-science__inner { gap: 22px; }
-  @include narrow { .gb-science__inner { gap: 32px; } }
+  @include narrow { .gb-science__inner { gap: 48px; } }   // client-set
   @include tablet { .gb-science__inner { gap: fluid(32px, 22px); } }
+
+  // Client-set, and it stacks on the gap above rather than replacing it: 22 + 26
+  // at desktop, 48 + 26 on phones.
+  .gb-science__cards { margin-top: 26px; }
 }
 
 .gb-science__inner {
@@ -4674,13 +5084,37 @@ body.is-menu-open {
   gap: 24px;
   width: 100%;
 
-  // 3 → 2 → 1, and the thresholds fall exactly on the value tiers.
-  // A column holds .gb-bear-meter at its 347px max plus 2×32 padding = 411px,
-  // so three columns need ~1361px of viewport — wider than the whole tablet
-  // tier. Three columns therefore stay on pc only; the tier boundaries do the
-  // rest, no hand-computed threshold needed (was tablet-from(744px)).
-  @include narrow { grid-template-columns: 1fr; gap: 31px; }
-  @include tablet { grid-template-columns: repeat(2, 1fr); max-width: 848px; gap: fluid(31px, 24px); }
+  // 3 → 2 → 1. Client-set thresholds: two-up below 1200, one-up below 576.
+  // Column count is layout, so it hangs on the `tight` threshold; the gaps stay
+  // on their value tiers. max-width rides with the two-up state because it only
+  // ever constrains that state (575 < 848, so the one-up tier needs no reset).
+  // Two-up runs on FOUR tracks with every card spanning two: a span-2 card is
+  // 2c + g = (100% - g) / 2, exactly what repeat(2, 1fr) gives, and the spare
+  // half-track each side lets a lone third card sit centred instead of hugging
+  // the left edge. All three .gb-science__cards on the site hold exactly 3.
+  // ⚠ A column here is narrower than the 411px .gb-bear-meter wants (347 + 2×32);
+  // three-up from 1201 gives 371 at that width, so the meter shrinks below its
+  // max. Client-set threshold, see PROJECT-STATUS AI.
+  // ⚠ `tight` must stay ahead of `mobile`: both are max-width queries of equal
+  // specificity, so source order is the only thing keeping one column below 576.
+  @include tight {
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 848px;
+
+    > * { grid-column: span 2; }
+    > :last-child:nth-child(odd) { grid-column: 2 / span 2; }
+  }
+  // One column below 576. The spans MUST be reset: against a single track the
+  // implicit grid would build a second column out of them and put the cards
+  // back two-up.
+  @include mobile {
+    grid-template-columns: 1fr;
+
+    > *,
+    > :last-child:nth-child(odd) { grid-column: auto; }
+  }
+  @include narrow { gap: 31px; }
+  @include tablet { gap: fluid(31px, 24px); }
 }
 
 .gb-science-card {
@@ -4743,12 +5177,29 @@ body.is-menu-open {
   // applies, which at 56px pulls the figure noticeably tight
   letter-spacing: 0;
   color: $c-green;
-  text-shadow: ink-outline(0.125em, $c-lime);   // Figma: 7px @ 56px
+  // Client-set: 0.125em (Figma's 7px @ 56px) left the page ground showing inside
+  // the 0 and in the notch between "50" and "%" -- the counter's inscribed circle
+  // is wider than the dilation radius. 0.145em is the smallest step that closes
+  // every hole (measured: 272 stray px at 0.125, 61 at 0.135, 0 at 0.145) and
+  // grows the outline by 1.1px at 56. em, so the phone tier scales with it.
+  text-shadow: ink-outline(0.145em, $c-lime);
 
-  // No mobile override: 228:5932 keeps this at 56/44, same as desktop.
+  // Client-set, and it reverses the earlier "56/44 at every width" call: the
+  // phone tier now matches what 324:58044 draws on the nutrient cards. ls is
+  // given as -1%, which CSS has no unit for -- -0.36px is that at 36.
+  // The tablet ramp is not in the brief; without it 767/768 would jump 36 -> 56.
+  @include narrow { font-size: 36px; line-height: 40px; letter-spacing: -0.36px; }
+  @include tablet {
+    font-size: fluid(36px, 56px);
+    line-height: fluid(40px, 44px);
+    letter-spacing: fluid(-0.36px, 0px);
+  }
 }
 
 .gb-science-card__text {
+  // Client-set, unscoped in the brief while the line above it named the tight
+  // group explicitly -- so it applies to all six cards, index included.
+  margin-top: 6px;
   font-size: 16px;
   line-height: 24px;
   letter-spacing: -0.32px;
@@ -4767,6 +5218,8 @@ body.is-menu-open {
   gap: 8px 4px;
   width: 100%;
   max-width: 347px;
+
+  @include narrow { max-width: 100%; }   // client-set
 }
 
 .gb-bear-meter__bear {
@@ -4796,25 +5249,9 @@ body.is-menu-open {
   @include tablet { gap: fluid(12px, 22px); }
 }
 
-.gb-science-card--nutrient .gb-science-card__value {
-  @include narrow {
-    font-size: 36px;
-    line-height: 40px;
-    letter-spacing: -0.36px;
-    // 324:58062 strokes this node 7px OUTSIDE like every other figure -- the
-    // radius is absolute on both boards, so it cannot ride the em of a font
-    // size that halves. (It used to be `none` here, which read as a plain
-    // green figure against the board's lime-outlined one.)
-    text-shadow: ink-outline(7px, $c-lime);
-  }
-  // The size ramps but the stroke does not: 7px is what both boards set.
-  @include tablet {
-    font-size: fluid(36px, 56px);
-    line-height: fluid(40px, 44px);
-    letter-spacing: fluid(-0.36px, 0px);
-    text-shadow: ink-outline(7px, $c-lime);
-  }
-}
+// Client-set: one figure spec for every card at every width, so --nutrient
+// carries no size of its own. 324:58044 draws "50%" at 36/40 on the 390 board;
+// that is deliberately not followed.
 
 // ==========================================================================
 // Nutrition
@@ -4870,10 +5307,26 @@ body.is-menu-open {
   gap: 24px;
   @include container;
 
-  // 3 → 2 → 1 on the value tiers, same reasoning as .gb-science__cards
-  // (was tablet-from(704px)).
-  @include narrow { grid-template-columns: 1fr; gap: 32px; }
-  @include tablet { grid-template-columns: repeat(2, 1fr); max-width: 848px; gap: fluid(32px, 24px); }
+  // 3 → 2 → 1, same device and same client-set thresholds as
+  // .gb-science__cards (two-up below 1200, one-up below 576) — see the note
+  // there for why the column count hangs on `tight` and the gaps do not, and
+  // for why `tight` has to precede `mobile`.
+  @include tight {
+    grid-template-columns: repeat(4, 1fr);
+    max-width: 848px;
+
+    > * { grid-column: span 2; }
+    > :last-child:nth-child(odd) { grid-column: 2 / span 2; }
+  }
+  // See .gb-science__cards: the spans have to be reset for the single track.
+  @include mobile {
+    grid-template-columns: 1fr;
+
+    > *,
+    > :last-child:nth-child(odd) { grid-column: auto; }
+  }
+  @include narrow { gap: 32px; }
+  @include tablet { gap: fluid(32px, 24px); }
 }
 
 .gb-highlight-card {
@@ -4959,6 +5412,10 @@ body.is-menu-open {
   font-size: 16px;
   line-height: 24px;
   letter-spacing: -0.32px;
+
+  // Client-set: the card centres its text, but the 271 box itself used to hug
+  // the left edge, so short lines sat off-centre against the title above.
+  margin: 0 auto;
 
   // 228:8958 is ls 0 and 294 wide on 390; 271 is the desktop board's measure.
   // Client-set 283 — between the two, and no line moves either way: the widest
@@ -5081,8 +5538,11 @@ body.is-menu-open {
   // 243:22226 opens with paddingTop 32 and its first child (Product image,
   // 191:2214) adds another 20 -- the build has no element for that inner frame,
   // so the two collapse into one 52 here.
-  @include narrow { padding: 52px 0 calc(64px + var(--sc-h)); }
-  @include tablet { padding: fluid(52px, 96px) fluid(0, 0) calc(fluid(64px, 96px) + var(--sc-h)); }
+  // Client-set 46 at the foot. --lg and --page both restate padding-bottom in
+  // this tier, so the 46 reaches only the plain tiles (reviews / our-story /
+  // how-gumi-works) — which is exactly the :not() the brief named.
+  @include narrow { padding: 52px 0 calc(46px + var(--sc-h)); }
+  @include tablet { padding: fluid(52px, 96px) fluid(0, 0) calc(fluid(46px, 96px) + var(--sc-h)); }
 }
 
 .gb-product--lg {
@@ -5098,8 +5558,13 @@ body.is-menu-open {
 .gb-product--page {
   padding-bottom: calc(96px + var(--sc-lg-h));
 
-  @include narrow { padding-bottom: calc(64px + var(--sc-lg-h)); }
-  @include tablet { padding-bottom: calc(fluid(64px, 96px) + var(--sc-lg-h)); }
+  // The base .gb-product opens with 52 on mobile (the board's 32 + the inner
+  // frame's 20 collapsed into one). The PDP's own board starts at 20 instead.
+  @include narrow { padding-top: 20px; padding-bottom: calc(64px + var(--sc-lg-h)); }
+  @include tablet {
+    padding-top: fluid(20px, 96px);
+    padding-bottom: calc(fluid(64px, 96px) + var(--sc-lg-h));
+  }
 }
 
 .gb-product__inner {
@@ -5110,10 +5575,12 @@ body.is-menu-open {
   margin: 0 auto;
   padding: 0 20px;
 
-  @include stack { flex-direction: column; max-width: 560px; }
+  // Client moved this stack point from 1024 to 767 along with the other three.
   // Stacked, the gap stands in for the boards' own paddingBottom between the
   // three PDP frames (Product image / Details / USP), which is 32.
-  @include narrow { gap: 32px; }
+  // Client-set: the cap moves off the container and onto the media below, so the
+  // info column runs the full version width while the gallery stays 520.
+  @include narrow { flex-direction: column; gap: 32px; }
   @include tablet { gap: fluid(32px, 24px); }
 }
 
@@ -5122,24 +5589,38 @@ body.is-menu-open {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  width: 465px;
-  flex-shrink: 0;
+  // Shrinkable, not a rigid 465: the two columns now hold down to 767, and at
+  // 768 the pair needs 954 in a 728 box. A hard width here made the row
+  // overflow by 163 rather than letting both sides give. 1440 is unaffected —
+  // 465 + 24 + 465 exactly fills the content box, so there is nothing to shrink.
+  flex: 0 1 465px;
+  min-width: 0;
 
-  // 191:2214 itemSpacing 16 -- the gallery, then the nutritional-label button
-  @include stack { width: 100%; }
-  @include narrow { gap: 16px; }
+  // 191:2214 itemSpacing 16 -- the gallery, then the nutritional-label button.
+  // 520 is what the inner's old 560 cap left after its own 20+20 padding, so the
+  // gallery is unchanged at every width; only the info column below it is freed.
+  @include narrow { flex: none; width: 100%; max-width: 520px; margin-inline: auto; gap: 16px; }
   @include tablet { gap: fluid(16px, 24px); }
 }
 
-// The standalone PDP pins the gallery while the long info column scrolls
-// (handover note: "PDP product image sticky"). Only above tablet, where the
-// two halves still sit side by side.
-.gb-product--page .gb-product__media {
+// The gallery pins on the left while the long info column scrolls past it.
+// Client-set: every page that runs the two columns, not just the PDP, and from
+// 768 up -- the two halves sit side by side from there (the stack point is 767),
+// so pinning from 1281 left every laptop at exactly 1280 scrolling it away.
+.gb-product__media {
   @include pc {
     position: sticky;
     // The board's 24 is to the viewport top; with the header sticky that 24 sits
     // under it, so add the header's own height (fixed at $h-header in this tier)
     top: calc(#{$h-header} + 24px);
+    align-self: flex-start;
+  }
+
+  // Same offset, but the header's height ramps in this tier so the pin has to
+  // ramp with it.
+  @include tablet {
+    position: sticky;
+    top: calc(#{fluid($h-header-mobile, $h-header)} + 24px);
     align-self: flex-start;
   }
 }
@@ -5158,10 +5639,8 @@ body.is-menu-open {
   gap: 14px;
   min-width: 0;
 
-  // Layout thresholds carry arrangement only, never numbers -- a gap here would
-  // overlap the tablet tier again (round 29). 191:2214 is itemSpacing 16.
-  @include stack { flex-wrap: wrap; }
-  @include narrow { gap: 16px; }
+  // 191:2214 is itemSpacing 16.
+  @include narrow { flex-wrap: wrap; gap: 16px; }
   @include tablet { gap: fluid(16px, 14px); }
 }
 
@@ -5182,9 +5661,11 @@ body.is-menu-open {
 
   // Hanging outside only pays once the page is wide enough to hold the
   // overhang: .gb-product__inner is 995 max-width with 20px padding, so the media
-  // column starts at (W-995)/2 + 20 and the rail needs 62 of that. W >= 1080
-  // is break-even, but everything <= 1280 is narrow now (the two columns have
-  // already stacked and the thumbs run horizontally), so this follows pc.
+  // column starts at (W-995)/2 + 20 and the rail needs 62 of that, i.e. W >= 1080
+  // is break-even. Kept on pc anyway. Between 768 and 1280 the two columns are
+  // now side by side (client moved the stack point to 767), so the rail falls
+  // back to its base column INSIDE the media box — it costs the stage ~62px of
+  // width there (465 -> 403 at 1280) and that is the intended degradation.
   @include pc {
     position: absolute;
     top: 0;                        // design: rail top = image top
@@ -5193,8 +5674,8 @@ body.is-menu-open {
   }
 
   // 324:53792 turns the rail into a centred horizontal strip under the image
-  // once the two halves stack.
-  @include stack {
+  // once the two halves stack — which the client moved to 767.
+  @include narrow {
     flex-direction: row;
     justify-content: center;
     order: 2;
@@ -5222,15 +5703,16 @@ body.is-menu-open {
 
   @include hover { opacity: 0.75; }
 
-  @include stack { width: 52px; height: 52px; }   // 324:53792
+  @include narrow { width: 52px; height: 52px; }   // 324:53792
 }
 
-// Main stage — one slide at a time, cross-faded. It used to be a scroll-snap
-// rail, where one flick could cross several slides and the change was a shift, not
-// a fade. Slides are stacked absolutely now and only .is-active is opaque; JS
-// holds "one per gesture" by stepping +/-1 rather than measuring distance.
-// Without JS the first slide carries is-active in the markup so it is visible, but
-// the thumbnails do nothing — a cost of the cross-fade, not an omission.
+// Main stage — one slide at a time, cross-faded, driven by Swiper (client-set;
+// the same behaviour was hand-rolled here until then). The thumbnail rail is NOT
+// a second Swiper: it stays the plain scroller below and just calls slideTo, so
+// its scroll-snap and its Lenis exemption are untouched.
+// Without Swiper on the page the wrapper is still a flex row of full-width
+// slides, so slide one shows and the thumbnails do nothing — the same no-JS
+// state this had before.
 .gb-product__stage {
   position: relative;
   flex: 1 1 100%;
@@ -5246,17 +5728,20 @@ body.is-menu-open {
   @include tablet { border-radius: fluid(16px, 24px); }
 }
 
+// A .swiper-slide as well: the absolute stacking and the opacity tween that used
+// to live here are Swiper's now (its speed carries the duration, .swiper-fade the
+// curve). Reduced motion is handled at init -- speed 0 -- because the duration
+// arrives as an inline style the reset's !important rule cannot reach.
 .gb-product__image {
-  position: absolute;
-  inset: 0;
   background: $c-gray-200;
   border-radius: $r-xl;
-  opacity: 0;
-  transition: opacity $t-slow $ease-out;
+  // Client-set: the stage is draggable, so say so on the slide itself.
+  cursor: grab;
 
-  &.is-active { opacity: 1; }
+  &:active { cursor: grabbing; }
 
-  @media (prefers-reduced-motion: reduce) { transition-duration: 0.01ms; }
+  @include narrow { border-radius: $r-lg; }
+  @include tablet { border-radius: fluid($r-lg, $r-xl); }
 }
 
 .gb-product__label-btn {
@@ -5299,10 +5784,14 @@ body.is-menu-open {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  width: 465px;
+  flex: 0 1 465px;      // pairs with .gb-product__media — see the note there
+  min-width: 0;
   padding: 0 32px;
 
-  @include stack { width: 100%; padding: 0; }
+  // Client-set: no side padding below 1200. The pair of columns is already
+  // pinched there and the 32 was coming straight out of the copy.
+  @include tight { padding: 0; }
+  @include narrow { flex: none; width: 100%; }
 }
 
 .gb-product__head {
@@ -5390,8 +5879,13 @@ body.is-menu-open {
   transition: trans(background-color, color, transform);
 
   // Mobile boards draw this at 350x52, 16px, ls +0.48 (desktop 60/18 is correct)
+  // ⚠ The cap is client-set without a number; 520 matches .gb-product__media's
+  // own stacked cap so the button lines up with the image above it (at 390 the
+  // column is 350 and the cap does nothing). See PROJECT-STATUS AJ.
   @include narrow {
     height: 52px;
+    max-width: 520px;
+    margin-inline: auto;
     font-size: 16px;
     letter-spacing: 0.48px;
   }
@@ -5671,33 +6165,20 @@ body.is-menu-open {
   width: 100%;
 }
 
+// Swiper track (client-set: every carousel on the site runs on Swiper). It was
+// a native overflow-x scroller with scroll-snap and a clone-based loop; Swiper
+// owns the translate, the loop and the drag now.
+// `column-gap` lays nothing out here -- .swiper is display:block -- it is the
+// declared source main.js reads and hands over as `spaceBetween`, because Swiper
+// writes the spacing as slide margins and needs the number in JS. It has to be a
+// real property, not a custom property: getComputedStyle returns custom props
+// unevaluated, so a clamp() would come back as the literal string.
 .gb-reels {
-  display: flex;
-  gap: 24px;
   width: 100%;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
-  scrollbar-width: none;
+  column-gap: 24px;
 
-  @media (prefers-reduced-motion: reduce) { scroll-behavior: auto; }
-
-  &::-webkit-scrollbar { display: none; }
-
-  @include narrow { gap: 16px; }
-  @include tablet { gap: fluid(16px, 24px); }
-
-  // While a mouse drag is in flight the snap points fight the pointer: every
-  // move gets pulled back to the nearest card and the rail feels stuck. The
-  // script puts this class on for the duration and takes it off on release,
-  // so the settle-to-snap still happens, just at the end.
-  &.is-dragging {
-    scroll-snap-type: none;
-    scroll-behavior: auto;
-    cursor: grabbing;
-    user-select: none;
-  }
+  @include narrow { column-gap: 16px; }
+  @include tablet { column-gap: fluid(16px, 24px); }
 }
 
 // Grey box with a play glyph is the design's own placeholder for the reel.
@@ -5710,10 +6191,12 @@ body.is-menu-open {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 304px;
+  // Explicit width, not a flex-basis: `slidesPerView: "auto"` measures the slide
+  // box, and .swiper-slide's own width: 100% has to lose to it.
+  width: 304px;
+  flex: 0 0 auto;
   height: 540px;
   border-radius: 21px;
-  scroll-snap-align: center;
   color: $c-ink;
 
   cursor: pointer;
@@ -5730,7 +6213,7 @@ body.is-menu-open {
   }
 
   // Figma mobile 228 x 405 (Reels Row 716 = 3 x 228 + 2 x 16)
-  @include narrow { flex-basis: 228px; height: 405px; }
+  @include narrow { width: 228px; height: 405px; }
   @include tablet { height: fluid(405px, 540px); }
 }
 
@@ -5797,11 +6280,16 @@ body.is-menu-open {
 }
 
 // Testimonials ------------------------------------------------------------
+// 3 -> 2 -> 1 down the value tiers, the same ladder .gb-nutrition__cards runs.
+// The gap is a custom property because .gb-testimonial's flex-basis is solved
+// from it, and it changes on every tier.
 .gb-testimonials {
+  --gb-testi-gap: 24px;
+
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 24px;
+  gap: var(--gb-testi-gap);
   padding: 48px 80px 0;
   width: 100%;
   max-width: 1441px;
@@ -5810,12 +6298,24 @@ body.is-menu-open {
   // inherit the gap.
   margin-bottom: 48px;
 
-  @include stack { flex-direction: column; align-items: center; }
   // 236:11294;187:12730 has no top padding and 187:12731 is itemSpacing 32 --
   // the block's own spacing above and below is .gb-reviews__inner's 48, so a
   // padding-top here and the margin-bottom below both double it up.
-  @include narrow { padding: 0 20px; gap: 30px; margin-bottom: 0; }
-  @include tablet { padding: fluid(0, 48px) fluid(20px, 80px) 0; gap: fluid(30px, 24px); }
+  // Stacking is layout, so it drops to `mobile` with the rest of the ladder;
+  // the gap and the gutters are values and stay on `narrow`.
+  @include mobile {
+    flex-direction: column;
+    align-items: center;
+  }
+  @include narrow {
+    --gb-testi-gap: 30px;
+    padding: 0 20px;
+    margin-bottom: 0;
+  }
+  @include tablet {
+    --gb-testi-gap: #{fluid(30px, 24px)};
+    padding: fluid(0, 48px) fluid(20px, 80px) 0;
+  }
 }
 
 .gb-testimonial {
@@ -5823,19 +6323,42 @@ body.is-menu-open {
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  flex: 1 1 300px;         // 411 is the design width; shrink before wrapping
+  // Three up. The desktop board's row (I324:69755;313:11103) is 1280 = 3 x 411
+  // + 2 x 24. The basis used to be 300px, which let a FOURTH card squeeze onto
+  // that row at 302 each -- our-story and how-gumi-works ship four and the
+  // board draws three. 340 is a wrapping threshold, not a width: the row runs
+  // 1121 (at 1281) to 1281 (max-width 1441 less the 80 gutters), so a basis
+  // above 302.25 breaks four onto two rows and one at or below 357.67 keeps
+  // three on one. grow then hands every card the same 410.67 the 300 did, so
+  // the three-card pages render identically. A calc() basis off the gap says
+  // the same thing but resolves 0.016px narrower (browsers clamp the % to
+  // 33.3333), which would show up in every future snapshot diff.
+  flex: 1 1 340px;
   max-width: 411px;
   text-align: center;
 
   svg { width: 120px; height: 24px; color: $c-lime-600; }
 
-  // Stacked, flex-basis is a HEIGHT: 300px held every card open at 300 against
-  // the board's 196, so the copy floated in a tall empty box. auto hands the
-  // height back to the content.
-  @include stack { flex: auto; }
+  // ⚠ Three-up now starts at 1201, where the row is only ~1060 wide — 3 x 340
+  // plus two gaps needs 1068, so the basis above wraps the third card. This tier
+  // solves the basis from the container instead. It has to come BEFORE `tight`,
+  // which takes 768-1200 back to two-up; 1281 and above matches neither and
+  // keeps the 340 the desktop has always had.
+  @include tablet {
+    flex-basis: calc((100% - 2 * var(--gb-testi-gap)) / 3);
+    svg { width: fluid(100px, 120px); height: fluid(20px, 24px); }
+  }
+  // Two-up below 1200. Half the row less one gap, so it matches the grids'
+  // span-2 arithmetic. max-width 411 still caps it, which leaves the pair
+  // centred with slack either side from ~1010 up — the same thing the old
+  // tablet tier did at 1280.
+  @include tight { flex-basis: calc((100% - var(--gb-testi-gap)) / 2); }
+  // Stacked below 576, where flex-basis would be a HEIGHT: 300px used to hold
+  // every card open at 300 against the board's 196, floating the copy in a tall
+  // empty box. auto hands the height back to the content.
+  @include mobile { flex: auto; }
   // 236:11294;187:12732;183:4814 is a 100 x 20 five-star strip (no gaps)
   @include narrow { svg { width: 100px; height: 20px; } }
-  @include tablet { svg { width: fluid(100px, 120px); height: fluid(20px, 24px); } }
 }
 
 .gb-testimonial__body {
@@ -5882,7 +6405,8 @@ body.is-menu-open {
   text-align: center;
 
   // 236:11294;285:23587 is 350 wide inside the 390 board = the 20 gutter
-  @include narrow { padding: 0 20px; font-size: 12px; line-height: 18px; letter-spacing: -0.24px; }
+  @include narrow { margin-top: 2px; padding: 0 20px; font-size: 12px; line-height: 18px; letter-spacing: -0.24px; }
+  @include tablet { margin-top: fluid(2px, 0px); }
   @include tablet { padding: 0 fluid(20px, 0px); }
   @include tablet { font-size: fluid(12px, 14px); line-height: fluid(18px, 22px); letter-spacing: fluid(-0.24px, -0.28px); }
 }
@@ -5924,10 +6448,12 @@ body.is-menu-open {
 
   @include stack { min-height: 0; }
 
-  // 324:53792 stacks the halves: a 343x343 square on top, copy beneath
+  // 324:53792 stacks the halves: a 343x343 square on top, copy beneath.
+  // ⚠ Client-set 575 overrides the board's 343 — the card grows with the
+  // viewport up to 575 instead of sitting at the phone width on a 767 screen.
   @include narrow {
     flex-direction: column;
-    max-width: 343px;
+    max-width: 575px;
     border-radius: $r-lg;
   }
 }
@@ -6016,7 +6542,9 @@ body.is-menu-open {
     @include tablet { gap: fluid(32px, 24px); }
   }
 
-  @include narrow { gap: 12px; }
+  // Client-set: the stack fills the widened phone card instead of staying on
+  // the board's 347 copy column. .gb-promo-card__btn keeps its 347.
+  @include narrow { gap: 12px; max-width: 100%; }
   @include tablet { gap: fluid(12px, 16px); }
 }
 
@@ -6037,12 +6565,25 @@ body.is-menu-open {
   @include narrow { display: none; }
 }
 
+// Only ever painted on mobile, so these are the phone values with no tier of
+// their own. Width is a percentage of the card so the scallop keeps overhanging
+// by the same proportion at every phone width; the height follows the svg's own
+// viewBox rather than being restated.
+//
+// ⚠ max-width: none is load-bearing. The reset's `img, svg { max-width: 100% }`
+// clamps anything wider than its parent, so both this 143% and the 492px it
+// replaced were being squeezed back to the card's own 343 — the arcs came out
+// 30% too small (47.5 pitch against the board's 68). Measured on the board
+// (324:53792, the image/card seam): 5 arcs at 69/68/69/68. This now renders 5
+// at 68/68/68/67.5.
 .gb-promo-card__lip--h {
   display: none;
-  left: 50%;
-  bottom: -40px;
-  width: 492px;
-  height: 81px;
+  left: 50.5%;   // client-set (was 53.5)
+  bottom: -48px;
+  width: 143%;
+  max-width: none;
+  height: auto;
+  aspect-ratio: 492 / 81;
   transform: translateX(-50%);
 
   @include narrow { display: block; }
@@ -6050,7 +6591,9 @@ body.is-menu-open {
 
 .gb-promo-card--green {
   .gb-promo-card__lip { color: $c-green; }
-  .gb-promo-card__lip--v { right: -63px; }
+  // Client-set. The white card keeps the symmetric -63 (half of the 126 box);
+  // this one hangs further out, leaving 31 of the scallop inside the card.
+  .gb-promo-card__lip--v { right: -95px; }
 }
 
 .gb-promo-card--white {
@@ -6101,6 +6644,18 @@ body.is-menu-open {
   gap: 8px;
   margin: 0 auto;
   text-align: left;
+
+  // Client-set, FINAL (r57 withdraws r56 and restores r51): centred on pc, not
+  // centred on phones. Dropping the auto left margin hands centring to the
+  // parent's align-items, and the 15 on the right then pushes the box 7.5 left
+  // of centre -- the board's own "hangs slightly left of centre". Decision I is
+  // closed on this answer; do not "fix" it back to dead centre.
+  @include narrow { margin-right: 15px; margin-left: 0; }
+  // margin-left has to be zeroed HERE TOO, which r51 did not do: one auto margin
+  // against a fixed one absorbs the slack the other way, so this tier hung RIGHT
+  // (768 measured +30.7 from centre, 1280 +43.7) between a phone tier hanging
+  // left and a centred pc tier. Zeroed, the 15 ramps to 0 and the ends meet.
+  @include tablet { margin-right: fluid(15px, 0px); margin-left: 0; }
 }
 
 .gb-promo-card__list-item {
@@ -6113,6 +6668,9 @@ body.is-menu-open {
   color: $c-gray-700;
 
   svg { flex-shrink: 0; width: 24px; height: 24px; }
+
+  @include narrow { svg { width: 20px; height: 20px; } }
+  @include tablet { svg { width: fluid(20px, 24px); height: fluid(20px, 24px); } }
 }
 
 // Figma's 347-wide button carries 64px side padding, which is where the
@@ -6192,7 +6750,11 @@ body.is-menu-open {
   max-width: 100%;
   aspect-ratio: 427.4 / 365.7;
 
-  @include narrow { width: 303px; }
+  // 303 is the 390 board value. The art half is aspect-ratio 1 and shrinks with
+  // the card, but a fixed 303 does not, so below ~380 the picture (110% tall and
+  // pulled up 8%) runs into .gb-promo-card__lip--h sitting at the half's bottom.
+  // 303/350 keeps 390 and every wider phone byte-identical and scales under it.
+  @include narrow { width: min(303px, 86.571%); }
   @include tablet { width: fluid(303px, 427px); }
 }
 
@@ -6203,6 +6765,21 @@ body.is-menu-open {
   width: 110%;
   height: 110%;
   max-width: none;
+
+  // No tablet ramp: fluid() interpolates with calc() and a percentage cannot be
+  // ramped that way (it resolves against a box that is itself changing).
+  // Client-set -4% (r40 -8% -> r42 -5% -> -4%); the base rule stays -5%.
+  @include narrow { top: -4%; }
+
+  // Fourth pass over this value, and the first that scopes it: only the promo
+  // card's artwork goes back to -8%. The other .gb-promo-art on the site
+  // (.gb-ingredients__disc) keeps -4% — the client named the white card, and
+  // the green promo card has no artwork half at all.
+  // Restated inside the scope because .gb-promo-card--white & is 0-2-0 and a
+  // media query adds no specificity — a bare @include narrow above would lose.
+  .gb-promo-card--white & {
+    @include narrow { top: -8%; }
+  }
 }
 
 // The live composite. Only figma/promo-art-source.html uses it now — it is the
@@ -6287,9 +6864,9 @@ body.is-menu-open {
   background: $c-white;
   padding: 120px 0 calc(120px + var(--sc-h));
 
-  @include narrow { padding: 64px 0 calc(64px + var(--sc-h)); }
+  @include narrow { padding: 52px 0 calc(64px + var(--sc-h)); }
   @include tablet {
-    padding: fluid(64px, 120px) 0 calc(#{fluid(64px, 120px)} + var(--sc-h));
+    padding: fluid(52px, 120px) 0 calc(#{fluid(64px, 120px)} + var(--sc-h));
   }
 }
 
@@ -6358,6 +6935,12 @@ body.is-menu-open {
     max-width: 400px;
     margin-inline: auto;
   }
+  // Client-set: full width on phones. It must stay inside `mobile` and after the
+  // narrow block (same specificity, source order decides): .gb-vs__bear is a
+  // percentage of this box and its right edge lands at 103.2% of it, so an
+  // uncapped table pushes the bear off screen from ~660 up (767 measured a
+  // 771px document in a 767px window).
+  @include mobile { max-width: 100%; }
 }
 
 .gb-vs__col {
@@ -6473,13 +7056,13 @@ body.is-menu-open {
 
   @include narrow {
     left: 31.339%;             // 110 / 351
-    top: 34.25px;              // centred in the 68.5 brand band
+    top: 46.25px;
     translate: 0 -50%;
     font-size: 15.8px;
     line-height: 21.1px;
     letter-spacing: 0.32px;
   }
-  @include tablet { top: fluid(34.25px, 62px); font-size: fluid(15.8px, 24.5px); line-height: fluid(21.1px, 32.7px); letter-spacing: fluid(0.32px, 0.49px); }
+  @include tablet { top: fluid(46.25px, 62px); font-size: fluid(15.8px, 24.5px); line-height: fluid(21.1px, 32.7px); letter-spacing: fluid(0.32px, 0.49px); }
 }
 
 .gb-vs__pile {
@@ -6517,6 +7100,9 @@ body.is-menu-open {
     margin-top: 12px;
     padding-top: 13px;
     border-top: 1px solid rgba(1, 19, 7, 0.1);
+
+    @include narrow { padding-top: 11px; }
+    @include tablet { padding-top: fluid(11px, 13px); }
   }
 }
 
@@ -6565,6 +7151,7 @@ body.is-menu-open {
   @include pc { padding-right: 1px; }
   @include narrow {
     gap: 8px;
+    padding-right: 15px;
     font-size: 12px;
     line-height: 15.5px;
     letter-spacing: -0.12px;
@@ -6594,8 +7181,8 @@ body.is-menu-open {
 
   // `stack` used to hold a hand-picked 80/96 here — a layout threshold carrying
   // values, which both overlapped `tablet` and left a 64 → 80 step at 768.
-  @include narrow { padding: 64px 0; }
-  @include tablet { padding: fluid(64px, 96px) 0 fluid(64px, 120px); }
+  @include narrow { padding: 52px 0 80px; }
+  @include tablet { padding: fluid(52px, 96px) 0 fluid(80px, 120px); }
 }
 
 // 324:75766 (the FAQ page) runs the same list on white with no heading above it.
@@ -6603,8 +7190,11 @@ body.is-menu-open {
   background: $c-white;
   padding-top: 94px;
 
-  @include narrow { padding-top: 64px; }
-  @include tablet { padding-top: fluid(64px, 94px); }
+  @include narrow { padding: 52px 0 64px; }
+  @include tablet {
+    padding-top: fluid(52px, 94px);
+    padding-bottom: fluid(64px, 120px);
+  }
 
   // No heading above the list on this page, so the first row's rule would read
   // as a stray line under the page header.
@@ -6691,8 +7281,13 @@ body.is-menu-open {
 .gb-app-section--lg {
   padding-bottom: calc(96px + var(--sc-lg-h));
 
-  @include narrow { padding-bottom: calc(64px + var(--sc-lg-h)); }
-  @include tablet { padding-bottom: calc(fluid(64px, 96px) + var(--sc-lg-h)); }
+  // Client-set 52 on mobile; the base section opens with 64. The tablet ramp has
+  // to carry it too or the 767/768 seam steps 52 -> 64.
+  @include narrow { padding-top: 52px; padding-bottom: calc(64px + var(--sc-lg-h)); }
+  @include tablet {
+    padding-top: fluid(52px, 96px);
+    padding-bottom: calc(fluid(64px, 96px) + var(--sc-lg-h));
+  }
 }
 
 .gb-app-section__inner {
@@ -6716,25 +7311,9 @@ body.is-menu-open {
   @include tablet { font-size: fluid(30px, 40px); line-height: fluid(36px, 48px); letter-spacing: fluid(-0.3px, -0.4px); }
 }
 
-.gb-app-slot { width: 100%; }
-
-.gb-app-slot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 240px;
-  padding: 20px;
-  border: 1px dashed $c-gray-300;
-  border-radius: $r-lg;
-  color: $c-gray-500;
-  font-size: 14px;
-  line-height: 22px;
-  letter-spacing: -0.28px;
-  text-align: center;
-
-  @include narrow { min-height: 180px; }
-  @include tablet { min-height: fluid(180px, 240px); }
-}
+// .gb-app-slot (the dashed placeholder box) was dropped on client request --
+// pdp lost it in r40, reviews in r42, so the rules went with it. .gb-product__app-slot
+// is a different class and is still in use on four pages.
 
 // ==========================================================================
 // FAQ with image
@@ -6748,7 +7327,7 @@ body.is-menu-open {
   background: $c-lime-150;
   padding: 96px 0 120px;
 
-  @include narrow { padding: 64px 0; }
+  @include narrow { padding: 64px 0 80px; }   // client-set
   @include tablet { padding: fluid(64px, 96px) 0 fluid(64px, 120px); }
 }
 
@@ -6761,27 +7340,39 @@ body.is-menu-open {
   margin-inline: auto;
   padding-inline: 188px;
 
+  // Client-set: two columns hold until 767 (see .gb-compare__inner).
   @include tight { gap: 40px; padding-inline: var(--pad-x); }
-  @include stack {
+  // Client-set: the version gutter stays on the container on mobile (as
+  // .gb-compare__inner already does); the body below gives its own up.
+  @include narrow {
     flex-direction: column;
     align-items: center;
     gap: 32px;
     padding-inline: var(--pad-x);
   }
-  @include narrow { padding-inline: 0; }
 }
 
 // The design's own grey placeholder — no photography has been supplied.
 .gb-faq-image__media {
-  flex: 0 0 520px;
-  width: 520px;
+  // Client-set: shrinkable, not a hard 520 (see .gb-ingredients__disc).
+  flex: 0 1 520px;
+  width: auto;
   aspect-ratio: 1;
   border-radius: $r-xl;
   background: $c-gray-200;
   overflow: hidden;
 
-  @include stack { flex: 0 1 auto; width: 100%; max-width: 520px; }
-  @include narrow { max-width: 350px; border-radius: $r-lg; }
+  // Client-set: 520 caps the square on mobile too (r42 removed the cap and it
+  // ran 767 wide at 767 — edge to edge). align-items: center on the inner does
+  // the centring. Above 767 this is a row again, so the shrinkable 520 basis on
+  // the base rule is what applies — it must stay `0 1`, not `0 0`, or it starves
+  // the body column.
+  @include narrow {
+    flex: 0 1 auto;
+    width: 100%;
+    max-width: 520px;
+    border-radius: $r-lg;
+  }
 
   img { @include cover-img; }
 }
@@ -6794,9 +7385,18 @@ body.is-menu-open {
   flex: 0 1 489px;
   padding-inline: 32px;
 
-  @include stack { flex: 1 1 auto; width: 100%; max-width: 520px; padding-inline: 0; }
-  @include narrow { gap: 32px; padding-inline: $pad-x-mobile; }
-  @include tablet { gap: fluid(32px, 16px); }
+  // Follows the column switch, now at 767 — above it this is still a row and
+  // keeps its 489 basis. Client-set: no cap once stacked, and no gutter of its
+  // own — the inner carries it now.
+  @include narrow {
+    flex: 1 1 auto;
+    width: 100%;
+    gap: 32px;
+    padding-inline: 0;
+  }
+  // Client-set: the 32 gutter is a desktop-board value only. narrow already
+  // zeroed it, so this carries the same call across 768-1280.
+  @include tablet { gap: fluid(32px, 16px); padding-inline: 0; }
 }
 
 .gb-faq-image__text {
@@ -6890,40 +7490,61 @@ body.is-menu-open {
   @include tablet { font-size: fluid(30px, 40px); line-height: fluid(36px, 48px); letter-spacing: fluid(-0.3px, -0.4px); }
 }
 
+// Two lives in one box: a Swiper rail at or below 991, a three-column grid above
+// it (main.js destroys the Swiper on the way up and rebuilds it on the way down).
+// The grid therefore sits on .swiper-wrapper, which is the element the cards are
+// actually children of.
 .gb-expert__cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
   width: 100%;
+  // Read by main.js as `spaceBetween` -- see the note on .gb-reels. Above 991
+  // Swiper is gone and the wrapper's own `gap` does the spacing instead.
+  column-gap: 24px;
 
-  // Text-only cards compress fine, so this one follows the requested ladder:
-  // three from 992 up, two below it, rail below 768.
-  @include mid { grid-template-columns: repeat(2, 1fr); }
-
-  // 324:64961 keeps all three side by side in a 350px column — a swipe rail.
-  @include narrow {
-    display: flex;
-    gap: 16px;
-    // full-bleed rail: cancel the container padding, restore it as scroll padding
-    width: calc(100% + #{$pad-x-mobile * 2});
-    margin-inline: -$pad-x-mobile;
-    padding-inline: $pad-x-mobile;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-
-    &::-webkit-scrollbar { display: none; }
+  // 324:64961 runs the three cards as a swipe rail. Client moved the rail up
+  // from 768 to 991, so the two-column grid tier is gone. The bleed now crosses
+  // 768, where the gutter changes -- it has to read --pad-x, not the phone
+  // constant it used while this only ever ran below 767.
+  // The cards run edge to edge and are clipped by .swiper's overflow: hidden,
+  // which is what puts a part-card at each margin.
+  // ⚠ No padding-inline here, deliberately: Swiper measures the container with
+  // clientWidth, which INCLUDES padding, so a padded track makes it think it has
+  // more room than the slides actually get and the whole set drifts left (at 991
+  // it cut the third card by 24px). The gutter it used to carry did not align
+  // anything either -- scroll-padding was 0, so the old rail snapped flush to the
+  // viewport edge, which is exactly where the slides sit now.
+  @include mid {
+    width: calc(100% + var(--pad-x) * 2);
+    margin-inline: calc(var(--pad-x) * -1);
   }
-  @include tablet { gap: fluid(16px, 24px); }
+
+  // .swiper's overflow: hidden is only wanted while there IS a Swiper. Above the
+  // threshold it is destroyed and the box is a plain grid, where the clip only
+  // manages to cut the bottom 30px off the cards' fadeInUp while it plays.
+  @media (min-width: #{$bp-mid + 1px}) { overflow: visible; }
+  @include narrow { column-gap: 16px; }
+  @include tablet { column-gap: fluid(16px, 24px); }
+
+  > .swiper-wrapper {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+
+    // Only 992-1280 of this tier can be reached; @include mid below overrides
+    // the rest of it, and source order decides -- mid has to stay last.
+    @include tablet { gap: fluid(16px, 24px); }
+    // Swiper's own track: it writes the spacing as slide margins, so a gap here
+    // would be counted twice.
+    @include mid { display: flex; gap: 0; }
+  }
 }
 
 // Rail controls. The mobile board carries Frame 992460 under the track
 // (324:64961, two 32px lime buttons); the desktop board has no nav because all
-// three cards are already side by side.
+// three cards are already side by side. Shown wherever the rail is.
 .gb-expert__nav {
   display: none;
 
-  @include narrow { display: flex; }
+  @include mid { display: flex; }
 }
 
 .gb-expert-card {
@@ -6935,11 +7556,21 @@ body.is-menu-open {
   border-radius: $r-xl;
   overflow: hidden;
 
+  // Rail geometry follows the rail's own threshold. The board's 305 holds all
+  // the way to 991, where 3.1 cards are visible -- close enough to the
+  // three-column grid above it that the switch does not jump.
+  // "One card per swipe" is the client's; it is `longSwipes: false` in main.js
+  // now, where it used to be scroll-snap-stop: always.
+  @include mid {
+    width: 305px;
+    flex: 0 0 auto;
+  }
+  // Centring below 767 (so the card before and after both peek, 26.5px each at
+  // 390) is `centeredSlides` in main.js, switched off from 768 up where 2.3
+  // start-aligned cards already read as a rail. Client-set.
   @include narrow {
-    flex: 0 0 305px;
     padding: 20px 20px 32px;
     border-radius: $r-lg;
-    scroll-snap-align: start;
   }
   @include tablet { padding: fluid(20px, 24px) fluid(20px, 24px) fluid(32px, 36px); }
 }
@@ -7054,14 +7685,18 @@ body.is-menu-open {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 96px;
+  gap: 80px;                  // client-set (board 96)
   width: 100%;
   max-width: 1440px;          // 1250 content + 95 each side
   margin-inline: auto;
   padding-inline: 95px;
 
-  @include stack { gap: 64px; padding-inline: var(--pad-x); }
+  // Client-set 80 (was the board's 96). The stack point is 767, so 768-1280 is a
+  // row band and the gap belongs on the value tier: the old `stack` copy sat on a
+  // layout threshold, overlapped narrow, and stepped at 768/1025. The ramp meets
+  // 48 at 768 and 80 at 1281, so neither seam moves.
   @include narrow { gap: 48px; padding-inline: var(--pad-x); }
+  @include tablet { gap: fluid(48px, 80px); padding-inline: var(--pad-x); }
 }
 
 .gb-dosed__block {
@@ -7072,24 +7707,28 @@ body.is-menu-open {
 
   // The threshold only carries the arrangement; the gap is a value-tier job.
   // 332:22019 stacks the image 48 under the copy on mobile (it was 32).
-  @include stack { flex-direction: column-reverse; }
-  @include narrow { gap: 48px; }
+  // Client moved the stack point 1024 -> 767 along with compare / ingredients /
+  // faq-image / product.
+  @include narrow { flex-direction: column-reverse; gap: 48px; }
   @include tablet { gap: fluid(48px, 54px); }
 }
 
 .gb-dosed__block--flip {
   flex-direction: row-reverse;
 
-  @include stack { flex-direction: column-reverse; }
+  @include narrow { flex-direction: column-reverse; }
 }
 
 .gb-dosed__media {
-  flex: 0 0 598px;
-  width: 598px;
+  // Shrinkable, not a rigid 598: the row now holds down to 768 and the pair
+  // needs 1250 in a 728 box. The old `flex: 0 0 598px` also starved the copy in
+  // the band it already covered — at 1100 the body was left 258 wide (178 of it
+  // text), the same failure the page hero's media used to have.
+  flex: 0 1 598px;
+  min-width: 0;
   aspect-ratio: 1;
 
-  @include stack { flex: none; width: 100%; max-width: 598px; }
-  @include narrow { max-width: 350px; }
+  @include narrow { flex: none; width: 100%; max-width: 350px; }
 }
 
 .gb-dosed__body {
@@ -7097,12 +7736,15 @@ body.is-menu-open {
   flex-direction: column;
   align-items: center;
   flex: 0 1 598px;
+  min-width: 0;
   gap: 34px;
   padding-inline: 40px;
 
-  @include stack { flex: none; width: 100%; max-width: 598px; padding-inline: 0; }
-  @include narrow { gap: 32px; }
-  @include tablet { gap: fluid(32px, 34px); }
+  // Client-set: no cap once stacked. The padding ramps rather than stepping —
+  // at 768 the column lands near 340 and a flat 40+40 would leave 260 for a
+  // 30px title.
+  @include narrow { flex: none; width: 100%; padding-inline: 0; gap: 32px; }
+  @include tablet { gap: fluid(32px, 34px); padding-inline: fluid(0, 40px); }
 }
 
 // Figma overlaps the copy 78px (mobile 86px) into the 132px arc frame, i.e.
@@ -7189,12 +7831,35 @@ body.is-menu-open {
 }
 
 .gb-story__inner {
-  display: flex;
-  align-items: flex-start;
+  // Client-set: same 3 -> 2 -> 1 device as .gb-science__cards / .gb-nutrition__cards
+  // (see the note there). Grid, not flex: two-up runs on FOUR tracks with every
+  // card spanning two, so the spare half-track on each side lets the lone third
+  // card sit centred instead of hugging the left edge. align-items is start —
+  // the three cards are not equal height and the design does not force them to be.
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: start;
   gap: 24px;
   @include container;
 
-  @include narrow { flex-direction: column; gap: 48px; }
+  // Two-up below 1200, one-up below 576 — client-set, see .gb-science__cards
+  // for why the column count hangs on `tight` and has to precede `mobile`.
+  @include tight {
+    grid-template-columns: repeat(4, 1fr);
+
+    > * { grid-column: span 2; }
+    > :last-child:nth-child(odd) { grid-column: 2 / span 2; }
+  }
+  // One column below 576. The spans MUST be reset: against a single track the
+  // implicit grid would build a second column out of them and put the cards
+  // back two-up.
+  @include mobile {
+    grid-template-columns: 1fr;
+
+    > *,
+    > :last-child:nth-child(odd) { grid-column: auto; }
+  }
+  @include narrow { gap: 48px; }
   @include tablet { gap: fluid(48px, 24px); }
 }
 
@@ -7202,10 +7867,9 @@ body.is-menu-open {
   display: flex;
   flex-direction: column;
   gap: 32px;
-  flex: 1 1 0;
   min-width: 0;
 
-  @include narrow { width: 100%; flex: none; gap: 24px; }
+  @include narrow { gap: 24px; }
   @include tablet { gap: fluid(24px, 32px); }
 }
 
@@ -7282,19 +7946,36 @@ body.is-menu-open {
 // 52.5px of plate above and below the content's own 48px padding. On mobile the
 // board draws 350.85x507.5 and the values below add up to 512 -- close enough
 // that the mask rides along without visible distortion.
-.gb-cta-band__plate {
-  --plate-mask: #{$mask-scallop-band} center / 100% 100% no-repeat;
+// ⚠ The nine-slice's own region boundaries — the rectangle r in from each edge —
+// rasterise as a hairline LIGHTER than the plate at some device pixel ratios
+// (measured: 1100 @ dpr 1.75, a 1515px run at y 57.1 that is 63 lighter). Each
+// slice is antialiased against its neighbour and the two partial edges do not add
+// up to one opaque pixel. A flat pad of the same colour behind the image fills
+// them in. It has to sit INSIDE the lobes' valley line or it shows through the
+// valleys, which is why the background is not simply `$c-green` on the whole box.
+@mixin plate-pad($r, $px, $py) {
+  background: linear-gradient($c-green, $c-green) no-repeat center /
+              calc(100% - #{(scallop-valley($r, $py) + 1) * 2}px)
+              calc(100% - #{(scallop-valley($r, $px) + 1) * 2}px);
+}
 
+.gb-cta-band__plate {
   padding-block: 52px;
-  background: $c-green;
-  -webkit-mask: var(--plate-mask);
-  mask: var(--plate-mask);
+  // border-width stays 0 so the box does not grow; border-image-width paints the
+  // nine-slice inward over the padding box instead. border-style must not be
+  // `none` or the image is never painted.
+  border: 0 solid transparent;
+  border-image: scallop-tile($plate-r-pc, $plate-px-pc, $plate-py-pc)
+                $plate-r-pc fill / #{$plate-r-pc}px / 0 round;
+  @include plate-pad($plate-r-pc, $plate-px-pc, $plate-py-pc);
 
   // 324:73697 draws the plate 507.5 tall around a 500-tall content block, so
   // only 3.75 of plate shows above and below it -- not the 24 this used to set,
   // which pushed the whole block 20px down inside the scallops.
   @include narrow {
-    --plate-mask: #{$mask-scallop-band-mobile} center / 100% 100% no-repeat;
+    border-image: scallop-tile($plate-r-mob, $plate-px-mob, $plate-py-mob)
+                  $plate-r-mob fill / #{$plate-r-mob}px / 0 round;
+    @include plate-pad($plate-r-mob, $plate-px-mob, $plate-py-mob);
 
     padding-block: 3.75px;
   }
@@ -7375,7 +8056,10 @@ body.is-menu-open {
   text-transform: capitalize;
   border: 1px solid $c-white;
 
-  @include narrow { width: 100%; }   // FILL on both mobile boards
+  // FILL on both mobile boards. 64 is the board's own inset, but it is measured
+  // against the board's 350 button; here __content's gutter leaves 274, and 64
+  // then leaves 146 for a 146.34 label -- one line short.
+  @include narrow { width: 100%; padding-inline: 24px; }
 
   @include hover {
     background: $c-lime;
@@ -7400,8 +8084,8 @@ body.is-menu-open {
   background: $c-white;
   padding: 96px 0;
 
-  @include narrow { padding: 64px 0; }
-  @include tablet { padding: fluid(64px, 96px) fluid(0, 0); }
+  @include narrow { padding: 64px 0 84px; }
+  @include tablet { padding: fluid(64px, 96px) fluid(0, 0) fluid(84px, 96px); }
 }
 
 .gb-form-section__inner {
@@ -7477,6 +8161,132 @@ body.is-menu-open {
   @include hover { border-color: $c-gray-500; }
 }
 
+// Client-set: draw the enquiry select as a button + ul listbox (main.js
+// selectBox) so the chevron can rotate -- a native popup paints itself and a
+// background-image cannot be transformed. The native control stays in the DOM
+// underneath as the form's value carrier; with the script dead it is simply
+// still visible and nothing here applies.
+.gb-select {
+  position: relative;
+  z-index: $z-base;
+
+  &.is-open { z-index: $z-sticky; }   // the open list has to clear the fields below
+}
+
+// visually-hidden, NOT display:none -- the same reason as .gb-form__check: the
+// control still has to submit, validate and answer enquiryPrefill.
+.gb-select__native { @include visually-hidden; }
+
+.gb-select__button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  // The chevron is an element now; the 40 that made room for the painted one
+  // would count twice. 14 is the board's own gap to the right edge.
+  padding-right: 14px;
+  background-image: none;
+  text-align: left;
+
+  &[aria-expanded="true"] { border-color: $c-green; }
+}
+
+.gb-select__value {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.gb-select__arrow {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  transition: trans(transform);
+
+  .gb-select.is-open & { transform: rotate(180deg); }
+}
+
+.gb-select__list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1;
+  max-height: 224px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+  background: $c-white;
+  border: 1px solid $c-gray-300;
+  border-radius: $r-sm;
+  box-shadow: 0 4px 12px $c-ink-05;
+
+  // visibility, not display: display cannot transition, and the closed list must
+  // stay out of hit-testing while the fade runs.
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: trans(opacity, transform), visibility 0s linear $t-base;
+
+  &:focus-visible { outline: none; }   // the ring belongs on the active option
+
+  .gb-select.is-open & {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: trans(opacity, transform), visibility 0s;
+  }
+}
+
+.gb-select__option {
+  padding: 8px 10px;
+  border-radius: $r-xs;
+  cursor: pointer;
+  transition: trans(background-color, color);
+
+  @include hover { background: $c-lime-100; }
+
+  &[aria-selected="true"] { color: $c-green; }
+
+  // Keyboard position. The list holds focus and moves aria-activedescendant, so
+  // there is no :focus on an option to style.
+  &.is-active {
+    background: $c-lime-150;
+    color: $c-green;
+  }
+}
+
+// Client-set: the phone field's country code is the same widget (data-select
+// "bare"). It sits inside .gb-field__phone's own border, so the trigger carries
+// no box -- only the typography the native select had.
+.gb-select--bare {
+  .gb-select__button {
+    gap: 3px;              // the native drew a 20 chevron inside a 23 padding-right
+    padding-right: 0;
+    font-family: $font-brand-stack;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: -0.32px;
+    color: $c-gray-700;
+    transition: trans(color);
+
+    @include hover { color: $c-ink; }
+  }
+
+  // Hang the list off the phone FIELD's bottom edge, not off the trigger: the
+  // trigger is a 24 line box centred in a 22 content box, so its own 100% stops
+  // 10px short of the field's border edge. 10 + the default 4 gap = 14.
+  // Left-aligned and content-wide -- the trigger is only as wide as "AU".
+  .gb-select__list {
+    top: calc(100% + 14px);
+    left: 0;
+    right: auto;
+    width: max-content;
+    min-width: 100%;
+  }
+}
+
 .gb-field__input--area {
   height: 152px;
   resize: vertical;
@@ -7499,7 +8309,11 @@ body.is-menu-open {
     border-color: $c-green;
   }
 
-  select {
+  // :not() so the hidden native underneath the drawn control does not keep this
+  // block's 23 padding-right -- .gb-select__native's visually-hidden is only
+  // 0-1-0 and would lose to `.gb-field__phone select` (measured 23px wide, not 1).
+  // The fallback path is unaffected: with no script there is no .gb-select__native.
+  select:not(.gb-select__native) {
     appearance: none;
     border: 0;
     background: transparent;
@@ -7549,13 +8363,23 @@ body.is-menu-open {
 
   @include hover { color: $c-ink; }
 
-  input[type="checkbox"] {
+  // The native box paints its accent-color instantly -- transition never applies
+  // to it. Client-set: hide the input and draw the box on ::before instead.
+  // visually-hidden, NOT display:none: the latter drops the control out of the
+  // tab order and takes the browser's required-field message with it.
+  &::before {
+    content: "";
     flex: 0 0 20px;
     width: 20px;
     height: 20px;
     margin-top: 2px;
-    accent-color: $c-green;
+    border: 1px solid $c-gray-300;
+    border-radius: 4px;
+    background: $c-white no-repeat center / 12px 12px;
+    transition: trans(background-color, border-color);
   }
+
+  input[type="checkbox"] { @include visually-hidden; }
 
   a {
     color: $c-ink;
@@ -7564,6 +8388,20 @@ body.is-menu-open {
 
     @include hover { color: $c-green; }
   }
+}
+
+// Flat, not nested: the drawn box is a pseudo-element of the label, so the state
+// has to be read off the input from the label itself.
+.gb-form__check:has(input[type="checkbox"]:checked)::before {
+  background-color: $c-green;
+  border-color: $c-green;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M10 3L4.5 8.5L2 6' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+// The real control is off-screen, so its focus ring would be too.
+.gb-form__check:has(input[type="checkbox"]:focus-visible)::before {
+  outline: 2px solid $c-green;
+  outline-offset: 2px;
 }
 
 // 326:79979 / 326:81218: full width, 60 tall, brand green. .gb-btn only carries
@@ -7604,6 +8442,7 @@ body.is-menu-open {
   a {
     font-weight: 500;
     color: $c-ink;
+    text-decoration: underline;   // client-set
     transition: trans(color);
 
     @include hover { color: $c-green; }
@@ -7619,8 +8458,13 @@ body.is-menu-open {
 
   // 326:81540 runs this at the body size, not the small one the desktop board
   // uses -- four lines of 24 instead of four of 20.
-  @include narrow { font-size: 16px; line-height: 24px; letter-spacing: -0.32px; }
-  @include tablet { font-size: fluid(16px, 14px); line-height: fluid(24px, 20px); letter-spacing: fluid(-0.32px, -0.28px); }
+  // client-set margin (was 16px 0); the -2 bottom pulls the block back onto the
+  // submit button's own spacing
+  @include narrow { font-size: 16px; line-height: 24px; letter-spacing: -0.32px; margin: 16px 0 -2px; }
+  @include tablet {
+    font-size: fluid(16px, 14px); line-height: fluid(24px, 20px); letter-spacing: fluid(-0.32px, -0.28px);
+    margin: fluid(16px, 0px) 0 fluid(-2px, 0px);
+  }
 }
 
 // ==========================================================================
@@ -7670,6 +8514,9 @@ body.is-menu-open {
 .gb-rich-text .gb-rich-table__wrap {
   margin-top: 0;
   margin-bottom: 20px;
+
+  @include narrow { margin-bottom: 16px; }
+  @include tablet { margin-bottom: fluid(16px, 20px); }
 }
 
 .gb-rich-text h2 {
@@ -7777,8 +8624,14 @@ body.is-menu-open {
 }
 
 // Shipping's rate table (326:83129).
+// 326:83143 draws a real grid: every cell is stroked #cccccc 0.5 CENTER with
+// 10/12 padding, the header cells are filled #f3f3f3, and rows 2/4/6 the same.
+// Shipping has no desktop board, so the only drawn table is the mobile one and
+// it holds at every width -- the earlier desktop fallback (a single bottom rule,
+// auto layout, no fills) lost the whole grid at 768.
 .gb-rich-table {
   width: 100%;
+  table-layout: fixed;      // percentage/px column widths need a non-auto width
   border-collapse: collapse;
   font-size: 16px;
   line-height: 24px;
@@ -7787,48 +8640,26 @@ body.is-menu-open {
 
   th,
   td {
-    padding: 12px 0;
+    // The stroke is CENTER, i.e. inside the board's 44 -- so the padding is
+    // (44 - 24 line - 1 collapsed border) / 2, not a flat 10.
+    padding: 9.5px 12px;
     text-align: left;
-    border-bottom: 1px solid $c-ink-05;
+    border: 0.5px solid $c-gray-300;
   }
 
-  th { font-weight: 500; }
+  th { font-weight: 500; background: $c-gray-050; }
+  tbody tr:nth-child(even) { background: $c-gray-050; }
 
-  // 326:83143 is a 350-wide table with an 88 / 262 split and 44-tall rows (68 for
-  // the two-line header). Auto layout gives the columns to whatever the content
-  // asks for -- 60 / 289 here, which is why the header had to break and why the
-  // body rows then ran two lines deep. Fixed layout needs a non-auto table width,
-  // which the 100% above provides.
-  // 326:83143 draws a real grid: every cell is stroked #cccccc 0.5 CENTER with
-  // 10/12 padding, the header cells are filled #f3f3f3, and rows 2/4/6 are
-  // filled the same -- not the single bottom rule the desktop fallback uses.
-  // (Shipping has no desktop board, so that fallback stays until the designer
-  // confirms one; see docs/PROJECT-STATUS.md.)
-  @include narrow {
-    table-layout: fixed;
-
-    th,
-    td {
-      // The stroke is CENTER, i.e. inside the board's 44 -- so the padding is
-      // (44 - 24 line - 1 collapsed border) / 2, not a flat 10.
-      padding: 9.5px 12px;
-      border: 0.5px solid $c-gray-300;
-    }
-
-    th { background: $c-gray-050; }
-    tbody tr:nth-child(even) { background: $c-gray-050; }
-
-    th:first-child  { width: 25.14%; }   //  88 / 350
-    th:nth-child(2) { width: 74.86%; }   // 262 / 350
-  }
+  // The board hugs the label column and fills the other, so the hugging one is
+  // px: at the board's own 350 that is exactly 88 / 262, and a wider viewport
+  // only grows the fill side instead of stretching both.
+  th:first-child { width: 88px; }
 }
 
-// 326:83187 splits 203 / 147 instead, and its header is one line.
+// 326:83187 fills the first column instead and fixes the 147 Cost one.
 .gb-rich-table--even {
-  @include narrow {
-    th:first-child  { width: 58%; }      // 203 / 350
-    th:nth-child(2) { width: 42%; }      // 147 / 350
-  }
+  th:first-child  { width: auto; }
+  th:nth-child(2) { width: 147px; }
 }
 
 .gb-rich-table__wrap {
@@ -7868,14 +8699,16 @@ body.is-menu-open {
   margin-inline: auto;
   padding-inline: 189px;
 
+  // Client has moved this stack point three times: 1024 (r30) -> 991 (r41) ->
+  // 767 now. Two columns therefore hold through the whole tablet tier. Only the
+  // direction sits on the value tier — the gutter still hands over to --pad-x
+  // at 1200, which is a separate concern from stacking.
   @include tight { gap: 64px; padding-inline: var(--pad-x); }
-  @include stack {
+  @include narrow {
     flex-direction: column;
     align-items: center;
-    gap: 48px;
-    padding-inline: var(--pad-x);
+    gap: 46px;          // client-set
   }
-  @include narrow { gap: 32px; padding-inline: var(--pad-x); }
 }
 
 .gb-compare__heading {
@@ -7885,7 +8718,8 @@ body.is-menu-open {
   flex: 0 1 410px;
   padding-top: 20px;
 
-  @include stack { flex: 1 1 auto; width: 100%; max-width: 560px; padding-top: 0; }
+  // Client-set: no 560 cap once stacked — the block runs the full version width.
+  @include narrow { flex: 1 1 auto; width: 100%; padding-top: 0; }
 }
 
 .gb-compare__title {
@@ -7916,7 +8750,7 @@ body.is-menu-open {
   flex: 0 1 519px;
   width: 100%;
 
-  @include stack { flex: 1 1 auto; max-width: 560px; }
+  @include narrow { flex: 1 1 auto; }
 }
 
 // Avatars and mark columns share the gap but not the track sizes: in 324:56865
@@ -8052,25 +8886,38 @@ body.is-menu-open {
   margin-inline: auto;
   padding-inline: 188px;
 
+  // Client-set: two columns hold until 767 (see .gb-compare__inner).
   @include tight { gap: 40px; padding-inline: var(--pad-x); }
-  @include stack {
+  // Client-set: the version gutter stays on the container on mobile (as
+  // .gb-compare__inner already does); the body below gives its own up.
+  @include narrow {
     flex-direction: column;
     gap: 32px;
     padding-inline: var(--pad-x);
   }
-  @include narrow { gap: 32px; padding-inline: 0; }
 }
 
 .gb-ingredients__disc {
   --box-bg: #{$c-sand};
   position: relative;
-  flex: 0 0 520px;
-  width: 520px;
+  // Client-set: shrinkable, not a hard 520. Two columns now run down to 991,
+  // where a rigid basis would starve the body column the way the page hero's
+  // media used to. aspect-ratio: 1 keeps it square at whatever width it lands.
+  flex: 0 1 520px;
+  width: auto;
   aspect-ratio: 1;
   border-radius: $r-xl;
 
-  @include stack { flex: 0 1 auto; width: 100%; max-width: 520px; }
-  @include narrow { max-width: 350px; border-radius: $r-lg; }
+  // Client-set: 520 caps the square on mobile too (r42 removed the cap and it
+  // ran 767 wide at 767 — edge to edge). align-items: center on the inner does
+  // the centring. Above 767 this is a row again and the shrinkable 520 basis on
+  // the base rule applies.
+  @include narrow {
+    flex: 0 1 auto;
+    width: 100%;
+    max-width: 520px;
+    border-radius: $r-lg;
+  }
 }
 
 .gb-ingredients__disc .gb-promo-art {
@@ -8090,8 +8937,15 @@ body.is-menu-open {
   flex: 0 1 489px;
   padding-inline: 32px;
 
-  @include stack { flex: 1 1 auto; width: 100%; max-width: 520px; padding-inline: 0; }
-  @include narrow { gap: 16px; padding-inline: $pad-x-mobile; }
+  // Follows the column switch, now at 767 — above it this is still a row and
+  // keeps its 489 basis. Client-set: no cap once stacked, and no gutter of its
+  // own — the inner carries it now.
+  @include narrow {
+    flex: 1 1 auto;
+    width: 100%;
+    gap: 16px;
+    padding-inline: 0;
+  }
   @include tablet { gap: fluid(16px, 48px); }
 
   // The button is 220px hug in Figma; as a column flex child it would stretch

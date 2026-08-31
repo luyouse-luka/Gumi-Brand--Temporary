@@ -62,6 +62,8 @@
    * Header — dropdown panel on desktop, full-width drawer on mobile.
    * ------------------------------------------------------------------- */
   var header = {
+    lockToken: 0,
+
     init: function () {
       var el = document.getElementById("site-header");
       if (!el) return;
@@ -75,6 +77,14 @@
         self.set(!el.classList.contains("is-open"));
       });
 
+      // On mobile the drawer covers the whole viewport, bar included, so the
+      // toggle underneath it is not hit-testable and there is nothing "outside"
+      // the panel to click. Its own close button is the only way back out.
+      var close = el.querySelector(".gb-header__panel-close");
+      if (close) {
+        close.addEventListener("click", function () { self.set(false); });
+      }
+
       document.addEventListener("keydown", function (e) {
         if (e.key === "Escape") self.set(false);
       });
@@ -82,14 +92,6 @@
       document.addEventListener("click", function (e) {
         if (el.classList.contains("is-open") && !el.contains(e.target)) self.set(false);
       });
-
-      // Once the header is sticky its distance to the viewport top changes with
-      // scroll (it drops to zero when the announcement bar leaves), so the mobile
-      // drawer's "header bottom to viewport bottom" height has to be measured.
-      // The CSS calc() only holds while the page is at the very top.
-      window.addEventListener("resize", function () {
-        if (el.classList.contains("is-open")) self.measure();
-      }, { passive: true });
 
       var items = el.querySelectorAll("[data-collapsible]");
       for (var i = 0; i < items.length; i++) {
@@ -104,18 +106,41 @@
       }
     },
 
-    // Usable drawer height = viewport height - where the header's bottom sits
-    measure: function () {
-      var bottom = this.el.getBoundingClientRect().bottom;
-      this.el.style.setProperty("--drawer-h", (window.innerHeight - bottom) + "px");
-    },
-
     set: function (open) {
-      if (open) this.measure();
+      // Measure the real scrollbar width while it is still on screen: the lock
+      // below removes it and the viewport would widen by that much, shunting the
+      // page sideways. The is-menu-open rule pads the freed width back in.
+      if (open) {
+        var scrollbarW = window.innerWidth - document.documentElement.clientWidth;
+        document.documentElement.style.setProperty("--scrollbar-w", scrollbarW + "px");
+      }
+      var wasOpen = this.el.classList.contains("is-open");
       this.el.classList.toggle("is-open", open);
       var toggle = this.el.querySelector(".gb-header__toggle");
       if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
-      document.body.classList.toggle("is-menu-open", open);
+      // html carries the scroll (the reset puts overflow-x on it), so the lock
+      // has to sit on both. The rule itself is scoped to the phone tier.
+      var token = ++this.lockToken;
+      if (open) {
+        document.documentElement.classList.add("is-menu-open");
+        document.body.classList.add("is-menu-open");
+        return;
+      }
+      // Same shape as modal.close(): dropping the lock in this frame hands the
+      // scrollbar back while the drawer is still sliding shut, and the drawer's
+      // containing block narrows by that width -- it steps 15px sideways in full
+      // view. Hold the lock for the slide-out, which the panel declares itself.
+      // Token, not a stored timer id: reopening mid-exit must not let the stale
+      // callback unlock the drawer that replaced this one.
+      var panel = this.el.querySelector(".gb-header__panel");
+      var ms = (wasOpen && panel) ? modalExitMs(panel) : 0;
+      var self = this;
+      var run = function () {
+        if (self.lockToken !== token) { return; }
+        document.documentElement.classList.remove("is-menu-open");
+        document.body.classList.remove("is-menu-open");
+      };
+      if (ms > 0) { setTimeout(run, ms); } else { run(); }
     }
   };
 
@@ -254,6 +279,73 @@
   };
 
   function rand(min, max) { return min + Math.random() * (max - min); }
+
+  /* ---------------------------------------------------------------------
+   * countUp — [data-count-up] counts a figure up from zero the first time it
+   * enters the viewport.
+   *
+   * The markup ships the FINAL value; nothing here writes the number into an
+   * empty element. So with JS off, with reduced motion, or if this throws, the
+   * figure is simply there — which is why it can afford to bail early anywhere.
+   *
+   * The element keeps its authored innerHTML (the figures are wrapped in a
+   * span) and gets it back verbatim on the last frame, so the count can never
+   * leave a rounded value or a stripped wrapper behind.
+   * ------------------------------------------------------------------- */
+  var COUNT_MS = 1400;
+
+  var countUp = {
+    init: function () {
+      var els = document.querySelectorAll("[data-count-up]");
+      if (!els.length) return;
+      // Reduced motion: leave the authored figure exactly as it is.
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (!("IntersectionObserver" in window)) return;
+
+      var self = this;
+      var io = new IntersectionObserver(function (entries, obs) {
+        for (var i = 0; i < entries.length; i++) {
+          if (!entries[i].isIntersecting) continue;
+          obs.unobserve(entries[i].target);      // once only
+          self.run(entries[i].target);
+        }
+      }, { rootMargin: "0px 0px -12% 0px" });
+
+      for (var j = 0; j < els.length; j++) { io.observe(els[j]); }
+    },
+
+    run: function (el) {
+      var html = el.innerHTML;
+      var text = el.textContent.trim();
+      // prefix / digits / suffix — "95%" and "6g" both land here, "Actually
+      // good" does not and is left alone.
+      var m = text.match(/^(\D*?)(\d+(?:\.\d+)?)(\D*)$/);
+      if (!m) return;
+      var head = m[1], target = parseFloat(m[2]), tail = m[3];
+      var decimals = (m[2].split(".")[1] || "").length;
+
+      /* Freeze the box at its final width first: "0%" is narrower than "95%",
+         and the figure sits in a flex column, so without this every frame
+         relayouts the card. */
+      el.style.minWidth = el.getBoundingClientRect().width + "px";
+
+      var t0 = 0;
+      var step = function (now) {
+        if (!t0) { t0 = now; }
+        var p = Math.min(1, (now - t0) / COUNT_MS);
+        if (p < 1) {
+          // easeOutCubic — the same shape as $ease-out in the motion tokens
+          var v = target * (1 - Math.pow(1 - p, 3));
+          el.textContent = head + v.toFixed(decimals) + tail;
+          window.requestAnimationFrame(step);
+        } else {
+          el.innerHTML = html;
+          el.style.minWidth = "";
+        }
+      };
+      window.requestAnimationFrame(step);
+    }
+  };
 
   /* ---------------------------------------------------------------------
    * lineReveal — per-line entrance for running copy, the other half of the
@@ -602,9 +694,20 @@
    * ------------------------------------------------------------------- */
   var FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+  // Exit length, declared by the modal itself in CSS next to the transition that
+  // uses it. Reduced motion zeroes every duration and delay, so the exit is over
+  // before the next frame and there is nothing to wait for.
+  function modalExitMs(el) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) { return 0; }
+    var v = getComputedStyle(el).getPropertyValue("--modal-exit").trim();
+    if (!v) { return 0; }
+    return v.slice(-2) === "ms" ? parseFloat(v) : parseFloat(v) * 1000;
+  }
+
   var modal = {
     current: null,
     lastFocus: null,
+    unlockToken: 0,
 
     init: function () {
       var self = this;
@@ -650,8 +753,11 @@
       document.body.classList.add("is-modal-open");
       // The page is locked, so Lenis has nothing to do; stopping it lets the modal body scroll
       smoothScroll.pause();
-      var first = el.querySelector(FOCUSABLE);
-      if (first) first.focus();
+      // Focus the dialog, not its first control. FOCUSABLE lands on the close
+      // button, and a script focus with no pointer input before it still counts
+      // as :focus-visible -- the ring painted itself the moment the modal
+      // appeared. The container carries tabindex="-1" and has rings turned off.
+      el.focus();
     },
 
     close: function () {
@@ -660,10 +766,26 @@
       this.current = null;
       el.classList.remove("is-open");
       el.setAttribute("aria-hidden", "true");
-      document.documentElement.classList.remove("is-modal-open");
-      document.body.classList.remove("is-modal-open");
-      smoothScroll.resume();
+      // The lock stays on until the exit has played. Dropping it here hands the
+      // scrollbar back while the panel is still fully opaque, and this modal is
+      // position:fixed -- its containing block is the viewport, which narrows by
+      // the scrollbar width -- so the centred panel jumps sideways mid-fade.
+      this.unlockAfter(modalExitMs(el));
       if (this.lastFocus) this.lastFocus.focus();
+    },
+
+    // A token rather than a stored timer id: open() can land inside the wait, and
+    // the stale callback must not unlock the modal that replaced this one.
+    unlockAfter: function (ms) {
+      var self = this;
+      var token = ++this.unlockToken;
+      var run = function () {
+        if (self.unlockToken !== token || self.current) { return; }
+        document.documentElement.classList.remove("is-modal-open");
+        document.body.classList.remove("is-modal-open");
+        smoothScroll.resume();
+      };
+      if (ms > 0) { setTimeout(run, ms); } else { run(); }
     },
 
     trap: function (e) {
@@ -767,27 +889,44 @@
   };
 
   /* ---------------------------------------------------------------------
-   * slider — arrow controls for a horizontal snap track, with an optional
-   * endless loop.
+   * slider — horizontal card rails, driven by Swiper.
    *
-   * The track already scrolls and snaps in CSS, so this only adds the arrows
-   * and, for [data-slider-loop], the wrap-around; with JS off the strip is
-   * still swipeable, just finite and without buttons. One step = one slide
-   * plus the gap, read from the DOM rather than hard-coded, so it survives the
-   * responsive gap changes.
+   * Client-set: every carousel on the site runs on Swiper, not just the product
+   * gallery. This was a native overflow-x scroller with scroll-snap and a
+   * clone-based endless loop; Swiper owns the translate, the loop, the drag and
+   * the momentum now, so the clone bookkeeping, the wrap-around, the pointer
+   * drag and the click-swallowing are all gone.
    *
    *   [data-slider]  wrapper
-   *     [data-slider-track]  the scroller
+   *     [data-slider-track]  the .swiper container
+   *       .swiper-wrapper > [.swiper-slide]
    *     [data-slider-prev] / [data-slider-next]  buttons
-   *     [data-slider-loop]   clone the set and wrap around
-   *     [data-slider-centre] park a slide's centre on the viewport centre
    *
-   * The loop is clone-based rather than transform-based so that native touch
-   * scrolling, momentum and snapping all keep working: the set is repeated
-   * until there is at least one full set of runway on each side, and once the
-   * scroll goes idle the position is shifted by exactly one set width. A whole
-   * set is 1640px on the reels row, so a single fling cannot outrun it, and
-   * shifting only when idle means the jump never cuts a momentum scroll short.
+   * Config rides on the wrapper, one attribute per Swiper option, so the markup
+   * still says what a rail does without reading this file:
+   *   [data-slider-loop]           endless wrap (needs > 2x the visible count)
+   *   [data-slider-rewind]         arrows wrap round instead of dead-ending
+   *   [data-slider-centre]         centeredSlides at every width
+   *   [data-slider-centre-narrow]  centeredSlides below 768 only
+   *   [data-slider-step]           one slide per gesture (longSwipes: false)
+   *   [data-slider-until="N"]      only a rail at or below N px wide; above that
+   *                                Swiper is destroyed and CSS lays the track out
+   *                                some other way (the expert cards become a grid)
+   *
+   * `spaceBetween` is read off the track's own `column-gap` rather than written
+   * here: the gap is responsive and lives in the SCSS, and Swiper needs the
+   * resolved number in JS because it writes the spacing as slide margins.
+   *
+   * ⚠ `loop` has a hard prerequisite. Swiper 11 loops by REORDERING the slides it
+   * has rather than cloning, so a rail can never show more cards than exist:
+   * with the 5 cards the reels row used to carry, 1440 (which fits 4.3) left
+   * 232px of empty track on the right. Client-set: the reels rows now carry 10
+   * placeholder cards so the loop has more than twice the visible count, and
+   * they run `loop`. The expert rail on reviews stays on `rewind` -- above 991
+   * it is a three-column GRID, so padding it out to loop size would turn one row
+   * of three into three rows and change the desktop layout.
+   * `rewind` (arrows wrap, nothing dead-ends) remains the fallback for any rail
+   * that cannot be padded out.
    * ------------------------------------------------------------------- */
   var slider = {
     init: function () {
@@ -797,207 +936,132 @@
 
     bind: function (root) {
       var track = root.querySelector("[data-slider-track]");
+      if (!track || !track.querySelector(".swiper-slide")) { return; }
+      // Vendor script missing or blocked: the wrapper is still a flex row of
+      // cards, so the first few show and the arrows do nothing.
+      if (typeof Swiper !== "function") { return; }
+
       var prev = root.querySelector("[data-slider-prev]");
       var next = root.querySelector("[data-slider-next]");
-      if (!track) { return; }
-
       var loop = root.hasAttribute("data-slider-loop");
-      var originals = [];
-      var i;
-      for (i = 0; i < track.children.length; i++) { originals.push(track.children[i]); }
-      var setCount = originals.length;
-
-      var pitch = function () {
-        var first = track.firstElementChild;
-        if (!first) { return track.clientWidth; }
-        var gap = parseFloat(getComputedStyle(track).columnGap) || 0;
-        return first.getBoundingClientRect().width + gap;
+      // Swiper treats them as alternatives; loop wins where both are present.
+      var rewind = !loop && root.hasAttribute("data-slider-rewind");
+      var until = parseFloat(root.getAttribute("data-slider-until"));
+      var centreNarrow = root.hasAttribute("data-slider-centre-narrow");
+      var centre = root.hasAttribute("data-slider-centre") || centreNarrow;
+      // Whether centring is in force RIGHT NOW, which is what decides where the
+      // rail opens. Only initialSlide may read this: `centeredSlides` itself has
+      // to stay true in the base params or the 768 breakpoint below has nothing
+      // to fall back to on the way down.
+      var centredNow = function () {
+        return root.hasAttribute("data-slider-centre")
+            || (centreNarrow && matchMedia("(max-width: 767px)").matches);
       };
-      var setWidth = function () { return pitch() * setCount; };
+      var sw = null;
 
-      // Enough copies that a full set of runway sits on each side of the
-      // viewport: 1.5 sets of travel plus whatever the viewport itself covers.
-      var fill = function () {
-        if (!loop || !setCount) { return; }
-        // A set that measures 0 (images not yet decoded, display:none ancestor)
-        // used to fall back to 1px and ask for one clone per viewport pixel --
-        // measured at 4281 nodes. Wait for a real measurement instead.
-        var w = setWidth();
-        if (w <= 1) { return; }
-        var need = Math.min(12, Math.ceil(2.5 + track.clientWidth / w));
-        var have = Math.round(track.children.length / setCount);
-        while (have < need) {
-          for (i = 0; i < setCount; i++) {
-            var clone = originals[i].cloneNode(true);
-            clone.setAttribute("aria-hidden", "true");
-            /* aria-hidden with a focusable inside is a trap: the reader skips
-               the node but Tab still lands in it. Take the copies out of the
-               tab order — the originals are still reachable. */
-            if (clone.matches && clone.matches(FOCUSABLE)) { clone.tabIndex = -1; }
-            var inner = clone.querySelectorAll ? clone.querySelectorAll(FOCUSABLE) : [];
-            for (var c = 0; c < inner.length; c++) { inner[c].tabIndex = -1; }
-            track.appendChild(clone);
-          }
-          have++;
+      var options = function () {
+        var o = {
+          slidesPerView: "auto",
+          spaceBetween: parseFloat(getComputedStyle(track).columnGap) || 0,
+          loop: loop,
+          rewind: rewind,
+          grabCursor: true,
+          speed: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 400,
+          centeredSlides: centre,
+          // A centred rail opens on its MIDDLE card, which is what puts the set
+          // symmetrically across the viewport -- the board's own framing. Opening
+          // on the first card would centre that one and leave the whole left half
+          // of the track empty.
+          // A centred rail opens on its MIDDLE card so the set sits symmetrically
+          // across the viewport. Under `loop` there is no "whole set" to centre --
+          // the rail is endless in both directions -- so the first card is fine.
+          initialSlide: (!loop && centredNow())
+            ? Math.floor((track.querySelectorAll(".swiper-slide").length - 1) / 2)
+            : 0,
+          // One slide per gesture: without this a long drag hands over to the
+          // long-swipe rule and crosses as many cards as it travelled.
+          longSwipes: !root.hasAttribute("data-slider-step"),
+          // The markup carries role / aria-label already; the a11y module would
+          // add a second, conflicting set.
+          a11y: false,
+          keyboard: false
+        };
+        if (centreNarrow) {
+          o.breakpoints = { 768: { centeredSlides: false } };
         }
-      };
-
-      var jump = function (to) {
-        var prevBehavior = track.style.scrollBehavior;
-        track.style.scrollBehavior = "auto";
-        track.scrollLeft = to;
-        track.style.scrollBehavior = prevBehavior;
-      };
-
-      // Keep the position inside the second set, so there is always a set of
-      // content to scroll into on either side.
-      var wrap = function () {
-        if (!loop) { return; }
-        var w = setWidth();
-        if (w <= 0) { return; }
-        var s = track.scrollLeft;
-        if (s < w * 0.5) { jump(s + w); }
-        else if (s > w * 1.5) { jump(s - w); }
+        return o;
       };
 
       var sync = function () {
-        if (loop) { return; }          // no ends to reach
-        // 1px of slack: sub-pixel scroll positions would otherwise never
-        // satisfy an exact comparison and the end button would stay live.
-        var max = track.scrollWidth - track.clientWidth;
-        if (prev) { prev.disabled = track.scrollLeft <= 1; }
-        if (next) { next.disabled = track.scrollLeft >= max - 1; }
+        if (!sw || rewind || loop) { return; }   // neither one ever dead-ends
+        if (prev) { prev.disabled = sw.isBeginning; }
+        if (next) { next.disabled = sw.isEnd; }
       };
 
-      if (prev) {
-        prev.addEventListener("click", function () {
-          track.scrollBy({ left: -pitch(), behavior: "smooth" });
+      var create = function () {
+        if (sw) { return; }
+        sw = new Swiper(track, options());
+        sw.on("slideChange", sync);
+        sync();
+      };
+
+      var destroy = function () {
+        if (!sw) { return; }
+        sw.destroy(true, true);           // also strips the inline styles it wrote
+        sw = null;
+        if (prev) { prev.disabled = false; }
+        if (next) { next.disabled = false; }
+      };
+
+      if (prev) { prev.addEventListener("click", function () { if (sw) sw.slidePrev(); }); }
+      if (next) { next.addEventListener("click", function () { if (sw) sw.slideNext(); }); }
+
+      // The rail is focusable (tabindex on the track), and a native scroller
+      // answered the arrow keys for free. Bound to the track, not the document:
+      // a reader arrowing down the page must not be paging a carousel.
+      if (track.hasAttribute("tabindex")) {
+        track.addEventListener("keydown", function (e) {
+          if (!sw) { return; }
+          if (e.key === "ArrowRight") { sw.slideNext(); e.preventDefault(); }
+          else if (e.key === "ArrowLeft") { sw.slidePrev(); e.preventDefault(); }
         });
       }
-      if (next) {
-        next.addEventListener("click", function () {
-          track.scrollBy({ left: pitch(), behavior: "smooth" });
-        });
-      }
 
-      track.addEventListener("scroll", function () {
-        if (!track._t) {
-          track._t = window.requestAnimationFrame(function () {
-            track._t = 0;
-            sync();
-            if (root._onScroll) { root._onScroll(); }
-          });
-        }
-        // Wrap only once the scroll has settled, so a jump can never cut a
-        // momentum scroll or a smooth scrollBy short.
-        window.clearTimeout(track._idle);
-        track._idle = window.setTimeout(wrap, 120);
-      }, { passive: true });
+      if (!(until > 0)) { create(); return; }
 
-      /* Drag to scroll, mouse only. Touch already scrolls this rail natively
-         with momentum and snapping; taking over its pointer events would cost
-         both. The rail keeps its own scrollLeft, so this is just a nudge —
-         release hands straight back to the CSS snap. */
-      var drag = null;
-      var DRAG_SLOP = 5;      // below this it is a click, not a drag
-
-      track.addEventListener("pointerdown", function (e) {
-        track._noClick = false;
-        if (e.pointerType !== "mouse" || e.button !== 0) { return; }
-        drag = { x: e.clientX, left: track.scrollLeft, moved: 0, held: false };
-      });
-
-      track.addEventListener("pointermove", function (e) {
-        if (!drag) { return; }
-        var dx = e.clientX - drag.x;
-        if (Math.abs(dx) > drag.moved) { drag.moved = Math.abs(dx); }
-        if (!drag.held && drag.moved > DRAG_SLOP) {
-          drag.held = true;
-          track.classList.add("is-dragging");
-          try { track.setPointerCapture(e.pointerId); } catch (err) {}
-        }
-        if (drag.held) {
-          track.scrollLeft = drag.left - dx;
-          e.preventDefault();
-        }
-      });
-
-      var dragEnd = function (e) {
-        if (!drag) { return; }
-        var held = drag.held;
-        if (held) {
-          try { track.releasePointerCapture(e.pointerId); } catch (err) {}
-          track.classList.remove("is-dragging");
-          /* Swallow the click this drag would otherwise fire: the pointer went
-             down on a reel, so letting it through would open the lightbox at
-             the end of every drag. */
-          track._noClick = true;
-        }
-        drag = null;
-      };
-      track.addEventListener("pointerup", dragEnd);
-      track.addEventListener("pointercancel", dragEnd);
-
-      track.addEventListener("click", function (e) {
-        if (!track._noClick) { return; }
-        track._noClick = false;
-        e.preventDefault();
-        e.stopPropagation();
-      }, true);
-
-      // The reels row is full-bleed and wider than the viewport; the design
-      // frames it by centring the window on a card's centre (Reels Row
-      // x=-88 w=1617 on a 1440 frame — 88px of overhang on each side, which is
-      // exactly what "middle card centred" produces at that width). Recompute
-      // it rather than hard-coding 88 so the framing survives any viewport.
-      var centre = function () {
-        if (!root.hasAttribute("data-slider-centre")) { return; }
-        var p = pitch();
-        var slide = track.firstElementChild;
-        if (!p || !slide) { return; }
-        var half = slide.getBoundingClientRect().width / 2;
-        var target = loop ? setWidth() : (track.scrollWidth - track.clientWidth) / 2;
-        var k = Math.round((target + track.clientWidth / 2 - half) / p);
-        var to = k * p + half - track.clientWidth / 2;
-        var max = track.scrollWidth - track.clientWidth;
-        jump(Math.max(0, Math.min(max, to)));
-      };
-
-      // Only width matters here. Mobile browsers fire resize when the address
-      // bar shows/hides, which changes height alone -- rebuilding on that threw
-      // the track back to centre while the user was mid-swipe.
-      var lastW = window.innerWidth;
-      var relayout = function () { fill(); centre(); sync(); };
-
-      window.addEventListener("resize", function () {
-        if (window.innerWidth === lastW) { return; }
-        lastW = window.innerWidth;
-        relayout();
-      }, { passive: true });
-      relayout();
-      root._sync = sync;
-      root._wrap = wrap;
-      root._centre = centre;
+      // Rails that only exist below a breakpoint. matchMedia rather than
+      // Swiper's own `breakpoints: {enabled: false}`: disabling leaves the loop
+      // duplicates in the DOM, and above the threshold those show up as extra
+      // grid cells.
+      var mq = matchMedia("(max-width: " + until + "px)");
+      var apply = function () { if (mq.matches) { create(); } else { destroy(); } };
+      if (mq.addEventListener) { mq.addEventListener("change", apply); }
+      else if (mq.addListener) { mq.addListener(apply); }
+      apply();
     }
   };
 
   /* ---------------------------------------------------------------------
-   * gallery — thumbnail rail driving the main stage.
+   * gallery — thumbnail rail driving a Swiper stage.
    *
-   * One slide at a time, cross-faded. It used to be a scroll-snap rail where a
-   * flick could cross several slides and the change was a shift. Slides are
-   * stacked now and only .is-active is opaque; the index is a variable here rather
-   * than something inferred from scrollLeft.
+   * Client-set: the stage is Swiper (assets/swiper-bundle.min.js), configured to
+   * behave exactly as the hand-rolled version did — cross-fade, one slide per
+   * gesture, no wrap, stops at the ends.
    *
-   * "One slide per gesture" means +/-1 regardless of distance — 40px and 400px both
-   * advance one. It stops at the ends and does not wrap (a product gallery, not a
-   * carousel).
+   * The rail is deliberately NOT Swiper's thumbs module: that would turn it into
+   * a transform track and cost it its scroll-snap, its overflow scrolling and its
+   * place in the Lenis PREVENT list. It stays a plain button strip calling
+   * slideTo, with slideChange writing the active state back.
+   *
+   * Keyboard is ours too. Swiper's module listens on the document, so ArrowLeft /
+   * ArrowRight would change slides while the reader is arrowing down the page;
+   * this stays bound to the focused stage.
    *
    *   [data-gallery]        shell
    *     [data-gallery-thumbs] thumbnail column
    *       [data-gallery-go="N"] jump to slide N
-   *     [data-gallery-track]  stage
-   *       [data-gallery-slide]  one slide
+   *     [data-gallery-track]  stage (.swiper)
+   *       [data-gallery-slide]  one slide (.swiper-slide)
    * ------------------------------------------------------------------- */
   var gallery = {
     init: function () {
@@ -1009,69 +1073,60 @@
       var stage = root.querySelector("[data-gallery-track]");
       var thumbs = root.querySelectorAll("[data-gallery-go]");
       if (!stage || !thumbs.length) { return; }
-      var slides = stage.querySelectorAll("[data-gallery-slide]");
-      if (!slides.length) { return; }
+      if (!stage.querySelector("[data-gallery-slide]")) { return; }
+      // Vendor script missing or blocked: the CSS leaves slide one showing, which
+      // is the same state this had with JS off.
+      if (typeof Swiper !== "function") { return; }
 
-      var idx = 0;
-      for (var k = 0; k < slides.length; k++) {
-        if (slides[k].classList.contains("is-active")) { idx = k; }
-      }
+      var sw = new Swiper(stage, {
+        effect: "fade",
+        fadeEffect: { crossFade: true },
+        // Was `transition: opacity .3s` on the slide; Swiper writes the duration
+        // inline, so the reduced-motion reset cannot reach it and it is set here.
+        speed: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 300,
+        // The old gesture, restated as options: nothing moves under the finger,
+        // a drag shorter than 40px is not a swipe, and a mostly-vertical one is
+        // the page scrolling.
+        followFinger: false,
+        threshold: 40,
+        touchAngle: 45,
+        // The markup already carries role / aria-label / aria-current; the a11y
+        // module would add a second, conflicting set.
+        a11y: false,
+        keyboard: false
+      });
 
-      var show = function (next) {
-        next = Math.max(0, Math.min(slides.length - 1, next));
-        if (next === idx) { return; }
-        idx = next;
-        for (var i = 0; i < slides.length; i++) {
-          slides[i].classList.toggle("is-active", i === idx);
-        }
+      var sync = function (scroll) {
+        var idx = sw.activeIndex;
         for (var j = 0; j < thumbs.length; j++) {
           var on = j === idx;
           thumbs[j].classList.toggle("is-active", on);
           if (on) { thumbs[j].setAttribute("aria-current", "true"); }
           else { thumbs[j].removeAttribute("aria-current"); }
         }
-        // The thumbnail rail scrolls too (vertical on desktop, horizontal when narrow)
-        if (thumbs[idx] && thumbs[idx].scrollIntoView) {
+        // The rail scrolls too (vertical on desktop, horizontal when narrow).
+        // Not on first paint: nothing has been chosen yet, and scrollIntoView
+        // would drag the page down to the gallery on load.
+        if (scroll && thumbs[idx] && thumbs[idx].scrollIntoView) {
           try { thumbs[idx].scrollIntoView({ block: "nearest", inline: "nearest" }); } catch (e) {}
         }
       };
 
+      sw.on("slideChange", function () { sync(true); });
+      sync(false);
+
       for (var i = 0; i < thumbs.length; i++) {
         (function (btn) {
           btn.addEventListener("click", function () {
-            show(parseInt(btn.getAttribute("data-gallery-go"), 10) || 0);
+            sw.slideTo(parseInt(btn.getAttribute("data-gallery-go"), 10) || 0);
           });
         })(thumbs[i]);
       }
 
-      // One slide per gesture. Pointer events rather than touch, so trackpad and
-      // mouse drags work too; pointerType does not matter here.
-      var x0 = null, y0 = null;
-      stage.addEventListener("pointerdown", function (e) {
-        x0 = e.clientX; y0 = e.clientY;
-      }, { passive: true });
-      stage.addEventListener("pointerup", function (e) {
-        if (x0 === null) { return; }
-        var dx = e.clientX - x0, dy = e.clientY - y0;
-        x0 = y0 = null;
-        // A mostly-vertical gesture is scrolling the page, not changing slides
-        if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) { return; }
-        show(idx + (dx < 0 ? 1 : -1));
-      }, { passive: true });
-      stage.addEventListener("pointercancel", function () { x0 = y0 = null; }, { passive: true });
-
       stage.addEventListener("keydown", function (e) {
-        if (e.key === "ArrowRight") { show(idx + 1); e.preventDefault(); }
-        else if (e.key === "ArrowLeft") { show(idx - 1); e.preventDefault(); }
+        if (e.key === "ArrowRight") { sw.slideNext(); e.preventDefault(); }
+        else if (e.key === "ArrowLeft") { sw.slidePrev(); e.preventDefault(); }
       });
-
-      // First paint: the markup already has is-active on slide one, so only sync the thumbs
-      for (var m = 0; m < thumbs.length; m++) {
-        var on2 = m === idx;
-        thumbs[m].classList.toggle("is-active", on2);
-        if (on2) { thumbs[m].setAttribute("aria-current", "true"); }
-        else { thumbs[m].removeAttribute("aria-current"); }
-      }
     }
   };
 
@@ -1101,6 +1156,196 @@
           select.selectedIndex = i;
           return;
         }
+      }
+    }
+  };
+
+  /* ---------------------------------------------------------------------
+   * selectBox — client-set: the enquiry select is presented as a button and a
+   * ul listbox so the chevron can rotate. A native <select> paints its own
+   * popup, and the background-image arrow it used before cannot be transformed.
+   *
+   * An enhancement, not a replacement. The native control stays in the DOM as
+   * the single source of the options AND as the form's value carrier, so submit
+   * still posts `enquiry`, enquiryPrefill still works, and if this module ever
+   * throws the user is left with the native control rather than nothing.
+   * It runs after enquiryPrefill so the button opens on the preselected option.
+   *
+   * ARIA listbox pattern: the ul takes focus and moves aria-activedescendant,
+   * so no option ever holds a tabindex. Typeahead is not implemented.
+   * ------------------------------------------------------------------- */
+  var selectBox = {
+    boxes: [],
+
+    init: function () {
+      var self = this;
+      var all = document.querySelectorAll("select[data-select]");
+      for (var i = 0; i < all.length; i++) { this.build(all[i]); }
+      if (!this.boxes.length) { return; }
+
+      document.addEventListener("click", function (e) {
+        for (var i = 0; i < self.boxes.length; i++) {
+          var b = self.boxes[i];
+          if (b.open && !b.wrap.contains(e.target)) { self.close(b, false); }
+        }
+      });
+    },
+
+    build: function (native) {
+      if (!native.options.length) { return; }
+      var self = this;
+      var id = native.id || ("gb-select-" + this.boxes.length);
+      // "bare" = the phone field's country code: same widget with no box of its
+      // own, because .gb-field__phone already draws the border around it.
+      var bare = native.getAttribute("data-select") === "bare";
+      var aria = native.getAttribute("aria-label");
+
+      var wrap = document.createElement("div");
+      wrap.className = bare ? "gb-select gb-select--bare" : "gb-select";
+      native.parentNode.insertBefore(wrap, native);
+      wrap.appendChild(native);
+      native.classList.add("gb-select__native");
+      native.setAttribute("tabindex", "-1");
+      native.setAttribute("aria-hidden", "true");
+
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.id = id + "-button";
+      btn.className = bare ? "gb-select__button"
+                           : "gb-field__input gb-field__input--select gb-select__button";
+      btn.setAttribute("aria-haspopup", "listbox");
+      btn.setAttribute("aria-expanded", "false");
+      btn.setAttribute("aria-controls", id + "-list");
+      btn.innerHTML =
+        '<span class="gb-select__value"></span>' +
+        '<svg class="gb-select__arrow" viewBox="0 0 20 20" fill="none" aria-hidden="true">' +
+        '<path d="M5 7.5L10 12.5L15 7.5" stroke="#4d4d4d" stroke-width="1.667" ' +
+        'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+      // The label pointed at a control that is now off-screen. A button is not a
+      // labelable element, so the association has to move to aria-labelledby.
+      var label = document.querySelector('label[for="' + id + '"]');
+      if (label) {
+        if (!label.id) { label.id = id + "-label"; }
+        label.removeAttribute("for");
+        label.addEventListener("click", function () { btn.focus(); });
+        btn.setAttribute("aria-labelledby", label.id + " " + btn.id);
+      } else if (aria) {
+        btn.setAttribute("aria-label", aria);
+      }
+
+      var list = document.createElement("ul");
+      list.className = "gb-select__list";
+      list.id = id + "-list";
+      list.setAttribute("role", "listbox");
+      list.setAttribute("tabindex", "-1");
+      if (label) { list.setAttribute("aria-labelledby", label.id); }
+      else if (aria) { list.setAttribute("aria-label", aria); }
+      // Built after smoothScroll.init has swept the DOM for PREVENT, so it has to
+      // opt out of Lenis itself.
+      list.setAttribute("data-lenis-prevent", "");
+
+      for (var i = 0; i < native.options.length; i++) {
+        var li = document.createElement("li");
+        li.className = "gb-select__option";
+        li.id = id + "-opt-" + i;
+        li.setAttribute("role", "option");
+        li.textContent = native.options[i].text;
+        list.appendChild(li);
+      }
+
+      wrap.appendChild(btn);
+      wrap.appendChild(list);
+
+      var box = { wrap: wrap, native: native, btn: btn, list: list,
+                  value: btn.firstChild, open: false, active: -1 };
+      this.boxes.push(box);
+      this.sync(box);
+
+      btn.addEventListener("click", function () {
+        if (box.open) { self.close(box, true); } else { self.show(box); }
+      });
+
+      btn.addEventListener("keydown", function (e) {
+        var k = e.key;
+        if (k === "ArrowDown" || k === "ArrowUp" || k === "Enter" || k === " ") {
+          e.preventDefault();          // also stops Enter/Space firing click twice
+          self.show(box);
+        }
+      });
+
+      list.addEventListener("click", function (e) {
+        var li = e.target.closest && e.target.closest(".gb-select__option");
+        if (!li) { return; }
+        self.choose(box, Array.prototype.indexOf.call(list.children, li));
+        self.close(box, true);
+      });
+
+      list.addEventListener("keydown", function (e) {
+        var k = e.key, last = list.children.length - 1;
+        if (k === "Escape") { e.stopPropagation(); self.close(box, true); }
+        else if (k === "Tab") { self.close(box, false); }
+        else if (k === "ArrowDown") { e.preventDefault(); self.move(box, box.active + 1); }
+        else if (k === "ArrowUp") { e.preventDefault(); self.move(box, box.active - 1); }
+        else if (k === "Home") { e.preventDefault(); self.move(box, 0); }
+        else if (k === "End") { e.preventDefault(); self.move(box, last); }
+        else if (k === "Enter" || k === " ") {
+          e.preventDefault();
+          self.choose(box, box.active);
+          self.close(box, true);
+        }
+      });
+
+      // Anything that drives the real control (enquiryPrefill, a Shopify app,
+      // a form reset) is mirrored back into the drawn one.
+      native.addEventListener("change", function () { self.sync(box); });
+    },
+
+    show: function (box) {
+      if (box.open) { return; }
+      box.open = true;
+      box.wrap.classList.add("is-open");
+      box.btn.setAttribute("aria-expanded", "true");
+      this.move(box, box.native.selectedIndex);
+      box.list.focus();
+    },
+
+    close: function (box, refocus) {
+      if (!box.open) { return; }
+      box.open = false;
+      box.wrap.classList.remove("is-open");
+      box.btn.setAttribute("aria-expanded", "false");
+      box.list.removeAttribute("aria-activedescendant");
+      if (refocus) { box.btn.focus(); }
+    },
+
+    move: function (box, i) {
+      var kids = box.list.children;
+      if (!kids.length) { return; }
+      i = Math.max(0, Math.min(kids.length - 1, i));
+      for (var j = 0; j < kids.length; j++) {
+        kids[j].classList.toggle("is-active", j === i);
+      }
+      box.active = i;
+      box.list.setAttribute("aria-activedescendant", kids[i].id);
+      kids[i].scrollIntoView({ block: "nearest" });
+    },
+
+    choose: function (box, i) {
+      if (i < 0 || i >= box.native.options.length) { return; }
+      if (box.native.selectedIndex !== i) {
+        box.native.selectedIndex = i;
+        box.native.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      this.sync(box);
+    },
+
+    sync: function (box) {
+      var i = box.native.selectedIndex;
+      box.value.textContent = i < 0 ? "" : box.native.options[i].text;
+      var kids = box.list.children;
+      for (var j = 0; j < kids.length; j++) {
+        kids[j].setAttribute("aria-selected", j === i ? "true" : "false");
       }
     }
   };
@@ -1137,7 +1382,7 @@
    * ------------------------------------------------------------------- */
   var smoothScroll = {
     // Every overflow-y:auto container on the site has to be registered here
-    PREVENT: ".gb-product__thumbs, .gb-header__panel, .gb-nl-panel__body",
+    PREVENT: ".gb-product__thumbs, .gb-header__panel, .gb-nl-panel__body, .gb-select__list",
 
     lenis: null,
 
@@ -1201,9 +1446,10 @@
     // responding from that point on. Failing one module is the smaller loss.
     var modules = [["wowo", wowo], ["header", header], ["bearMeter", bearMeter],
                    ["packBand", packBand],
-                   ["popText", popText], ["lineReveal", lineReveal], ["modal", modal], ["promoModal", promoModal],
+                   ["popText", popText], ["countUp", countUp], ["lineReveal", lineReveal], ["modal", modal], ["promoModal", promoModal],
                    ["slider", slider], ["gallery", gallery], ["accordion", accordion],
-                   ["smoothScroll", smoothScroll], ["enquiryPrefill", enquiryPrefill]];
+                   ["smoothScroll", smoothScroll], ["enquiryPrefill", enquiryPrefill],
+                   ["selectBox", selectBox]];
     for (var i = 0; i < modules.length; i++) {
       try {
         modules[i][1].init();
@@ -1214,8 +1460,9 @@
   });
 
   window.gumi = { wowo: wowo, header: header, bearMeter: bearMeter, packBand: packBand,
-                  popText: popText,
+                  popText: popText, countUp: countUp,
                   lineReveal: lineReveal, modal: modal, promoModal: promoModal, slider: slider,
                   gallery: gallery, accordion: accordion,
-                  smoothScroll: smoothScroll, enquiryPrefill: enquiryPrefill };
+                  smoothScroll: smoothScroll, enquiryPrefill: enquiryPrefill,
+                  selectBox: selectBox };
 })();

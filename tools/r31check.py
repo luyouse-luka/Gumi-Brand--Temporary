@@ -50,7 +50,13 @@ C = [
     ("faq.html", 1440, ".gb-acc-body__text", "line-height", "28px"),
     ("faq.html", 1440, ".gb-acc-body__text", "letter-spacing", "-0.36px"),
     ("faq.html", 1440, ".gb-page-hero--center", "padding-top", "64px"),
-    ("get-in-touch.html", 1440, ".gb-field__phone select", "padding-right", "23px"),
+    # r57 draws this control (main.js selectBox, `bare` variant): the native
+    # select is now the hidden value carrier and deliberately carries no padding.
+    # The board's 23 lives on in the trigger as a 20 chevron + a 3 gap -- see
+    # r57check's "padding-right 0" / "gap 3" pair. What is still checked here is
+    # that the DRAWN trigger keeps the typography the native one had.
+    ("get-in-touch.html", 1440, ".gb-field__phone .gb-select__button", "font-size", "16px"),
+    ("get-in-touch.html", 1440, ".gb-field__phone .gb-select__button", "letter-spacing", "-0.32px"),
     ("referral.html", 1440, ".gb-form__note", "letter-spacing", "normal"),
     ("privacy-policy.html", 1440, ".gb-rich-text", "display", "block"),
     ("privacy-policy.html", 1440, ".gb-rich-text > p", "margin-bottom", "20px"),
@@ -64,11 +70,14 @@ C = [
     ("index.html", 700, ".gb-hero__btn", "margin-left", "112.5px"),   # auto margins centre it
     ("index.html", 390, ".gb-hero__art", "position", "absolute"),
     ("index.html", 1440, ".gb-hero__art", "position", "absolute"),
-    # footer link groups align left once the row wraps
+    # footer link groups: reversed twice -- r39 flipped the wrapped row to
+    # flex-end, r42 put it back to flex-start below 1281. Desktop stays right.
     ("index.html", 900, ".gb-footer__link-groups", "justify-content", "flex-start"),
     ("index.html", 1440, ".gb-footer__link-groups", "justify-content", "flex-end"),
-    # cards: one column below 768 with no max-width
-    ("science.html", 700, ".gb-science__cards", "max-width", "none"),
+    # cards: one column below 768. r51 moved the two-up cap onto `tight`, so the
+    # property is now declared from 1200 down — 848 is wider than any container
+    # at 700, so it still constrains nothing. Geometry judged in r52check §1.
+    ("science.html", 700, ".gb-science__cards", "max-width", "848px"),
     # promo card body paints above the scallop lip
     ("pdp.html", 900, ".gb-promo-card__body", "z-index", "1"),
     # arcs: per-board svg

@@ -2,8 +2,8 @@
 
 > 建档 2026-08-20，交接人：上一轮搭建会话（第 1~13 轮）。
 > **本文件的读者是审计会话**：要做还原度核对、CSS / JS / 性能审计。
-> 项目全貌见 [PROJECT-STATUS.md](PROJECT-STATUS.md)，改动史见 [CHANGELOG.md](CHANGELOG.md)，
-> 设计方口头约定见 [HANDOVER-NOTES.md](HANDOVER-NOTES.md)。**本文件不重复它们，只写审计要用的东西。**
+> 项目全貌见 [PROJECT-STATUS.md](../PROJECT-STATUS.md)，改动史见 [CHANGELOG.md](../CHANGELOG.md)，
+> 设计方口头约定见 [HANDOVER-NOTES.md](../HANDOVER-NOTES.md)。**本文件不重复它们，只写审计要用的东西。**
 
 ---
 
