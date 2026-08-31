@@ -33,7 +33,7 @@
 // font url()s read it. Previewing over file:// caches css/js/woff2 until a hard
 // refresh, so without it a real change reads as "nothing happened".
 // font-check.html prints the value the browser actually got.
-$build: "20260831-r57";
+$build: "20260831-r58";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -6591,14 +6591,19 @@ html.is-menu-open {
 
 .gb-promo-card--green {
   .gb-promo-card__lip { color: $c-green; }
-  // Client-set. The white card keeps the symmetric -63 (half of the 126 box);
-  // this one hangs further out, leaving 31 of the scallop inside the card.
+  // Client-set. Both cards now hang the scallop further out than the symmetric
+  // -63 (half of the 126 box): this one leaves 31 of it inside, the white card 26.
   .gb-promo-card__lip--v { right: -95px; }
 }
 
 .gb-promo-card--white {
   .gb-promo-card__lip { color: $c-white; }
-  .gb-promo-card__lip--v { left: -63px; }
+  // Client-set r58 (-63 -> -100): 26 of the 126 box bites into the cream half,
+  // matching the green card's 31. Deliberately untiered -- .gb-promo-card__lip--v
+  // is display:none below 768, so this one declaration IS every tier that paints
+  // it, and the bite stays 26 from 768 to 1440 while the card itself shrinks.
+  // The phone tier draws .gb-promo-card__lip--h instead and is NOT affected.
+  .gb-promo-card__lip--v { left: -100px; }
 }
 
 // Type ----------------------------------------------------------------------

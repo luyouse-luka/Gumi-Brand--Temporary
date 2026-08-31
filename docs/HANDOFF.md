@@ -4,8 +4,8 @@
 > 项目定位与已确立的规范在 [PROJECT-STATUS.md](PROJECT-STATUS.md)；
 > 改动史在 [CHANGELOG.md](CHANGELOG.md)（近 10 轮）+ [CHANGELOG-ARCHIVE.md](CHANGELOG-ARCHIVE.md)（第一～三十轮），**两份一起 grep**。
 >
-> 状态：`$build` = **`20260831-r57`**（第五十五轮），已编译；⚠ **验证不完整**
-> （需求方叫停，`rwd.py` 等七项未跑，清单见 CHANGELOG 第五十五轮「未跑」一节，
+> 状态：`$build` = **`20260831-r58`**（第五十六轮），已编译；⚠ **验证不完整**
+> （第五十五轮被叫停，`rwd.py` 等七项至今未跑，清单见 CHANGELOG 第五十五轮「未跑」一节，
 > **下一轮第一件事是补跑**）。
 > 本文 2026-08-27 由 R41-HANDOFF / R37-HANDOFF / AUDIT-HANDOFF 三份合并而成，原文在 [archive/](archive/)。
 
@@ -60,6 +60,11 @@ npx sass@1.77.8 assets/customstyle.scss assets/customstyle.css --no-source-map
   `r40check` / `r52check` / `r56check` 三处判据都写了「这是终版」。
   ⚠ 另注意 `tablet` 档**也**有 `margin-left: 0`（r57 补的）—— r51 漏了它，
   那一档一直在往右挂（768 +30.7 / 1024 +37.2 / 1280 +43.7）。**不要以为是多余的。**
+- **两张 promo 卡的竖向波浪都不是对称骑缝的**：绿卡 `right: -95px`（咬痕 31，第五十一轮），
+  白卡 `left: -100px`（咬痕 26，第五十六轮）。板上是对称的 −63（咬痕 63），
+  **两次都是需求方点名推出去的**，别按板改回去。
+  ⚠ 手机档画的是另一个元素 `lip--h`（`bottom: -48px`，咬痕 34.4），**故意没跟着变浅** ——
+  需求只点名了 `lip--v`，按比例换算出来的 −65 是自造值。待决 AX。
 - **promo 弹窗在 768–1280 是一张 390×744 的居中卡片，不是全屏、也不是桌面的双栏**
   （第五十四轮，第二组·5）。这一档**没有板**，取的是手机板 `285:19373` 自己的尺寸，
   所以堆叠布局里每个值都停在它自己的板宽上（含 `--sc-w` 被钉回 144.64px 的波浪节距）。
@@ -358,7 +363,7 @@ cd /home/ly/project/Gumi-Brand
 npx sass@1.77.8 assets/customstyle.scss assets/customstyle.css --no-source-map
 
 # 逐轮定向断言（全部应通过）
-for s in r31check r32check r36check r39check r40check r41check r42check r43check r44check r45check r48check r50check r52check r53check r55check r56check r57check; do python3 tools/$s.py; done
+for s in r31check r32check r36check r39check r40check r41check r42check r43check r44check r45check r48check r50check r52check r53check r55check r56check r57check r58check; do python3 tools/$s.py; done
 
 python3 tools/rwd.py           # 12 页 × 14 档：横向溢出 / 文字被裁 / 可滚容器是否登记给 Lenis（约五分钟，必跑）
 python3 tools/revealcheck.py   # 入场动效收尾（约两分钟）
@@ -403,6 +408,7 @@ python3 tools/r42rect.py r41m 390
 | `r55check.py` | 第五十三轮 13 条（promo 图/波浪净距、vs 表全宽档、弹窗初始焦点、四个 max-width、bear 的百分比 top、描边无洞、science 间距与手机字号、faq 槽、画出来的勾选框、长文页入场） | 动 promo 卡 / vs 表 / modal 焦点 / science 卡 / 表单 / rich-page 之后 |
 | `r56check.py` | 第五十四轮三条（promo 列表正居中、弹窗只在 ≤767 全屏 + 768–1280 的 390×744 卡片 + 波浪节距钉回板值、询问类型的 button + ul 下拉：结构 / ARIA / 键盘 / 表单取值 / 预填 / 无横向溢出） | 动 promo 卡 / promo 弹窗 / 表单控件之后 |
 | `r57check.py` | 第五十五轮（国家码的 `bare` 变体：结构 / 排版 / ARIA / 列表挂在框底 4px / 层叠 / focus-within / 键盘 / 表单取值 / 两控件互不干扰） | 动 `.gb-field__phone` / `selectBox` 之后 |
+| `r58check.py` | 第五十六轮（白卡 `lip--v` 六档咬痕恒 26、盒子仍 126、不越出卡片；绿卡对照组仍 31；手机档改画 `lip--h` 且仍在 −48） | 动 `.gb-promo-card__lip*` 之后 |
 | `r53check.py` | §1 手机抽屉关闭时不得横跳（**必须保留真实滚动条**，gap=0 时 abort）；§2 reels 的 `loop` 无缝（两侧必须**真的溢出**，且走 8 张后再量一次；另钉「卡数 > 2 倍可见张数」这条 loop 的前提） | 动 `header` / 锁滚动 / 抽屉时长；**动 reels 卡数或 `data-slider-*` 之后** |
 | `pagescan.py` | 设计导出与实现左右并排出图 | 对稿复查（见「三」） |
 | `fq.py` | 查稿节点：box / ink / 旋转矩阵 / 布局 / 填充 / 描边 / 字号行高字距 / characterStyleOverrides | 取任何数值之前 |
@@ -693,6 +699,7 @@ for fa in sorted(glob.glob(f"{A}/*.1440.json")):
 | **AP** | **第三组·3 语义不明，未动手（`--cream` 版第 4 张卡的对齐）** | 五十三 |
 | ~~I（重开）~~ | ~~promo 列表的居中语义~~ — **五十五轮终版：pc 居中 / 手机端不居中，关闭** | 五十四 |
 | **AT** | **768–1280 的弹窗形态（需求方回「糊了」，要重问：这一档想要什么形态）** | 五十四 |
+| **AX** | **手机端的 `lip--h` 要不要跟着 `lip--v` 一起变浅（−65 是换算值不是板值）** | 五十六 |
 | ~~AU~~ | ~~「手机端」阈值~~ — 五十五轮需求方选择忽略，维持 ≤767 ✅ | 五十四 |
 | ~~AV~~ | ~~国家码 `<select>`~~ — 五十五轮「一起改」，已落地 ✅ | 五十四 |
 | ~~AW~~ | ~~typeahead~~ — 五十五轮需求方选择忽略 ✅ | 五十四 |
@@ -702,7 +709,7 @@ for fa in sorted(glob.glob(f"{A}/*.1440.json")):
 **M 已在第四十三轮关闭**：版心搬回 `__inner`、两个正方形各加 520 上限。
 **S 已在第四十五轮关闭**：九宫格 `border-image`，纯 CSS，不换图不依赖 JS。
 剩下的 K / L / N / O / P / Q / T / U / V / W / X / Y / AA / AC / AD / AG / AH /
-AK–AP / AT 都是一句话就能定的，一起问。**AT 要重问**（第五十四轮没讲清楚，
+AK–AP / AT / AX 都是一句话就能定的，一起问。**AT 要重问**（第五十四轮没讲清楚，
 需求方回「糊了」）—— 问法只有一句：**768–1280 这一档的邮件弹窗想要什么形态？**
 **AG / AA 最值得先问** —— AG 是全站轮播丢了无限循环（要恢复只能加卡，是内容决策）；
 AA 让 logo 完全没有反馈，与公约相反。其次是 O / Q / T / V / W / AD / AH
@@ -790,22 +797,19 @@ AA 让 logo 完全没有反馈，与公约相反。其次是 O / Q / T / V / W /
 
 ---
 
-## 八、工作区状态（第五十五轮末）
+## 八、工作区状态（第五十六轮末）
 
-- `$build` = `20260831-r57`，全站 **38** 处 `?v=` 与 `font-check.html` 的 `EXPECT_BUILD` 一致。
-- ⚠ **验证不完整，是需求方叫停的**。已跑全过：`r31`（改注后）/ `r32` / `r36` / `r39` /
-  `r40` / `r41` / `r42` / `r43` / `r44` / `r45` / `r48` / `r50` / `r52` / `r56`（149 条）/
-  `r57`（93 条），加双向判据（改前 `r57check` 0/29 红、`r56check` AQ 段 19 红，
-  恢复后 css md5 一致）。
-  **没跑：`rwd.py`（本轮动过两页 HTML，按规矩必跑）/ `r53check` / `r55check` /
-  `scrolllock` / `revealcheck` / `hardbreaks` / `platecheck` / `seamcheck` /
-  `font-check.html` / 全站矩形波及比对。下一轮第一件事是补跑这些。**
-- HTML 改动只有属性：`get-in-touch.html` / `referral.html` 的国家码 `<select>` 加
-  `data-select="bare"`（**没有增删节点**）。
-  ⚠ 但这两页 + `get-in-touch` 的询问类型现在**运行时**会多出节点
-  （每个控件 10 个：`div.gb-select` + button + span + svg + path + ul + 每个 option 一个 li），
-  `cssnap.py diff` 对这三处无效，用 `r42rect.py`。
-- `assets/customstyle.css` 是最新编译产物，无警告（md5 `66d1b6a5…`）。
+- `$build` = `20260831-r58`，全站 **38** 处 `?v=` 与 `font-check.html` 的 `EXPECT_BUILD` 一致。
+  第五十六轮**没有动过 HTML 结构**（只有 `?v=`）。
+- ⚠ **验证仍不完整**（第五十五轮被叫停的那一批至今没补）。
+  第五十六轮已跑全过：`r58check`（44 条）+ 双向判据（改前 6 条红，css md5 一致）
+  + `r31` / `r40` / `r44` / `r52` / `r55` / `r56` / `r57`。
+  **仍未跑：`rwd.py` / `r53check` / `scrolllock` / `revealcheck` / `hardbreaks` /
+  `platecheck` / `seamcheck` / `font-check.html` / 全站矩形波及比对。**
+- 三个页面**运行时**会多出 DOM 节点（`selectBox` 建出来的下拉，每个控件 10 个上下）：
+  `get-in-touch`（两个：国家码 + 询问类型）、`referral`（一个：国家码）。
+  `cssnap.py diff` 对这两页无效，用 `r42rect.py`。
+- `assets/customstyle.css` 是最新编译产物，无警告（md5 `13e7107…`）。
 - `assets/main.js` 现在是 **15 个模块**（`selectBox` 注册在 `enquiryPrefill` 之后 ——
   顺序有意义，它要读到预填好的 `selectedIndex`）。`selectBox` 有两个变体：
   默认（询问类型，自带 44 高的白盒）与 `bare`（国家码，无盒子，`.gb-field__phone` 画边框）。
@@ -813,9 +817,8 @@ AA 让 logo 完全没有反馈，与公约相反。其次是 O / Q / T / V / W /
   它用到的样式以「Vendor — Swiper」分区写在 `customstyle.scss` 里，没有第二个样式表。
   **全站每一个轮播都跑在它上面**：产品图廊（5 页，fade）、reels 横轨（4 页，**10 张卡跑
   `loop`**）、expert 卡片轨（1 页，3 张卡跑 `rewind`，≥992 销毁后变三列网格）。
-- **第三十八～五十五轮已在 2026-08-31 一次提交并推送**：`59ad586`（`551f77b..59ad586`，
-  59 files / +16740 −4801）。工作区干净。
-  ⚠ 提交信息里写明了第五十五轮验证不完整，**补跑之后请另起一条提交**。
+- **第三十八～五十五轮已在 2026-08-31 提交并推送**：`59ad586` + `5daa99a`。
+  **第五十六轮（r58）尚未提交。**
 - git 远端 `github.com/luyouse-luka/Gumi-Brand--Temporary`（private，临时同步仓库），分支 `main`。
   推送走 SSH 别名 **`github-luyouse-user`** —— 裸用 `github.com` 会走 devmtc-1 那把 key 认证失败。
 - **推送等明确指令**，共用环境绝不全量、绝不 `--delete`。

@@ -185,7 +185,7 @@ def main():
         ok_if("767 promo-card 不再停在板上的 343", r["w"] > 343 + 1, "%.1f" % r["w"])
         pg.close()
 
-        # ===== 4. 绿卡 lip--v 探出 95（白卡仍是 63）========================
+        # ===== 4. 绿卡 lip--v 探出 95（白卡 r58 起也改成 100）==============
         for w in (1440, 1024, 768):
             pg = page(b, "pdp.html", w)
             d = pg.evaluate("""() => {
@@ -208,7 +208,9 @@ def main():
             }""")
             eq("%d 绿卡 lip--v 右探出（相对 media 半边）" % w, d["green"]["right"], 95, tol=0.6)
             eq("%d 绿卡 lip--v 挂在 media 半边上" % w, d["green"]["host"], "gb-promo-card__media")
-            eq("%d 白卡 lip--v 左探出仍是 63" % w, d["white"]["left"], 63, tol=0.6)
+            # r52 时白卡是对照组（没动，仍 63）；r58 需求方把它也推出去了 → 100，
+            # 咬进奶油半边 26，与绿卡的 31 接近。逐档覆盖见 r58check。
+            eq("%d 白卡 lip--v 左探出（r58 由 63 改为 100）" % w, d["white"]["left"], 100, tol=0.6)
             eq("%d 白卡 lip--v 挂在 art 半边上" % w, d["white"]["host"], "gb-promo-card__art")
             eq("%d lip--v 盒宽仍是 126" % w, d["green"]["w"], 126, tol=0.6)
             pg.close()

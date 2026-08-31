@@ -1,27 +1,27 @@
 @font-face {
   font-family: "PP Palma";
-  src: url("pppalma-fizzy-light.woff2?v=20260831-r57") format("woff2");
+  src: url("pppalma-fizzy-light.woff2?v=20260831-r58") format("woff2");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("PPPalma-Regular.woff2?v=20260831-r57") format("woff2");
+  src: url("PPPalma-Regular.woff2?v=20260831-r58") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("PPPalma-FizzyMedium.woff2?v=20260831-r57") format("woff2");
+  src: url("PPPalma-FizzyMedium.woff2?v=20260831-r58") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("PPPalma-FizzyHeavy.woff2?v=20260831-r57") format("woff2");
+  src: url("PPPalma-FizzyHeavy.woff2?v=20260831-r58") format("woff2");
   font-weight: 800;
   font-style: normal;
   font-display: swap;
@@ -64,7 +64,7 @@
 }
 @font-face {
   font-family: "Figtree";
-  src: url("figtree-variable-latin.woff2?v=20260831-r57") format("woff2");
+  src: url("figtree-variable-latin.woff2?v=20260831-r58") format("woff2");
   font-weight: 300 900;
   font-style: normal;
   font-display: swap;
@@ -72,7 +72,7 @@
 }
 @font-face {
   font-family: "Figtree";
-  src: url("figtree-variable-latin-ext.woff2?v=20260831-r57") format("woff2");
+  src: url("figtree-variable-latin-ext.woff2?v=20260831-r58") format("woff2");
   font-weight: 300 900;
   font-style: normal;
   font-display: swap;
@@ -80,7 +80,7 @@
 }
 @font-face {
   font-family: "Inter";
-  src: url("inter-variable-latin.woff2?v=20260831-r57") format("woff2");
+  src: url("inter-variable-latin.woff2?v=20260831-r58") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -88,7 +88,7 @@
 }
 @font-face {
   font-family: "Inter";
-  src: url("inter-variable-latin-ext.woff2?v=20260831-r57") format("woff2");
+  src: url("inter-variable-latin-ext.woff2?v=20260831-r58") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -96,7 +96,7 @@
 }
 @font-face {
   font-family: "Lexend";
-  src: url("lexend-variable-latin.woff2?v=20260831-r57") format("woff2");
+  src: url("lexend-variable-latin.woff2?v=20260831-r58") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -104,7 +104,7 @@
 }
 @font-face {
   font-family: "Lexend";
-  src: url("lexend-variable-latin-ext.woff2?v=20260831-r57") format("woff2");
+  src: url("lexend-variable-latin-ext.woff2?v=20260831-r58") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -112,7 +112,7 @@
 }
 @font-face {
   font-family: "Playpen Sans";
-  src: url("playpen-sans-600-latin.woff2?v=20260831-r57") format("woff2");
+  src: url("playpen-sans-600-latin.woff2?v=20260831-r58") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -120,14 +120,14 @@
 }
 @font-face {
   font-family: "Playpen Sans";
-  src: url("playpen-sans-600-latin-ext.woff2?v=20260831-r57") format("woff2");
+  src: url("playpen-sans-600-latin-ext.woff2?v=20260831-r58") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 :root {
-  --build: "20260831-r57";
+  --build: "20260831-r58";
 }
 
 *, *::before, *::after {
@@ -6424,7 +6424,7 @@ a.gb-header__link::after {
   color: #ffffff;
 }
 .gb-promo-card--white .gb-promo-card__lip--v {
-  left: -63px;
+  left: -100px;
 }
 
 .gb-promo-card__title {
