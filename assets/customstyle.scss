@@ -33,7 +33,7 @@
 // font url()s read it. Previewing over file:// caches css/js/woff2 until a hard
 // refresh, so without it a real change reads as "nothing happened".
 // font-check.html prints the value the browser actually got.
-$build: "20260907-r90";
+$build: "20260907-r91";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -359,6 +359,28 @@ $mask-scallop-box: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUAAAAFACA
 //               the theme's gb-promo.liquid renders no such element, so the
 //               shape has to arrive as a mask instead.
 $mask-promo-lip: url("data:image/svg+xml,%3Csvg width='126' height='764' viewBox='0 0 126 764' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='63' cy='63.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='169.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='275.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='381.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='487.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='593.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='699.5' r='63' fill='%23000'/%3E%3C/svg%3E");
+
+// scallop-lip-h the same seam turned across the card, drawn on phones where
+//               the two halves stack (492x81, r=40.5 at 68.1 pitch). Static
+//               ships it as an svg child too; the theme does not.
+$mask-promo-lip-h: url("data:image/svg+xml,%3Csvg width='492' height='81' viewBox='0 0 492 81' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='40.5' cy='40.5' r='40.5' fill='%23000'/%3E%3Ccircle cx='108.6' cy='40.5' r='40.5' fill='%23000'/%3E%3Ccircle cx='176.7' cy='40.5' r='40.5' fill='%23000'/%3E%3Ccircle cx='244.8' cy='40.5' r='40.5' fill='%23000'/%3E%3Ccircle cx='312.9' cy='40.5' r='40.5' fill='%23000'/%3E%3Ccircle cx='381' cy='40.5' r='40.5' fill='%23000'/%3E%3Ccircle cx='449.1' cy='40.5' r='40.5' fill='%23000'/%3E%3C/svg%3E");
+
+// The phone seam is drawn twice (green card's image half, white card's artwork
+// half) and only differs by colour. bottom:-48 leaves 34.4 of the 82.4 box
+// inside the half; the rest is clipped by the card's overflow, exactly as the
+// static build's svg child is.
+@mixin promo-lip-h($color) {
+  content: "";
+  position: absolute;
+  left: 50.5%;
+  bottom: -48px;
+  width: 143%;
+  aspect-ratio: 492 / 81;
+  transform: translateX(-50%);
+  background: $color;
+  -webkit-mask: $mask-promo-lip-h 0 0 / 100% 100% no-repeat;
+  mask: $mask-promo-lip-h 0 0 / 100% 100% no-repeat;
+}
 
 // scallop-band  the CTA plate. Two of them, because the boards do NOT draw one
 //               shape at two sizes: desktop (324:75854, 1280x393) is 14 lobes
@@ -4247,7 +4269,23 @@ a.gb-header__link {
 
 }
 
-// Shop / Learn more / Get in Touch only exist in the mobile design
+// One list per breakpoint. A Shopify link list cannot carry a class per entry,
+// so the single-list shape this replaced had to hide desktop-only entries with
+// .gb-header__links-item--mobile -- which pinned the phone order to "every
+// mobile entry, then every desktop entry" and could not express the board's
+// interleaved order. Both the static build and the theme now ship two lists.
+.gb-header__links--desktop {
+  @include narrow { display: none; }
+}
+
+.gb-header__links--mobile {
+  display: none;
+
+  @include narrow { display: flex; }
+}
+
+// ⚠ Kept for the live theme only: sections/gb-header.liquid still ships the old
+// single list until r90 is pushed. Delete this pair once it is.
 .gb-header__links-item--mobile { display: none; }
 
 @include narrow {
@@ -6985,6 +7023,29 @@ html.is-menu-open {
 // Prices, discounts and the plan list are the subscription app's job — this is
 // the board's own copy plus the picker's behaviour (docs/PROJECT-STATUS.md,
 // "implementation boundary"). The board keeps Start Now inside this frame, so
+// Live only. r87 flattened .gb-product__info: .gb-product__head is gone and every
+// block now sits inside this form, so .gb-product__info's own `gap: 24` reaches a
+// single child and the design's 24/16 rhythm was lost -- measured 0 between every
+// pair at 1440 and 390. Rebuilt here because the liquid is theirs.
+// ⚠ Keyed on what each block WRAPS: `{% content_for 'blocks' %}` gives the
+// div.shopify-block wrappers no identity of their own.
+.gb-product__form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  // The head group (rating / title / price / lead / features) ran at 16 inside
+  // .gb-product__head. -8 walks the 24 back down to it.
+  > .shopify-block:has(> .gb-product__title),
+  > .shopify-block:has(> .gb-product__tag),
+  > .shopify-block:has(> .gb-product__lead),
+  > .shopify-block:has(> .gb-product__features) { margin-top: -8px; }
+
+  // A single-variant product renders an empty variants block. It still counts as
+  // a flex item, so it would open a 24 gap on both sides of nothing.
+  > .shopify-block:not(:has(*)) { display: none; }
+}
+
 // .gb-product__cta is a child here and .gb-product__info's 24 gap is the
 // board's Product Details gap.
 
@@ -7955,6 +8016,22 @@ html.is-menu-open {
       @include narrow { display: none; }   // the phone tier draws lip--h instead
     }
   }
+
+  // The board's green card has no arc; the theme block's arc_text carries the
+  // schema default ("OUR PROMISE"), so gb-promo.liquid draws one. It is green on
+  // green -- invisible -- but it took 34px + a gap out of the copy column and,
+  // being a 452px box, widened the copy half past 50% from 768 to ~1100.
+  .gb-promo-card__arc { display: none; }
+
+  // The board runs title and lead as direct children of the stack; the theme
+  // wraps them in __main, whose 24/32 gap is the WHITE card's rhythm. Restate
+  // the stack's own so the green card spaces the same either way.
+  .gb-promo-card__main {
+    gap: 16px;
+
+    @include narrow { gap: 12px; }
+    @include tablet { gap: fluid(12px, 16px); }
+  }
 }
 .gb-promo-card--white { background: $c-white; }
 
@@ -7967,7 +8044,17 @@ html.is-menu-open {
   overflow: hidden;   // clip the image to the radius
 
   @include narrow { flex: 0 0 auto; width: 100%; aspect-ratio: 1; border-radius: $r-lg; }
-  img, video, picture { @include cover-img; }
+  // Client-set: contain, not cover. The board has no photo here at all -- the
+  // half is a flat grey placeholder -- so whatever the theme block is given has
+  // to sit inside it whole rather than be cropped to a square.
+  img, video, picture { @include cover-img(contain); }
+
+  // Phone seam, live only. See .gb-promo-card--green .gb-promo-card__body::before
+  // for the vertical one; gb-promo.liquid ships neither lip element. Geometry is
+  // .gb-promo-card__lip--h's, so on the static build this lands under its svg.
+  &::after {
+    @include narrow { @include promo-lip-h($c-green); }
+  }
 }
 
 .gb-promo-card__art {
@@ -7984,6 +8071,11 @@ html.is-menu-open {
     width: 100%;
     aspect-ratio: 1;
     border-radius: $r-lg;
+  }
+
+  // Mirror of the green card's phone seam, in the white card's own colour.
+  &::after {
+    @include narrow { @include promo-lip-h($c-white); }
   }
 }
 
@@ -8103,6 +8195,27 @@ html.is-menu-open {
   // it, and the bite stays 26 from 768 to 1440 while the card itself shrinks.
   // The phone tier draws .gb-promo-card__lip--h instead and is NOT affected.
   .gb-promo-card__lip--v { left: -100px; }
+
+  // Mirror of the green card's rebuild -- gb-promo.liquid ships no lip element,
+  // so the seam is a mask here too. This card runs copy-then-artwork, so it hangs
+  // off the RIGHT edge and the bite is the client-set 26 rather than 31.
+  // ⚠ Same z-index -1 rule as the green card: __body opens its own stacking
+  // context, so a negative child lands above its background and under the copy.
+  .gb-promo-card__body::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: -26px;
+    z-index: -1;
+    width: 126px;
+    height: 764px;
+    transform: translateY(-50%);
+    background: $c-white;
+    -webkit-mask: $mask-promo-lip 0 0 / 126px 764px no-repeat;
+    mask: $mask-promo-lip 0 0 / 126px 764px no-repeat;
+
+    @include narrow { display: none; }
+  }
 }
 
 // Type ----------------------------------------------------------------------
@@ -8415,14 +8528,46 @@ html.is-menu-open {
 // Table ---------------------------------------------------------------------
 // Widths are percentages of the 924px design block so the whole thing scales
 // without the columns drifting out of alignment.
+// ⚠ Grid, not flex, and the reason is cross-column alignment: the two columns
+// carry their own rows, so as soon as either side wraps (measured at 1100: the
+// Gumi value wraps one row, THE OTHERS wraps a different one) every row below
+// drifts out of line, 8px at the top growing to 14 by the last row.
+// subgrid puts both columns on the SAME row tracks, so a wrap on either side
+// grows that one track for both. The columns stay real boxes, which
+// .gb-vs__col--gumi::before needs -- display:contents would delete it.
+// ⚠ 20 tracks is a ceiling, not the row count: unused tracks collapse to 0 and
+// row-gap is 0, so they contribute nothing. The rhythm between rows is the
+// margin/padding/border on .gb-vs__row + .gb-vs__row, never a gap.
 .gb-vs__table {
-  display: flex;
-  gap: 6.494%;                 // 60 / 924
+  display: grid;
+  grid-template-columns: 55.844% 37.554%;   // 516 / 924, 347 / 924
+
+  // The label column, and the lime card's left edge derived from it. Both
+  // percentages resolve against .gb-vs__col, which is the base for every user
+  // of these two (the label is a flex item of a full-width row, the card and the
+  // logo are absolute inside the column / the brand row).
+  // ⚠ The px floor is load-bearing. flex-basis alone loses to the flex item's
+  // automatic minimum size, so once 21.124% falls under a label's min-content
+  // (below ~1300) only the LONG labels grew -- the value column then started at
+  // three different x's and the card's fixed 26.163% cut through the text.
+  // Floor = the board's own label width, 109 desktop / 87 mobile.
+  --vs-label-w: max(#{21.124%}, #{109px});
+  --vs-card-x: calc(var(--vs-label-w) + 5.039%);   // + 26 / 516 to the card
+  // ⚠ The last track is 1fr, not auto, and it is load-bearing: the columns span
+  // 1/-1, so without something to absorb the leftover height they'd shrink to
+  // their content and .gb-vs__col--gumi::before (height:100%) would come up
+  // short of the 25px of card the board leaves under the last row. Flex used to
+  // hand that stretch over for free.
+  grid-template-rows: repeat(19, auto) 1fr;
+  column-gap: 6.494%;          // 60 / 924
+  row-gap: 0;
   flex: 1 1 auto;
   min-width: 0;
   min-height: 448px;
 
   @include stack { min-height: 0; }
+
+  @include tablet { --vs-label-w: max(#{21.124%}, #{fluid(87px, 109px)}); }
 
   // The stacked layout's percentages are all measured against the 351-wide
   // mobile design; without a cap they stretch at 768 and push the bear off
@@ -8433,6 +8578,10 @@ html.is-menu-open {
   // content (298.8 of the 350 available) and every /351 percentage below --
   // lime card, logo, bear, "THE OTHERS", pile -- renders 15% small.
   @include narrow {
+    --vs-label-w: max(#{24.786%}, #{87px});
+    --vs-card-x: calc(var(--vs-label-w) + 1.425%);   // + 5 / 351 to the card
+
+    display: flex;
     flex-direction: column;
     gap: 16px;
     width: 100%;
@@ -8447,17 +8596,20 @@ html.is-menu-open {
   @include mobile { max-width: 100%; }
 }
 
+// Both columns span every track of the parent so their rows line up one-to-one.
+// The widths live on the parent's grid-template-columns now, not on flex-basis.
 .gb-vs__col {
   position: relative;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-row: 1 / -1;
+  grid-template-rows: subgrid;
   min-width: 0;
+
+  @include narrow { display: flex; flex-direction: column; }
 }
 
-.gb-vs__col--gumi  { flex: 0 0 55.844%; }   // 516 / 924
-.gb-vs__col--others { flex: 1 1 37.554%; }  // 347 / 924
-
 @include narrow {
+  // Column direction here, so flex-shrink would eat the height.
   .gb-vs__col--gumi,
   .gb-vs__col--others { flex: 0 0 auto; }
 
@@ -8466,22 +8618,24 @@ html.is-menu-open {
   .gb-vs__col--gumi { min-height: 302px; }
 }
 
-// The lime card behind the Gumi column: 409x448 at x 135 in the design
+// The lime card behind the Gumi column: 409x448 at x 135 in the design.
+// left comes off the label column instead of the board's flat 26.163% so the
+// card can never ride over a label; right pins the edge the width used to fix,
+// which is why width is gone -- left moving must not drag the right edge with it.
 .gb-vs__col--gumi::before {
   content: "";
   position: absolute;
   z-index: 0;
-  left: 26.163%;
+  left: var(--vs-card-x);
+  right: -5.426%;              // 28 / 516 — the board hangs it past the column
   top: 0;
-  width: 79.264%;
   height: 100%;
   background: $c-lime-200;
   border-radius: $r-xl;
 
   @include narrow {
-    left: 26.211%;               // 92 / 351
+    right: 0;                    // 92 + 259 = 351, flush with the column
     top: 9.934%;                 // 30 / 302
-    width: 73.789%;              // 259 / 351
     height: 90.066%;
     background: $c-lime-150;      // 324:53792 uses the lighter mint here
     border-radius: 15px;
@@ -8503,9 +8657,14 @@ html.is-menu-open {
   @include narrow { height: 88.5px; }
 }
 
+// Offset from the CARD's left edge, not the column's: the card now starts where
+// the label column ends, and a flat 33.023% would have left the logo hanging off
+// its left side wherever the label floor pushed the card right (1025-1280).
+// 35.4 = 170.4 - 135 desktop, 17 = 109 - 92 mobile; both stay percentages so the
+// logo keeps scaling with the column exactly like the bear and the card do.
 .gb-vs__logo {
   position: absolute;
-  left: 33.023%;               // 170.4 / 516
+  left: calc(var(--vs-card-x) + 6.860%);   // 35.4 / 516
   top: 45px;
   width: 33.527%;              // 173 / 516
   color: $c-green;
@@ -8514,7 +8673,7 @@ html.is-menu-open {
   path { fill: currentColor; }
 
   @include narrow {
-    left: 31.054%;             // 109 / 351
+    left: calc(var(--vs-card-x) + 4.843%); // 17 / 351
     top: 51px;
     width: 29.345%;            // 103 / 351
   }
@@ -8571,20 +8730,24 @@ html.is-menu-open {
 
 .gb-vs__pile {
   position: absolute;
-  left: 78.963%;               // 274 / 347
+  right: -39px;                // 1398 - 1359: the board hangs it past the column
   top: 6px;
   width: 32.276%;              // 112 / 347
   height: auto;
 
-  // left/width follow the ARRANGEMENT, not the value tier: percentages are
-  // relative to .gb-vs__col, and while the column is stacked (≤1024) that box
-  // is ~728px — wider than the 516px desktop board — so the desktop ratios
-  // (left+width = 111%) push this off-screen. Percentages cannot be ramped:
-  // calc() has no way to divide a length by a length to get a unitless
-  // progress, so fluid() is px-only. top is a px value and still ramps.
-  @include stack { left: 80.627%; width: 19.373%; }
-  @include narrow { top: 0; }
-  @include tablet { top: fluid(0, 6px); }
+  // ⚠ width is a percentage of the column in BOTH tiers, which is what keeps the
+  // pile, the bear and the logo at one ratio: all three ride the same box. The
+  // phone board draws this one smaller (68.5 against 112), so that value belongs
+  // to `narrow`, not `stack` — parked on stack it ran the phone size all the way
+  // up to 1024 and the pile came out 40% under the bear across the whole tablet
+  // tier. Percentages cannot be ramped (fluid() is px-only), so the overhang is
+  // the px value that ramps and the size follows the column.
+  @include tablet { right: #{fluid(0, -39px)}; top: fluid(0, 6px); }
+  @include narrow {
+    right: 0;                  // 282.5 + 68.5 = 351, flush with the column
+    top: 0;
+    width: 19.516%;            // 68.5 / 351
+  }
 }
 
 // Rows ----------------------------------------------------------------------
@@ -8619,14 +8782,16 @@ html.is-menu-open {
 }
 
 .gb-vs__label {
-  flex: 0 0 21.124%;           // 109 / 516
+  flex: 0 0 var(--vs-label-w);
+  // Explicit, so the automatic minimum size never widens one row's label past
+  // the others -- the floor in --vs-label-w is what holds long labels now.
+  min-width: 0;
   font-size: 16px;
   font-weight: 500;
   line-height: 24px;
   color: $c-gray-900;
 
   @include narrow {
-    flex: 0 0 24.786%;         // 87 / 351
     font-size: 12px;
     line-height: 15.5px;
     letter-spacing: -0.12px;

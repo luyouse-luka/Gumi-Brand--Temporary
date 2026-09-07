@@ -1,0 +1,55 @@
+--- a/sections/gb-header.liquid	2026-09-07 11:58:09.575947183 +0000
++++ b/sections/gb-header.liquid	2026-09-07 13:18:02.434014585 +0000
+@@ -38,10 +38,26 @@
+         </a>
+       </div>
+       <nav class="gb-header__nav" aria-label="Main">
+-        <ul class="gb-header__links">
++        {%- comment -%}
++          Two lists, one per breakpoint, on purpose. A Shopify link list cannot
++          carry a class per entry, so the single list this replaced had to hide
++          desktop-only entries with .gb-header__links-item--mobile -- which fixed
++          the phone order as "every mobile entry, then every desktop entry".
++          The board interleaves them (Shop, How Gumi Works, Science, Reviews,
++          Learn more, Get in Touch), which that shape cannot express.
++          Each list is now ordered by the merchant in the admin, and CSS shows
++          exactly one of them. ⚠ Mobile menu must therefore carry the FULL phone
++          menu, not just the entries desktop leaves out.
++        {%- endcomment -%}
++        <ul class="gb-header__links gb-header__links--desktop">
++          {%- for link in section.settings.desktop_menu.links -%}
++            <li><a class="gb-header__link" href="{{ link.url }}">{{ link.title | escape }}</a></li>
++          {%- endfor -%}
++        </ul>
++        <ul class="gb-header__links gb-header__links--mobile">
+           {%- for link in section.settings.mobile_menu.links -%}
+             {%- if link.links.size > 0 -%}
+-              <li class="gb-header__links-item--mobile" data-collapsible>
++              <li data-collapsible>
+                 <button class="gb-header__link" type="button" aria-expanded="false">
+                   {{ link.title | escape }}
+                   <svg class="gb-header__link-chevron" aria-hidden="true" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg>
+@@ -55,12 +71,9 @@
+                 </div>
+               </li>
+             {%- else -%}
+-              <li class="gb-header__links-item--mobile"><a class="gb-header__link" href="{{ link.url }}">{{ link.title | escape }}</a></li>
++              <li><a class="gb-header__link" href="{{ link.url }}">{{ link.title | escape }}</a></li>
+             {%- endif -%}
+           {%- endfor -%}
+-          {%- for link in section.settings.desktop_menu.links -%}
+-            <li><a class="gb-header__link" href="{{ link.url }}">{{ link.title | escape }}</a></li>
+-          {%- endfor -%}
+         </ul>
+         <a class="gb-btn gb-btn--lg" href="{{ routes.account_url }}">{{ section.settings.account_label | default: 'Manage Account' | escape }}</a>
+       </nav>
+--- a/blocks/gb-title.liquid	2026-09-07 11:58:04.636019203 +0000
++++ b/blocks/gb-title.liquid	2026-09-07 13:17:24.486455229 +0000
+@@ -1,6 +1,6 @@
+ {%- assign p = closest.product | default: product -%}
+ {%- if p -%}
+-  <h2 class="gb-product__title" {{ block.shopify_attributes }}>{{ p.title | escape }}</h2>
++  <h1 class="gb-product__title" {{ block.shopify_attributes }}>{{ p.title | escape }}</h1>
+ {%- endif -%}
+ {% schema %}
+ { "name": "Title", "settings": [] }

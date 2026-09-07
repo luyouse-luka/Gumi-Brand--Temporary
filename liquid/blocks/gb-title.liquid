@@ -1,0 +1,7 @@
+{%- assign p = closest.product | default: product -%}
+{%- if p -%}
+  <h1 class="gb-product__title" {{ block.shopify_attributes }}>{{ p.title | escape }}</h1>
+{%- endif -%}
+{% schema %}
+{ "name": "Title", "settings": [] }
+{% endschema %}

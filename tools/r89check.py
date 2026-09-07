@@ -62,7 +62,9 @@ check('7 green moved to the copy half',
       '.gb-promo-card--green .gb-promo-card__body {\n  background: #005635;' in css, True)
 check('8 scallop is masked, not an element',
       css.count('.gb-promo-card--green .gb-promo-card__body::before') == 2, True)
-check('9 webkit prefix shipped', css.count('-webkit-mask: url("data:image/svg+xml,%3Csvg width=\'126\'') == 1, True)
+# >= not ==: r90 gives the white card the same mask, and this assertion is about
+# the prefix being emitted at all, not about how many cards use it.
+check('9 webkit prefix shipped', css.count('-webkit-mask: url("data:image/svg+xml,%3Csvg width=\'126\'') >= 1, True)
 
 PROBE = """() => {
   const cs=(s,p)=>{const e=document.querySelector(s); return e?getComputedStyle(e)[p]:null;};

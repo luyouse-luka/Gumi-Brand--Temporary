@@ -4556,6 +4556,294 @@ line-reveal 在新父层级下仍正常：`is-split` 生效、标题两档都是
    其它页面的手机稿是否也该 44，**没查，待裁决**。
 5. 线上没有 `gb-app-section` 的 liquid，这块**目前只活在静态站**。要上线得对方补 section。
 
+## 第九十一轮（2026-09-07）— 需求方点名五处：菜单结构 / PDP h1 / form 间距 / 白卡波浪 / vs 对齐（`$build` = `20260907-r90`）
+
+> ⚠ **轮次号与另一个会话撞了**：同日另一个会话也记了「第九十轮」（gb-crev 评论卡四处改造）。
+> 本条改记为第九十一轮。`$build` 仍是 `20260907-r90` —— 那个值已经推上 live，改了反而对不上。
+> ⚠ **本轮推送夹带了那个会话的 7 行 gb-crev CSS**（它 12:31 改了同一个 `customstyle.scss`，
+> 我在之后编译）。已核查：**线上 `gb-crev` 元素数为 0**（PDP / reviews / home 三页实测），
+> 那是还没有 liquid 的静态站新模块，所以这 7 行零匹配、无实际影响。逐条见本条末尾。
+
+### 1. 菜单拆成两个列表（静态站已落地，liquid 未推）
+
+**问题不是样式，是结构表达不了顺序**。静态站原本一个 `<ul>`，用
+`.gb-header__links-item--mobile` 把桌面不要的项隐藏掉。**Shopify 的 link list 无法给单个
+菜单项加类名**，所以线上 liquid 只能「先遍历 mobile_menu 全部、再遍历 desktop_menu 全部」，
+手机端顺序被钉死：
+
+| | 线上现状 | 稿 |
+|---|---|---|
+| 手机 | Shop, **Learn more, Get in Touch**, How Gumi Works, Science, Reviews | Shop, How Gumi Works, Science, Reviews, **Learn more, Get in Touch** |
+| 桌面 | How Gumi Works / Science / Reviews ✅ | 同 ✅ |
+
+改成**两个独立 `<ul>`**（`--desktop` / `--mobile`），CSS 按 767 各显其一，
+每个列表在后台各自排序。静态站 **11 个页面**全部改完（菜单块原本 md5 完全一致，统一替换）。
+
+- **零回归实测**：1440 / 390 两档下 nav 高度、首项 top、末项 bottom、按钮 top、
+  可见项列表**逐值与改动前相同**。
+- JS 不用改：`main.js` 用的是 `el.querySelectorAll("[data-collapsible]")`，作用域是整个面板。
+- ⚠ `.gb-header__links-item--mobile` 那两条 CSS **暂时保留** —— 线上 liquid 还是旧的单列表。
+  推 r90 的 header 之后才能删。
+
+### 2. PDP 缺 h1
+
+线上 PDP 实测 `h1` 数量 **0**，产品标题是 `<h2>`。`blocks/gb-title.liquid` 改成 `<h1>`。
+`h1` 的全局样式是 0-0-1，输给 `.gb-product__title` 的 0-1-0，**外观零变化**。
+
+### 3. `gb-product__form` 还原 24/16 节奏
+
+r87 那波重构删掉 `.gb-product__head`、把所有 block 塞进 `<form>`，
+`.gb-product__info` 的 `gap: 24` 只剩一个子元素可作用，head 的 `gap: 16` 直接没了 ——
+实测每一处间距都是 **0**。
+
+给 form 补 `flex column + gap: 24`，再用 `:has()` 按每个 block **包着什么**把 head 组
+（title / tag / lead / features）walk 回 16（`-8px`）。
+⚠ 只能这么认：`{% content_for 'blocks' %}` 给 wrapper 的 `div.shopify-block` 没有任何身份。
+⚠ 顺带处理**单变体产品的空 block**：高度 0 但仍是 flex item，会白吃一份 24 ——
+`:not(:has(*))` 隐藏它。
+
+### 4. 白卡的波浪咬痕
+
+绿卡在 r89 已用 `__body::before` + `$mask-promo-lip` 重建，白卡这次照做。
+白卡是「文案在左、插画在右」，所以挂在 **右**缘、凸出 **26**（客户定的咬痕值，绿卡是 31）。
+
+### 5. `gb-vs` 跨列行对齐：flex → grid + subgrid
+
+**真因**：两列各自持有自己的 5 行，任一侧文字换行，下面每一行就错开，且逐行累积 ——
+1100 实测顶部 8px、到末行 **15px**。
+
+`.gb-vs__table` 改成 grid，两列 `grid-row: 1/-1` + `grid-template-rows: subgrid`，
+**两列共享同一组行轨道**，任一侧换行同时撑开两边。
+
+- ⚠ **不能用 `display: contents`** 把行提上去：那会删掉列的盒子，
+  `.gb-vs__col--gumi::before`（浅绿卡片）跟着消失。
+- ⚠ **最后一条轨道必须是 `1fr`**：列跨 1/-1，没有东西吸收剩余高度的话列会缩到内容高，
+  卡片（`height:100%`）就比板上短一截。flex 原来是免费给这个 stretch 的。
+- ⚠ `grid-template-rows: repeat(19, auto) 1fr` 里的 19 是**上限不是行数**，
+  空轨道塌成 0 且 `row-gap: 0`，不产生任何间距。
+
+**对照实测**：1440 / 900 / 768 三档 `maxDrift` / 列高 / 卡片高 **完全不变**（零回归），
+1100 的 15px 漂移归零。
+
+⚠ **`.gb-vs__col--gumi::before` 溢出列宽 28px 是设计本身，不是 bug**：
+稿上卡片 x135 + 宽409 = 544，others 列从 576 起，本来就不相碰；
+线上各宽度实测卡片右缘始终落在 others 左缘内侧 19–28px 的空隙里。**没有改。**
+
+### 文件清单
+
+| 文件 | 改动 |
+|---|---|
+| 11 个页面 HTML | 菜单块拆成 `--desktop` / `--mobile` 两个 `<ul>` |
+| `assets/customstyle.scss` / `.css` | 菜单两档显隐、form 节奏、白卡 `::before`、gb-vs grid/subgrid；`$build` → `20260907-r90` |
+| `liquid/sections/gb-header.liquid` | 两个列表（**未推**） |
+| `liquid/blocks/gb-title.liquid` | h2 → h1（已推）；`liquid/` 下新建 `blocks/` |
+| `liquid/r90.patch` | 上面两个 liquid 的 diff |
+| `tools/r90check.py` | 本轮判据 |
+| `docs/LIVE-BACKLOG.md` | 新增第〇节：推 header 前后台必须补的六项手机菜单 |
+
+### 推送
+
+`--only` 三个文件（`customstyle.css` / `.scss` / `blocks/gb-title.liquid`）
+`--nodelete --allow-live`。三方对比：三个文件线上均 = `baseline-r89`，无第三方改动
+（对方同期只动了 4 个后台托管的 json）。产物新鲜度验过。
+回读 **616 → 616**、三文件逐字节相同、**613 个清单外文件零改动**。新基线 **`baseline-r90`**。
+`r90check --as-served` 推前 **13 红** → 推后**全绿**；`r88check` / `r89check` 回归全绿。
+`theme check` 改前改后同为 8 errors / 29 offenses，无一条指向改动文件。
+
+### ⚠ 并行会话与本轮推送夹带的内容
+
+同目录有另一个会话在做 `gb-crev`（评论卡）。证实：`~/.claude/projects/` 下
+`9ab85ed0` 与本会话 `237f7750` 同在 13:52 写入；`images/star.svg`、`images/review-bear.png/webp`
+的 mtime 是 **12:31**，本会话没有创建过。
+
+`customstyle.scss` 是**共享文件**，本轮推送因此夹带了它 12:31 的改动。185 行 css 差异里
+**7 行属于 gb-crev**，五个选择器：
+
+| 夹带的改动 | 对线上的影响 |
+|---|---|
+| `.gb-crev__stars` / `.gb-crev-card__rating` 由 `display:block` 改 flex，去掉写死的 160×32 / 100×20 | 线上零匹配 |
+| 删除 `.gb-crev-card__rating[data-rating="4.5"] path:last-of-type{fill-opacity}` | 线上零匹配 |
+| 新增 `.gb-crev-card__star--dim` / `[hidden]` 两条 / `.gb-crev-card__image img` | 线上零匹配 |
+
+**已实测核查**：`gb-crev` 在线上 `sections/*.liquid` 与 `templates/*.json` 中 **0 处**，
+PDP / reviews / home 三页渲染后 `[class*=gb-crev]` 元素数均为 **0** ——
+那是对方尚在静态站开发、线上还没有 liquid 的模块，所以这 7 行不产生任何视觉影响。
+`main.js`（含对方的 `crevPager`）**不在本轮推送清单里，没有推**。
+
+⚠ **教训**：共享 `customstyle.scss` 的项目里，推送前的三方对比只比了「线上 vs 基线」，
+没有比「本地 scss vs 我这轮实际动过的行」。下次推送前应先 `git diff assets/customstyle.scss`
+确认差异都是自己的。
+
+### 遗留
+
+- **`sections/gb-header.liquid` 未推**：需求方要求先在静态站调完。推之前**后台 Mobile menu
+  必须先补成六项**，否则手机端会少掉 How Gumi Works / Science / Reviews。
+- 手机端的 `lip--h`（卡片底部水平波浪）线上仍缺，两张卡都是。
+- collection 页（r88）仍是无稿的自定值，待设计方裁决。
+
+## 第九十二轮（2026-09-07）— promo 还原静态站（含响应式）+ vs 表格对齐与比例（`$build` = `20260907-r91`）
+
+需求方两条：① `gb-promo` 样式仍未还原静态站、包括响应式，`__media` 的图要 `object-fit: contain`；
+② `gb-vs__label` 要最小宽度（否则 `gb-vs__value` 对不齐），响应式下 `.gb-vs__col--gumi::before`
+不能碰到 label 的区域，`gb-vs__pile` / `gb-vs__bear` / `gb-vs__logo` 要保持相同比例。
+
+### A. gb-promo：线上与静态站的四处结构差
+
+线上 PDP 与静态 `pdp.html` 在 1440 / 1024 / 768 / 390 四档逐元素比对，差异只有四处，
+**全部来自 `sections/gb-promo.liquid` 与 theme editor 的内容，不是数值走样**：
+
+| 差异 | 真因 | 本轮处置 |
+|---|---|---|
+| 绿卡 `__media` 里的图被裁 | 线上 block 填了图（稿里这半边是纯灰占位、根本没有图），我们给的是 `cover` | 客户指定改 `contain` |
+| 绿卡多画一条弧 | `templates/product.json` 里绿卡的 `arc_text` 留着 schema 默认值 `"OUR PROMISE"`，liquid 不分 variant 都画 | CSS 对绿卡 `display:none`；liquid 侧也加了 `variant == 'white'` 判断 |
+| 绿卡标题↔正文间距偏大 | 线上多一层 `__main`（gap 24/28/32 是**白卡**的节奏），稿里绿卡的 title/lead 是 `__stack` 直接子元素 | 给绿卡的 `__main` restate `__stack` 的 16 / 12 / `fluid(12,16)` |
+| ≤767 两卡都缺横向波浪 | `gb-promo.liquid` 不渲染 `.gb-promo-card__lip--h` | 与 r89 的竖向咬痕同一手法：`__media::after` / `__art::after` + 新增 `$mask-promo-lip-h` |
+
+⚠ **绿卡那条弧不是「看不见就无害」**：它 `color: $c-green` 画在绿底上确实隐形，
+但它是个 `width: 452px` 的盒子，把 copy 半边的 min-content 顶宽了 —— 768 档实测
+`__body` 被撑到 **395**、`__media` 只剩 364，卡片不再是 50/50；1024 / 768 两档还让整卡
+分别高出 **62 / 66px**。改掉后四档 `__body` / `__stack` / `title` / `lead` / `btn` 的
+矩形与静态站**逐值相同**。
+
+⚠ **`$mask-promo-lip-h` 的 `bottom: -48px` 是承重的**：82.4 的盒子只有 34.4 落在
+image 半边内，其余被卡片的 `overflow: hidden` 切掉 —— 静态站那个 svg 子元素也是这么被切的。
+静态站上伪元素与真 svg **完全重合**（500.5×82.39、bottom −48、left 176.75 三值相同），
+390 全页像素差 339 px（0.048%），全在弧边的抗锯齿上。
+
+### B. gb-vs：label 列宽是这三个症状的同一个根
+
+`.gb-vs__label` 原来是 `flex: 0 0 21.124%`（稿 109/516），**但 flex item 的
+automatic minimum size 会压过 flex-basis**。1300 以下 21.124% 掉到 label 的
+min-content 之下，于是**只有长的那两条（Subscription / Transparency）撑宽**：
+
+| 视口 | label 宽度（改前） | value 起点 | 与浅绿卡左缘 |
+|---|---|---|---|
+| 1281 | 90.2 / 97.9 / **105.5** | 三个 x | ok |
+| 1100 | 73.9 / 89.2 / **96.1** | 三个 x | **压进去 4.6** |
+| 1025 | 67.1 / 85.7 / **92.3** | 三个 x | **压进去 9.2** |
+
+三个改法串成一条链：
+
+1. `--vs-label-w: max(21.124%, 109px)`（tablet 档 floor 走 `fluid(87px,109px)`，
+   narrow 档 `max(24.786%, 87px)`）+ label 上 `min-width: 0` 关掉 auto 最小尺寸。
+   floor 取的就是稿自己的 label 宽度，**不是拍的数**。
+2. `--vs-card-x: calc(var(--vs-label-w) + 5.039%)`（narrow `1.425%`），浅绿卡的
+   `left` 从写死的 26.163% 改成读它 —— 卡永远开始在 label 之后。
+   **`width` 换成 `right: -5.426%`**：左缘会动，右缘（稿的 28px 外挂）必须钉住。
+3. `.gb-vs__logo` 的 `left` 改成 `calc(var(--vs-card-x) + 6.860%)`（narrow `4.843%`，
+   即稿的 35.4 / 17）。不改这条，1025–1280 档卡右移之后 logo 会挂在卡外面。
+
+改后 1440 / 1024 / 768 / 767 / 575 / 390 六档**逐值与改前相同**（1440 卡宽 408.984 → 408.969），
+只有 1025–1280 这一段动，且动的正是坏掉的那段。360 / 320 两档因为有了 87 的 floor 不再挤破。
+
+### C. gb-vs：pile 的档位放错了，比例就是这么丢的
+
+`.gb-vs__pile` 的 `@include stack { left: 80.627%; width: 19.373% }` —— 那对数是
+**手机稿的值**（282.5/351、68.5/351），却挂在 `stack`（≤1024）上，于是整个 768–1024
+平板档跑的是手机尺寸：
+
+| 视口 | pile（改前 → 改后） | bear | bear : pile |
+|---|---|---|---|
+| 1440 | 112 → 112 | 201.5 | 1.799 |
+| 1024 | **67.2 → 112** | 201.5 | 2.999 → **1.799** |
+| 900 | **60.3 → 100.5** | 180.8 | 2.999 → **1.799** |
+| 768 | **53 → 88.2** | 158.8 | 2.996 → **1.800** |
+| 390 | 67.8 → 68.3 | 122.3 | 1.804 → 1.791 |
+
+改法：把手机值搬回 `narrow`，尺寸维持列宽百分比（与 bear / logo / 浅绿卡同一个盒子，
+比例自然一致），**外挂量改成会插值的 px**：pc `right: -39px`、tablet `fluid(0, -39px)`、
+narrow `right: 0`（稿里手机的 pile 右缘正好与列右缘齐平）。
+
+⚠ 原来那对数是**为了不溢出**才凑成 `80.627 + 19.373 = 100%` 的。直接把桌面百分比放到
+768 会让 pile 右缘超出视口 10px；现在靠 `right` 的 px 斜坡兜底，768–1440 全档
+`document.scrollWidth == innerWidth`。
+⚠ bear 与 logo 的 `width` **一个字没动** —— 它们本来就是列宽百分比，坏的只有 pile。
+
+### 判据
+
+`tools/r91check.py`（静态 11 档 / 线上 5 档）：
+
+- label 列在每一列内**只有一个宽度**、value 只有一个 x
+- label 最右缘 ≤ 浅绿卡左缘；卡右缘 = 列右缘 + 5.426%（narrow 档 0）
+- logo 左缘 ≥ 卡左缘
+- `bear : pile` = 1.799（≥768）/ 1.791（≤767），`logo : bear` = 0.8586 / 0.8395，容差 0.02
+- `document.scrollWidth == innerWidth`
+- 绿卡 arc `display:none`、两个半边宽度差 ≤1、`__main` 的 gap == `__stack` 的 gap
+- ≤767 两个 `::after` 有 content / 颜色 / mask / `bottom:-48px`，>767 `content: none`
+- 静态站上伪元素宽度 == 真 svg 宽度（±0.5）
+
+**结果**：`r91check` 静态 11 档全绿；线上 5 档只剩「白卡有手机弧」5 红（那半边是 liquid，
+`page.route` 换 css 够不到，属预期）。`--as-served` **33 红** —— 判据能认出未推状态。
+`rwd.py` 11 页 × 14 档全绿。回归：`r87check` / `r88check` / `r89check` / `r90check` **全绿**。
+
+### 文件清单
+
+| 文件 | 改动 |
+|---|---|
+| `assets/customstyle.scss` | 新增 `$mask-promo-lip-h` + `promo-lip-h()` mixin；`__media` 图改 `contain`；绿卡 arc 隐藏 + `__main` 节奏；两个 `::after` 波浪；`--vs-label-w` / `--vs-card-x` 两个 token；浅绿卡 left/right、logo left、pile right/width、label flex 改写；`$build` → `20260907-r91` |
+| `assets/customstyle.css` | 重编译（双写，`--style=expanded`） |
+| `liquid/sections/gb-promo.liquid` | **未推**：补 `gb-arc-text--mob`，arc 只对 white variant 渲染 |
+| `tools/r91check.py` | 本轮判据（新增） |
+
+⚠ **编译必须 `--style=expanded`**：线上的 `assets/customstyle.css` 是展开格式（10973 行）。
+本轮一度用 `--style=compressed` 编出单行，`r87check` 里那三条按行解析 css 的断言立刻全红 ——
+那是格式判据在报警，不是样式坏了。
+
+### 推送（2026-09-07）
+
+推了**三个文件**到 live 主题 `Dev (#180348977399)`，`--only` 逐个列出 + `--nodelete --allow-live`：
+
+```
+assets/customstyle.css
+assets/customstyle.scss
+sections/gb-promo.liquid      ← 需求方本轮明确授权
+```
+
+**三方对比**（推送前）：`live-20260907-1501` 与 `baseline-r90` **逐文件零差异** ——
+上一轮推送之后没有任何第三方改动，无冲突。
+**差异归属核查**（承接上一轮的教训）：`customstyle.scss` 对基线的 125 行差异里，
+出现的选择器只有 `.gb-promo-card*` 与 `.gb-vs*`，**没有夹带别的模块**。
+**liquid 体检**：`shopify theme check` 对推送前后两份目录各跑一次，
+报告**逐行相同**（421 files / 29 offenses / 8 errors / 21 warnings），本轮零新增。
+
+**回读验证**（三道）：
+
+1. CLI 拉回：文件数 **616 → 616**；与推送前快照的差异**正好是这三个文件**，
+   且三个都与本地**逐字节相同**；613 个清单外文件零改动。
+2. 线上实测：`r91check --as-served` 推前 **33 红**、推后**全绿**（含
+   「白卡有手机弧」那 5 条 —— 那半边正是这次一起推的 liquid）。
+3. CDN 回读（压缩形式判据）：`20260907-r91` × 16、`right:-39px` × 1、
+   `--vs-label-w` × 6、`--vs-card-x` × 5、`gb-promo-card__media:after` × 1、
+   `gb-promo-card__art:after` × 1、`.gb-promo-card--green .gb-promo-card__arc` × 1。
+
+⚠ **不带指纹的 `/cdn/shop/t/2/assets/customstyle.css` 是过期缓存，不能当判据** ——
+本轮它回来的还是 **r73**（`--build: "20260907-r73"`，214672 字节）。
+正确做法：从线上页面取带 `?v=` 的真实 URL（本轮 `?v=710593666850501996…`，234351 字节），
+或者干脆读渲染后的 `getComputedStyle(document.documentElement)` 的 `--build`（实测 `"20260907-r91"`）。
+⚠ Shopify 的压缩器把 `::after` 改写成 `:after`，但**不动 custom property 的值**
+（`--vs-label-w: max(21.124%, 109px)` 里的空格原样保留）。写判据要按这两条来。
+
+基线滚动：`baseline-r90`（上一版线上）→ **`baseline-r91`（616 文件，当前线上）**；
+推送前快照 `live-20260907-1501` 保留。
+
+**回归**（全部 `--as-served`，即打在真线上）：`r87check` **all assertions ok**、
+`r88check` / `r89check` / `r90check` **all green**、`r91check` **all green**。
+
+### 遗留
+
+- **白卡手机端的 `OUR PROMISE` 弧仍缺**：静态站有 `gb-arc-text--mob`（278×29、rx 118.5、
+  20px），线上 liquid 只输出 `--pc`（452×34、rx 144.5），而 `--pc` 在 ≤767 是
+  `display:none`。**CSS 补不了** —— 两块稿是两个椭圆，一个 viewBox 装不下。
+  改法已写进 `liquid/sections/gb-promo.liquid`，**等授权再推**。
+- 白卡标题手机端断行不同：静态是 `Quality you / can trust`（稿里的 `<br class="gb-br-narrow">`），
+  线上是纯文本设置，自然断成 `Quality you can / trust`。要还原得给 liquid 定一个断行约定，
+  **本轮没做**。
+- 后台 `templates/product.json` 里绿卡的 `arc_text` 仍是 `"OUR PROMISE"`。CSS 已经挡住，
+  但更干净的做法是请对方在主题编辑器里清空它。
+- ⚠ **别报成 bug**：静态站上两处波浪是「真 svg + 伪元素」双绘（竖向 r89 起就是如此，
+  横向本轮起同样）。两者几何完全重合，只在弧边差抗锯齿。静态站是参考稿不是线上，
+  刻意不用 `:has()` 去关掉伪元素 —— `:has()` 一旦不被支持整条规则失效，线上就没波浪了。
+
 ## 第八十八～八十九轮（2026-09-07）— collection 页底距 + product 顶距改档 + promo 波浪重建（`$build` = `20260907-r89`）
 
 两批需求一次推送。第一批一条（collection 页底部间距），第二批三条（两个 padding-top、promo 还原）。

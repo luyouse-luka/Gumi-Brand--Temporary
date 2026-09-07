@@ -5,6 +5,42 @@
 > （`templates/*.json`、`sections/footer-group.json`、`config/settings_data.json`）。
 > 推它们会覆盖对方在后台调过的一切。剩下的落在这里。
 
+## 〇、⚠ r90 的菜单改动依赖这一条（推 liquid 之前必须先做）
+
+`sections/gb-header.liquid` 从「一个菜单 + 用 `.gb-header__links-item--mobile` 隐藏桌面项」
+改成了**两个独立菜单**（桌面一个、手机一个，CSS 各显其一）。原因：
+**Shopify 的 link list 无法给单个菜单项加类名**，所以旧结构下手机端的顺序被钉死成
+「先全部 mobile 项、再全部 desktop 项」，而稿上两者是交错的。
+
+推送后手机端只会渲染 **Mobile menu** 这一个 link list，所以后台必须把它补成完整的六项：
+
+| 顺序 | 条目 | 类型 |
+|---|---|---|
+| 1 | Shop | 普通链接 |
+| 2 | How Gumi Works | 普通链接 |
+| 3 | Science | 普通链接 |
+| 4 | Reviews | 普通链接 |
+| 5 | Learn more | **带子项**：Our Story / FAQs / Shipping / Referral Program |
+| 6 | Get in Touch | **带子项**：Partners & Influencers / Press Inquiries / Careers |
+
+Desktop menu 保持现在的三项（How Gumi Works / Science / Reviews）不变。
+
+⚠ **不补就会缺项**：当前 Mobile menu 只有 Shop / Learn more / Get in Touch 三项，
+推了 liquid 而不补菜单，手机端会**少掉 How Gumi Works / Science / Reviews**。
+所以两件事要么一起做，要么先补菜单再推。
+
+## 〇之二、promo 绿卡的 Arc text 请在后台清空（r91）
+
+`templates/product.json` → `promo` → 第一张卡（`variant: green`）的 **Arc text** 现在是
+schema 默认值 `"OUR PROMISE"`。稿里绿卡**没有弧**，而 `gb-promo.liquid` 不分 variant 都画，
+于是线上多了一条绿底绿字的隐形弧 —— 它是个 452px 宽的盒子，把 copy 半边顶宽了
+（768 档实测两个半边变成 364 / 395，卡片不再 50/50，1024 / 768 两档整卡还高出 62 / 66px）。
+
+r91 的 CSS 已经 `display: none` 挡住它，功能上没问题。**更干净的做法**是在主题编辑器里
+把绿卡的 Arc text 清空 —— 那样内容与稿一致，不靠样式兜底。
+⚠ **r91 已把 `variant == 'white'` 判断推上线**，所以绿卡现在无论后台填什么都不会画弧了 ——
+这一条降级成「后台数据整洁度」，不再是视觉问题。
+
 ## 一、现在就能在后台做完的（不需要我们再改代码）
 
 ### 1. 首页评价区标题少了换行 ⚠ 这是线上的真 bug

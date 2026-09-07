@@ -1,0 +1,114 @@
+<section class="gb-promo">
+  <div class="gb-promo__inner">
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'card' -%}
+        {%- assign card_class = 'gb-promo-card gb-promo-card--' | append: block.settings.variant -%}
+        <article class="{{ card_class }}" {{ block.shopify_attributes }}>
+          {%- if block.settings.image != blank and block.settings.variant == 'green' -%}
+            <div class="gb-promo-card__media">
+              <img src="{{ block.settings.image | image_url: width: 900 }}" alt="{{ block.settings.image.alt | escape }}" loading="lazy" decoding="async">
+            </div>
+          {%- endif -%}
+          <div class="gb-promo-card__body">
+            <div class="gb-promo-card__stack">
+              {%- if block.settings.arc_text != blank and block.settings.variant == 'white' -%}
+                {%- comment -%} Two boards, two ellipses: 452x34 rx144.5 on desktop, 278x29 rx118.5 on mobile. One viewBox cannot carry both, so the breakpoint picks. {%- endcomment -%}
+                <svg class="gb-arc-text gb-promo-card__arc gb-arc-text--pc" viewBox="0 0 452 34" aria-hidden="true">
+                  <path id="promise-arc-{{ block.id }}" d="M 81 83 A 144.5 66 0 0 1 370 83" fill="none"></path>
+                  <text text-anchor="middle"><textPath href="#promise-arc-{{ block.id }}" startOffset="50%">{{ block.settings.arc_text | escape }}</textPath></text>
+                </svg>
+                <svg class="gb-arc-text gb-promo-card__arc gb-arc-text--mob" viewBox="0 0 278 29" aria-hidden="true">
+                  <path id="promise-arc-m-{{ block.id }}" d="M 20.5 82.105 A 118.5261 65.7047 0 0 1 257.55 82.105" fill="none"></path>
+                  <text text-anchor="middle"><textPath href="#promise-arc-m-{{ block.id }}" startOffset="50%">{{ block.settings.arc_text | escape }}</textPath></text>
+                </svg>
+              {%- endif -%}
+              <div class="gb-promo-card__main">
+                <h2 class="gb-promo-card__title{% if block.settings.title_outlined %} gb-promo-card__title--outlined{% endif %}">{{ block.settings.title }}</h2>
+                {%- if block.settings.lead != blank -%}
+                  <p class="gb-promo-card__lead{% if block.settings.variant == 'white' %} gb-promo-card__lead--muted{% endif %}">{{ block.settings.lead | escape }}</p>
+                {%- endif -%}
+                {%- assign checks = block.settings.checks | split: '|' -%}
+                {%- if checks.size > 0 and checks.first != blank -%}
+                  <ul class="gb-promo-card__list">
+                    {%- for item in checks -%}
+                      <li class="gb-promo-card__list-item"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.9961 22.0415C17.5189 22.0415 21.9961 17.5644 21.9961 12.0415C21.9961 6.51866 17.5189 2.0415 11.9961 2.0415C6.47325 2.0415 1.99609 6.51866 1.99609 12.0415C1.99609 17.5644 6.47325 22.0415 11.9961 22.0415Z" fill="#005635"/><path d="M14.9961 9.0415L8.99609 15.0415M8.99609 9.0415L14.9961 15.0415" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>{{ item | escape }}</span></li>
+                    {%- endfor -%}
+                  </ul>
+                {%- endif -%}
+              </div>
+            </div>
+            {%- if block.settings.button_label != blank -%}
+              <a class="gb-btn gb-promo-card__btn{% if block.settings.variant == 'green' %} gb-promo-card__btn--light{% endif %}" href="{{ block.settings.button_url | default: '#' }}">{{ block.settings.button_label | escape }}</a>
+            {%- endif -%}
+          </div>
+          {%- if block.settings.image != blank and block.settings.variant == 'white' -%}
+            <div class="gb-promo-card__art">
+              <div class="gb-promo-art">
+                <img class="gb-promo-art__img" src="{{ block.settings.image | image_url: width: 1400 }}" alt="{{ block.settings.image.alt | escape }}" width="1413" height="1209" loading="lazy" decoding="async">
+              </div>
+            </div>
+          {%- endif -%}
+        </article>
+      {%- endif -%}
+    {%- endfor -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Gumi Promo Cards",
+  "tag": "section",
+  "class": "section",
+  "settings": [],
+  "blocks": [
+    {
+      "type": "card",
+      "name": "Promo card",
+      "settings": [
+        { "type": "select", "id": "variant", "label": "Style",
+          "options": [
+            { "value": "green", "label": "Green" },
+            { "value": "white", "label": "White (with arc)" }
+          ],
+          "default": "green" },
+        { "type": "image_picker", "id": "image", "label": "Image" },
+        { "type": "text", "id": "arc_text", "label": "Arc text (white variant only)", "default": "OUR PROMISE" },
+        { "type": "text", "id": "title", "label": "Title", "default": "Card title" },
+        { "type": "checkbox", "id": "title_outlined", "label": "Outlined title", "default": false },
+        { "type": "textarea", "id": "lead", "label": "Lead" },
+        { "type": "text", "id": "checks", "label": "Checklist (pipe | separated)", "info": "Only for white variant. e.g. No preservatives|No artificial|No nasties" },
+        { "type": "text", "id": "button_label", "label": "Button label", "default": "Shop Now" },
+        { "type": "url", "id": "button_url", "label": "Button URL" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gumi Promo Cards",
+      "blocks": [
+        {
+          "type": "card",
+          "settings": {
+            "variant": "green",
+            "title": "We got sick of choking down five different bottles.",
+            "lead": "Most multivitamin routines fall apart by week two. Too many bottles, too much admin, not enough reason to keep going. Gumi is the version that actually sticks: one pouch, once a day, done.",
+            "button_label": "Shop Now"
+          }
+        },
+        {
+          "type": "card",
+          "settings": {
+            "variant": "white",
+            "title_outlined": true,
+            "title": "Quality you can trust",
+            "arc_text": "OUR PROMISE",
+            "lead": "60+ potent ingredients to revive whole body vitality in great tasting gummies.",
+            "checks": "No preservatives|No artificial colours & flavours|No nasties, full stop",
+            "button_label": "Shop Now"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -4,6 +4,34 @@
 > 项目定位与已确立的规范在 [PROJECT-STATUS.md](PROJECT-STATUS.md)；
 > 改动史在 [CHANGELOG.md](CHANGELOG.md)（近 10 轮）+ [CHANGELOG-ARCHIVE.md](CHANGELOG-ARCHIVE.md)（第一～三十轮），**两份一起 grep**。
 >
+> 状态：`$build` = **`20260907-r91`**（第九十二轮，2026-09-07）—— promo 还原静态站 + vs 表格对齐。
+> **已推 live**（2026-09-07，三个文件：`assets/customstyle.css` / `.scss` / `sections/gb-promo.liquid`）。
+> 回读 **616 → 616**、三个文件逐字节相同、613 个清单外文件零改动。新基线 **`baseline-r91`**。
+> 判据 **`tools/r91check.py`**（静态 11 档 / 线上 5 档）：`--as-served` 推前 33 红、推后**全绿**。
+> 六件事：`__media` 图 `cover`→`contain`、绿卡的弧隐藏、绿卡 `__main` restate `__stack` 的节奏、
+> 手机端横向波浪用 `::after` + `$mask-promo-lip-h` 重建、`--vs-label-w` 给 label 列一个 floor、
+> 浅绿卡与 logo 的 `left` 改从 label 列推导、pile 的手机值从 `stack` 搬回 `narrow`。
+>
+> ⚠ **不要报成 bug 的四条**：
+> 1. **静态站上两处波浪是「真 svg + 伪元素」双绘** —— 竖向自 r89、横向自 r91。两者几何
+>    完全重合（500.5×82.39 / bottom −48 / left 176.75 三值相同），只在弧边差抗锯齿，
+>    390 全页 339px（0.048%）。**刻意不用 `:has()` 去关掉伪元素**：`:has()` 一旦不被支持，
+>    整条规则失效，线上就彻底没波浪了。静态站是参考稿、不是线上，宁可让它多画一层。
+> 2. **绿卡的 `.gb-promo-card__arc { display: none }` 不是「藏内容」** —— 稿里绿卡没有弧，
+>    是后台 `arc_text` 留着 schema 默认值造成的。它绿底绿字看不见，但 452px 的盒子会把
+>    copy 半边顶宽（768 档实测 364 / 395，卡片不再 50/50）。
+> 3. **`.gb-vs__col--gumi::before` 现在写 `left` + `right`、没有 `width`** —— 不是漏了。
+>    左缘要跟着 label 列走，右缘（稿的 28px 外挂）必须钉死，两者只能用 left+right 表达。
+> 4. **`.gb-vs__pile` 没有 `left`** —— 它改成靠 `right` 定位。`right` 是会插值的 px
+>    （pc −39 / tablet `fluid(0,−39px)` / narrow 0），因为 768 档若直接用桌面百分比，
+>    pile 右缘会超出视口 10px。`width` 仍是列宽百分比，这是 bear : pile 比例不变的原因。
+>
+> ⚠ **编译一律 `--style=expanded`** —— 线上 `assets/customstyle.css` 是展开格式（10973 行）。
+> 用 `compressed` 编出单行不会报错，但 `r87check` 里按行解析 css 的三条断言会全红。
+> ⚠ **回读 CDN 别用不带指纹的 URL** —— `/cdn/shop/t/2/assets/customstyle.css` 本轮回来的是
+> **r73 的过期缓存**。要么用线上页面里带 `?v=` 的真实 URL，要么直接读渲染后的 `--build`。
+> 另：Shopify 压缩器把 `::after` 写成 `:after`，但**不动 custom property 的值**（空格保留）。
+
 > 状态：`$build` = **`20260907-r90`**（第九十轮，2026-09-07）—— 评论卡四处改造：
 > 星级拆成 `<img>`、附件放小熊占位、More/Less 分页、4.76 补上 r89 漏掉的 `$c-lime` 描边。
 > **未推 live**（`gb-app-section` 线上仍没有 liquid，推 css 也渲染不出来）。

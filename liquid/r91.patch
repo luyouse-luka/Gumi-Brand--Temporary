@@ -1,0 +1,29 @@
+--- /home/ly/project/Gumi-Brand-shopify/baseline-r90/sections/gb-promo.liquid	2026-09-07 13:49:57.750199728 +0000
++++ liquid/sections/gb-promo.liquid	2026-09-07 14:38:52.347891238 +0000
+@@ -11,11 +11,16 @@
+           {%- endif -%}
+           <div class="gb-promo-card__body">
+             <div class="gb-promo-card__stack">
+-              {%- if block.settings.arc_text != blank -%}
++              {%- if block.settings.arc_text != blank and block.settings.variant == 'white' -%}
++                {%- comment -%} Two boards, two ellipses: 452x34 rx144.5 on desktop, 278x29 rx118.5 on mobile. One viewBox cannot carry both, so the breakpoint picks. {%- endcomment -%}
+                 <svg class="gb-arc-text gb-promo-card__arc gb-arc-text--pc" viewBox="0 0 452 34" aria-hidden="true">
+                   <path id="promise-arc-{{ block.id }}" d="M 81 83 A 144.5 66 0 0 1 370 83" fill="none"></path>
+                   <text text-anchor="middle"><textPath href="#promise-arc-{{ block.id }}" startOffset="50%">{{ block.settings.arc_text | escape }}</textPath></text>
+                 </svg>
++                <svg class="gb-arc-text gb-promo-card__arc gb-arc-text--mob" viewBox="0 0 278 29" aria-hidden="true">
++                  <path id="promise-arc-m-{{ block.id }}" d="M 20.5 82.105 A 118.5261 65.7047 0 0 1 257.55 82.105" fill="none"></path>
++                  <text text-anchor="middle"><textPath href="#promise-arc-m-{{ block.id }}" startOffset="50%">{{ block.settings.arc_text | escape }}</textPath></text>
++                </svg>
+               {%- endif -%}
+               <div class="gb-promo-card__main">
+                 <h2 class="gb-promo-card__title{% if block.settings.title_outlined %} gb-promo-card__title--outlined{% endif %}">{{ block.settings.title }}</h2>
+@@ -67,7 +72,7 @@
+           ],
+           "default": "green" },
+         { "type": "image_picker", "id": "image", "label": "Image" },
+-        { "type": "text", "id": "arc_text", "label": "Arc text (white variant)", "default": "OUR PROMISE" },
++        { "type": "text", "id": "arc_text", "label": "Arc text (white variant only)", "default": "OUR PROMISE" },
+         { "type": "text", "id": "title", "label": "Title", "default": "Card title" },
+         { "type": "checkbox", "id": "title_outlined", "label": "Outlined title", "default": false },
+         { "type": "textarea", "id": "lead", "label": "Lead" },
