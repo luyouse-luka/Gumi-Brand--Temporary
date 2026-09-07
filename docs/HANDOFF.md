@@ -5,8 +5,10 @@
 > 改动史在 [CHANGELOG.md](CHANGELOG.md)（近 10 轮）+ [CHANGELOG-ARCHIVE.md](CHANGELOG-ARCHIVE.md)（第一～三十轮），**两份一起 grep**。
 >
 > 状态：`$build` = **`20260907-r92`**（第九十三轮，2026-09-07）—— vs 品牌行美术件不再压文字、
-> `/404` 换主题字体、`product-list` 底距。**未推 live**（需求方本轮没说推）。
-> 判据 **`tools/r92check.py`**：静态 14 档全绿、线上（换 css + 注入钩子）全绿、`--as-served` 17 红。
+> `/404` 换主题字体、`product-list` 底距。
+> **已推 live**（2026-09-07，三个文件：`assets/customstyle.css` / `.scss` / `sections/main-404.liquid`）。
+> 回读 **616 → 616**、三个文件逐字节相同、613 个清单外文件零改动。新基线 **`baseline-r92`**。
+> 判据 **`tools/r92check.py`**：静态 14 档全绿；`--as-served` 推前 17 红、推后**全绿**。
 >
 > ⚠ **不要报成 bug 的四条**：
 > 1. **`.gb-vs__logo` / `__bear` / `__pile` 的 `max-width` 不是多余的** —— 它们的尺寸是列宽

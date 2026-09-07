@@ -30,7 +30,7 @@
 | `sections/gb-hero.liquid` | r71 | lead 走 gb-rich-inline | ✅ 已推 |
 | `sections/gb-header.liquid` | r90 | 菜单拆成两个 ul（桌面/手机各一），移除 `--mobile` 单项类 | ❌ **未推**：需求方要求先在静态站落地并调完样式；推之前后台 Mobile menu 必须先补成六项，见 `docs/LIVE-BACKLOG.md` 第〇节 |
 | `blocks/gb-title.liquid` | r90 | PDP 产品标题 `<h2>` → `<h1>`（整页原本 0 个 h1） | ✅ 已推 |
-| `sections/main-404.liquid` | r92 | schema `class` 补 `gb-404` 钩子（`section-wrapper` 是 main-page / main-blog-post / section 共用的，不能当选择器） | ❌ **未推**：等授权。没有它，404 的标题/正文/按钮样式全部不生效 |
+| `sections/main-404.liquid` | r92 | schema `class` 补 `gb-404` 钩子（`section-wrapper` 是 main-page / main-blog-post / section 共用的，不能当选择器） | ✅ **已推**（r92，2026-09-07）。线上渲染出的类名实测 `shopify-section section-wrapper gb-404`；theme check 前后报告 diff 为 0 |
 | `sections/gb-promo.liquid` | r91 | 补 `gb-arc-text--mob`（手机端那条弧线上一直没有）；arc 只对 `variant == 'white'` 渲染 | ✅ **已推**（r91，2026-09-07，需求方明确授权）。theme check 推前后报告逐行相同；线上手机端实测已出弧 |
 | `sections/gb-nutrition.liquid` | r71 | 卡片 text 走 gb-rich-inline | ✅ 已推 |
 | `sections/gb-form-section.liquid` | r71 | note 走 gb-rich-inline | ✅ 已推 |

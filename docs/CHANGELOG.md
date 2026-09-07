@@ -4778,6 +4778,42 @@ type preset 类（`h3`）放在**包裹层**上，由 `.text-block.h3 :is(h1,...
 | `liquid/r92.patch` | 上面那一行的 diff |
 | `tools/r92check.py` | 本轮判据（新增） |
 
+### 推送（2026-09-07）
+
+推了**三个文件**到 live 主题 `Dev (#180348977399)`，`--only` 逐个列出 + `--nodelete --allow-live`：
+
+```
+assets/customstyle.css
+assets/customstyle.scss
+sections/main-404.liquid
+```
+
+**三方对比**（推送前）：新拉的线上快照与 `baseline-r91` **逐文件零差异**，无第三方改动。
+**差异归属核查**：`customstyle.scss` 对基线的 133 行差异里出现的选择器只有
+`.gb-vs*` / `.gb-404` / `.ui-test-product-list` / `[data-testid=product-list]`
+（`.gb-btn` / `.gb-btn--lg` 只出现在注释里），没有夹带别的模块。
+**liquid 体检**：`shopify theme check` 推送前后两份目录的报告 **diff 为 0 行**
+（421 files / 29 offenses / 8 errors / 21 warnings），零新增。
+
+**回读验证**（三道）：
+
+1. CLI 拉回：**616 → 616**；与推送前快照的差异**正好是这三个文件**，三个都与本地
+   **逐字节相同**；613 个清单外文件零改动。
+2. 线上实测：`r92check --as-served` 推前 **17 红**、推后**全绿**（含 404 那半边 ——
+   钩子类正是这次一起推的 liquid）。渲染后的 section 类名实测为
+   `shopify-section section-wrapper gb-404`。
+3. CDN 带指纹回读（237386 字节）：`20260907-r92` × 16、`.gb-404` × 6、
+   `max-width:174.168px` / `105.993px` / `68.5px` 各 1、`right:calc(-5.426% - 3px)` × 1、
+   `data-testid=product-list` × 3、`section-resource-list__header` × 6；
+   页面 `--build` 读回 `"20260907-r92"`。
+
+基线滚动：`baseline-r91` → **`baseline-r92`（616 文件，当前线上）**；推送前快照保留。
+
+git：`d16c61b`（r90+r91，含 11 页菜单两列表结构）→ **`a6be46e`**（本轮），均已 push 到 `main`。
+
+**回归**（全部 `--as-served`，打在真线上）：`r87check` / `r91check` / `r92check` **all assertions ok**，
+`r88check` / `r89check` / `r90check` **all green**。
+
 ### 顺带发现 / 未修
 
 - `/404` 商品卡的**价格**仍是 Inter 12/500（Horizon 默认）。商品名已经是 PP Palma
