@@ -1,0 +1,355 @@
+@use "sass:list";
+@use "sass:math";
+@use "sass:string";
+
+// ============================================================================
+// Gumi Account — account.scss
+//
+// The account centre's styles, kept apart from customstyle.scss so the whole
+// block can be lifted out later (spec decision 4).
+//
+//   npx sass@1.77.8 assets/account.scss assets/account.css --no-source-map
+//
+// Load AFTER customstyle.css — the cascade order is what lets this file
+// override the shared header/footer.
+//
+// Two halves, same as customstyle.scss:
+//   DEFINITIONS — variables and mixins, copied from customstyle.scss
+//                 (spec decision 5). tools/acctvars.py fails if they drift.
+//   OUTPUT      — the CSS itself. Block order is a cascade dependency.
+//
+// $build-acct is deliberately separate from customstyle's $build: the two files
+// ship on their own schedules.
+// ============================================================================
+
+$build-acct: "20260907-a1";
+
+// ==========================================================================
+// Variables
+// ==========================================================================
+
+// Design tokens. Values from Figma node data (see docs/DESIGN-TOKENS.md).
+
+// customstyle.scss's $build is deliberately NOT copied here: account ships on
+// its own schedule. Any url() in this file uses $build-acct at the top.
+
+// Brand
+$c-lime:        #b5ed61;
+$c-lime-600:    #85c947;
+$c-lime-200:    #daf6b0;
+$c-lime-150:    #e7f8d0;
+$c-lime-100:    #f4fce7;
+$c-lime-050:    #f9fff1;
+$c-lime-stroke: #47ac00;   // stroke only
+
+$c-green:       #005635;
+$c-green-900:   #004128;
+$c-ink:         #011307;
+
+$c-cream:       #faf9f8;
+$c-sand:        #f5f1e9;
+$c-lilac:       #e9d7fe;
+$c-gold:        #eec644;
+$c-coral:       #dd655e;   // the cross mark on comparison rows / 324:70523 subhead
+$c-blue:        #0374a5;   // 341:42573 only — cart delivery interval + "Continue Shopping"
+
+// Neutral
+$c-white:       #ffffff;
+$c-black:       #000000;
+$c-gray-900:    #1a1a1a;
+$c-gray-850:    #1b1c1e;
+$c-gray-800:    #333333;
+$c-gray-700:    #4d4d4d;
+$c-gray-600:    #666666;
+$c-gray-500:    #737373;
+$c-gray-400:    #808080;   // 341:42573 stepper border / disabled checkout label
+$c-gray-350:    #b3b3b3;   // 316:18260 subscription dropdown border
+$c-gray-300:    #cccccc;
+$c-gray-200:    #d9d9d9;
+$c-gray-150:    #e6e6e6;   // 341:42573 cart line rule / disabled checkout fill
+$c-gray-100:    #eeeeee;
+$c-gray-050:    #f3f3f3;   // 326:83143 table header / zebra fill
+$c-navy:        #101828;
+
+$c-ink-05:      rgba(1, 19, 7, 0.05);
+
+// Semantic aliases — components use these
+$color-text:        $c-ink;
+$color-text-muted:  $c-gray-700;
+$color-heading:     $c-green;
+$color-bg:          $c-white;
+$color-bg-alt:      $c-cream;
+$color-accent:      $c-lime;
+$color-border:      $c-gray-200;
+
+// Layout
+$w-design:        1440px;
+$w-container:     1280px;
+$w-design-mobile: 390px;
+
+// Value tiers (r29): phone ≤767 → interpolated 768–1280 → desktop ≥1281.
+// Only two boards exist (390, 1440); everything between is fluid().
+$bp-desktop:    1440px;   // desktop board, fluid() upper anchor
+$bp-tablet:     1280px;   // tablet upper bound
+$bp-mobile:     575px;    // phone-only tweaks
+$bp-design-m:   390px;    // mobile board
+
+// Layout thresholds — max-width only, may nest; never carry values (see mixins)
+$bp-tight:      1200px;
+$bp-stack:      1024px;
+$bp-mid:         991px;   // card grids drop a column
+$bp-narrow:      767px;   // phone layout + phone values
+$bp-hero-gutter: 1380px;  // below this the hero drops its own 110 gutters for --pad-x
+
+// announcement bar + header bar, used to size the mobile drawer
+$h-announcement-mobile: 32px;
+$h-header-mobile: 64px;
+$h-header: 80px;          // PDP's sticky gallery offsets against this
+
+$pad-x-desktop: 80px;
+$pad-x-tablet:  40px;
+$pad-x-mobile:  20px;
+
+// Radius
+$r-xs:   4px;
+$r-sm:   8px;
+$r-md:   12px;
+$r-lg:   16px;
+$r-xl:   24px;
+$r-pill: 999px;
+
+// Motion. The boards carry no hover/active state, so these are house values.
+$t-fast:      0.15s;   // icons, underlines — small areas
+$t-base:      0.2s;    // button / link colour, the default
+$t-slow:      0.3s;    // card lift + shadow, larger area so slower
+$t-panel:     0.35s;   // header dropdown: height / background / chevron must match
+// Mobile drawer. Lifted from funkyfood's .header-mobile-menu at the client's
+// request — the slide is long and heavily eased, quite unlike $t-panel.
+$t-drawer:    0.7s;
+$ease-drawer: cubic-bezier(0.77, 0, 0.175, 1);
+// easeOutCubic. The default `ease` is flat at both ends and reads as no transition.
+$ease-out:    cubic-bezier(0.33, 1, 0.68, 1);
+$ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+// Z-index
+$z-base:     1;
+$z-sticky:   50;
+$z-header:   100;
+$z-overlay:  900;
+$z-modal:    1000;
+
+// ==========================================================================
+// Mixins
+// ==========================================================================
+
+// Two families. Value tiers are MUTUALLY EXCLUSIVE — never overlap them.
+//
+// Value tiers (what a number is at a given width)
+//   @include mobile   ≤575        phone-only tweak, on top of narrow
+//   @include narrow   ≤767        phone board 390 values + phone layout
+//   @include tablet   768–1280    fluid() interpolation, no board exists
+//   @include pc       ≥1281       desktop board 1440; base rules already hold it
+//
+// Layout thresholds (how boxes are arranged) — max-width only, they may nest
+//   @include mid      ≤991        card grid drops a column
+//   @include stack    ≤1024       two columns become one
+//   @include tight    ≤1200       container starts to pinch
+//
+// Overlapping value tiers make the winner depend on source order; keep them exclusive.
+// Layout thresholds are per-module geometry and must NOT align to 767/1280 — a
+// 1194-wide tablet fits the two-column board. They carry arrangement only: a value
+// here overlaps `tablet` and brings the order-dependence back.
+@mixin mobile { @media (max-width: $bp-mobile) { @content; } }
+@mixin narrow { @media (max-width: $bp-narrow) { @content; } }
+@mixin tablet { @media (min-width: #{$bp-narrow + 1px}) and (max-width: $bp-tablet) { @content; } }
+// r59: the promo card keeps its two-column layout all the way down to 768 (it
+// is scaled, not reflowed -- see --pp-k), so it needs one query that spans
+// tablet and pc rather than the two separate tiers.
+@mixin panel-wide { @media (min-width: #{$bp-narrow + 1px}) { @content; } }
+@mixin pc     { @media (min-width: #{$bp-tablet + 1px}) { @content; } }
+
+@mixin tight  { @media (max-width: $bp-tight)  { @content; } }
+@mixin stack  { @media (max-width: $bp-stack)  { @content; } }
+@mixin mid    { @media (max-width: $bp-mid)    { @content; } }
+
+@mixin touch  { @media (hover: none) { @content; } }
+
+// The 768–1280 tier has no board; every value is interpolated between the two
+// boards. Never hand-pick a middle number.
+//   $m mobile-board value (holds at 390), $d desktop-board value (holds at 1440)
+// Equals $m at 768 and $d at 1281, linear between; clamp guards both ends.
+// r29: the ramp used to start at 576. It now starts at 768 so that ≤767 is
+// uniformly phone values — which also makes the 767→768 handover seamless,
+// since fluid() returns exactly $m at its start.
+$fluid-from: $bp-narrow + 1px;                                  // 768px
+$fluid-to:   $bp-tablet + 1px;                                  // 1281px
+$fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
+
+// ⚠ The slope must be UNITLESS. `#{$d - $m} * (100vw - 576px)` is px × px: the
+// declaration is dropped silently and the value just never moves, while DevTools
+// shows the line as if it were fine. 0 needs its unit too — calc cannot add a
+// bare number to a length.
+@function fluid($m, $d) {
+  $m: if(math.is-unitless($m), $m * 1px, $m);
+  $d: if(math.is-unitless($d), $d * 1px, $d);
+  @if $m == $d { @return $m; }
+  $lo: if($m < $d, $m, $d);
+  $hi: if($m < $d, $d, $m);
+  $k:  math.div($d - $m, 1px);          // unitless slope
+  @return clamp(#{$lo},
+                calc(#{$m} + #{$k} * (100vw - #{$fluid-from}) / #{$fluid-span}),
+                #{$hi});
+}
+
+// Always hover through this, never a bare &:hover — on touch the state sticks
+// after a tap. ⚠ (hover: hover) is always false in headless chromium; verify with Playwright.
+@mixin hover { @media (hover: hover) { &:hover { @content; } } }
+
+// Link hover underline. Pseudo-element + scaleX, not text-decoration:
+// text-decoration cannot interpolate, so it can only jump.
+@mixin link-underline($color: currentColor, $bottom: -2px, $height: 1px) {
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: $bottom;
+    height: $height;
+    background: $color;
+    transform: scaleX(0);
+    transform-origin: right center;
+    transition: transform $t-fast $ease-out;
+  }
+
+  @include hover {
+    &::after { transform: scaleX(1); transform-origin: left center; }
+  }
+}
+
+// Expands a property list into one transition value: trans(color, background-color)
+@function trans($props...) {
+  $out: ();
+  @each $p in $props {
+    $out: list.append($out, #{$p} $t-base $ease-out, comma);
+  }
+  @return $out;
+}
+
+// Full-bleed background, contained content.
+// Responsive padding rides a custom property so this mixin stays media-query
+// free — otherwise every caller trips Sass's mixed-decls deprecation.
+
+@mixin container($max: $w-container) {
+  width: 100%;
+  max-width: $max + $pad-x-desktop * 2;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--pad-x);
+  padding-right: var(--pad-x);
+}
+
+@mixin font($family, $size, $weight: 400, $lh: null, $ls: null) {
+  font-family: $family;
+  font-size: $size;
+  font-weight: $weight;
+  @if $lh { line-height: $lh; }
+  @if $ls { letter-spacing: $ls; }
+}
+
+@mixin line-clamp($lines: 2) {
+  display: -webkit-box;
+  -webkit-line-clamp: $lines;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// Parent needs a fixed height or aspect-ratio plus overflow: hidden
+@mixin cover-img($fit: cover) {
+  width: 100%;
+  height: 100%;
+  object-fit: $fit;
+  display: block;
+}
+
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Round outline around glyphs. Figma strokes text with strokeJoin ROUND, which
+// -webkit-text-stroke cannot reproduce — it only miters, so wide strokes grow
+// long spikes off every corner. Stacking offset copies gives a true round hull.
+//
+// Two rings, not one: a single ring at the full radius steps clean over the
+// counters of o / e / a, leaving the page background showing through the holes.
+// The inner ring lands inside the stroke and fills them.
+// Pass the radius in em so the outline scales with the type.
+//
+// ⚠ MULTI-LINE: text-shadow paints line by line, so once the radius approaches
+// half the leading, line 2's halo covers line 1's glyphs. (11.25px under 36px of
+// leading is fine; 8.37px under 18.09px is not.) When it bites, split into two
+// layers — see .gb-promo-art__label / .gb-promo-art__label-top.
+@function ink-outline($r, $color, $steps: 36, $rings: 3) {
+  $out: ();
+  @for $ring from 1 through $rings {
+    $rr: math.div($r * $ring, $rings);
+    // Step count follows the ring radius: the inner rings need far fewer
+    // copies to stay gap-free, which keeps the declaration from ballooning.
+    $n: math.ceil(math.div($steps * $ring, $rings));
+    @for $i from 0 through $n - 1 {
+      $a: math.div(360, $n) * $i * 1deg;
+      $x: math.div(math.round($rr * math.cos($a) * 1000), 1000);
+      $y: math.div(math.round($rr * math.sin($a) * 1000), 1000);
+      $out: list.append($out, #{$x} #{$y} 0 $color, comma);
+    }
+  }
+  @return $out;
+}
+
+// Same paint-order trap one level in: an inline child is its own paint unit, so
+// 6<span>g</span> paints "6 halo, 6 glyph, g halo, g glyph" and the g's halo cuts
+// into the 6 already down.
+//
+// Two layers: the bottom one paints the halo for the whole string with transparent
+// glyphs (halo over halo is one colour), the top one paints glyphs with no halo.
+//
+//   <p class="stat__value">
+//     <span class="ink-halo" aria-hidden="true">6<span …>g</span></span>
+//     6<span …>g</span>
+//   </p>
+//
+// z-index -1 because a positioned child paints AFTER its parent's in-flow text;
+// isolation keeps that -1 from falling behind an ancestor's background.
+@mixin ink-split($r, $color) {
+  position: relative;
+  isolation: isolate;
+  text-shadow: none;
+
+  > .gb-ink-halo {
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    left: 0;
+    width: 100%;
+    color: transparent;
+    text-shadow: ink-outline($r, $color);
+    pointer-events: none;
+  }
+}
+
+// ==========================================================================
+// OUTPUT
+// ==========================================================================
+
+.gb-acct {
+  min-height: 40vh;
+}
