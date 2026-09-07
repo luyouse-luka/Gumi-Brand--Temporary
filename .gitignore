@@ -2,6 +2,8 @@
 # （tools/snap 168MB computed-style 快照、tools/shots 60MB 截图）
 tools/snap/
 tools/shots/
+# 同类：2.6MB 的前后对比截图，判据随时可重跑
+tools/r73shots/
 
 # 设计源 127MB，本来就标着「不进交付」；需要时看服务器上的
 # /home/ly/project/Gumi-Brand/figma/

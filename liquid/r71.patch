@@ -1,0 +1,79 @@
+diff -ur baseline-r70/sections/gb-footer.liquid work-r71/sections/gb-footer.liquid
+--- baseline-r70/sections/gb-footer.liquid	2026-09-04 13:14:40.341831070 +0000
++++ work-r71/sections/gb-footer.liquid	2026-09-04 13:43:58.069306487 +0000
+@@ -10,7 +10,7 @@
+           {% render 'gb-logo', variant: 'lg' %}
+         </a>
+         {%- if section.settings.tagline != blank -%}
+-          <p class="gb-footer__tagline">{{ section.settings.tagline }}</p>
++          <p class="gb-footer__tagline">{%- render 'gb-rich-inline', html: section.settings.tagline -%}</p>
+         {%- endif -%}
+       </div>
+ 
+diff -ur baseline-r70/sections/gb-form-section.liquid work-r71/sections/gb-form-section.liquid
+--- baseline-r70/sections/gb-form-section.liquid	2026-09-04 13:14:40.341831070 +0000
++++ work-r71/sections/gb-form-section.liquid	2026-09-04 13:43:58.069306487 +0000
+@@ -67,7 +67,7 @@
+       <button class="gb-btn gb-form__submit" type="submit">{{ s.submit_label | default: 'Send Message' | escape }}</button>
+       {%- if is_referral -%}
+         {%- if s.note != blank -%}
+-          <p class="gb-form__note">{{ s.note }}</p>
++          <p class="gb-form__note">{%- render 'gb-rich-inline', html: s.note -%}</p>
+         {%- endif -%}
+         {%- if s.disclaimer != blank -%}
+           <p class="gb-form__disclaimer">{{ s.disclaimer | escape }}</p>
+diff -ur baseline-r70/sections/gb-hero.liquid work-r71/sections/gb-hero.liquid
+--- baseline-r70/sections/gb-hero.liquid	2026-09-04 13:14:40.341831070 +0000
++++ work-r71/sections/gb-hero.liquid	2026-09-04 13:43:58.069306487 +0000
+@@ -9,7 +9,7 @@
+       {%- endif -%}
+       <div class="gb-hero__cta">
+         {%- if s.lead != blank -%}
+-          <p class="gb-hero__lead" data-line-reveal>{{ s.lead }}</p>
++          <p class="gb-hero__lead" data-line-reveal>{%- render 'gb-rich-inline', html: s.lead -%}</p>
+         {%- endif -%}
+         {%- if s.button_label != blank -%}
+           <a class="gb-btn gb-hero__btn wowo fadeInUp delay-in-2" href="{{ s.button_url | default: '#' }}">{{ s.button_label | escape }}</a>
+diff -ur baseline-r70/sections/gb-nutrition.liquid work-r71/sections/gb-nutrition.liquid
+--- baseline-r70/sections/gb-nutrition.liquid	2026-09-04 13:14:40.341831070 +0000
++++ work-r71/sections/gb-nutrition.liquid	2026-09-04 13:43:58.069306487 +0000
+@@ -35,7 +35,7 @@
+             </div>
+             <div class="gb-highlight-card__body">
+               <h3 class="gb-highlight-card__title">{{ b.title | escape }}</h3>
+-              <p class="gb-highlight-card__text">{{ b.text }}</p>
++              <p class="gb-highlight-card__text">{%- render 'gb-rich-inline', html: b.text -%}</p>
+             </div>
+           </article>
+         {%- endif -%}
+diff -ur baseline-r70/sections/gb-product.liquid work-r71/sections/gb-product.liquid
+--- baseline-r70/sections/gb-product.liquid	2026-09-04 13:14:40.341831070 +0000
++++ work-r71/sections/gb-product.liquid	2026-09-04 13:43:58.069306487 +0000
+@@ -108,7 +108,7 @@
+       {%- endform -%}
+ 
+       {%- if section.settings.guarantee_note != blank -%}
+-        <p class="gb-product__guarantee-note">{{ section.settings.guarantee_note }}</p>
++        <p class="gb-product__guarantee-note">{%- render 'gb-rich-inline', html: section.settings.guarantee_note -%}</p>
+       {%- endif -%}
+       {%- assign guarantees = section.blocks | where: 'type', 'guarantee' -%}
+       {%- if guarantees.size > 0 -%}
+Only in work-r71/snippets: gb-rich-inline.liquid
+diff -ur baseline-r70/snippets/gb-scripts.liquid work-r71/snippets/gb-scripts.liquid
+--- baseline-r70/snippets/gb-scripts.liquid	2026-09-04 13:14:42.353808130 +0000
++++ work-r71/snippets/gb-scripts.liquid	2026-09-04 13:43:58.069306487 +0000
+@@ -2,6 +2,11 @@
+   Gumi custom scripts. Rendered at the end of <body> from layout/theme.liquid.
+   Swiper is loaded only where a carousel exists (see individual sections).
+ {%- endcomment -%}
+-<script src="{{ 'lenis.min.js' | asset_url }}"></script>
+-<script src="{{ 'swiper-bundle.min.js' | asset_url }}"></script>
+-<script src="{{ 'main.js' | asset_url }}"></script>
++{%- comment -%}
++  defer, not bare: these sit ~172KB into <body>, so parser-blocking tags
++  held main.js back ~3.6s and [data-line-reveal] text stayed visible that
++  whole time. defer keeps execution order and runs before DOMContentLoaded.
++{%- endcomment -%}
++<script src="{{ 'lenis.min.js' | asset_url }}" defer></script>
++<script src="{{ 'swiper-bundle.min.js' | asset_url }}" defer></script>
++<script src="{{ 'main.js' | asset_url }}" defer></script>

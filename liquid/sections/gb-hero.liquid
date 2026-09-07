@@ -1,0 +1,97 @@
+{%- liquid
+  assign s = section.settings
+-%}
+<section class="gb-hero">
+  <div class="gb-hero__inner">
+    <div class="gb-hero__text">
+      {%- if s.title != blank -%}
+        <h1 class="gb-hero__title" data-line-reveal>{{ s.title | escape }}</h1>
+      {%- endif -%}
+      <div class="gb-hero__cta">
+        {%- if s.lead != blank -%}
+          <p class="gb-hero__lead" data-line-reveal>{%- render 'gb-rich-inline', html: s.lead -%}</p>
+        {%- endif -%}
+        {%- if s.button_label != blank -%}
+          <a class="gb-btn gb-hero__btn wowo fadeInUp delay-in-2" href="{{ s.button_url | default: '#' }}">{{ s.button_label | escape }}</a>
+        {%- endif -%}
+        {%- if section.blocks.size > 0 -%}
+          <ul class="gb-usps wowo fadeInUp delay-in-3">
+            {%- for block in section.blocks -%}
+              {%- if block.type == 'usp' -%}
+                {%- assign b = block.settings -%}
+                <li class="gb-usp" {{ block.shopify_attributes }}>
+                  <span class="gb-usp__value"><span class="gb-ink-halo" aria-hidden="true">{{ b.value }}{% if b.suffix != blank %}<span class="gb-usp__{% if b.suffix_style == 'unit' %}unit{% else %}plus{% endif %}">{{ b.suffix }}</span>{% endif %}</span>{{ b.value }}{% if b.suffix != blank %}<span class="gb-usp__{% if b.suffix_style == 'unit' %}unit{% else %}plus{% endif %}">{{ b.suffix }}</span>{% endif %}</span>
+                  <span class="gb-usp__label">{{ b.label }}</span>
+                </li>
+              {%- endif -%}
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
+      </div>
+    </div>
+    {%- if s.bear_image != blank -%}
+      <div class="gb-hero__art gb-float-art gb-float-art--hero">
+        <picture>
+          <source type="image/webp"
+                  srcset="{{ s.bear_image | image_url: width: 559, format: 'webp' }} 559w, {{ s.bear_image | image_url: width: 1118, format: 'webp' }} 1118w"
+                  sizes="(min-width: 990px) 559px, 90vw">
+          <img class="gb-hero__bear"
+               src="{{ s.bear_image | image_url: width: 559 }}"
+               srcset="{{ s.bear_image | image_url: width: 559 }} 559w, {{ s.bear_image | image_url: width: 1118 }} 1118w"
+               sizes="(min-width: 990px) 559px, 90vw"
+               width="{{ s.bear_image.width }}" height="{{ s.bear_image.height }}"
+               alt="{{ s.bear_image.alt | escape }}"
+               fetchpriority="high" decoding="async">
+        </picture>
+      </div>
+    {%- endif -%}
+  </div>
+  {%- if s.show_scallop -%}
+    <div class="gb-scallop gb-scallop--edge gb-scallop--lg gb-scallop--down gb-scallop--to-white"></div>
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "Gumi Hero",
+  "settings": [
+    { "type": "text", "id": "title", "label": "Title", "default": "Eating your greens never felt this good." },
+    { "type": "richtext", "id": "lead", "label": "Lead", "default": "<p>Real fruit, real veg, real vitamins, hiding in a gumi bear.</p>" },
+    { "type": "text", "id": "button_label", "label": "Button label", "default": "Try Gumi" },
+    { "type": "url", "id": "button_url", "label": "Button URL", "default": "/collections/all" },
+    { "type": "image_picker", "id": "bear_image", "label": "Bear image" },
+    { "type": "checkbox", "id": "show_scallop", "label": "Bottom scallop", "default": true }
+  ],
+  "blocks": [
+    {
+      "type": "usp",
+      "name": "USP item",
+      "settings": [
+        { "type": "text", "id": "value", "label": "Value", "default": "60" },
+        { "type": "text", "id": "suffix", "label": "Suffix (e.g. + or g)", "default": "+" },
+        {
+          "type": "select",
+          "id": "suffix_style",
+          "label": "Suffix style",
+          "options": [
+            { "value": "plus", "label": "+" },
+            { "value": "unit", "label": "unit (g)" }
+          ],
+          "default": "plus"
+        },
+        { "type": "text", "id": "label", "label": "Label", "default": "Clean Ingredients" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gumi Hero",
+      "blocks": [
+        { "type": "usp", "settings": { "value": "60", "suffix": "+", "suffix_style": "plus", "label": "Clean Ingredients" } },
+        { "type": "usp", "settings": { "value": "21", "suffix": "", "suffix_style": "plus", "label": "Vitamins & Minerals" } },
+        { "type": "usp", "settings": { "value": "6", "suffix": "g", "suffix_style": "unit", "label": "of Fibre" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

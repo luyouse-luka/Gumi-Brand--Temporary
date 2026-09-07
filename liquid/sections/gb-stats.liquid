@@ -1,0 +1,111 @@
+{%- liquid
+  assign s = section.settings
+  assign arc_id = 'gb-stats-arc-' | append: section.id
+-%}
+<section class="gb-stats">
+  <div class="gb-stats__inner">
+    <div class="gb-stats__head wowo fadeInUp">
+      {%- if s.arc_text != blank -%}
+        <svg class="gb-arc-text gb-stats__arc" viewBox="0 0 278 29" aria-hidden="true">
+          <path id="{{ arc_id }}" d="M 34 51.591 A 118.5261 65.7047 0 0 1 244 51.591" fill="none"></path>
+          <text text-anchor="middle"><textPath href="#{{ arc_id }}" startOffset="50%">{{ s.arc_text | escape }}</textPath></text>
+        </svg>
+      {%- endif -%}
+      {%- if s.title != blank -%}
+        <h2 class="gb-stats__title" data-line-reveal>{{ s.title }}</h2>
+      {%- endif -%}
+    </div>
+
+    <div class="gb-stats__grid">
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'stat' -%}
+          {%- assign b = block.settings -%}
+          <div class="gb-stat gb-stat--{{ b.variant | default: 'ingredients' }}" {{ block.shopify_attributes }}>
+            <p class="gb-stat__value" data-line-reveal><span class="gb-ink-halo" aria-hidden="true">{{ b.value }}{% if b.suffix != blank %}<span class="gb-stat__{% if b.suffix_style == 'unit' %}unit{% else %}plus{% endif %}">{{ b.suffix }}</span>{% endif %}</span>{{ b.value }}{% if b.suffix != blank %}<span class="gb-stat__{% if b.suffix_style == 'unit' %}unit{% else %}plus{% endif %}">{{ b.suffix }}</span>{% endif %}</p>
+            <p class="gb-stat__label" data-line-reveal>{{ b.label }}</p>
+            <p class="gb-stat__text" data-line-reveal>{{ b.text }}</p>
+          </div>
+        {%- endif -%}
+      {%- endfor -%}
+      {%- if s.bear_image != blank -%}
+        <div class="gb-stats__bear">
+          <div class="gb-stats__bear-art gb-float-art gb-float-art--d1">
+            <picture>
+              <source type="image/webp"
+                      srcset="{{ s.bear_image | image_url: width: 1121, format: 'webp' }}">
+              <img class="gb-stats__bear-img"
+                   src="{{ s.bear_image | image_url: width: 1121 }}"
+                   width="{{ s.bear_image.width }}" height="{{ s.bear_image.height }}"
+                   loading="lazy" decoding="async" alt="">
+            </picture>
+          </div>
+          <span class="gb-stats__arrow gb-stats__arrow--1" aria-hidden="true"><svg viewBox="388.720 50.483 116.428 99.951" fill="currentColor" stroke="currentColor" stroke-width="3.56071" xmlns="http://www.w3.org/2000/svg"><path d="M85.3612 1.07025C79.1443 43.6234 40.9629 64.2927 1.1035 68.9924C0.419042 69.0744 -0.0730789 69.6958 0.00892991 70.3803C0.0909387 71.0648 0.712282 71.5568 1.39674 71.4748C42.3728 66.6457 81.4437 45.1752 87.834 1.42979C87.935 0.748488 87.4618 0.114501 86.7774 0.0135666C86.096 -0.0873673 85.4621 0.385791 85.3612 1.07025Z" transform="matrix(0.944417 -0.328751 -0.328751 -0.944417 420.402344 148.653564)" fill-rule="evenodd"/><path d="M4.25191 23.0174C6.02456 21.7211 8.26719 20.1187 8.51638 19.9295C15.2695 14.8008 20.865 8.89931 25.7919 1.97588C26.1924 1.41443 26.0599 0.632184 25.4985 0.231603C24.937 -0.168979 24.1548 -0.0364477 23.7543 0.524997C18.9788 7.24026 13.5537 12.9651 7.00243 17.9392C6.62077 18.2294 1.57715 21.8283 0.611969 22.6326C0.214542 22.9607 0.0916151 23.2698 0.0695358 23.3455C-0.0629399 23.7429 0.01589 24.0552 0.123132 24.2823C0.246146 24.5378 0.552021 24.91 1.14501 25.0992C1.76638 25.2948 3.14798 25.3831 3.49494 25.4336C8.72773 26.2095 14.6356 26.6196 20.0134 28.1083C25.1421 29.5277 29.7945 31.9312 32.7783 36.7476C33.1411 37.3343 33.9138 37.5141 34.5005 37.1514C35.0872 36.7886 35.2671 36.0159 34.9043 35.4292C31.5672 30.045 26.4132 27.285 20.682 25.6985C15.3357 24.2192 9.48155 23.7713 4.25191 23.0174Z" transform="matrix(0.944417 -0.328751 -0.328751 -0.944417 402.775390 104.885742)" fill-rule="evenodd"/></svg></span>
+          <span class="gb-stats__arrow gb-stats__arrow--2" aria-hidden="true"><svg viewBox="289.057 301.848 125.896 116.817" fill="currentColor" stroke="currentColor" stroke-width="3.56071" xmlns="http://www.w3.org/2000/svg"><path d="M85.3612 1.07025C79.1443 43.6234 40.9629 64.2927 1.1035 68.9924C0.419042 69.0744 -0.0730789 69.6958 0.00892991 70.3803C0.0909387 71.0648 0.712282 71.5568 1.39674 71.4748C42.3728 66.6457 81.4437 45.1752 87.834 1.42979C87.935 0.748488 87.4618 0.114501 86.7774 0.0135666C86.096 -0.0873673 85.4621 0.385791 85.3612 1.07025Z" transform="matrix(0.628643 -0.777694 -0.777694 -0.628643 357.947268 416.884763)" fill-rule="evenodd"/><path d="M4.25191 23.0174C6.02456 21.7211 8.26719 20.1187 8.51638 19.9295C15.2695 14.8008 20.865 8.89931 25.7919 1.97588C26.1924 1.41443 26.0599 0.632184 25.4985 0.231603C24.937 -0.168979 24.1548 -0.0364477 23.7543 0.524997C18.9788 7.24026 13.5537 12.9651 7.00243 17.9392C6.62077 18.2294 1.57715 21.8283 0.611969 22.6326C0.214542 22.9607 0.0916151 23.2698 0.0695358 23.3455C-0.0629399 23.7429 0.01589 24.0552 0.123132 24.2823C0.246146 24.5378 0.552021 24.91 1.14501 25.0992C1.76638 25.2948 3.14798 25.3831 3.49494 25.4336C8.72773 26.2095 14.6356 26.6196 20.0134 28.1083C25.1421 29.5277 29.7945 31.9312 32.7783 36.7476C33.1411 37.3343 33.9138 37.5141 34.5005 37.1514C35.0872 36.7886 35.2671 36.0159 34.9043 35.4292C31.5672 30.045 26.4132 27.285 20.682 25.6985C15.3357 24.2192 9.48155 23.7713 4.25191 23.0174Z" transform="matrix(0.628643 -0.777694 -0.777694 -0.628643 319.875004 389.012450)" fill-rule="evenodd"/></svg></span>
+          <span class="gb-stats__arrow gb-stats__arrow--3" aria-hidden="true"><svg viewBox="771.113 228.789 125.350 116.759" fill="currentColor" stroke="currentColor" stroke-width="3.56071" xmlns="http://www.w3.org/2000/svg"><path d="M85.3612 1.07025C79.1443 43.6234 40.9629 64.2927 1.1035 68.9924C0.419042 69.0744 -0.0730789 69.6958 0.00892991 70.3803C0.0909387 71.0648 0.712282 71.5568 1.39674 71.4748C42.3728 66.6457 81.4437 45.1752 87.834 1.42979C87.935 0.748488 87.4618 0.114501 86.7774 0.0135666C86.096 -0.0873673 85.4621 0.385791 85.3612 1.07025Z" transform="matrix(-0.605848 0.795581 0.795581 0.605848 826.115242 230.569090)" fill-rule="evenodd"/><path d="M4.25191 23.0174C6.02456 21.7211 8.26719 20.1187 8.51638 19.9295C15.2695 14.8008 20.865 8.89931 25.7919 1.97588C26.1924 1.41443 26.0599 0.632184 25.4985 0.231603C24.937 -0.168979 24.1548 -0.0364477 23.7543 0.524997C18.9788 7.24026 13.5537 12.9651 7.00243 17.9392C6.62077 18.2294 1.57715 21.8283 0.611969 22.6326C0.214542 22.9607 0.0916151 23.2698 0.0695358 23.3455C-0.0629399 23.7429 0.01589 24.0552 0.123132 24.2823C0.246146 24.5378 0.552021 24.91 1.14501 25.0992C1.76638 25.2948 3.14798 25.3831 3.49494 25.4336C8.72773 26.2095 14.6356 26.6196 20.0134 28.1083C25.1421 29.5277 29.7945 31.9312 32.7783 36.7476C33.1411 37.3343 33.9138 37.5141 34.5005 37.1514C35.0872 36.7886 35.2671 36.0159 34.9043 35.4292C31.5672 30.045 26.4132 27.285 20.682 25.6985C15.3357 24.2192 9.48155 23.7713 4.25191 23.0174Z" transform="matrix(-0.605848 0.795581 0.795581 0.605848 864.976569 257.326902)" fill-rule="evenodd"/></svg></span>
+          <span class="gb-stats__arrow gb-stats__arrow--4" aria-hidden="true"><svg viewBox="769.726 500.413 126.737 114.385" fill="currentColor" stroke="currentColor" stroke-width="3.56071" xmlns="http://www.w3.org/2000/svg"><path d="M85.3612 1.07025C79.1443 43.6234 40.9629 64.2927 1.1035 68.9924C0.419042 69.0744 -0.0730789 69.6958 0.00892991 70.3803C0.0909387 71.0648 0.712282 71.5568 1.39674 71.4748C42.3728 66.6457 81.4437 45.1752 87.834 1.42979C87.935 0.748488 87.4618 0.114501 86.7774 0.0135666C86.096 -0.0873673 85.4621 0.385791 85.3612 1.07025Z" transform="matrix(-0.777505 0.628877 0.628877 0.777505 839.808600 502.193112)" fill-rule="evenodd"/><path d="M4.25191 23.0174C6.02456 21.7211 8.26719 20.1187 8.51638 19.9295C15.2695 14.8008 20.865 8.89931 25.7919 1.97588C26.1924 1.41443 26.0599 0.632184 25.4985 0.231603C24.937 -0.168979 24.1548 -0.0364477 23.7543 0.524997C18.9788 7.24026 13.5537 12.9651 7.00243 17.9392C6.62077 18.2294 1.57715 21.8283 0.611969 22.6326C0.214542 22.9607 0.0916151 23.2698 0.0695358 23.3455C-0.0629399 23.7429 0.01589 24.0552 0.123132 24.2823C0.246146 24.5378 0.552021 24.91 1.14501 25.0992C1.76638 25.2948 3.14798 25.3831 3.49494 25.4336C8.72773 26.2095 14.6356 26.6196 20.0134 28.1083C25.1421 29.5277 29.7945 31.9312 32.7783 36.7476C33.1411 37.3343 33.9138 37.5141 34.5005 37.1514C35.0872 36.7886 35.2671 36.0159 34.9043 35.4292C31.5672 30.045 26.4132 27.285 20.682 25.6985C15.3357 24.2192 9.48155 23.7713 4.25191 23.0174Z" transform="matrix(-0.777505 0.628877 0.628877 0.777505 871.201179 537.417479)" fill-rule="evenodd"/></svg></span>
+        </div>
+      {%- endif -%}
+    </div>
+
+    {%- if s.note != blank -%}
+      <p class="gb-stats__note wowo fadeInUp">{{ s.note }}</p>
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Gumi Stats",
+  "settings": [
+    { "type": "text", "id": "arc_text", "label": "Arc text", "default": "ONE HANDFUL" },
+    { "type": "richtext", "id": "title", "label": "Title", "default": "<p>60+ whole foods. No juicer, no fuss.</p>" },
+    { "type": "image_picker", "id": "bear_image", "label": "Bear image (centre)" },
+    { "type": "inline_richtext", "id": "note", "label": "Bottom note" }
+  ],
+  "blocks": [
+    {
+      "type": "stat",
+      "name": "Stat",
+      "settings": [
+        {
+          "type": "select",
+          "id": "variant",
+          "label": "Variant (colour theme)",
+          "options": [
+            { "value": "ingredients", "label": "Ingredients" },
+            { "value": "fibre", "label": "Fibre" },
+            { "value": "vitamins", "label": "Vitamins" },
+            { "value": "benefits", "label": "Benefits" }
+          ],
+          "default": "ingredients"
+        },
+        { "type": "text", "id": "value", "label": "Value", "default": "60" },
+        { "type": "text", "id": "suffix", "label": "Suffix", "default": "+" },
+        {
+          "type": "select",
+          "id": "suffix_style",
+          "label": "Suffix style",
+          "options": [
+            { "value": "plus", "label": "+" },
+            { "value": "unit", "label": "unit" }
+          ],
+          "default": "plus"
+        },
+        { "type": "text", "id": "label", "label": "Label", "default": "Clean Ingredients" },
+        { "type": "textarea", "id": "text", "label": "Text" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gumi Stats",
+      "blocks": [
+        { "type": "stat", "settings": { "variant": "ingredients", "value": "60", "suffix": "+", "label": "Clean Ingredients", "text": "Whole fruits, veggies and superfoods, nothing artificial hiding in the mix" } },
+        { "type": "stat", "settings": { "variant": "fibre", "value": "6", "suffix": "g", "suffix_style": "unit", "label": "of Fibre", "text": "Because your gut deserves better than another green juice you'll forget to finish" } },
+        { "type": "stat", "settings": { "variant": "vitamins", "value": "21", "suffix": "", "label": "Vitamins & Minerals", "text": "A full day's worth of goodness, minus the multivitamin gag reflex" } },
+        { "type": "stat", "settings": { "variant": "benefits", "value": "10", "suffix": "+", "label": "Green benefits", "text": "From energy to immunity to skin, one gumi is doing a lot of quiet work" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

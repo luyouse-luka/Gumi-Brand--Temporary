@@ -19,6 +19,11 @@ from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IMG = os.path.join(ROOT, "images")
+ASSETS = os.path.join(ROOT, "assets")
+
+# bear-icon lives in assets/ because the css references it and Shopify serves
+# assets/ flat; every other entry is an <img src> under images/.
+DIR = {"bear-icon.png": ASSETS}
 
 # name: (mode, target_size or None)   mode = "lossless" or a quality int
 PLAN = {
@@ -65,7 +70,7 @@ def psnr(a, b):
 check = "--check" in sys.argv
 tot_png = tot_webp = 0
 for name, (mode, size) in sorted(PLAN.items()):
-    src = os.path.join(IMG, name)
+    src = os.path.join(DIR.get(name, IMG), name)
     if not os.path.exists(src):
         print(f"  MISSING {name}"); continue
     dst = src[:-4] + ".webp"

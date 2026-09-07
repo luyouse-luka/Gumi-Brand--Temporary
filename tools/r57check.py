@@ -120,7 +120,9 @@ with sync_playwright() as p:
           const hit=document.elementFromPoint(lb.left+lb.width/2, lb.top+lb.height/2);
           return {open:w.classList.contains('is-open'), vis:cl.visibility, op:cl.opacity,
             rot:getComputedStyle(a).transform,
-            gapFromField:+(lb.top-pb.bottom).toFixed(2),
+            up:w.classList.contains('is-up'),
+            gapFromField:+(w.classList.contains('is-up') ? (pb.top-lb.bottom)
+                                                         : (lb.top-pb.bottom)).toFixed(2),
             leftOnTrigger:+(lb.left-bb.left).toFixed(2),
             widerThanTrigger: lb.width >= bb.width - 0.5,
             onTop: hit ? (hit.className||hit.tagName) : null,
@@ -129,8 +131,11 @@ with sync_playwright() as p:
         chk("%s  click opens it" % f, d["open"], True)
         chk("%s  list visible" % f, d["vis"], "visible")
         chk("%s  chevron rotated" % f, d["rot"], "matrix(-1, 0, 0, -1, 0, 0)")
-        # it hangs off the FIELD's bottom edge, not off the 24px trigger inside it
-        chk("%s  4 clear of the field's bottom edge" % f, d["gapFromField"], 4.0, 0.6)
+        # It hangs off the FIELD's edge, not off the 24px trigger inside it.
+        # r59 added the flip: on this page the field sits low enough that a
+        # downward list would run past the viewport, so it opens upward -- the
+        # same 4 clear, mirrored.
+        chk("%s  4 clear of the field's edge" % f, d["gapFromField"], 4.0, 0.6)
         chk("%s  left-aligned to the trigger" % f, d["leftOnTrigger"], 0.0, 0.6)
         chk("%s  list is at least as wide as the trigger" % f, d["widerThanTrigger"], True)
         # the open list has to win over whatever field follows it
@@ -175,8 +180,11 @@ with sync_playwright() as p:
     d = pg.evaluate("""()=>({country:document.querySelector('.gb-field__phone .gb-select').classList.contains('is-open'),
       enquiry:document.getElementById('enquiry').closest('.gb-select').classList.contains('is-open')})""")
     chk("opening enquiry closes country (outside click)", [d["country"], d["enquiry"]], [False, True])
-    chk("two independent boxes registered",
-        pg.evaluate("()=>window.gumi.selectBox.boxes.length"), 2)
+    # Scoped to the form: r59 mounted the cart drawer on this page too, and its
+    # two delivery intervals are registered boxes as well.
+    chk("two independent boxes registered in the form",
+        pg.evaluate("()=>window.gumi.selectBox.boxes"
+                    ".filter(b=>!b.wrap.closest('.gb-cart')).length"), 2)
     pg.close()
 
     b.close()

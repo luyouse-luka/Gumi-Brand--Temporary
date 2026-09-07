@@ -1,0 +1,11 @@
+--- live-20260907-0121/snippets/gb-sub.liquid	2026-09-07 01:21:51.830570260 +0000
++++ work-r73/snippets/gb-sub.liquid	2026-09-07 01:22:26.838122510 +0000
+@@ -103,7 +103,7 @@
+         {%- if has_plans -%}
+           <div class="gb-sub__every">
+             <p class="gb-sub__every-label">Delivers every:</p>
+-            <select class="gb-sub__select" data-gb-plan-select aria-label="Delivery interval">
++            <select class="gb-sub__select" data-select data-gb-plan-select aria-label="Delivery interval">
+               {%- for row in plans_list -%}
+                 {%- assign parts = row | split: ':' -%}
+                 <option value="{{ parts[0] }}" data-pct="{{ parts[2] }}"{% if forloop.first %} selected{% endif %}>{{ parts[1] }}</option>

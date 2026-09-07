@@ -1,0 +1,93 @@
+{%- liquid
+  assign s = section.settings
+  assign title_html = s.title | escape | newline_to_br
+  assign title_html = title_html | replace: '<br />', '<br class="gb-br-narrow">'
+  assign title_html = title_html | replace: '<br>', '<br class="gb-br-narrow">'
+-%}
+<section class="gb-expert">
+  <div class="gb-expert__inner" data-slider data-slider-rewind data-slider-step data-slider-until="991" data-slider-centre-narrow>
+    {%- if s.title != blank -%}
+      <h2 class="gb-expert__title wowo fadeInUp" data-line-reveal>{{ title_html }}</h2>
+    {%- endif -%}
+    <div class="gb-expert__cards swiper" data-slider-track>
+      <div class="swiper-wrapper">
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'expert' -%}
+            {%- assign b = block.settings -%}
+            <article class="gb-expert-card swiper-slide wowo fadeInUp" {{ block.shopify_attributes }}>
+              <div class="gb-expert-card__media">
+                {%- if b.image != blank -%}
+                  <picture>
+                    <source type="image/webp" srcset="{{ b.image | image_url: width: 600, format: 'webp' }} 600w, {{ b.image | image_url: width: 1200, format: 'webp' }} 1200w">
+                    <img src="{{ b.image | image_url: width: 600 }}"
+                         srcset="{{ b.image | image_url: width: 600 }} 600w, {{ b.image | image_url: width: 1200 }} 1200w"
+                         sizes="(min-width: 990px) 380px, 80vw"
+                         width="{{ b.image.width }}" height="{{ b.image.height }}"
+                         loading="lazy" decoding="async" alt="{{ b.name | escape }}">
+                  </picture>
+                {%- endif -%}
+              </div>
+              <div class="gb-expert-card__text">
+                <div class="gb-expert-card__header">
+                  <p class="gb-expert-card__name">{{ b.name | escape }}</p>
+                  {%- if b.role != blank -%}
+                    <p class="gb-expert-card__role">{{ b.role | escape }}</p>
+                  {%- endif -%}
+                </div>
+                {%- if b.quote != blank -%}
+                  <p class="gb-expert-card__quote">{{ b.quote | escape }}</p>
+                {%- endif -%}
+              </div>
+            </article>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    </div>
+    {%- if section.blocks.size > 0 -%}
+      <style>
+        {%- for i in (1..section.blocks.size) -%}
+          .shopify-section-{{ section.id }} .gb-expert-card:nth-of-type({{ i }}) { animation-delay: {{ i | times: 0.1 }}s; }
+        {%- endfor -%}
+      </style>
+    {%- endif -%}
+    <div class="gb-reels__nav gb-expert__nav">
+      <button class="gb-reels__btn" type="button" data-slider-prev aria-label="Previous experts"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="32" height="32" rx="16" fill="#B5ED61"/><path d="M23.2884 15.9997H8.70508M15.9967 8.70801L8.70508 15.9997L15.9967 23.2913" stroke="#005635" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="gb-reels__btn" type="button" data-slider-next aria-label="Next experts"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="32" height="32" rx="16" fill="#B5ED61"/><path d="M8.71159 15.9997H23.2949M16.0033 8.70801L23.2949 15.9997L16.0033 23.2913" stroke="#005635" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+  </div>
+  {%- if s.show_scallop -%}
+    <div class="gb-scallop gb-scallop--edge gb-scallop--white-to-cream"></div>
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "Gumi Experts",
+  "tag": "section",
+  "class": "gb-expert-section",
+  "settings": [
+    { "type": "text", "id": "title", "label": "Title", "default": "Recommended\nby experts" },
+    { "type": "checkbox", "id": "show_scallop", "label": "Trailing scallop (white → cream)", "default": true }
+  ],
+  "blocks": [
+    {
+      "type": "expert",
+      "name": "Expert",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Portrait" },
+        { "type": "text", "id": "name", "label": "Name", "default": "Connor" },
+        { "type": "text", "id": "role", "label": "Role", "default": "Connor's title here" },
+        { "type": "textarea", "id": "quote", "label": "Quote" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gumi Experts",
+      "blocks": [
+        { "type": "expert" }, { "type": "expert" }, { "type": "expert" }
+      ]
+    }
+  ]
+}
+{% endschema %}

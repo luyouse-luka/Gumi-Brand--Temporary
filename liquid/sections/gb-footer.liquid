@@ -1,0 +1,176 @@
+{%- liquid
+  assign current_year = 'now' | date: '%Y'
+-%}
+<footer class="gb-footer-wrap">
+  <div class="gb-scallop gb-scallop--to-green"></div>
+  <div class="gb-footer">
+    <div class="gb-footer__inner">
+      <div class="gb-footer__brand">
+        <a class="gb-footer__logo" href="{{ routes.root_url }}" aria-label="{{ shop.name }} home">
+          {% render 'gb-logo', variant: 'lg' %}
+        </a>
+        {%- if section.settings.tagline != blank -%}
+          <p class="gb-footer__tagline">{%- render 'gb-rich-inline', html: section.settings.tagline -%}</p>
+        {%- endif -%}
+      </div>
+
+      <div class="gb-footer__middle">
+        {%- if section.settings.show_newsletter -%}
+          <div class="gb-footer__newsletter">
+            <p class="gb-footer__label">{{ section.settings.newsletter_label | escape }}</p>
+            {%- form 'customer', class: 'gb-footer__form' -%}
+              <input type="hidden" name="contact[tags]" value="newsletter">
+              <input class="gb-footer__input" type="email" name="contact[email]" placeholder="{{ section.settings.newsletter_placeholder | escape }}" aria-label="Email address" required>
+              <button class="gb-footer__submit" type="submit">{{ section.settings.newsletter_button | escape }}</button>
+            {%- endform -%}
+          </div>
+        {%- endif -%}
+
+        <div class="gb-footer__link-groups">
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'link_group' -%}
+              <div class="gb-footer__link-group" {{ block.shopify_attributes }}>
+                <p class="gb-footer__label">{{ block.settings.title | escape }}</p>
+                <div class="gb-footer__links">
+                  {%- assign links = block.settings.link_list.links -%}
+                  {%- if links.size > 0 -%}
+                    {%- for l in links -%}
+                      <a class="gb-footer__link" href="{{ l.url }}">{{ l.title | escape }}</a>
+                    {%- endfor -%}
+                  {%- else -%}
+                    {%- for i in (1..6) -%}
+                      {%- assign lk = 'link_' | append: i | append: '_label' -%}
+                      {%- assign uk = 'link_' | append: i | append: '_url' -%}
+                      {%- assign lb = block.settings[lk] -%}
+                      {%- assign lu = block.settings[uk] -%}
+                      {%- if lb != blank -%}
+                        <a class="gb-footer__link" href="{{ lu | default: '#' }}">{{ lb | escape }}</a>
+                      {%- endif -%}
+                    {%- endfor -%}
+                  {%- endif -%}
+                </div>
+              </div>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      </div>
+
+      <div class="gb-footer__social">
+        <p class="gb-footer__label">{{ section.settings.social_label | escape }}</p>
+        <div class="gb-footer__social-list">
+          {%- if section.settings.facebook_url != blank -%}
+            <a class="gb-footer__social-link" href="{{ section.settings.facebook_url }}" aria-label="Facebook"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#icon-facebook-clip0_0_506)"><path d="M16 0C7.16352 0 0 7.16352 0 16C0 23.5034 5.16608 29.7997 12.135 31.529V20.8896H8.83584V16H12.135V13.8931C12.135 8.44736 14.5997 5.9232 19.9462 5.9232C20.96 5.9232 22.7091 6.12224 23.4246 6.32064V10.7526C23.047 10.713 22.391 10.6931 21.5763 10.6931C18.953 10.6931 17.9392 11.687 17.9392 14.2707V16H23.1654L22.2675 20.8896H17.9392V31.8829C25.8618 30.9261 32.0006 24.1805 32.0006 16C32 7.16352 24.8365 0 16 0Z" fill="currentColor"/></g><defs><clipPath id="icon-facebook-clip0_0_506"><rect width="32" height="32" fill="white"/></clipPath></defs></svg></a>
+          {%- endif -%}
+          {%- if section.settings.instagram_url != blank -%}
+            <a class="gb-footer__social-link" href="{{ section.settings.instagram_url }}" aria-label="Instagram"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#icon-instagram-gumi-ig-clip)"><path d="M16 2.88125C20.275 2.88125 20.7813 2.9 22.4625 2.975C24.025 3.04375 24.8688 3.30625 25.4313 3.525C26.175 3.8125 26.7125 4.1625 27.2688 4.71875C27.8313 5.28125 28.175 5.8125 28.4625 6.55625C28.6813 7.11875 28.9438 7.96875 29.0125 9.525C29.0875 11.2125 29.1063 11.7188 29.1063 15.9875C29.1063 20.2625 29.0875 20.7688 29.0125 22.45C28.9438 24.0125 28.6813 24.8563 28.4625 25.4188C28.175 26.1625 27.825 26.7 27.2688 27.2563C26.7063 27.8188 26.175 28.1625 25.4313 28.45C24.8688 28.6688 24.0188 28.9313 22.4625 29C20.775 29.075 20.2688 29.0938 16 29.0938C11.725 29.0938 11.2188 29.075 9.5375 29C7.975 28.9313 7.13125 28.6688 6.56875 28.45C5.825 28.1625 5.2875 27.8125 4.73125 27.2563C4.16875 26.6938 3.825 26.1625 3.5375 25.4188C3.31875 24.8563 3.05625 24.0063 2.9875 22.45C2.9125 20.7625 2.89375 20.2563 2.89375 15.9875C2.89375 11.7125 2.9125 11.2063 2.9875 9.525C3.05625 7.9625 3.31875 7.11875 3.5375 6.55625C3.825 5.8125 4.175 5.275 4.73125 4.71875C5.29375 4.15625 5.825 3.8125 6.56875 3.525C7.13125 3.30625 7.98125 3.04375 9.5375 2.975C11.2188 2.9 11.725 2.88125 16 2.88125ZM16 0C11.6563 0 11.1125 0.01875 9.40625 0.09375C7.70625 0.16875 6.5375 0.44375 5.525 0.8375C4.46875 1.25 3.575 1.79375 2.6875 2.6875C1.79375 3.575 1.25 4.46875 0.8375 5.51875C0.44375 6.5375 0.16875 7.7 0.09375 9.4C0.01875 11.1125 0 11.6562 0 16C0 20.3438 0.01875 20.8875 0.09375 22.5938C0.16875 24.2938 0.44375 25.4625 0.8375 26.475C1.25 27.5313 1.79375 28.425 2.6875 29.3125C3.575 30.2 4.46875 30.75 5.51875 31.1562C6.5375 31.55 7.7 31.825 9.4 31.9C11.1063 31.975 11.65 31.9937 15.9938 31.9937C20.3375 31.9937 20.8813 31.975 22.5875 31.9C24.2875 31.825 25.4563 31.55 26.4688 31.1562C27.5188 30.75 28.4125 30.2 29.3 29.3125C30.1875 28.425 30.7375 27.5313 31.1438 26.4813C31.5375 25.4625 31.8125 24.3 31.8875 22.6C31.9625 20.8938 31.9813 20.35 31.9813 16.0063C31.9813 11.6625 31.9625 11.1188 31.8875 9.4125C31.8125 7.7125 31.5375 6.54375 31.1438 5.53125C30.75 4.46875 30.2063 3.575 29.3125 2.6875C28.425 1.8 27.5313 1.25 26.4813 0.84375C25.4625 0.45 24.3 0.175 22.6 0.1C20.8875 0.01875 20.3438 0 16 0Z" fill="currentColor"/><path d="M16 7.78125C11.4625 7.78125 7.78125 11.4625 7.78125 16C7.78125 20.5375 11.4625 24.2188 16 24.2188C20.5375 24.2188 24.2188 20.5375 24.2188 16C24.2188 11.4625 20.5375 7.78125 16 7.78125ZM16 21.3312C13.0563 21.3312 10.6687 18.9438 10.6687 16C10.6687 13.0563 13.0563 10.6687 16 10.6687C18.9438 10.6687 21.3312 13.0563 21.3312 16C21.3312 18.9438 18.9438 21.3312 16 21.3312Z" fill="currentColor"/><path d="M26.4625 7.45586C26.4625 8.51836 25.6 9.37461 24.5438 9.37461C23.4813 9.37461 22.625 8.51211 22.625 7.45586C22.625 6.39336 23.4875 5.53711 24.5438 5.53711C25.6 5.53711 26.4625 6.39961 26.4625 7.45586Z" fill="currentColor"/></g><defs><clipPath id="icon-instagram-gumi-ig-clip"><rect width="32" height="32" fill="white"/></clipPath></defs></svg></a>
+          {%- endif -%}
+          {%- if section.settings.tiktok_url != blank -%}
+            <a class="gb-footer__social-link" href="{{ section.settings.tiktok_url }}" aria-label="TikTok"><svg aria-hidden="true" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#icon-tiktok-clip0_0_514)"><path d="M22.7647 0H17.3717V21.7971C17.3717 24.3942 15.2976 26.5276 12.7163 26.5276C10.1351 26.5276 8.06089 24.3942 8.06089 21.7971C8.06089 19.2464 10.089 17.1594 12.5781 17.0667V11.5942C7.09293 11.6869 2.66797 16.1855 2.66797 21.7971C2.66797 27.4551 7.18511 32 12.7624 32C18.3397 32 22.8568 27.4087 22.8568 21.7971V10.6203C24.8849 12.1044 27.374 12.9855 30.0013 13.0319V7.55942C25.9451 7.42029 22.7647 4.08116 22.7647 0Z" fill="currentColor"/></g><defs><clipPath id="icon-tiktok-clip0_0_514"><rect width="32" height="32" fill="white"/></clipPath></defs></svg></a>
+          {%- endif -%}
+        </div>
+      </div>
+
+      <div class="gb-footer__bottom">
+        <hr class="gb-footer__divider">
+        <div class="gb-footer__legal">
+          <p>&copy; {{ current_year }} {{ shop.name }}. {{ section.settings.rights_text | escape }}</p>
+          <div class="gb-footer__legal-links">
+            {%- if shop.privacy_policy -%}
+              <a href="{{ shop.privacy_policy.url }}">{{ shop.privacy_policy.title }}</a>
+            {%- endif -%}
+            {%- if section.settings.cookies_url != blank -%}
+              <a href="{{ section.settings.cookies_url }}">{{ section.settings.cookies_label | default: 'Cookies' }}</a>
+            {%- endif -%}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+{% schema %}
+{
+  "name": "Gumi Footer",
+  "tag": "section",
+  "class": "gb-footer-section",
+  "max_blocks": 6,
+  "settings": [
+    { "type": "header", "content": "Brand" },
+    { "type": "richtext", "id": "tagline", "label": "Tagline", "default": "<p>Made with more care than a vitamin gummy probably needs. That's on purpose.</p>" },
+    { "type": "header", "content": "Newsletter" },
+    { "type": "checkbox", "id": "show_newsletter", "label": "Show newsletter", "default": true },
+    { "type": "text", "id": "newsletter_label", "label": "Newsletter label", "default": "Stay up to date" },
+    { "type": "text", "id": "newsletter_placeholder", "label": "Email placeholder", "default": "Enter your email" },
+    { "type": "text", "id": "newsletter_button", "label": "Button label", "default": "Subscribe" },
+    { "type": "header", "content": "Social" },
+    { "type": "text", "id": "social_label", "label": "Social label", "default": "Follow us" },
+    { "type": "url", "id": "facebook_url", "label": "Facebook URL" },
+    { "type": "url", "id": "instagram_url", "label": "Instagram URL" },
+    { "type": "url", "id": "tiktok_url", "label": "TikTok URL" },
+    { "type": "header", "content": "Legal" },
+    { "type": "text", "id": "rights_text", "label": "Rights text", "default": "All rights reserved." },
+    { "type": "text", "id": "cookies_label", "label": "Cookies link label", "default": "Cookies" },
+    { "type": "url", "id": "cookies_url", "label": "Cookies link URL" }
+  ],
+  "blocks": [
+    {
+      "type": "link_group",
+      "name": "Link group",
+      "settings": [
+        { "type": "text", "id": "title", "label": "Group title" },
+        { "type": "link_list", "id": "link_list", "label": "Menu (preferred)" },
+        { "type": "header", "content": "Manual links (used if no menu selected)" },
+        { "type": "text", "id": "link_1_label", "label": "Link 1 label" },
+        { "type": "url", "id": "link_1_url", "label": "Link 1 URL" },
+        { "type": "text", "id": "link_2_label", "label": "Link 2 label" },
+        { "type": "url", "id": "link_2_url", "label": "Link 2 URL" },
+        { "type": "text", "id": "link_3_label", "label": "Link 3 label" },
+        { "type": "url", "id": "link_3_url", "label": "Link 3 URL" },
+        { "type": "text", "id": "link_4_label", "label": "Link 4 label" },
+        { "type": "url", "id": "link_4_url", "label": "Link 4 URL" },
+        { "type": "text", "id": "link_5_label", "label": "Link 5 label" },
+        { "type": "url", "id": "link_5_url", "label": "Link 5 URL" },
+        { "type": "text", "id": "link_6_label", "label": "Link 6 label" },
+        { "type": "url", "id": "link_6_url", "label": "Link 6 URL" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gumi Footer",
+      "blocks": [
+        {
+          "type": "link_group",
+          "settings": {
+            "title": "Why Gumi",
+            "link_1_label": "Shop", "link_1_url": "/collections/all",
+            "link_2_label": "How Gumi Works", "link_2_url": "/pages/how-gumi-works",
+            "link_3_label": "Science", "link_3_url": "/pages/science",
+            "link_4_label": "Reviews", "link_4_url": "/pages/reviews"
+          }
+        },
+        {
+          "type": "link_group",
+          "settings": {
+            "title": "Learn more",
+            "link_1_label": "Our Story", "link_1_url": "/pages/our-story",
+            "link_2_label": "FAQs", "link_2_url": "/pages/faq",
+            "link_3_label": "Shipping", "link_3_url": "/pages/shipping",
+            "link_4_label": "Referral Program", "link_4_url": "/pages/referral"
+          }
+        },
+        {
+          "type": "link_group",
+          "settings": {
+            "title": "Get in touch",
+            "link_1_label": "Partners & Influencers", "link_1_url": "/pages/get-in-touch?type=partners",
+            "link_2_label": "Press Inquiries", "link_2_url": "/pages/get-in-touch?type=press",
+            "link_3_label": "Careers", "link_3_url": "/pages/get-in-touch?type=careers",
+            "link_4_label": "Contact", "link_4_url": "/pages/get-in-touch?type=contact"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

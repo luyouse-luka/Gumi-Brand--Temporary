@@ -1,0 +1,7 @@
+{%- comment -%}
+  richtext settings ship their value wrapped in <p>. Inside a <p> host the HTML
+  parser closes the host early, so the text ends up as a sibling and loses the
+  host's class and every style on it. Unwrap here; paragraph breaks survive as
+  <br>. Callers that render into a <div> do not need this.
+{%- endcomment -%}
+{{- html | strip_newlines | replace: '</p><p>', '<br>' | replace: '<p>', '' | replace: '</p>', '' | strip -}}

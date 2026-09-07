@@ -27,6 +27,8 @@
      次平铺）。±20% 是 `round` 在周期数只有 3–4 个时的固有粒度，不是实现缺陷；
      实测全档区间是 [0.86, 1.07]。⚠ 旧实现在这一项上是 0.44 与 2.07。
   4. 两块设计稿自己的宽度必须复现稿上的瓣数（390 → 顶 5 / 侧 8；1440 → 顶 14 / 侧 4）。
+  5. 四条边一起量（r67 补）。此前只量顶边与左边 —— 底边若被裁平或九宫格最后一行
+     没画出来，旧版会全绿通过。现在底/右的瓣数必须等于顶/左，谷深差不得超过 2px。
 
 活性自检：把 `.gb-cta-band__plate` 改回 `mask-size: 100% 100%` 的整轮廓，
 第 1、3、4 条应立刻报红。
@@ -82,7 +84,7 @@ def shoot(widths):
             css = pg.evaluate("""() => { const e = document.querySelector('.gb-cta-band__plate');
                 const s = getComputedStyle(e);
                 return {rep: s.borderImageRepeat, mask: s.webkitMaskImage || s.maskImage,
-                        bg: s.backgroundImage}; }""")
+                        bg: s.backgroundImage, biw: s.borderImageWidth}; }""")
             out[w] = (png, box, css)
             pg.close()
         b.close()
@@ -111,7 +113,22 @@ def edges(png):
         while x < w and not green(x, y):
             x += 1
         left.append(x)
-    return top, left, w, h
+    # r67: the bottom and right edges were never measured — a plate whose bottom
+    # scallops came out flat would have passed every earlier run. Distances are
+    # taken from their own edge inward so analyse() can treat them like the others.
+    bottom = []
+    for x in range(w):
+        y = h - 1
+        while y >= 0 and not green(x, y):
+            y -= 1
+        bottom.append(h - 1 - y)
+    right = []
+    for y in range(h):
+        x = w - 1
+        while x >= 0 and not green(x, y):
+            x -= 1
+        right.append(w - 1 - x)
+    return top, left, bottom, right, w, h
 
 
 def analyse(prof, n):
@@ -165,32 +182,66 @@ def main(widths):
     rows = []
     for w in widths:
         png, box, css = shots[w]
-        top, left, pw, ph = edges(png)
+        top, left, bot, right, pw, ph = edges(png)
         g = geom(w)
         r = g["r"]
         ha, hp, hv = analyse(top, pw)
         va, vp, vv = analyse(left, ph)
+        ba, bp, bv = analyse(bot, pw)
+        ra, rp, rv = analyse(right, ph)
         nh, sh = judge("顶边", w, ha, hp, hv, box["width"] - 2 * r, r, g["px"])
         nv, sv = judge("侧边", w, va, vp, vv, box["height"] - 2 * r, r, g["py"])
+        nb, sb = judge("底边", w, ba, bp, bv, box["width"] - 2 * r, r, g["px"])
+        nr, sr = judge("右边", w, ra, rp, rv, box["height"] - 2 * r, r, g["py"])
+        # The plate is symmetric: a bottom that lost its scallops (clipped, or the
+        # nine-slice not painting the last row) shows up as a count or depth gap.
+        if nb != nh:
+            FAILS.append("%d: 底边 %d 瓣 != 顶边 %d 瓣——底边被裁或没画全" % (w, nb, nh))
+        if nr != nv:
+            FAILS.append("%d: 右边 %d 瓣 != 左边 %d 瓣" % (w, nr, nv))
+        # 0.6 not 2.0: a fractional border-image PAINT width used to round the
+        # top and bottom slices opposite ways and the gap was exactly 0.5 —
+        # visible as a slightly shallower bottom edge, and a 2px window let it
+        # through. See r68.
+        if hv and bv and abs(hv - bv) > 0.6:
+            FAILS.append("%d: 底边谷深 %.1f 与顶边 %.1f 差 %.1f——底边被削"
+                         % (w, bv, hv, abs(hv - bv)))
+        if vv and rv and abs(vv - rv) > 0.6:
+            FAILS.append("%d: 右边谷深 %.1f 与左边 %.1f 差 %.1f" % (w, rv, vv, abs(vv - rv)))
         if css["rep"] != "round":
             FAILS.append("%d: border-image-repeat 是 %r，不是 round" % (w, css["rep"]))
         if css["mask"] not in (None, "none"):
             FAILS.append("%d: 板上还挂着 mask（%s）——旧的拉伸实现回来了" % (w, css["mask"][:40]))
-        rows.append((w, box["width"], box["height"], nh, sh, hv, nv, sv, vv))
-    print("%6s %11s %6s %8s %7s %6s %8s %7s" %
-          ("视口", "板宽×高", "顶瓣", "顶缩放", "顶谷深", "侧瓣", "侧缩放", "侧谷深"))
-    for w, bw, bh, nh, sh, hv, nv, sv, vv in rows:
-        print("%6d %5.0f×%-5.0f %6d %8.3f %7.1f %6d %8.3f %7.1f"
-              % (w, bw, bh, nh, sh, hv or 0, nv, sv, vv or 0))
+        # r68: the PAINT width has to be a whole px. A fractional one (the board's
+        # 58.8848) lands mid-device-pixel and the top and bottom slices round the
+        # opposite way — the bottom edge came out 0.5px shallower than the top.
+        # That gap is under the depth tolerance below, so guard the cause itself.
+        for part in str(css.get("biw", "")).split():
+            if not part.endswith("px"):
+                continue
+            v = float(part[:-2])
+            if abs(v - round(v)) > 1e-6:
+                FAILS.append("%d: border-image-width 是分数 %s——顶/底切片会朝相反方向舍入"
+                             % (w, part))
+        rows.append((w, box["width"], box["height"], nh, sh, hv, nv, sv, vv, nb, bv, nr, rv))
+    print("%6s %11s %6s %7s %6s %7s %6s %7s %6s %7s" %
+          ("视口", "板宽×高", "顶瓣", "顶谷深", "底瓣", "底谷深", "左瓣", "左谷深", "右瓣", "右谷深"))
+    for w, bw, bh, nh, sh, hv, nv, sv, vv, nb, bv, nr, rv in rows:
+        print("%6d %5.0f×%-5.0f %6d %7.1f %6d %7.1f %6d %7.1f %6d %7.1f"
+              % (w, bw, bh, nh, hv or 0, nb, bv or 0, nv, vv or 0, nr, rv or 0))
     # 两块稿必须复现
     for vw, wt, ws in ((390, 5, 8), (1440, 14, 4)):
-        for w, bw, bh, nh, sh, hv, nv, sv, vv in rows:
+        for w, bw, bh, nh, sh, hv, nv, sv, vv, nb, bv, nr, rv in rows:
             if w != vw:
                 continue
             if nh != wt:
                 FAILS.append("%d: 顶边应是稿上的 %d 瓣，实测 %d" % (vw, wt, nh))
             if nv != ws:
                 FAILS.append("%d: 侧边应是稿上的 %d 瓣，实测 %d" % (vw, ws, nv))
+            if nb != wt:
+                FAILS.append("%d: 底边应是稿上的 %d 瓣，实测 %d" % (vw, wt, nb))
+            if nr != ws:
+                FAILS.append("%d: 右边应是稿上的 %d 瓣，实测 %d" % (vw, ws, nr))
     print("=" * 78)
     if FAILS:
         print("FAIL — %d" % len(FAILS))

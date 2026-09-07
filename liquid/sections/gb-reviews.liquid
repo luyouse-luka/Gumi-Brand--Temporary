@@ -1,0 +1,119 @@
+{%- liquid
+  assign s = section.settings
+  assign classes = 'gb-reviews'
+  if s.background != blank and s.background != 'default'
+    assign classes = classes | append: ' gb-reviews--' | append: s.background
+  endif
+-%}
+<section class="{{ classes }}">
+  <div class="gb-reviews__inner">
+    {%- if s.rating != blank or s.title != blank -%}
+      <div class="gb-reviews__head wowo fadeInUp">
+        {%- if s.rating != blank -%}
+          <p class="gb-reviews__rating"><svg aria-hidden="true" viewBox="0 0 120 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.0489 2.92705C11.3483 2.00574 12.6517 2.00574 12.9511 2.92705L14.4697 7.60081C14.6035 8.01284 14.9875 8.2918 15.4207 8.2918H20.335C21.3037 8.2918 21.7065 9.53141 20.9228 10.1008L16.947 12.9894C16.5966 13.244 16.4499 13.6954 16.5838 14.1074L18.1024 18.7812C18.4017 19.7025 17.3472 20.4686 16.5635 19.8992L12.5878 17.0106C12.2373 16.756 11.7627 16.756 11.4122 17.0106L7.43648 19.8992C6.65276 20.4686 5.59828 19.7025 5.89763 18.7812L7.41623 14.1074C7.5501 13.6954 7.40345 13.244 7.05296 12.9894L3.07722 10.1008C2.29351 9.53141 2.69628 8.2918 3.66501 8.2918H8.57929C9.01252 8.2918 9.39647 8.01284 9.53035 7.60081L11.0489 2.92705Z" fill="currentColor"/><path d="M35.0489 2.92705C35.3483 2.00574 36.6517 2.00574 36.9511 2.92705L38.4697 7.60081C38.6035 8.01284 38.9875 8.2918 39.4207 8.2918H44.335C45.3037 8.2918 45.7065 9.53141 44.9228 10.1008L40.947 12.9894C40.5966 13.244 40.4499 13.6954 40.5838 14.1074L42.1024 18.7812C42.4017 19.7025 41.3472 20.4686 40.5635 19.8992L36.5878 17.0106C36.2373 16.756 35.7627 16.756 35.4122 17.0106L31.4365 19.8992C30.6528 20.4686 29.5983 19.7025 29.8976 18.7812L31.4162 14.1074C31.5501 13.6954 31.4034 13.244 31.053 12.9894L27.0772 10.1008C26.2935 9.53141 26.6963 8.2918 27.665 8.2918H32.5793C33.0125 8.2918 33.3965 8.01284 33.5303 7.60081L35.0489 2.92705Z" fill="currentColor"/><path d="M59.0489 2.92705C59.3483 2.00574 60.6517 2.00574 60.9511 2.92705L62.4697 7.60081C62.6035 8.01284 62.9875 8.2918 63.4207 8.2918H68.335C69.3037 8.2918 69.7065 9.53141 68.9228 10.1008L64.947 12.9894C64.5966 13.244 64.4499 13.6954 64.5838 14.1074L66.1024 18.7812C66.4017 19.7025 65.3472 20.4686 64.5635 19.8992L60.5878 17.0106C60.2373 16.756 59.7627 16.756 59.4122 17.0106L55.4365 19.8992C54.6528 20.4686 53.5983 19.7025 53.8976 18.7812L55.4162 14.1074C55.5501 13.6954 55.4034 13.244 55.053 12.9894L51.0772 10.1008C50.2935 9.53141 50.6963 8.2918 51.665 8.2918H56.5793C57.0125 8.2918 57.3965 8.01284 57.5303 7.60081L59.0489 2.92705Z" fill="currentColor"/><path d="M83.0489 2.92705C83.3483 2.00574 84.6517 2.00574 84.9511 2.92705L86.4697 7.60081C86.6035 8.01284 86.9875 8.2918 87.4207 8.2918H92.335C93.3037 8.2918 93.7065 9.53141 92.9228 10.1008L88.947 12.9894C88.5966 13.244 88.4499 13.6954 88.5838 14.1074L90.1024 18.7812C90.4017 19.7025 89.3472 20.4686 88.5635 19.8992L84.5878 17.0106C84.2373 16.756 83.7627 16.756 83.4122 17.0106L79.4365 19.8992C78.6528 20.4686 77.5983 19.7025 77.8976 18.7812L79.4162 14.1074C79.5501 13.6954 79.4034 13.244 79.053 12.9894L75.0772 10.1008C74.2935 9.53141 74.6963 8.2918 75.665 8.2918H80.5793C81.0125 8.2918 81.3965 8.01284 81.5303 7.60081L83.0489 2.92705Z" fill="currentColor"/><path d="M107.049 2.92705C107.348 2.00574 108.652 2.00574 108.951 2.92705L110.47 7.60081C110.604 8.01284 110.987 8.2918 111.421 8.2918H116.335C117.304 8.2918 117.706 9.53141 116.923 10.1008L112.947 12.9894C112.597 13.244 112.45 13.6954 112.584 14.1074L114.102 18.7812C114.402 19.7025 113.347 20.4686 112.564 19.8992L108.588 17.0106C108.237 16.756 107.763 16.756 107.412 17.0106L103.436 19.8992C102.653 20.4686 101.598 19.7025 101.898 18.7812L103.416 14.1074C103.55 13.6954 103.403 13.244 103.053 12.9894L99.0772 10.1008C98.2935 9.53141 98.6963 8.2918 99.665 8.2918H104.579C105.013 8.2918 105.396 8.01284 105.53 7.60081L107.049 2.92705Z" fill="currentColor"/></svg><span>{{ s.rating | escape }}</span></p>
+        {%- endif -%}
+        {%- if s.title != blank -%}
+          <h2 class="gb-reviews__title" data-line-reveal>{{ s.title | escape | newline_to_br }}</h2>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    <div class="gb-reviews__reels wowo fadeIn" data-slider data-slider-loop data-slider-centre>
+      <div class="gb-reels swiper" data-slider-track tabindex="0" role="group" aria-label="{{ s.aria_label | default: 'Customer reels' | escape }}">
+        <div class="swiper-wrapper">
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'reel' -%}
+              {%- assign b = block.settings -%}
+              {%- assign video_url = '' -%}
+              {%- assign poster = null -%}
+              {%- if b.video != blank -%}
+                {%- assign poster = b.video.preview_image -%}
+                {%- for src in b.video.sources -%}
+                  {%- if src.format == 'mp4' -%}{%- assign video_url = src.url -%}{%- break -%}{%- endif -%}
+                {%- endfor -%}
+                {%- if video_url == '' -%}{%- assign video_url = b.video.sources.first.url -%}{%- endif -%}
+              {%- endif -%}
+              <button class="gb-reel swiper-slide" type="button" data-modal="reel-video"{% if video_url != '' %} data-video="{{ video_url }}"{% endif %} aria-label="{{ b.alt | default: 'Play customer reel' | escape }}" {{ block.shopify_attributes }}>
+                <span class="gb-reel__media" aria-hidden="true">
+                  {%- if poster -%}
+                    <img class="gb-reel__media-img"
+                         src="{{ poster | image_url: width: 500 }}"
+                         srcset="{{ poster | image_url: width: 500 }} 500w, {{ poster | image_url: width: 1000 }} 1000w"
+                         sizes="(min-width: 990px) 260px, 60vw"
+                         width="{{ poster.width }}" height="{{ poster.height }}"
+                         loading="lazy" decoding="async" alt="">
+                  {%- endif -%}
+                </span>
+                <svg class="gb-reel__play" aria-hidden="true" viewBox="0 0 86 54" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="85.9996" height="53.7498" rx="10.6711" fill="white"/><path d="M53.2807 25.5673C54.5365 26.2924 54.5365 28.1051 53.2807 28.8301L37.9289 37.6935C36.673 38.4186 35.1032 37.5122 35.1032 36.0621L35.1032 18.3354C35.1032 16.8852 36.673 15.9789 37.9289 16.704L53.2807 25.5673Z" fill="currentColor"/></svg>
+              </button>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+      </div>
+      <div class="gb-reels__nav">
+        <button class="gb-reels__btn" type="button" data-slider-prev aria-label="Previous reels"><svg aria-hidden="true" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="20" fill="#005635"/><path d="M27.2884 19.9997H12.7051M19.9967 12.708L12.7051 19.9997L19.9967 27.2913" stroke="#F6FEEC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="gb-reels__btn" type="button" data-slider-next aria-label="Next reels"><svg aria-hidden="true" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="20" fill="#005635"/><path d="M12.7051 19.9997H27.2884M19.9967 12.708L27.2884 19.9997L19.9967 27.2913" stroke="#F6FEEC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    </div>
+    {%- if s.disclaimer != blank -%}
+      <p class="gb-reviews__disclaimer wowo fadeInUp">{{ s.disclaimer | escape }}</p>
+    {%- endif -%}
+  </div>
+</section>
+
+<div class="gb-rv-modal" id="reel-video" role="dialog" aria-modal="true" tabindex="-1"
+     aria-label="Customer reel" aria-hidden="true">
+  <div class="gb-rv-modal__overlay" data-modal-close></div>
+  <div class="gb-rv-modal__wrap">
+    <div class="gb-rv-panel">
+      <div class="gb-rv-panel__video" data-modal-media><svg aria-hidden="true" viewBox="0 0 86 54" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="85.9996" height="53.7498" rx="10.6711" fill="white"/><path d="M53.2807 25.5673C54.5365 26.2924 54.5365 28.1051 53.2807 28.8301L37.9289 37.6935C36.673 38.4186 35.1032 37.5122 35.1032 36.0621L35.1032 18.3354C35.1032 16.8852 36.673 15.9789 37.9289 16.704L53.2807 25.5673Z" fill="currentColor"/></svg></div>
+      <button class="gb-rv-panel__close" type="button" data-modal-close aria-label="Close reel">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 2.5l11 11M13.5 2.5l-11 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Gumi Reviews (reels)",
+  "tag": "section",
+  "class": "gb-reviews-section",
+  "settings": [
+    { "type": "text", "id": "rating", "label": "Rating text", "default": "4.8 stars" },
+    { "type": "text", "id": "title", "label": "Title", "default": "Aussies are obsessed. Here's why." },
+    {
+      "type": "select",
+      "id": "background",
+      "label": "Background",
+      "options": [
+        { "value": "default", "label": "Default" },
+        { "value": "cream", "label": "Cream" },
+        { "value": "sand", "label": "Sand" }
+      ],
+      "default": "default"
+    },
+    { "type": "text", "id": "aria_label", "label": "Carousel aria label", "default": "Customer reels" },
+    { "type": "textarea", "id": "disclaimer", "label": "Disclaimer", "default": "Testimonials featured in videos or other promotional materials may include individuals who received compensation, free product, or other incentives" }
+  ],
+  "blocks": [
+    {
+      "type": "reel",
+      "name": "Reel",
+      "settings": [
+        { "type": "video", "id": "video", "label": "Video (poster auto-derived from upload)" },
+        { "type": "text", "id": "alt", "label": "Accessible label", "default": "Play customer reel" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gumi Reviews (reels)",
+      "blocks": [
+        { "type": "reel" }, { "type": "reel" }, { "type": "reel" }, { "type": "reel" }, { "type": "reel" },
+        { "type": "reel" }, { "type": "reel" }, { "type": "reel" }, { "type": "reel" }, { "type": "reel" }
+      ]
+    }
+  ]
+}
+{% endschema %}

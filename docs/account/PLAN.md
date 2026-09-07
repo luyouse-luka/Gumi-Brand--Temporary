@@ -129,7 +129,7 @@ npx sass@1.77.8 assets/account.scss assets/account.css --no-source-map
 - 产出：`$build-acct`、`$c-*` 全套色板、`@mixin mobile/narrow/tablet/pc/mid/stack/tight`、
   `fluid($min,$max,$from,$to)`、根类 `.gb-acct`
 
-- [ ] **步骤 1：写漂移判据（先写，此时必红）**
+- [x] **步骤 1：写漂移判据（先写，此时必红）**
 
 创建 `tools/acctvars.py`：
 
@@ -161,7 +161,7 @@ print(f"\n{ok} ok / {len(missing)+len(drifted)} red")
 sys.exit(1 if missing or drifted else 0)
 ```
 
-- [ ] **步骤 2：跑判据，确认它红**
+- [x] **步骤 2：跑判据，确认它红**
 
 ```bash
 python3 tools/acctvars.py
@@ -169,7 +169,7 @@ python3 tools/acctvars.py
 预期：`RED missing in account.scss: $c-lime = #b5ed61`（以及其余全部），退出码 1。
 ⚠ 若此时是绿的，说明判据没抓到东西 —— 先修判据（负向断言要先验锚点，全局铁律 6）。
 
-- [ ] **步骤 3：建 account.scss 的 DEFINITIONS 段**
+- [x] **步骤 3：建 account.scss 的 DEFINITIONS 段**
 
 从 `assets/customstyle.scss` 第 28–431 行**逐字复制**变量与 mixin（色板 `$c-*`、
 断点 `$bp-*` 与七个 mixin、`fluid()`），顶部加：
@@ -184,14 +184,14 @@ $build-acct: "20260904-a1";
 
 ⚠ **不要复制 mask 常量段** —— account 稿里没有波浪，用不到；真需要时再单独内联。
 
-- [ ] **步骤 4：跑判据，确认它绿**
+- [x] **步骤 4：跑判据，确认它绿**
 
 ```bash
 python3 tools/acctvars.py
 ```
 预期：`N ok / 0 red`，退出码 0。
 
-- [ ] **步骤 5：建 account.html 骨架**
+- [x] **步骤 5：建 account.html 骨架**
 
 从 `index.html` 复制 `<head>`（含那段 `.wowo` 存活门内联脚本）、`<header>`、`<footer>`
 三块**原样**，中间放空的三个视图容器：
@@ -241,7 +241,7 @@ python3 tools/acctvars.py
 ⚠ **用 `hidden` 属性控制视图显隐，不要 `style="display:none"`** —— 后面 `view` 模块
 靠 `el.hidden` 切换。
 
-- [ ] **步骤 6：编译并肉眼确认**
+- [x] **步骤 6：编译并肉眼确认**
 
 ```bash
 npx sass@1.77.8 assets/account.scss assets/account.css --no-source-map
@@ -250,7 +250,7 @@ python3 tools/assetpath.py
 浏览器双击打开 `account.html`：header 与 footer 与现站**完全一致**，中间空白。
 ⚠ 若 header 塌了，多半是复制时漏了 `<head>` 的存活门脚本 —— `.wowo{opacity:0}` 是无条件的。
 
-- [ ] **步骤 7：提交**
+- [x] **步骤 7：提交**
 
 ```bash
 git add assets/account.scss assets/account.css account.html tools/acctvars.py docs/account/
@@ -277,7 +277,7 @@ git commit -m "feat(account): 地基 —— 变量副本、编译链路、页面
   hook `data-acct-menu-toggle` / `data-acct-menu`
 - 产出：`account.js` 的 `acctNav` 模块，暴露 `acctNav.closeMenu()`
 
-- [ ] **步骤 1：从节点取值，写进判据**
+- [x] **步骤 1：从节点取值，写进判据**
 
 从 `figma/account/nodes/2284-34578_desktop-navigation.json` 与
 `2284-34757_navigation-expanded.json` 取：header 高度、底色、logo 尺寸与左边距、
@@ -325,14 +325,14 @@ def main():
 main()
 ```
 
-- [ ] **步骤 2：跑判据，确认它红**
+- [x] **步骤 2：跑判据，确认它红**
 
 ```bash
 python3 tools/acctcheck.py
 ```
 预期：三条全红（`.gb-acct-header not found` 等）。
 
-- [ ] **步骤 3：写 header 覆盖样式**
+- [x] **步骤 3：写 header 覆盖样式**
 
 在 `account.scss` 的 Shell 分区里，用 `.gb-acct-header` 作用域**覆盖**现站 header，
 不改 `customstyle.scss` 一行：
@@ -348,7 +348,7 @@ python3 tools/acctcheck.py
 凡是要随断点变的值，走 custom property 覆盖（`--x: …`），不要直接写最终属性，
 否则永久禁用基类的断点规则。
 
-- [ ] **步骤 4：写汉堡面板结构与 JS**
+- [x] **步骤 4：写汉堡面板结构与 JS**
 
 `account.html` 的 header 内加：
 
@@ -415,7 +415,7 @@ python3 tools/acctcheck.py
 `.gb-acct-menu` 设了 `display:flex`，**作者样式会压过 UA 的 `[hidden]`** ——
 必须确认 reset 里那条 `!important` 生效，否则面板关不掉。
 
-- [ ] **步骤 5：编译，跑判据，确认它绿**
+- [x] **步骤 5：编译，跑判据，确认它绿**
 
 ```bash
 npx sass@1.77.8 assets/account.scss assets/account.css --no-source-map
@@ -423,12 +423,12 @@ python3 tools/acctcheck.py
 ```
 预期：`3 ok / 0 red`。
 
-- [ ] **步骤 6：活性自检（判据必须能抓到破坏）**
+- [x] **步骤 6：活性自检（判据必须能抓到破坏）**
 
 把 `.gb-acct-header` 的 `height` 临时改错一个值，重编译重跑 —— **必须转红**；
 改回来再跑 —— 必须回绿。判据抓不到破坏就是假绿（全局铁律 6）。
 
-- [ ] **步骤 7：提交**
+- [x] **步骤 7：提交**
 
 ```bash
 git add account.html assets/account.scss assets/account.css assets/account.js tools/acctcheck.py

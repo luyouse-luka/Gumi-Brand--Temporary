@@ -1,0 +1,12 @@
+{%- comment -%}
+  Gumi custom scripts. Rendered at the end of <body> from layout/theme.liquid.
+  Swiper is loaded only where a carousel exists (see individual sections).
+{%- endcomment -%}
+{%- comment -%}
+  defer, not bare: these sit ~172KB into <body>, so parser-blocking tags
+  held main.js back ~3.6s and [data-line-reveal] text stayed visible that
+  whole time. defer keeps execution order and runs before DOMContentLoaded.
+{%- endcomment -%}
+<script src="{{ 'lenis.min.js' | asset_url }}" defer></script>
+<script src="{{ 'swiper-bundle.min.js' | asset_url }}" defer></script>
+<script src="{{ 'main.js' | asset_url }}" defer></script>

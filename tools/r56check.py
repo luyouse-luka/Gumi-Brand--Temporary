@@ -99,14 +99,18 @@ with sync_playwright() as p:
         chk("%d  stacked" % w, d["dir"], "column")
         pg.close()
 
+    # r59 (client): this tier is the desktop two-column card scaled by --pp-k,
+    # NOT the phone board at its own size. The r56 answer to AT is withdrawn --
+    # see r61check for the full ladder.
     for w in (768, 900, 1024, 1280):
         pg = page("index.html", w); d = pg.evaluate(PANEL)
-        chk("%d  card is the phone board's 390 wide" % w, d["w"], 390.0, 0.6)
-        chk("%d  card is the phone board's 744 tall" % w, d["h"], 744.0, 0.6)
+        k = min(1.0, (w - 48) / 1062.0)
+        chk("%d  desktop card scaled (w)" % w, d["w"], 1062.0 * k, 0.6)
+        chk("%d  desktop card scaled (h)" % w, d["h"], 528.0 * k, 0.6)
         chk("%d  radius 24" % w, d["radius"], "24px")
         chk("%d  wrap gutter 24" % w, d["pad"], "24px")
         chk("%d  centred" % w, d["cx"], d["vw"] / 2.0, 0.6)
-        chk("%d  still the stacked layout" % w, d["dir"], "column")
+        chk("%d  two columns" % w, d["dir"], "row")
         pg.close()
 
     for w in (1281, 1440):
@@ -121,18 +125,30 @@ with sync_playwright() as p:
       const mk=v=>{const e=document.createElement('div'); e.style.width=v; a.appendChild(e);
         const w=e.getBoundingClientRect().width; e.remove(); return +w.toFixed(2);};
       return {scw:mk('var(--sc-w)'), pwr:mk('var(--pw-r)')};}"""
-    for w in (390, 768, 900, 1024, 1280):
+    # <=575 only: --sc-w is a viewport ramp and it starts climbing above that,
+    # which was true before r59 too -- the pin only ever covered the phone tier.
+    for w in (320, 390, 575):
         pg = page("index.html", w); d = pg.evaluate(WAVE)
         chk("%d  wave pitch on the phone board's 144.85" % w, d["scw"], 144.63, 0.5)
         chk("%d  wave radius on the phone board's 92.65" % w, d["pwr"], 92.66, 0.5)
+        pg.close()
+    # r59: from 768 up there is no strip to pin -- the column is plain cream and
+    # both pseudo-elements are switched off, so there is nothing left to measure.
+    for w in (768, 1024, 1280):
+        pg = page("index.html", w)
+        chk("%d  phone wave switched off" % w, pg.evaluate(
+            "()=>getComputedStyle(document.querySelector('.gb-promo-panel__art'),"
+            "'::before').content"), "none")
         pg.close()
     pg = page("index.html", 1440); d = pg.evaluate(WAVE)
     chk("1440  desktop column has no wave to pin", d["scw"], 302.19, 0.5)
     pg.close()
 
-    # short viewport: the cap has to give, not overflow the gutter
+    # short viewport: the scaled card is 485 tall at this width, well inside the
+    # 552 the gutters leave, so nothing has to give any more (r59)
     pg = page("index.html", 1024, 600); d = pg.evaluate(PANEL)
-    chk("1024x600  height clipped to the gutter", d["h"], 600 - 48.0, 1.0)
+    chk("1024x600  scaled height fits the gutter", d["h"], 528.0 * (976 / 1062.0), 1.0)
+    chk("1024x600  inside the gutter", d["h"] <= 600 - 48.0, True)
     pg.close()
 
     # ================================================================== AS

@@ -1,0 +1,17 @@
+--- live-20260907-r85/snippets/gb-logo.liquid	2026-09-07 09:06:53.114944299 +0000
++++ work-r85/snippets/gb-logo.liquid	2026-09-07 09:09:34.892581545 +0000
+@@ -17,8 +17,12 @@
+   {%- assign h = 32 -%}
+ {%- endif -%}
+ {%- if logo_img != blank -%}
+-  <img src="{{ logo_img | image_url: width: w | times: 2 }}"
+-       srcset="{{ logo_img | image_url: width: w }} 1x, {{ logo_img | image_url: width: w | times: 2 }} 2x"
++  {%- comment -%} `width: w | times: 2` multiplies the URL, not the width: image_url
++  runs first and `times` on a string is 0, which shipped src="0" and a "0 2x"
++  candidate. Double the number before it reaches the filter. {%- endcomment -%}
++  {%- assign w2 = w | times: 2 -%}
++  <img src="{{ logo_img | image_url: width: w2 }}"
++       srcset="{{ logo_img | image_url: width: w }} 1x, {{ logo_img | image_url: width: w2 }} 2x"
+        width="{{ w }}" height="{{ h }}"
+        alt="{{ shop.name | escape }}" loading="eager" decoding="async">
+ {%- elsif variant == 'lg' -%}

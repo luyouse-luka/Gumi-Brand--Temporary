@@ -1,0 +1,404 @@
+{%- liquid
+  # Product source: on product template use {{ product }} global; elsewhere pick via section setting.
+  assign p = product
+  if p == blank
+    assign p = all_products[section.settings.product]
+  endif
+  assign variant = p.selected_or_first_available_variant
+  assign wrap_class = 'gb-product gb-product--lg'
+  if section.settings.layout == 'page'
+    assign wrap_class = 'gb-product gb-product--page'
+  endif
+  assign form_id = 'gb-product-form-' | append: section.id
+  assign has_plans = false
+  if p.selling_plan_groups.size > 0
+    assign has_plans = true
+  endif
+-%}
+{%- if p == blank -%}
+  <section class="{{ wrap_class }}"><p style="padding:2rem;text-align:center;">Pick a product in the section settings.</p></section>
+{%- else -%}
+<section class="{{ wrap_class }}" data-gb-product data-product-id="{{ p.id }}" data-product-url="{{ p.url }}">
+  <div class="gb-product__inner">
+
+    {%- comment -%} ---------- MEDIA / GALLERY ---------- {%- endcomment -%}
+    <div class="gb-product__media wowo fadeIn">
+      <div class="gb-product__gallery" data-gallery>
+        <div class="gb-product__thumbs" data-gallery-thumbs>
+          {%- for m in p.media -%}
+            <button class="gb-product__thumb{% if forloop.first %} is-active{% endif %}" type="button" data-gallery-go="{{ forloop.index0 }}" aria-label="View image {{ forloop.index }}"{% if forloop.first %} aria-current="true"{% endif %}>
+              <img src="{{ m.preview_image | image_url: width: 120 }}" width="120" height="120" alt="" loading="lazy" decoding="async">
+            </button>
+          {%- endfor -%}
+        </div>
+        <div class="gb-product__stage swiper" data-gallery-track tabindex="0" role="group" aria-label="Product images">
+          <div class="swiper-wrapper">
+            {%- if p.media.size > 0 -%}
+              {%- for m in p.media -%}
+                <div class="gb-product__image swiper-slide" data-gallery-slide>
+                  <img src="{{ m.preview_image | image_url: width: 900 }}"
+                       srcset="{{ m.preview_image | image_url: width: 600 }} 600w, {{ m.preview_image | image_url: width: 1200 }} 1200w, {{ m.preview_image | image_url: width: 1800 }} 1800w"
+                       sizes="(min-width: 990px) 620px, 100vw"
+                       width="{{ m.preview_image.width }}" height="{{ m.preview_image.height }}"
+                       alt="{{ m.alt | escape }}"
+                       loading="{% if forloop.first %}eager{% else %}lazy{% endif %}"
+                       decoding="async">
+                </div>
+              {%- endfor -%}
+            {%- else -%}
+              {%- for i in (1..5) -%}
+                <div class="gb-product__image swiper-slide" data-gallery-slide></div>
+              {%- endfor -%}
+            {%- endif -%}
+          </div>
+        </div>
+      </div>
+      {%- if section.settings.show_nl_button -%}
+        <button class="gb-product__label-btn" type="button" data-modal="nutritional-label">View Nutritional Label</button>
+      {%- endif -%}
+    </div>
+
+    {%- comment -%} ---------- INFO ---------- {%- endcomment -%}
+    <div class="gb-product__info">
+      <div class="gb-product__head">
+        {%- if section.settings.rating_text != blank -%}
+          <p class="gb-product__rating"><svg aria-hidden="true" viewBox="0 0 103 21" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9.48368 2.51239C9.74062 1.7216 10.8594 1.72159 11.1163 2.51238L12.4198 6.52403C12.5347 6.87768 12.8643 7.11713 13.2361 7.11713H17.4542C18.2857 7.11713 18.6314 8.18113 17.9587 8.66986L14.5462 11.1492C14.2454 11.3678 14.1195 11.7552 14.2344 12.1088L15.5379 16.1205C15.7948 16.9113 14.8897 17.5689 14.217 17.0801L10.8045 14.6008C10.5037 14.3822 10.0963 14.3822 9.79548 14.6008L6.38298 17.0801C5.71029 17.5689 4.80519 16.9113 5.06214 16.1205L6.3656 12.1088C6.48051 11.7552 6.35463 11.3678 6.05379 11.1492L2.64128 8.66987C1.96859 8.18113 2.31431 7.11713 3.1458 7.11713H7.36389C7.73574 7.11713 8.0653 6.87768 8.18021 6.52403L9.48368 2.51239Z" fill="currentColor"/><path d="M30.0833 2.51239C30.3402 1.7216 31.459 1.72159 31.7159 2.51238L33.0194 6.52403C33.1343 6.87768 33.4639 7.11713 33.8357 7.11713H38.0538C38.8853 7.11713 39.231 8.18113 38.5583 8.66986L35.1458 11.1492C34.845 11.3678 34.7191 11.7552 34.834 12.1088L36.1375 16.1205C36.3944 16.9113 35.4893 17.5689 34.8166 17.0801L31.4041 14.6008C31.1033 14.3822 30.6959 14.3822 30.3951 14.6008L26.9826 17.0801C26.3099 17.5689 25.4048 16.9113 25.6617 16.1205L26.9652 12.1088C27.0801 11.7552 26.9542 11.3678 26.6534 11.1492L23.2409 8.66987C22.5682 8.18113 22.9139 7.11713 23.7454 7.11713H27.9635C28.3354 7.11713 28.6649 6.87768 28.7798 6.52403L30.0833 2.51239Z" fill="currentColor"/><path d="M50.6829 2.51239C50.9398 1.7216 52.0586 1.72159 52.3155 2.51238L53.619 6.52403C53.7339 6.87768 54.0635 7.11713 54.4353 7.11713H58.6534C59.4849 7.11713 59.8306 8.18113 59.1579 8.66986L55.7454 11.1492C55.4446 11.3678 55.3187 11.7552 55.4336 12.1088L56.7371 16.1205C56.994 16.9113 56.0889 17.5689 55.4162 17.0801L52.0037 14.6008C51.7029 14.3822 51.2955 14.3822 50.9947 14.6008L47.5822 17.0801C46.9095 17.5689 46.0044 16.9113 46.2614 16.1205L47.5648 12.1088C47.6797 11.7552 47.5538 11.3678 47.253 11.1492L43.8405 8.66987C43.1678 8.18113 43.5135 7.11713 44.345 7.11713H48.5631C48.935 7.11713 49.2645 6.87768 49.3794 6.52403L50.6829 2.51239Z" fill="currentColor"/><path d="M71.2845 2.51239C71.5414 1.7216 72.6602 1.72159 72.9171 2.51238L74.2206 6.52403C74.3355 6.87768 74.665 7.11713 75.0369 7.11713H79.255C80.0865 7.11713 80.4322 8.18113 79.7595 8.66986L76.347 11.1492C76.0462 11.3678 75.9203 11.7552 76.0352 12.1088L77.3386 16.1205C77.5956 16.9113 76.6905 17.5689 76.0178 17.0801L72.6053 14.6008C72.3045 14.3822 71.8971 14.3822 71.5963 14.6008L68.1838 17.0801C67.5111 17.5689 66.606 16.9113 66.8629 16.1205L68.1664 12.1088C68.2813 11.7552 68.1554 11.3678 67.8546 11.1492L64.4421 8.66987C63.7694 8.18113 64.1151 7.11713 64.9466 7.11713H69.1647C69.5365 7.11713 69.8661 6.87768 69.981 6.52403L71.2845 2.51239Z" fill="currentColor"/><path d="M91.8841 2.51239C92.141 1.7216 93.2598 1.72159 93.5167 2.51238L94.8202 6.52403C94.9351 6.87768 95.2646 7.11713 95.6365 7.11713H99.8546C100.686 7.11713 101.032 8.18113 100.359 8.66986L96.9466 11.1492C96.6458 11.3678 96.5199 11.7552 96.6348 12.1088L97.9383 16.1205C98.1952 16.9113 97.2901 17.5689 96.6174 17.0801L93.2049 14.6008C92.9041 14.3822 92.4967 14.3822 92.1959 14.6008L88.7834 17.0801C88.1107 17.5689 87.2056 16.9113 87.4625 16.1205L88.766 12.1088C88.8809 11.7552 88.755 11.3678 88.4542 11.1492L85.0417 8.66987C84.369 8.18113 84.7147 7.11713 85.5462 7.11713H89.7643C90.1361 7.11713 90.4657 6.87768 90.5806 6.52403L91.8841 2.51239Z" fill="currentColor"/></svg><span>{{ section.settings.rating_text | escape }}</span></p>
+        {%- endif -%}
+        <h2 class="gb-product__title">{{ p.title | escape }}</h2>
+        {%- if p.price_min != p.price_max -%}
+          <p class="gb-product__tag">From {{ p.price_min | money }} each</p>
+        {%- else -%}
+          <p class="gb-product__tag">{{ p.price | money }} each</p>
+        {%- endif -%}
+        {%- if section.settings.lead != blank -%}
+          <p class="gb-product__lead">{{ section.settings.lead | escape }}</p>
+        {%- endif -%}
+        {%- assign features = section.blocks | where: 'type', 'feature' -%}
+        {%- if features.size > 0 -%}
+          <ul class="gb-product__features">
+            {%- for b in features -%}
+              <li class="gb-product__feature" {{ b.shopify_attributes }}><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.6673 5.4165L7.50065 14.5832L3.33398 10.4165" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>{{ b.settings.label | escape }}</li>
+            {%- endfor -%}
+          </ul>
+        {%- endif -%}
+      </div>
+
+      {%- comment -%} ---------- FORM (variant + qty + selling_plan + ATC) ---------- {%- endcomment -%}
+      {%- form 'product', p, id: form_id, class: 'gb-product__form', data-gb-form: '' -%}
+        <input type="hidden" name="id" value="{{ variant.id }}" data-gb-variant-input>
+        <input type="hidden" name="quantity" value="1">
+        <input type="hidden" name="selling_plan" value="{% if has_plans %}{{ p.selling_plan_groups.first.selling_plans.first.id }}{% endif %}" data-gb-selling-plan-input>
+
+        {%- if p.has_only_default_variant == false -%}
+          <div class="gb-product__variants">
+            {%- for opt in p.options_with_values -%}
+              <label class="gb-field__label" for="opt-{{ section.id }}-{{ forloop.index0 }}">{{ opt.name | escape }}</label>
+              <select id="opt-{{ section.id }}-{{ forloop.index0 }}" class="gb-field__input gb-field__input--select" data-gb-option-select data-option-index="{{ forloop.index0 }}">
+                {%- for v in opt.values -%}
+                  <option value="{{ v | escape }}"{% if opt.selected_value == v %} selected{% endif %}>{{ v | escape }}</option>
+                {%- endfor -%}
+              </select>
+            {%- endfor -%}
+          </div>
+        {%- endif -%}
+
+        {%- render 'gb-sub', product: p, selected_variant: variant, input_name_prefix: section.id -%}
+
+        <button class="gb-product__cta" type="submit" data-gb-atc>{{ section.settings.cta_label | default: 'Start Now' | escape }}</button>
+      {%- endform -%}
+
+      {%- if section.settings.guarantee_note != blank -%}
+        <p class="gb-product__guarantee-note">{%- render 'gb-rich-inline', html: section.settings.guarantee_note -%}</p>
+      {%- endif -%}
+      {%- assign guarantees = section.blocks | where: 'type', 'guarantee' -%}
+      {%- if guarantees.size > 0 -%}
+        <ul class="gb-product__guarantees">
+          {%- for b in guarantees -%}
+            <li class="gb-product__guarantee" {{ b.shopify_attributes }}><svg aria-hidden="true" viewBox="0 0 34 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="17" cy="16" r="15.5" stroke="black"/></svg><span>{{ b.settings.label | escape | newline_to_br }}</span></li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+
+      {%- assign accs = section.blocks | where: 'type', 'accordion' -%}
+      {%- if accs.size > 0 -%}
+        <div class="gb-product__accordion">
+          {%- for b in accs -%}
+            <details class="gb-product__acc-item" name="gb-spec-{{ section.id }}" {{ b.shopify_attributes }}>
+              <summary class="gb-product__acc-row">{{ b.settings.title | escape }}<span class="gb-acc-icon" aria-hidden="true"></span></summary>
+              <div class="gb-acc-body">
+                {%- if b.settings.body != blank -%}
+                  <div class="gb-acc-body__text">{{ b.settings.body }}</div>
+                {%- endif -%}
+                {%- if b.settings.image != blank -%}
+                  <div class="gb-acc-body__media">
+                    <img src="{{ b.settings.image | image_url: width: 600 }}" width="{{ b.settings.image.width }}" height="{{ b.settings.image.height }}" loading="lazy" decoding="async" alt="{{ b.settings.image.alt | escape }}">
+                  </div>
+                {%- endif -%}
+              </div>
+            </details>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+
+      {%- assign tastes = section.blocks | where: 'type', 'taste' -%}
+      {%- if tastes.size > 0 -%}
+        <div class="gb-product__taste">
+          <p class="gb-product__sub-title">{{ section.settings.taste_title | default: 'Tastes Like' | escape }}</p>
+          <ul class="gb-product__taste-list">
+            {%- for b in tastes -%}
+              <li class="gb-product__taste-item" {{ b.shopify_attributes }}><svg aria-hidden="true" viewBox="0 0 51 48" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="25.5" cy="24" r="24" fill="currentColor"/></svg><span>{{ b.settings.label | escape }}</span></li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
+
+      {%- assign packeds = section.blocks | where: 'type', 'packed' -%}
+      {%- if packeds.size > 0 -%}
+        <div class="gb-product__packed">
+          <p class="gb-product__sub-title">{{ section.settings.packed_title | default: 'Packed With' | escape }}</p>
+          <ul class="gb-product__packed-list">
+            {%- for b in packeds -%}
+              <li class="gb-product__packed-item" {{ b.shopify_attributes }}><svg aria-hidden="true" viewBox="0 0 34 32" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="currentColor"/></svg><span>{{ b.settings.label | escape }}</span></li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+  {%- if section.settings.show_scallop -%}
+    <div class="gb-scallop gb-scallop--edge gb-scallop--lg gb-scallop--white-to-sand"></div>
+  {%- endif -%}
+
+  {%- comment -%} ---------- DATA + REACTIVE JS ---------- {%- endcomment -%}
+  <script type="application/json" data-gb-product-data>
+    {
+      "variants": [
+        {%- for v in p.variants -%}
+          {"id":{{ v.id }},"title":{{ v.title | json }},"available":{{ v.available }},"price":{{ v.price }},"compare_at":{{ v.compare_at_price | default: 0 }},"packs":{{ v.title | split: ' ' | first | plus: 0 }},"options":{{ v.options | json }}}{% unless forloop.last %},{% endunless %}
+        {%- endfor -%}
+      ],
+      "selling_plans": [
+        {%- assign _first = true -%}
+        {%- for group in p.selling_plan_groups -%}
+          {%- for plan in group.selling_plans -%}
+            {%- assign pct = 0 -%}
+            {%- for adj in plan.price_adjustments -%}
+              {%- if adj.value_type == 'percentage' -%}{%- assign pct = adj.value -%}{%- endif -%}
+            {%- endfor -%}
+            {% unless _first %},{% endunless %}{"id":{{ plan.id }},"name":{{ plan.name | json }},"pct":{{ pct }}}
+            {%- assign _first = false -%}
+          {%- endfor -%}
+        {%- endfor -%}
+      ],
+      "money_format": {{ shop.money_format | json }}
+    }
+  </script>
+</section>
+
+<script>
+  (function () {
+    var root = document.querySelector('[data-gb-product][data-product-id="{{ p.id }}"]');
+    if (!root || root.dataset.gbBound) return;
+    root.dataset.gbBound = '1';
+    var dataEl = root.querySelector('[data-gb-product-data]');
+    var data = JSON.parse(dataEl.textContent);
+    var subBlock = root.querySelector('[data-sub]');
+    var variantInput = root.querySelector('[data-gb-variant-input]');
+    var planInput = root.querySelector('[data-gb-selling-plan-input]');
+    var subRadio = root.querySelector('input[type=radio][value="subscribe"]');
+    var onceRadio = root.querySelector('input[type=radio][value="once"]');
+    var planSelect = root.querySelector('[data-gb-plan-select]');
+    var optSelects = root.querySelectorAll('[data-gb-option-select]');
+    var form = root.querySelector('[data-gb-form]');
+    var atc = root.querySelector('[data-gb-atc]');
+
+    var state = {
+      variantId: parseInt(variantInput.value, 10),
+      planId: planInput.value ? parseInt(planInput.value, 10) : null,
+      isSubscribe: subRadio ? subRadio.checked : false
+    };
+
+    function fmtMoney(cents) {
+      var dollars = (cents / 100).toFixed(2);
+      return '$' + dollars;
+    }
+    function currentVariant() { return data.variants.find(function(v){ return v.id === state.variantId; }); }
+    function currentPlan() { return data.selling_plans.find(function(p){ return p.id === state.planId; }); }
+
+    function render() {
+      var v = currentVariant();
+      if (!v) return;
+      var plan = currentPlan();
+      var pct = (plan && plan.pct) || 0;
+      var oneCents = v.price;
+      var subCents = Math.round(v.price * (100 - pct) / 100);
+      var wasCents = v.compare_at;
+      var packs = v.packs || 28;
+      var subRate = packs > 0 ? (subCents / packs / 100).toFixed(2) : '0.00';
+      var oneRate = packs > 0 ? (oneCents / packs / 100).toFixed(2) : '0.00';
+      var bannerOff = wasCents > 0 ? Math.round((wasCents - subCents) * 100 / wasCents) : 0;
+
+      set('[data-gb-sub-now]', fmtMoney(subCents));
+      set('[data-gb-one-now]', fmtMoney(oneCents));
+      set('[data-gb-sub-rate]', '$' + subRate + '/day');
+      set('[data-gb-one-rate]', '$' + oneRate + '/day');
+      set('[data-gb-banner-off]', bannerOff);
+      var packsText = packs + ' Packs delivered once';
+      root.querySelectorAll('[data-gb-packs]').forEach(function(el){ el.textContent = packsText; });
+      var subWas = root.querySelector('[data-gb-sub-was]');
+      var oneWas = root.querySelector('[data-gb-one-was]');
+      if (subWas) subWas.style.display = (wasCents > 0 && wasCents > subCents) ? '' : 'none';
+      if (oneWas) oneWas.style.display = (wasCents > 0 && wasCents > oneCents) ? '' : 'none';
+
+      variantInput.value = v.id;
+      planInput.value = state.isSubscribe && state.planId ? state.planId : '';
+
+      if (subBlock) {
+        subBlock.setAttribute('data-current-plan', state.isSubscribe ? (state.planId || '') : '');
+        subBlock.classList.toggle('is-once', !state.isSubscribe);
+        subBlock.classList.toggle('is-subscribe', state.isSubscribe);
+      }
+    }
+    function set(sel, val) {
+      var el = root.querySelector(sel);
+      if (el) el.textContent = val;
+    }
+    function findVariantByOptions(vals) {
+      return data.variants.find(function(v){
+        return v.options.every(function(o, i){ return o === vals[i]; });
+      });
+    }
+
+    if (subRadio) subRadio.addEventListener('change', function(){ if (this.checked) { state.isSubscribe = true; render(); }});
+    if (onceRadio) onceRadio.addEventListener('change', function(){ if (this.checked) { state.isSubscribe = false; render(); }});
+    if (planSelect) planSelect.addEventListener('change', function(){ state.planId = parseInt(this.value, 10); render(); });
+    optSelects.forEach(function(sel){
+      sel.addEventListener('change', function(){
+        var vals = Array.from(optSelects).map(function(s){ return s.value; });
+        var v = findVariantByOptions(vals);
+        if (v) { state.variantId = v.id; render(); }
+      });
+    });
+
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      atc.disabled = true;
+      var formData = new FormData(form);
+      // Strip selling_plan if empty so Shopify treats as one-time
+      if (!formData.get('selling_plan')) formData.delete('selling_plan');
+      formData.append('sections', 'cart-drawer,cart-icon');
+      fetch(window.Theme && window.Theme.routes ? window.Theme.routes.cart_add_url : '/cart/add.js', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: formData
+      }).then(function(r){ return r.json(); }).then(function(res){
+        atc.disabled = false;
+        if (res.status && res.status >= 400) {
+          document.dispatchEvent(new CustomEvent('cart:error', { detail: res }));
+          return;
+        }
+        return fetch('/cart.js').then(function(r){ return r.json(); }).then(function(cart){
+          document.dispatchEvent(new CustomEvent('cart:update', { detail: { resource: cart, sourceId: 'gb-product' } }));
+        });
+      }).catch(function(err){
+        atc.disabled = false;
+        console.error('gb-product atc', err);
+      });
+    });
+
+    render();
+  })();
+</script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Gumi Product",
+  "settings": [
+    { "type": "product", "id": "product", "label": "Product (leave empty on product page — uses current product)" },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "options": [
+        { "value": "page", "label": "PDP (full page)" },
+        { "value": "featured", "label": "Featured (embedded)" }
+      ],
+      "default": "page"
+    },
+    { "type": "text", "id": "rating_text", "label": "Rating text", "default": "123,456+ happy customers" },
+    { "type": "textarea", "id": "lead", "label": "Lead", "default": "60+ potent ingredients to revive whole body vitality in one great tasting gummy." },
+    { "type": "text", "id": "cta_label", "label": "ATC label", "default": "Start Now" },
+    { "type": "checkbox", "id": "show_nl_button", "label": "Show 'View Nutritional Label' button", "default": true },
+    { "type": "richtext", "id": "guarantee_note", "label": "Guarantee note", "default": "<p><strong>Less than 1%</strong> of customers use our money back guarantee.</p>" },
+    { "type": "text", "id": "taste_title", "label": "Tastes-like heading", "default": "Tastes Like" },
+    { "type": "text", "id": "packed_title", "label": "Packed-with heading", "default": "Packed With" },
+    { "type": "checkbox", "id": "show_scallop", "label": "Trailing scallop", "default": true }
+  ],
+  "blocks": [
+    {
+      "type": "feature",
+      "name": "Feature",
+      "settings": [
+        { "type": "text", "id": "label", "label": "Label", "default": "Promotes energy and focus" }
+      ]
+    },
+    {
+      "type": "guarantee",
+      "name": "Guarantee",
+      "settings": [
+        { "type": "text", "id": "label", "label": "Label (use newline for wrap)", "default": "30 Day\nMoney Back Guarantee" }
+      ]
+    },
+    {
+      "type": "accordion",
+      "name": "Accordion row",
+      "settings": [
+        { "type": "text", "id": "title", "label": "Title", "default": "Why Gumi" },
+        { "type": "richtext", "id": "body", "label": "Body", "default": "<p>Body copy…</p>" },
+        { "type": "image_picker", "id": "image", "label": "Image (optional)" }
+      ]
+    },
+    {
+      "type": "taste",
+      "name": "Taste item",
+      "settings": [
+        { "type": "text", "id": "label", "label": "Label", "default": "Heading" }
+      ]
+    },
+    {
+      "type": "packed",
+      "name": "Packed-with item",
+      "settings": [
+        { "type": "text", "id": "label", "label": "Label", "default": "Vitamins & Minerals" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gumi Product (PDP)",
+      "settings": { "layout": "page" },
+      "blocks": [
+        { "type": "feature", "settings": { "label": "Promotes energy and focus" } },
+        { "type": "feature", "settings": { "label": "Promotes gut and digestive health" } },
+        { "type": "feature", "settings": { "label": "Promotes immunity and resilience" } },
+        { "type": "feature", "settings": { "label": "Promotes skin, hair and nail health" } },
+        { "type": "guarantee", "settings": { "label": "30 Day <br>Money Back Guarantee" } },
+        { "type": "guarantee", "settings": { "label": "Aussie Based Support Team" } },
+        { "type": "guarantee", "settings": { "label": "Batch Tested Quality" } },
+        { "type": "accordion", "settings": { "title": "Why Gumi" } },
+        { "type": "accordion", "settings": { "title": "Ingredients & Allergies" } },
+        { "type": "accordion", "settings": { "title": "Science" } },
+        { "type": "accordion", "settings": { "title": "Directions" } },
+        { "type": "accordion", "settings": { "title": "Benefits" } },
+        { "type": "taste" }, { "type": "taste" }, { "type": "taste" },
+        { "type": "packed", "settings": { "label": "Vitamins & Minerals" } },
+        { "type": "packed", "settings": { "label": "Adaptogens & Herbs" } },
+        { "type": "packed", "settings": { "label": "Prebiotics" } },
+        { "type": "packed", "settings": { "label": "Antioxidants" } },
+        { "type": "packed", "settings": { "label": "Whole Food Fruit & Veg Blend" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

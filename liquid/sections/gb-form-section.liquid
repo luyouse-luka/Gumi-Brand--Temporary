@@ -1,0 +1,104 @@
+{%- liquid
+  assign s = section.settings
+  assign is_contact = false
+  if s.form_type == 'contact'
+    assign is_contact = true
+  endif
+  assign is_referral = false
+  if s.form_type == 'referral'
+    assign is_referral = true
+  endif
+-%}
+<section class="gb-form-section">
+  <div class="gb-form-section__inner">
+    {%- form 'contact', class: 'gb-form wowo fadeInUp', data-prefill-enquiry: is_contact -%}
+      {%- if form.posted_successfully? -%}
+        <p class="gb-form__success">{{ s.success_message | default: 'Thanks — we got it.' | escape }}</p>
+      {%- endif -%}
+      {%- if form.errors -%}
+        <div class="gb-form__errors">
+          {%- for field in form.errors -%}
+            <p>{{ form.errors.messages[field] }}</p>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+      <div class="gb-form__fields">
+        <div class="gb-field">
+          <label class="gb-field__label" for="first-name-{{ section.id }}">First name</label>
+          <input class="gb-field__input" type="text" id="first-name-{{ section.id }}" name="contact[first-name]" placeholder="First Name">
+        </div>
+        <div class="gb-field">
+          <label class="gb-field__label" for="last-name-{{ section.id }}">Last name</label>
+          <input class="gb-field__input" type="text" id="last-name-{{ section.id }}" name="contact[last-name]" placeholder="Last name">
+        </div>
+        <div class="gb-field">
+          <label class="gb-field__label" for="email-{{ section.id }}">Email</label>
+          <input class="gb-field__input" type="email" id="email-{{ section.id }}" name="contact[email]" placeholder="you@company.com" required>
+        </div>
+        <div class="gb-field">
+          <label class="gb-field__label" for="phone-{{ section.id }}">Phone number</label>
+          <div class="gb-field__phone">
+            <select aria-label="Country code" name="contact[country]" data-select="bare">
+              <option value="AU">AU</option>
+            </select>
+            <input type="tel" id="phone-{{ section.id }}" name="contact[phone]" placeholder="+61 400 000 000">
+          </div>
+        </div>
+        {%- if is_contact -%}
+          <div class="gb-field">
+            <label class="gb-field__label" for="enquiry-{{ section.id }}">Enquiry Type*</label>
+            <select class="gb-field__input gb-field__input--select" id="enquiry-{{ section.id }}" name="contact[enquiry]" required data-select>
+              <option value="contact">Contact Us</option>
+              <option value="partners">Partners &amp; Influencers</option>
+              <option value="press">Press Inquiries</option>
+              <option value="careers">Careers</option>
+            </select>
+          </div>
+          <div class="gb-field">
+            <label class="gb-field__label" for="message-{{ section.id }}">Message</label>
+            <textarea class="gb-field__input gb-field__input--area" id="message-{{ section.id }}" name="contact[body]"></textarea>
+          </div>
+          <label class="gb-form__check">
+            <input type="checkbox" name="contact[consent]" required>
+            <span>You agree to our friendly {% if shop.privacy_policy %}<a href="{{ shop.privacy_policy.url }}">privacy policy</a>{% else %}<a href="/pages/privacy-policy">privacy policy</a>{% endif %}</span>
+          </label>
+        {%- endif -%}
+      </div>
+      <button class="gb-btn gb-form__submit" type="submit">{{ s.submit_label | default: 'Send Message' | escape }}</button>
+      {%- if is_referral -%}
+        {%- if s.note != blank -%}
+          <p class="gb-form__note">{%- render 'gb-rich-inline', html: s.note -%}</p>
+        {%- endif -%}
+        {%- if s.disclaimer != blank -%}
+          <p class="gb-form__disclaimer">{{ s.disclaimer | escape }}</p>
+        {%- endif -%}
+      {%- endif -%}
+    {%- endform -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Gumi Form",
+  "settings": [
+    {
+      "type": "select",
+      "id": "form_type",
+      "label": "Form type",
+      "options": [
+        { "value": "contact", "label": "Contact" },
+        { "value": "referral", "label": "Referral" }
+      ],
+      "default": "contact"
+    },
+    { "type": "text", "id": "submit_label", "label": "Submit button label", "default": "Send Message" },
+    { "type": "text", "id": "success_message", "label": "Success message", "default": "Thanks — we got it." },
+    { "type": "header", "content": "Referral only" },
+    { "type": "richtext", "id": "note", "label": "Note under submit (e.g. sign-in link)" },
+    { "type": "textarea", "id": "disclaimer", "label": "Disclaimer text" }
+  ],
+  "presets": [
+    { "name": "Gumi Form" }
+  ]
+}
+{% endschema %}

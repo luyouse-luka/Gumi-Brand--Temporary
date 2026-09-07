@@ -1,0 +1,136 @@
+{%- doc -%}
+  Subscription UI (Subscribe & Save vs One Time Purchase) reading
+  product.selling_plan_groups (populated by Appstle).
+
+  Params:
+    product          — required
+    selected_variant — required (initial variant for SSR)
+    input_name_prefix — optional, default '' (empty = no prefix; used for scoping when multiple gb-sub instances on one page — cart line items etc.)
+
+  Renders no <form> — parent must wrap in one and include hidden variant id.
+{%- enddoc -%}
+{%- liquid
+  assign variant = selected_variant | default: product.selected_or_first_available_variant
+  assign prefix = input_name_prefix | default: ''
+  assign radio_name = 'gb-sub-plan'
+  if prefix != ''
+    assign radio_name = radio_name | append: '-' | append: prefix
+  endif
+
+  assign plans = ''
+  for group in product.selling_plan_groups
+    for plan in group.selling_plans
+      assign pct = 0
+      for adj in plan.price_adjustments
+        if adj.value_type == 'percentage'
+          assign pct = adj.value
+        endif
+      endfor
+      assign plans = plans | append: '|' | append: plan.id | append: ':' | append: plan.name | append: ':' | append: pct
+    endfor
+  endfor
+  assign has_plans = false
+  if plans != ''
+    assign has_plans = true
+  endif
+  assign plans_list = plans | remove_first: '|' | split: '|'
+
+  assign pack_count = variant.title | split: ' ' | first | plus: 0
+  if pack_count == 0
+    assign pack_count = 28
+  endif
+
+  assign first_plan_id = ''
+  assign first_plan_pct = 0
+  if has_plans
+    assign first_row = plans_list.first | split: ':'
+    assign first_plan_id = first_row[0]
+    assign first_plan_pct = first_row[2] | plus: 0
+  endif
+
+  assign _remainder_pct = 100 | minus: first_plan_pct
+  assign sub_price_cents = variant.price | times: _remainder_pct | divided_by: 100
+  assign one_price_cents = variant.price
+  assign was_cents = variant.compare_at_price | default: variant.price
+
+  assign banner_off = 0
+  if was_cents > 0
+    assign _diff = was_cents | minus: sub_price_cents
+    assign banner_off = _diff | times: 100 | divided_by: was_cents
+  endif
+-%}
+<div class="gb-sub" data-sub
+     data-variant-id="{{ variant.id }}"
+     data-variant-price="{{ variant.price }}"
+     data-variant-compare="{{ variant.compare_at_price | default: 0 }}"
+     data-variant-packs="{{ pack_count }}"
+     data-current-plan="{{ first_plan_id }}">
+  <p class="gb-sub__heading">Autoship and Save</p>
+
+  <div class="gb-sub__plans">
+    <div class="gb-sub__plan gb-sub__plan--sub" data-sub-plan="subscribe">
+      <p class="gb-sub__banner" data-gb-banner>MOST POPULAR: get <span data-gb-banner-off>{{ banner_off }}</span>% off</p>
+
+      <div class="gb-sub__panel">
+        <label class="gb-sub__pick">
+          <input class="gb-sub__radio" type="radio" name="{{ radio_name }}" value="subscribe" checked>
+          <span class="gb-sub__info">
+            <span class="gb-sub__line">
+              <span class="gb-sub__name">Subscribe &amp; Save</span>
+              <span class="gb-sub__price">
+                <span class="gb-sub__price-now" data-gb-sub-now>{{ sub_price_cents | money }}</span>
+                {%- if was_cents > 0 and was_cents > sub_price_cents -%}
+                  <span class="gb-sub__price-was" data-gb-sub-was>{{ was_cents | money }}</span>
+                {%- endif -%}
+              </span>
+            </span>
+            <span class="gb-sub__line gb-sub__line--meta">
+              <span class="gb-sub__packs" data-gb-packs>{{ pack_count }} Packs delivered once</span>
+              <span class="gb-sub__rate" data-gb-sub-rate></span>
+            </span>
+          </span>
+        </label>
+
+        <div class="gb-sub__works">
+          <p class="gb-sub__works-title">How subscription works:</p>
+          <ul class="gb-sub__points">
+            <li class="gb-sub__point"><svg class="gb-sub__tick" aria-hidden="true" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.6673 5.4165L7.50065 14.5832L3.33398 10.4165" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Locked in pricing, every delivery.</span></li>
+            <li class="gb-sub__point"><svg class="gb-sub__tick" aria-hidden="true" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.6673 5.4165L7.50065 14.5832L3.33398 10.4165" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Skip, pause or cancel any time.</span></li>
+            <li class="gb-sub__point"><svg class="gb-sub__tick" aria-hidden="true" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.6673 5.4165L7.50065 14.5832L3.33398 10.4165" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Delivered before you run out.</span></li>
+          </ul>
+        </div>
+
+        {%- if has_plans -%}
+          <div class="gb-sub__every">
+            <p class="gb-sub__every-label">Delivers every:</p>
+            <select class="gb-sub__select" data-select data-gb-plan-select aria-label="Delivery interval">
+              {%- for row in plans_list -%}
+                {%- assign parts = row | split: ':' -%}
+                <option value="{{ parts[0] }}" data-pct="{{ parts[2] }}"{% if forloop.first %} selected{% endif %}>{{ parts[1] }}</option>
+              {%- endfor -%}
+            </select>
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+
+    <label class="gb-sub__plan gb-sub__plan--once" data-sub-plan="once">
+      <input class="gb-sub__radio" type="radio" name="{{ radio_name }}" value="once">
+      <span class="gb-sub__info">
+        <span class="gb-sub__line">
+          <span class="gb-sub__name">One Time Purchase</span>
+          <span class="gb-sub__price">
+            <span class="gb-sub__price-now" data-gb-one-now>{{ one_price_cents | money }}</span>
+            {%- if was_cents > 0 and was_cents > one_price_cents -%}
+              <span class="gb-sub__price-was" data-gb-one-was>{{ was_cents | money }}</span>
+            {%- endif -%}
+          </span>
+        </span>
+        <span class="gb-sub__line gb-sub__line--meta">
+          <span class="gb-sub__packs" data-gb-packs>{{ pack_count }} Packs delivered once</span>
+          <span class="gb-sub__rate" data-gb-one-rate></span>
+        </span>
+      </span>
+    </label>
+  </div>
+</div>

@@ -3751,3 +3751,4098 @@ CSS/JS。三条链接带上当前的 `?v=20260831-r58`，下次升版时会跟�
   这是所有多字母字标做 favicon 的通病。**要不要改成只取一个 `G`？** 那样 16px 下认得出，
   但不再是完整字标。
 - **AX**（手机端 `lip--h` 要不要跟着变浅）与 **AT**（768–1280 的弹窗形态）仍待回复。
+
+---
+
+## 第五十八轮（2026-09-01）— 购物车抽屉
+
+需求（对话，任务文档未换版，md5 仍 `2d70c334…`）：**把 cart 对照设计做出来。**
+`$build` → `20260901-r59`。
+
+### 先纠正了前提：这四个 frame 不是页面，是抽屉
+
+`341:42573` / `336:36516`（有货）+ `341:42749` / `336:34942`（空车）四个 frame，
+之前 57 轮从没动过。桌面那两个是 **1440×768 的画布上放一层 `rgba(0,0,0,.5)` 遮罩
+加一个 391 宽的右侧面板**，不是 1440 宽的页面内容。手机那两个顶部 96 高的
+`chrome-browser`（`gumi.com.au` + 一张截图）和末尾 78 高的 home indicator 是
+**mockup 假舞台**，按 [[figma-modal-mockup-includes-fake-staging]] 不做。
+
+三项由需求方当场拍板：**① 做成全站 drawer 挂 header 购物车图标**（不新建页面）；
+**② 两个状态都做**；**③ 视觉壳 + 开关抽屉**，购物车数据归 Shopify。
+
+### 没写一行新 JS：`modal` 模块本来就是通用的
+
+`modal` 是事件委托 + `data-modal="id"`，滚动锁补偿、focus trap、Esc、Lenis 暂停全都现成。
+header 那个 `aria-label="Cart"` 的 `<a>` 加一个 `data-modal="gb-cart"` 就接上了。
+**唯一必须记得的是给根元素写 `--modal-exit`** —— 漏了会退回立即解锁，
+panel 在滑出途中横跳一个滚动条宽（第四十九轮修过的那个）。本轮值取 `$t-drawer`。
+
+⚠ **滑入不是淡入**：稿画的是侧滑，且它与手机菜单同族（`$t-drawer` 0.7s + `$ease-drawer`）。
+第二十八轮「全站弹窗改纯淡入淡出」针对的是**居中弹窗**，不含侧边抽屉。**这条是我定的，
+需求方只说了「可以」**，要推翻随时说 → 待决 BC。
+
+### 空态的两张卡直接复用 `.gb-nav-card`
+
+稿里空态那两张 169×169 的卡（Shop Gumi / Refer a Friend）与 header 导航卡**是同一个组件**，
+而 `.gb-nav-card` 的 `narrow` 档逐值就是稿上的样子（169 / pad 16 / r8 / 12·18·−0.24 / action 32）。
+所以没有重造，只在 cart 作用域里把它锁到那一档 —— 面板恒 391 宽，视口在桌面档时
+卡片不能跟着长到 193。
+
+⚠ **`.gb-nav-card__art` 有一道门**：它 `display:none` 直到 `.gb-header.is-open`，
+这一对（加 `loading="lazy"`）才是把 312KB 小熊挡在网络之外的东西。cart 是这张卡的
+**第二个宿主**，得有自己的门：`.gb-cart.is-open .gb-nav-card__art { display: block }`。
+漏了这条，空态两张卡永远是空的底色。
+
+### 稿自身的三处，没有照做
+
+- **桌面稿有两个 total 块**：一个在流里（被面板 768 高裁掉，看不见），一个
+  `position:absolute at 0,648`（648+120=768，钉底）。手机稿只有一个 —— 它的面板是
+  hug 到 1100，`48+48+602+278+120+4×1` 正好。**实现成一个 sticky 底栏**。
+- **`totals` 的 344 与 bar 的 343**：两个块的父级都是 auto-layout（可用 351），
+  子块却是 fixed 宽，而且**两个值还不一样**。判定是手拖的残留不是设计语言，
+  按 fill 351 做 —— 否则 Subtotal 的 `$60` 和 Total 的 `$45` 会互相错开 1px。→ 待决 BA
+- **产品缩略图 56×56 与礼物图 47×47 在稿里是 `#D9D9D9` 实心占位**。
+  按铁律 3 保留占位色块，没拿 `product-pack.png` 顶上去。→ 待决 AZ
+
+### 过程中揪出来的三个真问题
+
+1. **全局 `p{letter-spacing:-0.32px}` 漏进了六个 `<p>`**（ship / sum / grand-row /
+   pay-note / bar-total / empty-title）。稿上这些文本一个都没有字距。
+   六处显式补 `letter-spacing: normal`。
+2. **Figma 的描边是 `strokeAlign: INSIDE`** —— 稿上的 184（item）/ 102×40（步进器）/
+   114（礼物卡）**已经含了那 1px**，而 CSS 的 border 在 padding 盒之外。
+   三处把 padding 各减 1（`23px 0 24px` / `9px 11px` / `15px`），几何才逐位对上。
+   步进器的 count 因此是 `min-width: 30px`（2 border + 22 pad + 32 icon + 16 gap = 72，102−72）。
+3. **`.gb-cart__body` / `__empty` 没登记进 `smoothScroll.PREVENT`** ——
+   `rwd.py` 11 页 × 14 档全红「滚轮黑洞」。Lenis 会把滚轮全吃掉，抽屉内容根本滚不动。
+   `main.js` 里那份清单的注释写着 REGISTER EVERY NEW overflow-y:auto CONTAINER，
+   就地补上，这是本轮唯一动过的 JS。
+
+### 判据自己的两个空洞（都补上了）
+
+- **`backgroundColor` 是恒真的量**：遮罩的 `rgba(0,0,0,.5)` 无论 opacity 是 0 还是 1
+  都读得到。截图复看时才发现这条什么都没验。改成**读实际画出来的像素**：
+  打开前 `(26,26,26)` → 打开后 `(13,13,13)`，正好是 50% 叠加。
+- **`scrolllock.py` 的采样盲区**：它的文档假设「闲置覆盖层靠 `checkVisibility()` 自动排除」，
+  但**手机抽屉是用 `translateX(-100%)` 停在画外的**，`checkVisibility()` 仍为 true。
+  以前 8 个用例里它要么是被测的 overlay 本身、要么在桌面档 `display:none`，一直没露出来；
+  本轮加的 `get-in-touch@700` 第一次让它和另一个覆盖层同框，报了 53 处「移位」。
+  那是 HANDOFF 2b 明确豁免的行为（fixed 盒子的包含块是视口）且在画外没人看得见 ——
+  判据改成**只判视口内的元素**。
+
+### 验证
+
+- **`tools/r60check.py` 242 条全过**，八节：挂载（11 页 + font-check 反证）/
+  出处（内联图标的 `d` 与导出件逐字节相同，5 个支付图标整文件逐字节相同，先断言源文件只有一条 path
+  否则计数恒真）/ 几何 / 排版与颜色 / 文案 / 行为 / 空态 / 响应式八档
+- **双向判据 `tools/_reverse_r60.py`**：抽掉 drawer + scss 分区 + 三个色值 →
+  `r60check` **25 ok / 226 红**；恢复后 `customstyle.css` md5 与反向前**一致**（`df7a0c69…`）
+- **`scrolllock.py` 加了 3 个 cart 用例**，44 条 / 11 用例全过。
+  **活性自检**：把 `html.is-modal-open` 的 `padding-right` 打掉 → **11 个用例全红**
+  （cart 三个各报 281 / 185 / 146 处移位），还原后回到 44/0
+- **`rwd.py` 11 页 × 14 档全绿**（本轮动过 11 页 HTML 结构，按规矩必跑）
+- **回归**：`r31` / `r32` / `r36` / `r39` / `r40` / `r41` / `r42` / `r43` / `r44` /
+  `r45` / `r48` / `r50` / `r52` / `r53` / `r55` / `r56` / `r57` 全过。
+  `r19check` 8 条、`r20check` 1 条仍红 —— **是既往遗留**，本文第 662 行记过，与本轮无关
+- **对稿**：四个状态各截一张与 Figma 截图逐块比对，含空态小熊的裁切位置、
+  礼物卡被 sticky 底栏裁掉的位置
+- 两次编译 md5 一致（`df7a0c69…`）
+
+**没跑**：第五十五轮欠的那批（`r53check` 本轮跑了，其余 `revealcheck` / `hardbreaks` /
+`platecheck` / `seamcheck` / `font-check.html` / 全站矩形波及比对）—— **需求方明确说先不做**。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   新增 Cart drawer 分区（Modals 与 Motion 之间）+ 三个色值
+                             （$c-blue / $c-gray-400 / $c-gray-150）；$build → 20260901-r59
+改  assets/customstyle.css    编译产物
+改  assets/main.js            smoothScroll.PREVENT 补 .gb-cart__body, .gb-cart__empty（唯一一处）
+改  11 个交付页               header cart 链接加 data-modal；</body> 前插 drawer 标记
+改  全部 12 页                ?v= / EXPECT_BUILD → 20260901-r59
+新  images/pay-{visa,mastercard,applepay,amex,paypal}.svg   与导出件逐字节相同
+新  tools/r60check.py         本轮判据（242 条）
+新  tools/_apply_r60_html.py  挂载脚本（幂等，图标 path 运行时从 figma 源读）
+新  tools/_reverse_r60.py     反向套回 + --restore
+改  tools/scrolllock.py       加 3 个 cart 用例；采样排除画外元素
+```
+
+### 待裁决
+
+- **AZ. 产品缩略图与礼物图是稿里的 `#D9D9D9` 占位** —— 现在照样是灰块。
+  要用 `product-pack.png` 吗？礼物那张 47×47 站上没有对应素材。
+- **BA. `totals` 的 344 / bar 的 343 我按 fill 351 做了** —— 两个值不一致，判定是手拖残留。
+  要按稿钉死就说一声。
+- **BB. 空态的 Secure Checkout 只有视觉禁用**（`pointer-events:none`），没有 `aria-disabled` ——
+  静态站里状态是手改属性，没有 JS 同步；真实状态以后由 Shopify 给。
+- **BC. 抽屉用滑入不是淡入** —— 见上文，这条是我定的。
+- 仍开着：A–F / J–L / N–Q / T–Y / AA / AC / AD / AG / AH / AI / AJ / AK–AP / AT / AX / AY。
+
+---
+
+## 第五十九轮（2026-09-01）— 弹窗改双栏 + 购物车下拉与五处取值
+
+需求（对话，任务文档未换版，md5 仍 `2d70c334…`）五条：
+**① `.gb-promo-panel` 767 以上一直用 row；② `.gb-cart-item__interval` 点击出下拉；
+③ `__remove` 18×20；④ `__price` gap 6；⑤ `__gift-body` gap 10；⑥ `__lines` 手机端 padding 26/20。**
+`$build` → `20260901-r60`。
+
+### ① 这条就是待决 AT 的答案，AT 关闭
+
+AT 问的是「768–1280 这一档的弹窗想要什么形态」。旧答案是**手机板 390×744 的居中卡片**
+（好处是每个数都停在自己的板宽上，零自造）；AT 里也写明了另一条路的代价：
+「1062 = 531 + 531 在 720 的可用宽里必须缩栏，而熊的偏移是解在 531 上的 px，
+缩栏就被 `overflow: hidden` 切掉 —— 那才是自造数值」。**需求方选了另一条路。**
+
+**做法是缩放，不是重排** —— 于是那个代价不成立：
+
+```scss
+--pp-k: calc(min(1062px, 100vw - 48px) / 1062px);   // 1 at >=1110
+@include panel-wide { ... width: 1062px; height: 528px; zoom: var(--pp-k); }
+```
+
+`zoom` 而不是 `transform`：transform 会把原尺寸的盒子留在布局里，居中就废了。
+`@include pc` 的 9 个块整体改成 `@include panel-wide`（`min-width: 768`），
+**块里一个数都没动** —— 531 / -86.84 / 624.54 / 126 / 764 / 63 / 106.36 / 403 / 40
+全是板值，由 --pp-k 统一缩。768 处整张卡是 720×358、两栏各 360；1110 起回到 1062×528。
+自造的只有 --pp-k 这一个式子，48 是 wrap 自己的两个 24 gutter。
+
+⚠ 顺带清掉两处死代码：`@include tablet { --sc-w: 144.64px }`（那一档不再画手机波浪）
+和 panel 的 390×744 块。
+
+### ② 下拉复用 `selectBox`，加第三个变体
+
+interval 从 `<button>` 换成真的 `<select data-select="inline">`，模块照旧在它上面画控件 ——
+**没有为 cart 写第二套下拉**。模块的三元判断改成变体名驱动：
+
+```js
+var variant = native.getAttribute("data-select") || "";     // "" | "bare" | "inline"
+var boxless = variant === "bare" || variant === "inline";
+```
+
+⚠ 箭头的 `stroke` 由写死的 `#4d4d4d` 改成 `currentColor` —— 既有两个触发器的 color
+本来就是 `$c-gray-700`（`.gb-field__input` 与 `--bare` 都是），**实测改后仍是
+`rgb(77,77,77)`，等价**；cart 这个要跟着自己的蓝。
+板上 cart 的 16 chevron 与模块的 20 chevron **是同一个 vee**（都在视口的一半上，
+相对描边也一致），所以直接用模块的、CSS 设 16 ——`desktop-cart-icon-6` 不再内联。
+
+**列表放不下就往上开**（新能力，对三个变体都生效）：
+
+```js
+if (this.wouldOverflow(box)) { box.wrap.classList.add("is-up"); }
+```
+
+两个坑都是实测抓出来的：
+
+- **判断不能读 list 自己的 rect** —— 入场的 4px 位移正在跑，`getBoundingClientRect()`
+  拿到的是过渡的起始值，差的那点正好让 640 高的视口漏判（实测溢出 2px 却没翻）。
+  改成 `wrap.top + computed(top) + offsetHeight`，三个量都不受 transform 影响。
+- **判断要放在 `move()` 之后** —— `move()` 里的 `scrollIntoView` 会滚动祖先，
+  把先前测好的位置挪走。
+- 镜像偏移一开始写成 12，**是我算错了**（以为触发器上下不对称）。`.gb-field__input`
+  上下 padding 都是 10，所以向上也是 10 + 4 = **14**；改后两页实测都是离字段边缘正好 4。
+
+⚠ 这个翻转**改变了既有控件的行为**：`get-in-touch` / `referral` 的国家码字段在页面靠底，
+实测向下展开会到 909 而视口只有 900 —— 以前有 9px 在视口外，现在往上开。
+`r57check` 那条「离框底 4」改成「离框边 4，向下或向上」。
+
+### ③–⑥ 四处取值，全部推翻板值
+
+| 位置 | 板 | 客户 |
+|---|---|---|
+| `.gb-cart-item__remove` | 16×20 | **18×20** |
+| `.gb-cart-item__price` gap | 4 | **6** |
+| `.gb-cart__gift-body` gap | 8 | **10** |
+| `.gb-cart__lines` padding（≤767） | 24/20 | **26/20** |
+
+四处都在注释里标了 `client r59, board says N`，`r60check` 的对应断言就地改掉并注明。
+
+### 验证
+
+- **`tools/r61check.py` 151 条全过**：promo 面板 11 档（方向 / zoom / 盒子 / 两栏 /
+  塞得进 gutter / 竖缝 / 手机波浪开关）、下拉（结构 / 5 个选项 / 默认选中 / ARIA /
+  lenis-prevent / 排版 / 箭头 / 选中写回 native / 键盘 / Esc 不关抽屉）、
+  六档视口高的翻转（**每档都断言上下都没被裁**）、既有两个控件未受影响、手机端 padding
+- **双向判据 `tools/_reverse_r61.py`**（scss + js + 11 页三处一起套回）：
+  `r61check` **60 ok / 91 红**；恢复后 `customstyle.css` md5 与反向前**一致**（`75bc87d8…`）
+- **回归全过**：`r31` / `r32` / `r36` / `r39` / `r40` / `r41` / `r42` / `r43` / `r44` /
+  `r45` / `r48` / `r50` / `r52` / `r53` / `r55` / `r58` / `r59` / `r60`（240 条）；
+  `rwd.py` 11 页 × 14 档全绿；`scrolllock` 44 条 / 11 用例全过
+- 两次编译 md5 一致（`c396aa43…`）
+
+**本轮推翻的旧断言**（都是需求的直接结果，不是修 bug）：
+
+- `r56check` **21 条** —— 「768–1280 是手机板 390×744 的堆叠卡」整段改写成
+  「缩放的双栏」；波浪那段从 5 档收到 ≤575（`--sc-w` 是视口斜坡，767 处本来就爬到 161，
+  改前也一样，是我加测试宽度时加错了档）；1024×600 那条从「被 gutter 削顶」
+  改成「485 高，本来就塞得下」
+- `r57check` **2 条** —— 翻转（见上）+ 「两个独立控件」收紧到表单内
+  （这页现在也挂着 cart，它的两个 interval 同样是注册过的 box）
+- `r60check` **6 条** —— 四处取值 + interval 改测画出来的触发器 + chevron 不再内联
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   panel-wide mixin；--pp-k + zoom；9 个 pc 块改 panel-wide；
+                             删两处死代码；.gb-select--inline + is-up；四处取值；
+                             $build → 20260901-r60
+改  assets/customstyle.css    编译产物
+改  assets/main.js            selectBox：变体名驱动 / 箭头 currentColor / wouldOverflow +
+                             clipBottom + show() 里的翻转
+改  11 个交付页               两处 interval 由 <button> 换成 <select data-select="inline">
+改  全部 12 页                ?v= → 20260901-r60
+新  tools/r61check.py         本轮判据（151 条）
+新  tools/_reverse_r61.py     反向套回 + --restore
+改  tools/_apply_r60_html.py  模板出下拉；加 --remount
+改  tools/r56check.py         21 条按新形态改写
+改  tools/r57check.py         2 条（翻转 / 作用域）
+改  tools/r60check.py         6 条按本轮取值改写
+```
+
+### 待裁决
+
+- **BD. 下拉的五个档位里有三个是我编的** —— 稿里全站只出现过 `One Time Purchase`
+  与 `4 Weeks`（PDP 的订阅区也只有单值，且那块归 app）。需求方选择「补成常见订阅档位」，
+  于是有了 `2 Weeks` / `6 Weeks` / `8 Weeks`。**上线前要拿真实档位替换。**
+- ~~**AT**~~ — **本轮关闭**：768 以上一律双栏，缩放而非重排。
+- 仍开着：A–F / J–L / N–Q / T–Y / AA / AC / AD / AG / AH / AI / AJ / AK–AP / AX / AY /
+  AZ / BA / BB / BC。
+
+---
+
+## 第六十轮（2026-09-01）— 空车状态改用 `is-empty` 状态类
+
+需求方要求 `gb-cart` 的空态用 `class="is-empty"` 表达，不再用属性。
+
+### 改了什么
+
+`.gb-cart[data-cart="empty"]` → `.gb-cart.is-empty`，
+`.gb-cart:not([data-cart="empty"])` → `.gb-cart:not(.is-empty)`。
+
+两者都是 0-2-0，层叠权重不变；`is-empty` 与抽屉本来就有的 `is-open` 同为状态类，
+可以叠在一起，命名也一致。全站没有别的地方用过 `is-empty`（改前 grep 过）。
+
+`$build` **不动**，仍是 `20260901-r60`：这个 token 从没被服务过（线上还停在
+`20260831-r58`），r58 → r60 的破缓存已经覆盖本次改动。
+
+### 验证
+
+- **`r60check` 242 条全过**（新增 2 条把钩子名钉死：CSS 里必须有 `.gb-cart.is-empty`、
+  必须**不再**出现 `data-cart`）
+- **活性自检**：把判据里注入的钩子换回已废弃的 `data-cart="empty"`，
+  空态相关 **12 条当场转红**（禁用底色 / 字色 / 描边 / 不可点 / shop 按钮 44 高与 fill /
+  卡片 169 高 / 卡片 action 32），说明这些断言真的挂在这个钩子上，不是空转
+- **回归全过**：`r56`（149）/ `r57`（93）/ `r58`（44）/ `r59`（96）/ `r61`（151）；
+  `rwd.py` 11 页 × 14 档全绿；`scrolllock` 44 条 / 11 用例全过
+- 两次编译 md5 一致（`d00f77ce…`）
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   两条选择器 + 两处注释
+改  assets/customstyle.css    编译产物
+改  tools/r60check.py         注入改 classList.add；新增 2 条钩子名断言
+改  docs/HANDOFF.md           2 处（不要报成 bug 的清单 1b、第八节用法说明）
+改  docs/PROJECT-STATUS.md    1 处（待决 BB 的描述）
+```
+
+无新增待决。
+
+---
+
+## 第六十一轮（2026-09-03）— CSS 写死的图片移进 `assets/`
+
+需求方指出 `.gb-bear-meter__bear` 的图片路径不对：CSS 里写死引用的图片应该在
+官方 `assets/` 目录。
+
+### 为什么这是真 bug（不只是整洁问题）
+
+`assets/customstyle.scss` 里除字体外只有一处非 `data:` 的 `url()`：
+
+```scss
+background: url("../images/bear-icon.png") center / contain no-repeat;
+```
+
+样式表在 `assets/`，`../images/` 指到顶层 `images/` —— 在 `file://` 双击预览、
+在静态主机上都解析得到，所以一直没暴露。但 Shopify 把 `assets/` **扁平地**从 CDN
+服务出去（`cdn.shopify.com/s/files/…/t/1/assets/customstyle.css`），
+那里根本没有 `images/` 兄弟目录可以 `../` 上去 —— **主题一上线就 404，而且是静默的**：
+背景图空掉，控制台之外没有任何提示，500 个小熊（首页 3 组 + science 页 3 组各 100）
+一起消失。
+
+同一份文件里 14 处字体早就是裸文件名（第十五轮合并时改的，文件头注释也写了
+「url()s are bare filenames — assets/ is flat and has no subdirectories」），
+`bear-icon` 是唯一漏网的一处 —— 第十五轮那次只把它从 `../../images/` 改成 `../images/`，
+少改了一层。
+
+`<img src="images/…">` 那 21 处**不受影响**，没动：主题化时它们走 Liquid filter 改写。
+
+### 改了什么
+
+```scss
+// Bare filename like the fonts above: assets/ is flat, and on Shopify the css
+// is served from the CDN's assets/ with no images/ sibling to walk up into.
+background: url("bear-icon.png?v=#{$build}") center / contain no-repeat;
+background: image-set(url("bear-icon.webp?v=#{$build}") type("image/webp"),
+                      url("bear-icon.png?v=#{$build}")  type("image/png"))
+            center / contain no-repeat;
+```
+
+`git mv images/bear-icon.{png,webp} assets/`，并跟字体一样带上 `?v=#{$build}` 破缓存。
+
+`$build` **不动**，仍是 `20260901-r60` —— 与第六十轮同理：这个 token 从没被服务过
+（线上停在 `20260831-r58`），r58 → r60 的破缓存已经覆盖本次改动；何况图片换了 URL，
+本来就不存在旧缓存。
+
+### 验证
+
+- **产物 diff 恰好 2 行**（3 处 url），无一行是别的内容
+- **浏览器实测**：index / science 两页各 300 个 `.gb-bear-meter__bear`，
+  computed `background-image` 解析到 `assets/bear-icon.webp|png`，
+  用 `new Image()` 回读**两个文件都是 27×44 真加载成功**，`requestfailed` 为空
+- **活性自检**：把两个文件临时挪走，同一探针 4 条全部转红
+  （`0x0` + `net::ERR_FILE_NOT_FOUND`），证明判据挂在文件上不是空转
+- **新判据 `tools/assetpath.py`**：扫 scss 与产物 css 的每一条 `url()`，
+  断言是裸文件名且文件真在 `assets/` 里（`data:` 跳过 —— 三个 mask 是故意内联的）。
+  scss 16 条 / css 14 条全绿（差的 2 条是注释掉的 Plus Jakarta `@font-face`）。
+  活性自检：注入一条 `url("../images/…")` 当场报红，撤回后回绿
+- `python3 tools/webp.py --check` 15 个图全绿，`bear-icon.png` 在新位置照样被找到
+
+### 文件清单
+
+```
+移  images/bear-icon.png  → assets/bear-icon.png     git mv，内容未动
+移  images/bear-icon.webp → assets/bear-icon.webp    git mv，内容未动
+改  assets/customstyle.scss   3 处 url + 2 行注释
+改  assets/customstyle.css    编译产物（diff 2 行）
+改  tools/webp.py             加 DIR 映射，bear-icon 去 assets/ 找
+新  tools/assetpath.py        url() 路径判据（通用，非单轮）
+改  docs/PROJECT-STATUS.md    目录树 + 目录约定补「CSS url() 引用的图片是例外」
+改  docs/HANDOFF.md           架构段计数、第八节新增一条、标题改第六十一轮末
+改  docs/CHANGELOG.md         本条
+```
+
+### 推送（2026-09-03，本轮已推 live）
+
+**这一条修的是线上此刻正在生效的 bug，不是预防性改动。** 拉下 live 主题一看：
+
+```
+线上 assets/customstyle.css   url("../images/bear-icon.png")
+线上 assets/                  没有 bear-icon.png / .webp
+线上主题                      没有也不可能有 images/ 目录
+snippets/gb-head.liquid       <link href="{{ 'customstyle.css' | asset_url }}">
+```
+
+→ 线上 600 个小熊（index 3 组 + science 3 组各 100）**一直是空的**。
+线上模板里图片走 `shopify://shop_images/…`（Shopify Files），唯独 CSS 里 `url()`
+写死的这一个必须进 `assets/` —— 正是本轮修的。
+
+**店铺 / 主题**：`je1ka9-er.myshopify.com`，主题 **`Dev` (#180348977399)，role = live**
+（⚠ 名字叫 Dev 但它就是线上，看角色不看名字）。另有 `Horizon` (#179976765687) unpublished。
+主题基底是 Shopify **Horizon 4.1.5**，已含 5 个 `gb-` section + 21 个 `gb-` block。
+CLI 账号 **john@mockuptocode.com**（原先登录的 johnz0385@gmail.com 对这个店无权限）。
+
+**三方对比**（推送前）：线上 = `20260831-r58`，本地 = r60 + 本轮。
+本地 `assets/` 76 个文件里 48 个与线上不同 —— 但**其中 45 个只是 CRLF vs LF**
+（线上是 `\r\n`），去掉空白后逐字节相同，**一律不推**。
+真内容差异只有 `customstyle.css` / `customstyle.scss` / `main.js` 三个。
+
+**实推 4 个文件**（`--only` 逐个列出 + `--nodelete`）：
+
+```
+assets/customstyle.css     产物
+assets/customstyle.scss    源，双写 —— 不推它，下次谁从线上 scss 编译就把改动抹掉了
+assets/bear-icon.png       新增
+assets/bear-icon.webp      新增
+```
+
+`main.js` **没推**：它的 r58→r60 差异是 cart drawer / selectBox，而线上主题里
+没有 `gb-cart` / `gb-promo-modal` 的 liquid，推上去只是空转，不修任何已知问题。
+同理 `customstyle.css` 里 r59/r60 的 cart / promo 样式在主题里也没有对应 DOM，是空转。
+
+**回读验证**（推完重新 `theme pull` 到 `verify/`）：
+
+- **线上现状 vs 推送前基线的差异恰好是这 4 个**，其余 584 个文件一字未动
+- 4 个文件与本地**逐字节一致**（LF 也保住了，没被转成 CRLF）
+- 线上 css 里现在是 `url("bear-icon.png?v=20260901-r60")`，`../images/` 残留 **0 处**
+- 线上 `assets/bear-icon.png` / `.webp` 确实存在
+
+工作目录 `/home/ly/project/Gumi-Brand-shopify/`（**不在静态站仓库里**，静态站仓库只放交付物）：
+`baseline-pre-r61/` 推送前快照 · `baseline-dev-live/` 推送后的新基线 · `push-work/` 推送用工作副本。
+
+### 顺带发现（未修）
+
+- **Playwright 的 chromium 没了**（`~/.cache/ms-playwright/` 整个目录不存在），
+  `tools/` 下所有判据脚本写死的 `EXE`/`CHROME` 路径全部失效，现在只能用
+  `/snap/bin/chromium`。本轮探针临时改了路径跑通，**但 tools 里的脚本没动** ——
+  要么重装 playwright chromium，要么把 15 个脚本的路径改成带回退。等裁决。
+- `images/` 里另外 41 个文件（`<img src>` 与 favicon）**没动**，主题化时再一并处理。
+
+---
+
+## 第六十二轮（2026-09-03）— reels 接上真视频（`$build` = `20260903-r62`）
+
+需求四条：`gb-reviews__reels` 补上视频与截图；`.gb-reel`／`swiper-slide` 上加一个
+**行内属性**填视频链接或路径，点击时传给弹窗；`.gb-reel__media` 用视频第一帧；
+视频素材随便找一个短的。追加一条：`.gb-rv-panel__video` 改 16:9 并加宽。
+
+### 改之前是什么样
+
+三段占位，一段都没接上：
+
+```
+.gb-reel__media   空 <span>            <!-- TODO client asset: reel poster… -->
+.gb-rv-panel__video 只有一个 play 图标  <!-- TODO client asset: reel video -->
+modal.open(el)    只按 id 开窗，不接受任何来自触发元素的数据
+```
+
+**传参链路整条不存在**，不是接一下的事。
+
+### 素材
+
+`w3schools` 与 Google 的 `gtv-videos-bucket` 两个常用样片源现在都返回 **403**，
+实测可用的是 `test-videos.co.uk`（Big Buck Bunny / Jellyfish / Sintel，各 10s 1MB）
+与 MDN 的 `cc0-videos`（flower / friday）。**五个不同的片子**，不是同一个用五遍 ——
+十张卡若都指向同一个源，「点击传参」这件事就无法证伪，判据会恒真。
+
+下载到 `images/reel-1..5.mp4`（共 4.7MB）而不是写远程链接：刚刚两个源当场挂掉，
+把交付物绑在第三方存活上不合适；属性本身写路径写链接都行，主题化时换成
+Shopify Files 的 URL 即可。
+
+**第一帧**：本机没有 ffmpeg，帧是从 chromium 里取的 —— `<video>` 画进 `<canvas>`
+再读回 JPEG（`tools/_reelposter.py`）。走 http 而不是 `file://`：每个 `file://`
+文档各自一个 origin，会污染 canvas 让 `toDataURL` 抛异常。
+脚本同时算每帧平均亮度，五张 luma 49–130，没有开场黑帧。
+
+### 传参怎么做的
+
+行内属性用 `data-video`（铁律 17：hook 用 `data-*`，不复用样式类）：
+
+```html
+<button class="gb-reel swiper-slide" data-modal="reel-video"
+        data-video="images/reel-3.mp4" …>
+  <span class="gb-reel__media"><img class="gb-reel__media-img" src="images/reel-poster-3.jpg" …></span>
+```
+
+`modal` 侧只加了两个方法与四处接线：`open(el, trigger)` 多收一个触发元素，
+在 `is-open` **之前**调 `playVideo()`（放之后会先淡入一个空画面）；
+`close()` **开头**调 `stopVideo()`（放进 `unlockAfter` 里声音会多响 0.28s 的淡出时间）。
+`stopVideo` 除了 `pause()` 还 `removeAttribute("src") + load()` —— 只 pause 不清源，
+弹窗关掉后那 1MB 还在继续下。
+
+没有 `data-video` 的触发元素照旧显示灰底 + play 图标（`has-video` 类控制），
+所以这套改动对另外两个弹窗（营养标签、cart）完全无感。
+
+卡 6–10 复用卡 1–5 的五个源 —— 它们本来就是「loop 需要超过可见数两倍」而复制出来的，
+不是额外内容。
+
+### 16:9
+
+形状的源头是 `.gb-rv-panel` 的 `aspect-ratio`（不是 `__video`，那层是 100%/100%），
+所以就地改的是它：`304/540` → `16/9`，`width: min(100%, 960px)`。
+高度不再主导 —— 16:9 先撞到左右边，`max-width: calc((100svh - 80px) * 16 / 9)`
+让短视口整体缩小而不是把比例压扁（80 = `__wrap` 自己的上下 padding，`svh` 跟随本项目既有用法）。
+播放器用 `object-fit: contain` 而非 cover：占位片是横版，但**真实竖版 reel 不能被裁**。
+
+### 验证
+
+- **`tools/r62check.py` 94 条全过**。核心是**用三张不同的卡各点一次**
+  （1→reel-1、3→reel-3、7→reel-2），断言拿到的源**互不相同**（`sources differ == 3`），
+  外加 `videoWidth > 0` 证明帧真的解码了，不是只把字符串写进属性
+- **活性自检**：`tools/_reverse_r62.py` 撤回本轮改动后，**94 条里 74 条转红**
+  （`sources differ 1 == 3`、面板比例 `0.56 vs 1.78`），`--restore` 后回到 94/0
+- ⚠ 判据第一版在撤回后是**崩溃**而不是报红（播放器不存在，`v.getAttribute` 抛异常）。
+  已修：读不到播放器时返回哨兵值。**崩溃的判据分不清是页面坏了还是判据坏了**
+- **回归全过**：`rwd.py` 11 页 × 14 档全绿；`scrolllock` 44 条 / 11 用例（含 reel 弹窗）；
+  `r56`(149) / `r57`(93) / `r58`(44) / `r59`(96) / `r60`(242) / `r61`(151)
+- `assetpath.py` 仍绿；`?v=` 全站 130 处 + scss 1 处，无旧 token 残留
+
+**`$build` 跳过 r61**：r61 从来没有作为 token 存在过（第六十一轮沿用了 r60），
+而 `tools/r61check.py` 早被第五十九轮占用了这个名字。本轮是 `20260903-r62`，
+判据 `r62check.py`，两边对齐。
+
+### 环境（顺带修好的）
+
+Playwright 的 chromium 上一轮发现整个没了，`tools/` 下 15 个脚本的写死路径全失效。
+本轮装回 `python3 -m playwright install chromium` —— 装到的是 **chromium-1208**，
+脚本要的是 **1217**，用一条符号链接对上（`chromium-1217 -> chromium-1208`），
+15 个脚本一个字没改。⚠ **这条链接不在仓库里，换机器要重建**。
+（先试过把 `/snap/bin/chromium` 链过去，不行：那是 snap wrapper，
+不认 playwright 传的 `--disable-field-trial-config`。）
+顺带装上了 playwright 自带的 ffmpeg，下次抽帧不必再绕 canvas。
+
+### 文件清单
+
+```
+改  index / pdp / our-story / how-gumi-works.html   40 张卡加 data-video + poster img；
+                                                    弹窗加 <video data-modal-video>
+改  assets/main.js          modal: open 收 trigger、close 先停播、playVideo/stopVideo
+改  assets/customstyle.scss .gb-rv-panel 16/9 + 960 宽；.gb-rv-panel__player / __glyph
+改  assets/customstyle.css  编译产物
+改  11 页 + font-check.html $build 20260901-r60 → 20260903-r62（?v= 130 处）
+新  images/reel-1..5.mp4    占位视频 4.7MB
+新  images/reel-poster-1..5.jpg  各自的第 0 帧
+新  tools/_reelposter.py    canvas 抽帧（换素材时重跑）
+新  tools/_apply_r62_html.py / _reverse_r62.py / r62check.py
+改  4 页弹窗            播放器全部撤掉，只留 <div data-modal-media>；卡 5/10 改 YouTube 链接
+改  assets/main.js      modal.embedUrl()；playVideo 按类型建节点；stopVideo 移除节点；
+                        unlockAfter(ms, el) 淡出后再清状态类；EMBED_ALLOW 常量
+改  assets/customstyle.scss  __player/__embed 合并（不再需要 display 切换）；
+                        has-* 时容器底色压深，避免淡出闪灰
+删  images/reel-5.mp4    卡 5 改用托管链接后不再被引用
+换  images/reel-poster-5.jpg  改为该 YouTube 视频的缩略图
+```
+
+### 追加：`data-video` 也吃 YouTube / Vimeo 链接
+
+需求方补充：视频要支持 YouTube 之类的链接，不只是 mp4 文件。
+
+`<video src="https://www.youtube.com/watch?v=…">` 会去取一个 **HTML 页面**当媒体流，
+**静默失败** —— 黑帧、没有报错。托管平台只能用 iframe 嵌入。
+
+**结构上只留一个容器**（需求方指定）：`.gb-rv-panel__video` 挂 `data-modal-media`，
+里面除了 fallback 的 play 图标什么都没有；`modal.playVideo()` 判断 `data-video` 是哪一种，
+**当场建出对应的那一个节点**。HTML 里因此既没有 `<video>` 也没有 `<iframe>` —— 判据把这条
+钉死（`no <video> in markup` / `no <iframe> in markup`）。
+
+| 输入 | 去向 |
+|---|---|
+| `images/reel-1.mp4`、`https://cdn…/x.mp4` | `<video>`，`has-video` |
+| `youtube.com/watch?v=` / `youtu.be/` / `/shorts/` / `/embed/` / `/live/`（可带 `&t=`） | `<iframe>`，`has-embed` |
+| `vimeo.com/123` / `player.vimeo.com/video/123` | `<iframe>`，`has-embed` |
+| 没有 `data-video` | 灰底 + play 图标（原占位） |
+
+- 嵌入走 **`youtube-nocookie.com`**（YouTube 官方的隐私增强域），`&t=42` 转成 `&start=42`
+- `allow` 与 `referrerpolicy` **必须在 `src` 之前设**：权限是在 frame 开始加载时读的
+- **关闭时把节点整个移除** —— 对 iframe 这是唯一能停下第三方播放器的办法，
+  只清 `src` 不够干净；`<video>` 则先 `pause()` 再移除，声音和节点同一帧消失
+- **状态类改到淡出之后才移除**（`unlockAfter(ms, el)`）。这是判据抓出来的：
+  原来关掉弹窗后 `has-embed` 一直留着
+- **`.has-video / .has-embed` 时容器底色压成 `$c-ink`**：节点在 `close()` 的瞬间就没了，
+  而面板还要再淡出 `--modal-exit`，不压底色的话那 0.28s 里会闪出灰色的占位底
+
+**演示**：卡 5/10 改成一个真实的 YouTube 链接（Blender 的 Big Buck Bunny，CC-BY），
+poster 换成该片的 YouTube 缩略图，`images/reel-5.mp4` 随之删除。
+现在页面上两种类型同时活着，四张本地文件 + 一张托管链接。
+
+### ⚠ YouTube 卡在 `file://` 预览下打不开（Error 153）
+
+实测：
+- **`file://` 双击预览 → YouTube 报 `Error 153`**。`file://` 的 origin 是 `null`，
+  YouTube 拒绝这种来源的嵌入。**客户就是双击预览的**，这一条一定会被当成 bug 报回来
+- **`http://127.0.0.1` + headless → 「Sign in to confirm you're not a bot」**，
+  这是 YouTube 对无头浏览器 + 机房 IP 的反自动化拦截，与代码无关
+- 两次失败的原因都已定位，**都不是实现问题**；但**真机 + 真实域名下能不能播，本机验证不了**，
+  要人工在浏览器里确认。本地 mp4 那四张不受影响，`file://` 下照播
+
+因此判据只断言「建出了正确的节点、`src` 被写对」，**不断言第三方播放器加载成功** ——
+把判据绑在 YouTube 的可用性上，它迟早会因为对方的策略变化而变红。
+
+⚠ **判据必须每个用例重新加载页面**：`promoModal` 在 5000ms 自动弹出，而 modal 是单例，
+会关掉当时开着的 reel 弹窗。第一版判据让用例累积着跑，跑到第三个卡时正好越过 5 秒，
+`card 7 closed: no has-video` 无端变红 —— **红的原因与本轮毫无关系**。
+现在每个用例 `fresh()` 一次，各自远在 5 秒以内。
+
+### `file://` 下的降级（需求方报了 153 之后加的）
+
+对照实验先把根因钉死（`tools/` 外的一次性探针，跑完已删）：
+
+| | `file://` | `http://` |
+|---|---|---|
+| Big Buck Bunny | **Error 153** | 无 153 |
+| 换一个视频 | **Error 153** | 无 153 |
+| 去掉 `referrerpolicy` | **Error 153** | 无 153 |
+
+**153 只由 `file://` 触发**，与视频、与 referrerpolicy 都无关 —— `file://` 页面的 origin
+是 `null`，YouTube 拒绝为 null origin 配置播放器。**改代码绕不过去**，是对方的策略。
+
+客户就是双击预览的，让他们读到一个红色 `Error 153` 等于收一张误报的 bug 单。
+所以 `playVideo()` 在 `location.protocol === "file:"` 时不建 iframe，改建一段说明
+（`.gb-rv-panel__offline`）+ 一个「在新标签打开」的链接。**上真实域名这个分支永不触发。**
+
+- 链接色用 `$c-lime` 不用 `$c-green`：后者压在 `$c-ink` 上只有 **2.17:1**，低于 AA 的 4.5；
+  lime 是 13.9:1，且 footer 本来就是这个搭配
+- 三种节点（video / iframe / offline）**统一挂 `data-modal-node`**，
+  `stopVideo()` 按 hook 拆而不是按标签名 —— 否则那个 `<div>` 会被漏掉留在弹窗里
+
+判据因此覆盖两条路：`file://` 下建 offline 说明，**另起一个本地 http server** 验同一张卡
+在有 origin 时确实建出 iframe。共 133 条。
+
+### 推送到 Shopify live（2026-09-03 第二次）
+
+需求方指定**只推 `customstyle.css` / `customstyle.scss` / `main.js`**，liquid 不碰
+（liquid 推送需逐次授权）。
+
+⚠ **推送前的三方对比抓到别人的改动**：上一次推送之后，线上多了
+`sections/gb-reviews.liquid`（reels + `#reel-video` 弹窗）与 `blocks/gb-ingredients.liquid`，
+`templates/index.json` 也变了。**assets/ 下没有别人的改动**，所以这三个文件不冲突。
+
+**回读验证**：线上差异恰好是这 3 个，与本地逐字节一致，别人的 liquid 与 json 一个都没动。
+
+⚠ **视频功能在线上还不会工作**，需求方已知情并接受：
+
+| 缺口 | 位置 |
+|---|---|
+| 弹窗没有容器 hook | `sections/gb-reviews.liquid` 的 `.gb-rv-panel__video` 缺 `data-modal-media` |
+| 属性名不一致 | liquid 写 `data-video-url`，JS 读 `data-video`（**已定：以 `data-video` 为准**） |
+| 图标没有类名 | 弹窗里的 play `<svg>` 需要包一层 `.gb-rv-panel__glyph`，否则有媒体时盖不掉 |
+
+推上去之后线上的可见变化只有一个：**reel 弹窗从 304×540 竖版变成 960×540 横版**，
+里面仍是居中的 play 图标。JS 的新模块（cart drawer / selectBox / playVideo）在线上
+**全部早退** —— `data-modal-media` / `gb-cart` / `data-select` / `data-gallery`
+在主题的 liquid 里命中都是 0。
+
+### 顺带发现 / 待决（未动手）
+
+- **reel 播放会被 promo 弹窗打断** —— `promoModal.DELAY = 5000`，页面加载 5 秒后自动弹出，
+  而 modal 是单例，会 `close()` 掉正在播放的 reel。这是既有行为（弹窗一直是这样），
+  但**本轮之前 reel 弹窗里是静态占位，被顶掉无所谓，现在是正在播的视频**。
+  修法是 promo 弹出前检查 `modal.current`，但「promo 要不要给正在看视频的人让路」是决策，
+  **未动手，等裁决**。
+- **AD′ 面板 16:9 与真实竖版 reel 冲突** —— reel 本来是竖版短视频（稿里的卡就是 304×540
+  的 9:16）。16:9 是需求方本轮点名要的，占位片也确实是横版；但**真实竖版素材进来后，
+  contain 会在左右留大片黑边**。需要裁决：面板跟素材走（竖版回 9:16），还是素材裁成横版。
+- **Sintel 那张卡上下有黑边** —— 是素材自带的宽银幕 letterbox 编码在帧里，
+  `cover` 在 540/360 = 1.5 的缩放下垂直方向正好完整显示，所以黑边留下了。不是 CSS 问题。
+- **占位视频 4.7MB 进了仓库** —— 若不想要，改成远程链接只需替换 `data-video` 的值。
+- `.gb-rv-panel__video` 的 `@include hover { color: $c-green }` 现在只对 fallback 图标有意义
+  （有视频时图标是隐藏的）。无害，没动。
+
+---
+
+## 第八十九轮（2026-09-07）— Real Customer Reviews 静态实现（`$build` 与 r88 共用 `20260907-r88`）
+
+需求：把 reviews / pdp 两页的 Real Customer Reviews 从 app 挂载壳做成真的前端，对照设计还原。
+
+⚠ **本轮推翻了 `PROJECT-STATUS.md` 的「实现边界」** —— 评论区原本划归 Shopify 评论 app、
+前端只出壳。需求方明确要求做成静态前端，两页都做。
+
+⚠ **`$build` 与第八十八轮共用 `20260907-r88`**：同一时段另一个会话在做 r88（collection 页
+底距 + `tools/r88check.py`），它先把 token 提到 r88 并编译过，本轮改动搭在同一个 token 上，
+**不是漏改**。判据另起 `r89check.py` 以免撞名。轮次编号是否要重排，待需求方定。
+
+### 1. 数值与内容的来源
+
+全部取自 Figma 节点，桌面 `324:64032`（1440）/ 手机 `324:64978`（390）。四份稿
+（reviews 与 pdp 的桌面 + 手机）是同一个组件，所以两页共用一份实现。
+
+- 5 条评论的姓名、首字母、星级、时间、标题、正文、赞踩数都是板上原值
+- **只有第 1 条是 5 星，其余 4 条是 4.5**。板上的画法是把第五颗**整颗**降到 30% 透明
+  （`191:5463` fill a0.30），**不是半填充**
+- **图片只挂在第 1、3 条**：另外三条的 `Image` 节点 `visible: false`，卡高 324 与 240
+  差的 84 就是它（64 + 20 gap）。build.txt 看不出来，只有节点数据能证
+- 「See More Reviews」按钮里那个 24×24 icon 在板上 `visible: false` —— 按钮宽 280
+  = 64 + 152 + 64 正好不含它。**不要照 build.txt 的轮廓补图标**
+
+### 2. 两档只有这四处不同
+
+| 项 | 1440 | 390 |
+|---|---|---|
+| 4.76 | 66.18 / 52 | 56 / 44 |
+| Based on… | 16 / 24 / -0.32 | 14 / 20 / -0.28 |
+| 星 + 文案 | 一行，gap 12 | 上下两行，gap 16 |
+| 按钮 | 52 高 / 0 64 / 28 / .48 | 44 高 / 0 40 / 24 / -.32 |
+
+板上 heading 的 272、列表的 112 侧内距**改写成 max-width 736 / 1056**：手机档两个上限
+都大于它画的 350，于是手机端不需要任何覆盖，平板档也自然过渡。
+
+### 3. 结构上的两个决定
+
+- **外壳沿用 `.gb-app-section`**（padding、cream 底、48 gap 本来就对），新内容用
+  `gb-crev` 前缀。**不是 `gb-reviews`** —— 那是另外四页的 testimonial 轮播
+- **按钮复用 `.gb-btn--lg`**，手机档的 44/40 写在 `.gb-btn.gb-crev__more` 上（双类，
+  两个选择器都是 0-1-0）。**没有动基类** —— 它在 11 个页面上各用 2 处
+
+### 文件清单
+
+- `assets/customstyle.scss` / `assets/customstyle.css` — 新增 `gb-crev` / `gb-crev-card` 块
+- `reviews.html` — 壳换成完整实现，原来的 `<h2>` 移进 `.gb-crev__head`
+- `pdp.html` — 同上；这页原本连标题都没有，按板补上
+- `tools/r89check.py` — 判据（新增）
+
+### 判据
+
+`python3 tools/r89check.py` —— 两页 × 1440/390，68 条断言全绿。
+`--strip`（把 `.gb-crev` 规则从 css 里剥掉再注入）应报 **60 红** ——
+证明判据读的是本轮加的规则，而不是页面本来就有的东西。
+`tools/rwd.py reviews.html` / `pdp.html` 两页全绿。
+line-reveal 在新父层级下仍正常：`is-split` 生效、标题两档都是 1 行（48 / 36）。
+
+### 遗留
+
+1. **第 1 条评论的标题在板上就是断的** —— 「Great tasting, and super healthy product
+   that would」，「would」之后没有了。照原样保留（铁律 3），**待设计方裁决**。
+2. **赞踩不计数、See More 不展开**：板上只有 5 条，第 6 条不存在，编出来就是造假数据。
+   两者都只做 hover / press 态，点击行为留给 app。需求方已确认这样做。
+3. **按钮文字色**：板上 `#F5F1E9`，`.gb-btn--lg` 用的是白色。没有为这一个按钮改基类。
+4. **手机端按钮 44 高只在本模块作用域内**；`.gb-btn--lg` 基类手机端仍是 52。
+   其它页面的手机稿是否也该 44，**没查，待裁决**。
+5. 线上没有 `gb-app-section` 的 liquid，这块**目前只活在静态站**。要上线得对方补 section。
+
+## 第八十七轮（2026-09-07）— 需求方点名的六处 + logo liquid 落地（`$build` = `20260907-r87`）
+
+需求（对话）七条：reviews 标题版心、面板边框、guarantees 窄屏堆叠、stats 说明的负外边距、
+science 数字的手机字号、弹窗 pane 右内距，外加**「更改 gb-logo.liquid 推送」** —— r85 欠着的那条。
+
+### 1 / 6. 两条纯数值
+
+- `.gb-reviews__title { max-width: 570px }`。`.gb-reviews__head` 本来就是
+  `align-items: center` 的列，所以不需要再补 `margin-inline: auto`。
+- `.gb-nl-pane` 右内距 10 → 24。⚠ **副作用已实测**：`.gb-nl-panel__body` 的滚动条是 16px 宽，
+  原来的 10 + 16 = 26 与左侧 24 视觉等宽；改成 24 之后，**pane 滚动时右侧留白是 40 对左侧 24**。
+  不滚动的 pane 则从「左 24 右 10」变成两边都 24。要哪一种由需求方定。
+
+### 2. 面板边框：上边框之外，下边框也一起藏
+
+r86 只处理了 `border-top`。关着时面板是 0fr 行，**两条发丝都叠在 bar 自己的边框下面**，
+所以 `border-bottom` 同样改成 `transparent`，`.is-open` 时给回 `$c-sand`，
+两个 `*-color` 都进了面板原有的 `transition`。
+
+### 3. `.gb-product__guarantees` 窄于 370 时一行一个
+
+`@media (max-width: 369.98px) { flex-direction: column; align-items: center; }`。
+按铁律 18 这是**布局阈值**：只有排列，不带任何数值 —— 间距仍由上面那三档 `gap` 负责。
+`369.98` 而不是 `369`，是为了让 369 和 370 之间的小数视口也算「小于 370」。
+
+### 4. `.gb-stats__note` 992 以下不再上提
+
+把手机档里的 `margin-top: -16px` **删掉**，改成 `@include mid { margin-top: 0 }`。
+⚠ **`mid`（≤991）与 `narrow`（≤767）是重叠的两档，只有源码顺序决定胜负**，所以这条
+必须排在 `narrow` / `tablet` 之后（铁律 18 说的「值档互斥」在这里做不到互斥，
+就必须把顺序写进注释）。基础值 −34 因此只活在 992–1280，**991/992 会有 34px 的台阶**。
+
+### 5. ⚠ science 数字的手机字号 —— 同一组数字的**第三次反转**，这次带作用域
+
+历史（先 grep 再动手，铁律 1）：
+r43 手机 36/40 → r49 挪到 `--nutrient` 上、95% 组回板值 56/44 → r50 连那份也删（**全宽 56/44**）
+→ 后来又全局改回 36/40 并补了 768–1280 的斜坡 → **r87：只有 `.gb-science--tight` 保留 36/40，
+其余全部在所有宽度都用 56/44/0**。
+
+做法是把 `@include narrow` / `@include tablet` 两块从 `.gb-science-card__value` 搬到
+`.gb-science--tight .gb-science-card__value`（0-2-0）。**非 tight 的卡片因此不再需要平板斜坡** ——
+767/768 两侧都是 56，本来就没有台阶可补。
+
+⚠ 影响面：`gb-science--tight` **全站只有 science.html 的第二个 section**；
+index 的 3 张、science 第一个 section 的 3 张手机端全部变回 56/44。
+`text-shadow` 是 `em` 单位，描边跟着字号自己缩放，不用动。
+`rwd.py` 全站全绿 —— 56px 的数字在 360 档没有撑破任何容器。
+
+### 7. `snippets/gb-logo.liquid` —— r85 那条终于推了
+
+`{{ logo_img | image_url: width: w | times: 2 }}` **过滤器顺序错**：`image_url` 先出 URL，
+`times: 2` 乘的是字符串、返回 `0`，于是线上 `src="0"` 加一个 `0 2x` 候选 —— 1x 屏靠 srcset
+侥幸能看，**2x 屏必碎图**。改成先 `assign w2 = w | times: 2` 再进过滤器。
+
+**推完线上实测**：`src` 与 `2x` 候选都变成了真实的 `…Group_38203.svg?…&width=248`，
+`r85check` 里那 **18 条 `PEND` 全部转绿**。
+
+### 新增判据
+
+`tools/r87check.py` —— 离线 6 条 + 静态/线上各 **四档（1440 / 900 / 390 / 360）** × 3 页
+（index / science / pdp）。360 是为了第 3 条，900 是为了第 4 条的 768–991 带。
+第 5 条同页取 `.gb-science:not(.gb-science--tight)` 与 `.gb-science--tight` **两个样本对比**，
+单取一个证明不了「只有 tight 变」。第 2 条读边框颜色**必须等 500ms**（过渡起始值，第三次踩）。
+
+**双向**：`--as-served` **56 红** → 换本地 css **只剩 logo 那 6 条**（那是 liquid，路由换不到）
+→ 推完 liquid 后 `--as-served` **全绿**。`r85check` / `r86check` 复跑同样全绿。
+
+### ⚠ 对方把 PDP 拆成了 9 个 block
+
+推送前拉取（10:27）比 `baseline-r86` 多了 8 个文件（**608 → 616**）：新增
+`blocks/gb-atc` / `gb-feature` / `gb-guarantee-note` / `gb-lead` / `gb-price` / `gb-rating` /
+`gb-subscription` / `gb-title` / `gb-variants`，删掉 `_gb-features.liquid`，
+改写 `gb-features.liquid` / `gb-product.liquid` 与两个 template。
+**清单内 3 个文件线上都 = 基线，零冲突**，且 `theme check` 改前改后同为 29 offenses / 8 errors。
+
+⚠ **PDP 的卖点列表到这一刻仍然是空的**（`<ul class="gb-product__features"></ul>`），
+拆 block 之后也没恢复。是对方的文件，我们没动。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss     六处 + $build → r87
+改  assets/customstyle.css      重新编译（与基线 diff = 40 行，正好是这六处）
+改  全部 13 个 html             ?v= r86 → r87
+推  liquid/snippets/gb-logo.liquid   （r85 就改好的那份，本轮才授权推）
+新  tools/_apply_r87.py / tools/r87check.py
+```
+
+### 推送（2026-09-07，已上线）
+
+**3 个文件**：`assets/customstyle.css` / `assets/customstyle.scss` / `snippets/gb-logo.liquid`。
+三方对比零冲突。推送前 diff：css 删 21 / 增 34（剔 30 行 token 后 **40 行**）、
+scss 删 10 / 增 39、gb-logo 删 2 / 增 6。
+**回读 616 → 616、3 个文件逐字节相同、613 个清单外文件零改动。**
+线上 `r87check --as-served` **全绿**，`r85check` / `r86check` 也全绿。
+新基线 **`baseline-r87/`（616 文件）**。
+
+### 遗留
+
+- ⚠ **PDP 卖点列表线上是空的**（对方的 `content_for 'block'` 改造，r86 起）。
+- `.gb-nl-pane` 右侧在滚动态是 40 对 24，见第 6 条，等需求方定。
+- 跑马灯 88×36 的减速（r86）与「要不要收 duration」仍未定。
+- STYLE-GAP：**C11 关闭**（logo 已推）。
+
+---
+
+## 第八十六轮（2026-09-07）— 需求方点名的五处（`$build` = `20260907-r86`）
+
+需求（对话）五条：features 位置、手机菜单开合时 header 消失、手机跑马灯 logo 再小些、
+链接 hover 由下划线改为变色、面板上边框只在菜单打开时显示。**全部 CSS，未动 JS 与 liquid。**
+
+### 1. `.gb-product__features` 移到 `.gb-product__head` 下面
+
+**线上它在最底下**：这个 `<ul>` 是编辑器 block，`{% content_for 'blocks' %}` 在
+`.gb-product__info` 的**末尾**统一输出五个 block，所以它排在 CTA 和 guarantee-note 之后。
+静态站里它是 `.gb-product__head` 的子元素，位置本来就对。
+
+用 flex `order` 拉回来（`.gb-product__info` 本来就是 `flex-direction: column`）：
+head `-2`、features `-1`，其余默认 `0`。**静态站上两条选择器都匹配不到那个 `<ul>`
+（它不是 `info` 的子元素），是彻底的空转。**
+
+⚠ **第一版只写了 `.gb-product__info > .gb-product__features`，线上完全没生效** ——
+`content_for 'blocks'` 给每个 block 套了一层 `div.shopify-block`，`<ul>` 是**孙子**不是儿子
+（[[render-block-wrapper-breaks-child-selector]]）。判据当场测出 `order` 仍是 `0` 才发现。
+补了 `:has(> .gb-product__features)` 打在包裹层上，两条并存。
+⚠ HANDOFF 里「`div.shopify-block` 现在全站 0 处」这句**对 PDP 已经过时**。
+
+⚠ 两点取舍：`order` 只改**视觉**顺序，读屏与 Tab 仍按 DOM；features 上方的间距是
+`.gb-product__info` 的 24 而不是 head 内部的 16。要真正搬 DOM 得动
+`sections/gb-product.liquid`，登记为 STYLE-GAP **C12**。
+
+### 2. ⚠ 锁滚动把 sticky header 一起弄没了 —— 三处锁都有，本轮只修了菜单那处
+
+**实测**（390，页面滚到 900）：菜单一开，`.gb-header` 的 `top` 从 **0 跳到 −868**，
+直到锁解开（关闭后约 900ms，抽屉滑出的时长）才回来。**整个开着的期间 header 都不在**，
+关闭时又「啪」地跳回来 —— 这就是需求方说的「一下子消失」。
+
+**机制**（逐条实测，不是推断）：
+reset 里 `body { overflow-x: hidden }`。**只要 html 的 overflow 是 `visible`，body 的
+overflow 就被提升给视口**，body 自己仍是 `visible`；一旦锁把 html 设成 `overflow: hidden`，
+提升停止，那条 `overflow-x: hidden` 开始作用在 body 自己身上 —— body 成了 sticky 的
+scrollport，而 body 从不滚动，于是 header 落回静态位置（即文档顶部，视口外）。
+
+| 试法 | header top |
+|---|---|
+| 不锁 | 0 |
+| 只锁 html | **−868** |
+| html + body 都锁（现状） | **−868** |
+| 锁 html，body 强制 `overflow: visible` | 0 |
+| 锁 html，body `overflow-x: clip; overflow-y: visible` | **0，且横向裁切还在** |
+
+改成最后一行：`clip` **不建立滚动容器**，所以横向裁切保住了、sticky 也活着。
+判据里有一条守着锁没被削弱（锁上之后滚轮不能推动页面）。
+
+### ⚠ 顺带发现，**未修**（同一个病，另外两处）
+
+`html.is-modal-open, body.is-modal-open { overflow: hidden }`（弹窗）与
+`html:has(#cart-drawer …), … body { overflow: hidden }`（Horizon 购物车抽屉）
+**是同一条形状、同一个病**。实测 `is-modal-open` 下 header top：**390 档 −868、1440 档 −860**。
+
+- 弹窗是全屏遮罩，header 没了看不出来；**但购物车是侧边抽屉，header 露在旁边，桌面端一定看得见**。
+- 改法与本轮完全相同（那两处的 `body` 半边换成 `overflow-x: clip; overflow-y: visible`）。
+- 按铁律 20 **没动**，等需求方一句话。
+
+### 3. 手机跑马灯 slot 106×44 → **88×36**
+
+`.gb-logo-scroll__item` 与 `.gb-logo-scroll__img` 的 narrow 档同步改。
+⚠ **88×36 是我们选的数，不是稿上的** —— 这块 Social Proof 只有桌面稿（341:47384），
+106×44 本身就是第三十五轮需求方口头给的。要别的数说一声。
+⚠ **副作用**：速度 = 一组间距 / 15s，间距从 408 缩到 354，**这一档比原来慢约 13%**。
+没有改 duration（那是决策不是还原）；要维持原速就在 narrow 里加 `animation-duration: 13s`，一行。
+
+### 4. 链接 hover：去掉下划线，只变色
+
+`@mixin link-underline`（伪元素 + `scaleX`）**四个用户全部摘掉，mixin 一并删除**：
+`.gb-header__link` / `.gb-header__sublink` / `.gb-footer__link` / `.gb-footer__legal-links a`。
+**四个本来就各自带 hover 变色**（`#47ac00` / `$c-green` / `$c-white` ×2），所以摘掉下划线之后
+反馈没有变弱 —— 判据逐个强制 hover 实测颜色确实在动。
+
+⚠ 「统一变色」按**统一改用变色**理解，**不是四处都改成同一个颜色** ——
+header 在奶油底、footer 在深绿底，同色必然有一边看不见。
+⚠ **常驻下划线不在此列**：`text-decoration: underline` 那六处（rich-text 链接、
+法务小字、cart continue、promo dismiss 等）是行内链接的常态样式，不是 hover 效果，原样保留。
+
+### 5. `.gb-header__panel` 的上边框只在菜单打开时显示
+
+`border-top: 1px solid transparent` + `.gb-header.is-open & { border-top-color: $c-sand }`，
+并把 `border-top-color` 加进面板原有的 `transition`，跟着行高一起淡入。
+
+⚠ **用 transparent 不用 0 宽**：关着时面板是 0fr 行，宽度一变盒子会跳 1px；透明既不跳、
+颜色又能过渡。手机档那句 `border-top: 0` 保留 —— 宽度是 0，`is-open` 给的颜色画不出东西。
+
+### 新增判据
+
+`tools/r86check.py` —— 离线（8 条选择器/源码断言）+ 静态 1440/390 + 线上 1440/390。
+特别的三条：① 第 2 条**开菜单后读 header 位置，再补一次滚轮确认锁没被削弱**；
+② 第 4 条用 CDP 强制 hover **比对颜色前后**（`(hover:hover)` 在裸 headless 恒 false，
+拿不到就 SKIP 不是默默通过）；③ 第 5 条读 `is-open` 后的颜色**必须等 500ms**
+（又是 [[headless-transition-reads-start-value]]，本轮第二次踩）。
+
+**双向**：`--as-served` **30 红** → 换本地 css **全绿**。
+`tools/r85check.py` 同步改了一条（面板上边框的颜色断言移交给 r86check），复跑全绿。
+`tools/rwd.py` 全站全绿。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss     五处 + $build → r86（删 @mixin link-underline）
+改  assets/customstyle.css      重新编译（与基线 diff = 108 行，正好是这五处）
+改  全部 13 个 html             ?v= r85 → r86（135 处）
+改  tools/r85check.py           面板上边框颜色断言移交 r86check
+新  tools/_apply_r86.py / tools/r86check.py
+```
+
+### 2b/2c. 追加 —— 另外两处锁一起修了（需求方「修复推送」）
+
+`html.is-modal-open, body.is-modal-open` 与 `html:has(#cart-drawer …), … body`
+两条各拆成两行，`body` 半边同样换成 `overflow-x: clip; overflow-y: visible`，
+锁仍然只压在 `html` 上（[[overflow-clip-breaks-scroll-lock]]：**Gecko 只认 html 那一半**，
+所以这个方向是安全的）。`padding-right` 的滚动条补偿**依旧只在 html**
+（[[scroll-lock-compensation-once-only]]）。
+
+**线上实测（改前）**：`is-modal-open` 下 header top **1440 档 −860 / 390 档 −868**；
+购物车抽屉（把 `dialog` 的 `open` 属性直接置上，**不碰 `/cart/*`**）**1440 档 −860** ——
+这一处是侧边抽屉，header 就在旁边，**桌面端一直看得见**。
+
+⚠ **判据自己先测错了一次**：只加 class 不走 `modal.open()`，Lenis 还在跑，
+滚轮经由它的 `scrollTo` 推动了 `overflow: hidden` 的 html（900 → 1467）。
+拿 r85 基线 CSS 跑同一段，**两个宽度上数字完全一样**，证明与本轮改动无关；
+`modal.open()` 的生产路径会 `smoothScroll.pause()`，暂停后 1492 → 1492 锁得住。
+判据已改成走生产路径。（菜单那处不受影响：`.gb-header__panel` 在 Lenis 的 `PREVENT` 名单里。）
+
+### ⚠ 对方同时在改 PDP —— 第 1 条已由对方在 liquid 落地，但**列表现在是空的**
+
+推送当天 10:01 / 10:03 两次拉取之间，对方给 `sections/gb-product.liquid` 加了
+`{% content_for 'block', type: '_gb-features', id: 'features' %}`（放在 `.gb-product__head` 里，
+位置与静态站一致），把 `features` 从 `templates/product.json` 的 `block_order` 里摘掉，
+并新建 `blocks/_gb-features.liquid`。**方向和我们要的一样，所以本轮那两条 `order` 规则在线上已成空转**
+（留着无害，是对方万一回滚时的兜底）。
+
+⚠ **但线上渲染出来的 `<ul class="gb-product__features">` 是空的** ——
+`templates/product.json` 里 4 个 `_gb-feature` 子块都还在，
+`{% content_for 'block', type:…, id:… %}` 渲染了父块却**没有带出它内部的
+`{% content_for 'blocks' %}`**；改名成 `_gb-features` 之后仍然是空的。
+**PDP 上那四行卖点目前不显示。** 是对方的文件、对方正在改，我们没动。
+
+### 推送（2026-09-07，已上线）
+
+**2 个文件**：`assets/customstyle.css` / `assets/customstyle.scss`（`main.js` 本轮未动）。
+
+三方对比（`live-prepush-r86/` 对 `baseline-r85/`）：**两个文件线上都 = 基线，零冲突**。
+对方这期间改的是 `sections/gb-product.liquid` + `templates/index.json` + `templates/product.json`
+（后两个是 Online Store Editor 托管，**我们绝不推**）。
+
+推送前 diff 核算：css **删 103 / 增 51**，剔掉 30 行 build token 后 **124 行**，
+与本地对基线的 diff 逐行相同。
+
+**回读**：2 个文件**逐字节相同**。⚠ 文件数 **607 → 608，不是误伤** ——
+对方在我们推送的那两分钟里又提交了 `blocks/_gb-features.liquid`（新增）并再改了
+`gb-product.liquid` 与两个 template。我们用的是 `--only` 两个文件 + `--nodelete`，没碰他们任何东西。
+
+**线上实测**：`tools/r86check.py --password 1234 --as-served` **全绿**（推之前 30 红）；
+`tools/r85check.py --as-served` 也**全绿**（logo 那 18 条 `PEND` 除外）。
+
+新基线 **`Gumi-Brand-shopify/baseline-r86/`（608 文件）**。
+
+### 遗留
+
+- ⚠ **PDP 卖点列表线上是空的**（对方本轮引入，见上）。
+- ⚠ **`snippets/gb-logo.liquid` 仍未推**（r85 遗留，需授权）—— 线上三处 logo 在 2x 屏仍是碎图。
+- ⚠ **`snippets/gb-logo.liquid` 仍未推**（r85 遗留，需授权）。
+- 跑马灯 88×36 与「要不要一起把 duration 收到 13s」都等需求方确认。
+- STYLE-GAP 新增 **C12**（features 的 DOM 位置）。
+
+---
+
+## 第八十五轮（2026-09-07）— 需求方点名的九处（`$build` = `20260907-r85`）
+
+需求（对话）九条，逐条对号：thumb 焦点态、guarantee 图标尺寸、订阅卡描边、
+footer 分隔线透明度、面板上边框、面板列对齐、logo 换 `<img>`、抽屉卡插画宽度、
+reels 数量不足时居中不滚。**七条纯 CSS，一条 CSS+JS，一条 CSS+liquid。**
+
+### 1. `.gb-product__thumb:focus-visible` = `.is-active`
+
+`outline: none` + `border-color: $c-green`。理由和 r81 的 `.gb-reel` 一样：
+`.gb-product__thumbs` 是可滚容器（一个轴设了 `overflow`，另一个轴被强制成 `auto`），
+全局 `:focus-visible` 的 `2px/offset 2px` 环**四边全被裁**，键盘用户看不到焦点在哪。
+
+⚠ 判据踩了老坑：`border-color` 挂着 `0.2s` 过渡，强制伪类后立刻读 = 读到起始值，
+**会把一条好规则判成坏的**。`r85check` 里补了 400ms 等待（见 [[headless-transition-reads-start-value]]）。
+
+### 2. `.gb-product__guarantee` 图标 —— 第八十轮登记的那条
+
+`svg` → `svg, img` + `object-fit: contain`。`blocks/_gb-guarantee.liquid` 早在 r80 那次
+就换成了 `<img>`，只写 `svg` 的规则从此不生效。**实测线上 106×100，应为 34×32** ——
+5 个页面（index / pdp / our-story / how-gumi-works / reviews）都在放大近三倍的图标。
+写法照抄 `.gb-product__taste-item` 的同一处修复。
+
+### 3. `.gb-sub__plan` 描边从 inset 阴影改成 `::after` 覆盖环
+
+**这是画法错，不是数值错**：inset 阴影画在**子元素下面**，而 `--sub` 的
+`.gb-sub__panel` 是满宽实底，把左右下三边的描边整条盖住 —— 所以只有 `--once`
+（背景在卡片自己身上）看得见。r65 起就是这样，一直没人发现。
+
+```scss
+.gb-sub__plan {
+  position: relative;                 // 就这一条是新增的布局影响，且不建立层叠上下文
+  &::after { position: absolute; inset: 0; border: 1px solid $c-green; border-radius: inherit; }
+}
+```
+
+⚠ **仍然不能改回 `border`** —— 稿上 strokeAlign 是 INSIDE，真 border 会把 banner 顶进 1px、
+把 popular 卡片从 334 撑到 336（r65 的原话保留在注释里）。
+⚠ 也**没有用 `outline: 1px; outline-offset: -1px`**（写法更短、也画在子元素上面）：
+Safari 16.4 以下的 outline 不跟随 `border-radius`，会在圆角卡上画出一个直角绿框。
+⚠ `position: relative` 不影响下拉：`.gb-select` 自己就是 `position: relative`，
+弹层锚在它身上，不在卡片上。
+
+判据带**像素级**一条：截图取卡片左边缘第 0 列，改前是 lime-150（被盖住），改后是 #005635。
+
+### 4~6. footer 分隔线 / 面板上边框 / 面板列对齐
+
+- `.gb-footer__divider` 加 `opacity: 0.2`
+- `.gb-header__panel` 加 `border-top: 1px solid $c-sand`
+- `.gb-header__panel-inner` `align-items: center` → `flex-start`
+
+⚠ **面板上边框在手机档关掉了**（和既有的 `border-bottom: 0` 并排）：手机是整屏抽屉、
+从 y=0 起，那条发丝会落在状态栏下沿，稿里两条边都没有。**这一条是我的判断，不是需求方说的**，
+不要就说一声，改回来是一行。
+
+### 7. logo 换成了 `<img>` —— CSS 与 liquid 各坏一半
+
+**CSS 一半（本地已改）**：三处 logo 规则都只写了 `svg`，
+`snippets/gb-logo.liquid` 一旦 `settings.logo` 上传就渲染 `<img>`，规则全部落空。
+实测线上：**footer logo 1440 档 411×106（应 193×50）、390 档 350×91（应 167×43）；
+手机抽屉 logo 124×32（应 93×24）** —— 属性上的 width/height 只带了桌面一档，
+且被主题的 `img` 规则改写。三处都补成 `svg, img` + `object-fit: contain`。
+
+**liquid 一半（已改，未推）**：`{{ logo_img | image_url: width: w | times: 2 }}`
+**过滤器顺序错了** —— `image_url` 先跑，`times: 2` 作用在**字符串**上返回 `0`，
+于是线上是 `src="0"` 加一个 `0 2x` 候选。1x 屏靠 srcset 侥幸还能显示，**2x 屏必碎图**。
+改成先 `assign w2 = w | times: 2` 再进过滤器；两个 URL 都手工 curl 过 200。
+
+### 8. `.gb-nav-card__art` 手机档 `width: 100%`
+
+桌面卡片宽、插画按 `135.2%` 外溢是稿上的做法；手机抽屉里的卡片窄得多，
+同一个百分比把插画甩出了卡片。**实测 390：228 → 169（= 卡片宽）**。
+
+### 9. reels 卡片装不满轨道时居中且不滚（CSS + JS）
+
+`main.js` 的 `slider` 加 `fits()`：**量**所有 slide 的宽 + gap 之和，
+`<= track.clientWidth` 就不建 Swiper（已建的销毁），并在 `[data-slider]` 上挂 `.is-static`；
+CSS 让 `.swiper-wrapper` `justify-content: center` + `column-gap: inherit`，并隐藏箭头。
+
+- **是量不是数**：卡片宽是 `max(304px, 21.1111vw)` 的 vw 斜坡，
+  「几张算够」每个视口都不一样 —— 1440 是 4 张，**390 一张都算装得下、两张就不够**。
+  需求方猜的「小于 5 个」正好是 1440 档的准确答案。
+- ⚠ **只对 `loop` 轨道生效**（`if (!loop) return false`）。`rewind` 轨道（reviews 的
+  expert 卡）本来就设计成到头即停，且它三张卡在 963~991 这 28px 里**正好装得下** ——
+  不设门会把一个没人点名的布局改掉。判据专门有一条守着它。
+- ⚠ resize 监听**只认宽度变化**（`innerWidth === lastW` 就早退）：手机地址栏收起会以
+  同宽触发 resize，在那上面拆装轨道是肉眼可见的跳（[[mobile-toolbar-resize-rebuild]]）。
+- 遗留：静态状态下 `.gb-reels` 仍带 `tabindex="0"`，Tab 会停在一个不能动的框上。
+
+### 顺带查清，未修
+
+- **线上首页 reels 只剩 6 张**（our-story / how-gumi-works 仍是 10）。6 张在 1440
+  **仍然满得下**（1944 > 1440），逐格推进 8 次实测轨道无空洞，所以**不是 bug，不用管**；
+  记下来是因为再少两张就会触发本轮的 static 分支。
+- 静态状态下箭头是**隐藏**而不是 `disabled`。两种都合理，选了隐藏（桌面稿在卡片全排开时本来就没有 nav）。
+
+### 新增判据
+
+`tools/r85check.py` —— 三段：编译产物（9 条选择器 + `$build` + JS 里的 loop 门与 resize 守卫）、
+静态站 1440/390、线上 1440/390（`page.route` 换 **css 和 js 两个**，或 `--as-served`）。
+特别的两条：
+1. **CDP `CSS.forcePseudoState`** 强制 `:focus-visible`，不靠 Tab 走 40 站；
+2. **像素判据**给订阅卡描边（结构判据在改前也可能是绿的，只有取色能证明它被盖住了）。
+
+**双向**：`--as-served` **66 红 / 18 pending**，换成本地 css+js **全绿**（pending 那 18 条是 liquid，见下）。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss     九处 + $build → r85
+改  assets/customstyle.css      重新编译（与基线 diff = 54 行，正好是这九处）
+改  assets/main.js              slider: fits() + is-static + 宽度触发的 apply()
+改  全部 13 个 html             ?v= r84 → r85（140 处；含另一会话新建的 account.html）
+新  liquid/snippets/gb-logo.liquid   image_url 过滤器顺序（未推）
+新  liquid/r85.patch
+新  tools/_apply_r85.py / tools/r85check.py
+```
+
+### 验证
+
+- `tools/r85check.py --skip-live` 全绿；`--password 1234 --as-served` 66 红；`--password 1234` 全绿
+- `tools/rwd.py` 全站 11 页 × 10 档 **全绿**（面板加边框、列改 flex-start 都没撑破）
+- `shopify theme check` 改前改后同为 **28 offenses / 8 errors**
+
+### ⚠ 三方对比 + 并行会话
+
+- 线上自 r84 起只动了 `sections/gb-nutrition.liquid`（对方给它加了 `scallop_variant` 下拉，
+  即 STYLE-GAP 的 **C5**，已由对方自行落地）。**清单内 3 个文件线上都 = 基线，零冲突。**
+- ⚠ **同目录有另一个 Claude 会话在跑**（`80bab8cd-…`，09:18 仍在写），正在做 account 页
+  （新提交 `29a7638`、新建 `account.html` / `assets/account.*` / `tools/acct*.py`）。
+  `assets/account.scss` 是独立入口、自带 `?v=…-a1`，**不依赖 `customstyle.scss`**，两边不冲突；
+  我的 `?v=` 批量替换**顺带把 account.html 的 4 处 r84 也换成了 r85**（那页确实加载
+  `customstyle.css`，不换就吃旧样式，属于必要的一步）。
+
+### 推送（2026-09-07，已上线）
+
+**3 个文件**：`assets/customstyle.css` / `assets/customstyle.scss` / `assets/main.js`。
+需求方先说「先推 css 和 scss」，随后补「和 js」——**liquid 那一条没在授权范围内**。
+
+三方对比（`live-prepush-r85/` 对 `baseline-r84/`）：**三个文件线上都 = 基线，零冲突**。
+对方这期间只改了 `sections/gb-nutrition.liquid`（不在清单内）。
+
+推送前 diff 核算：css **删 24 / 增 60**，剔掉 30 行 build token 后正好 **54 行**，
+与本地对基线的 diff 逐行相同；scss 删 10 / 增 59（含 1 行 token）；main.js 删 5 / 增 38，
+**全部落在 `slider.bind` 一段**。
+
+**回读**（`live-after-r85/`）：文件数 **607 → 607 零增删**、3 个文件**逐字节相同**、
+**604 个清单外文件零改动**。
+
+**线上实测**：`tools/r85check.py --password 1234 --as-served` —— **全绿**
+（推之前同一判据 66 红）。18 条 `PEND` 仍在，那是 logo 的 `src`，见下。
+
+新基线 **`Gumi-Brand-shopify/baseline-r85/`（607 文件）**。
+
+### 遗留
+
+- ⚠ **`snippets/gb-logo.liquid` 未推**（需单独授权）。改后的文件在
+  `liquid/snippets/gb-logo.liquid` + `liquid/r85.patch`，工作副本 `Gumi-Brand-shopify/work-r85/`。
+  在推之前，线上三处 logo 仍是 `src="0"` + `0 2x` 候选 —— **1x 屏能看，2x 屏碎图**。
+  `r85check` 的 18 条 `PEND` 就是它，推完才会转绿。
+- STYLE-GAP 的 §二（后台 9 条）/ §三（liquid，C5 已由对方完成、C11 是本轮新增的 logo）仍未动。
+
+---
+
+## 第八十四轮（2026-09-07）— 静态站 ↔ live 全站样式比对 + 四处输给主题 CSS 的声明（`$build` = `20260907-r84`）
+
+需求方要求「检查网站和静态站的样式差别，再尽可能不改结构的情况下（需要个清单）修复一些样式 bug」。
+全站 11 页 × 390/768/1440 三档比对，产出 [STYLE-GAP.md](STYLE-GAP.md) 一份清单，
+**只修其中 CSS 能改的四条**，其余（后台设置 9 条、liquid 10 条）逐条登记等裁决。
+
+### 改了什么
+
+四条症状不同，真因是同一件事：**我们的选择器只有 0-1-0，被 Horizon 自己的 0-1-1 压掉**。
+
+1. **`.gb-footer__input`（11 页）** — 边框算出来是 `#dfdfdf`，稿是 `rgba(1,19,7,.1)`。
+   凶手是 base.css 的 `textarea, input:not([type="checkbox"], [type="radio"])`：
+   `:not()` 取参数里最高的那一档，`[type=...]` 是 0-1-0，加上 `input` 的 0-0-1 = **0-1-1**。
+   底色一起被它的 `var(--color-input-background)` 接管（当前恰好也是白，是**潜伏**不是没发生）。
+2. **`.gb-field__input` / `.gb-field__control`（get-in-touch / referral）** — 同一条规则，
+   边框 `#cccccc` 变 `#dfdfdf`。
+3. **`.gb-form__disclaimer`（referral，≤1280）** — 底部 `-2px` 被 Horizon 的
+   `:last-child:is(p,h1..h6)`（同样 0-1-1）清成 0，免责声明与提交按钮之间多出一截。
+4. **`.gb-promo` / `.gb-vs` / `.gb-app-section`（pdp）** — 整块窄一圈：1440 档 **1360**、
+   390 档 **358**。三个 section 的 schema 写了 `"class": "section"`，
+   Horizon 的 `.section > * { grid-column-start: 2 }` 把它们塞进栅格的居中列。
+
+前三条的改法是把**被压掉的那两三条声明**在 0-2-0 重述一遍（`.x.x`），第四条是
+`.section > .gb-promo, … { grid-column: 1/-1; }`。
+
+### 为什么这么改
+
+- **不直接把原规则的选择器加粗成 `.x.x`** —— `.gb-field__input--select` 只有 0-1-0，
+  整条加粗会连它的 `padding-right` 和箭头背景一起压死。只重述输掉的那几条。
+- **重述块排在被修规则之前** —— 那两条规则里的 `:focus-visible` 与
+  `.gb-field__input--select:hover` 同样是 0-2-0，靠源码顺序赢；排到后面会把焦点态和
+  hover 一起压死。`r84check.py` 里有两条断言盯着这个顺序。
+- **不去喂 Horizon 的变量**（`--color-input-border`）—— 那样看着更省事，但主题升级改了
+  变量名就会静默失效，而我们自己的规则还是输的，等于回到原点。特异性是版本无关的。
+- **第 4 条只是补偿** —— 根治是把三个 section 的 `"class": "section"` 去掉（liquid），
+  去掉后这条 CSS 变成空转，可以一并删。已登记进 STYLE-GAP C6。
+
+### 顺带查清、**未修**（等裁决，全在 STYLE-GAP.md）
+
+- **后台就能改 9 条**：reviews 的 hero 勾了 Center layout（稿是左对齐+配图）；
+  5 个文字页 hero 的 Size 填了 Large，按大波浪预留、却画小波浪 —— 1440 档空出 31px，
+  390 档反过来波浪压进下一区块 13px；`gb-product` 没挂进 4 个模板；
+  science/reviews 的 hero 图没传；footer 社交链接是空的。
+- **需要 liquid 10 条**：`gb-page-hero.liquid` 把副标题修饰类和尾部波浪**写死**了 ——
+  science 的 hero 波浪是白色压在奶油色区块上（实测 `fg=#ffffff` / 下方地色 `#faf9f8`），
+  四页的大波浪画成了小的，faq 少 `--lh-24`、privacy 少 `--privacy-mobile`；
+  `gb-promo.liquid` 没有 scallop setting、也没输出卡片中缝的 `__lip`；
+  `gb-nutrition → gb-product` 的交界波浪仍然没有（第八十一轮的遗留）。
+
+### 新增的判据（三个都可复跑）
+
+| 脚本 | 回答什么 |
+|---|---|
+| `tools/gapstyle.py` + `gapreport.py` | 同一个类，两边算出来的样式差在哪；几何单列不作判据 |
+| `tools/losers.py` | live 上哪条声明输给了主题自己的 CSS（走 CDP `CSS.getMatchedStylesForNode` 读真层叠） |
+| `tools/wavecheck.py` | 每条波浪的尺寸 / 配色 / 它下面**真正的地色** |
+| `tools/gapwhy.py` | 单个选择器的追因：真实 class 属性 + 祖先链 + 命中的规则 |
+| `tools/r84check.py` | 本轮四项，`--as-served` 必须全红 |
+
+⚠ **`losers.py` 写了三遍才不撒谎**，三个坑都值得记：
+① 只看有 `text` 的声明会漏掉简写 —— `border: 1px solid #ccc` 与
+`border-color: var(--color-input-border)` 属性名根本对不上，必须展开成 longhand；
+② 含 `var()` 的简写 Chrome **展不开**（pending substitution），得手写一张简写表补；
+③ 逻辑属性要归一到物理属性，否则 `summary { padding-block }` 和我们的 `padding-top`
+看起来像两件事，清单里全是假警报（`.gb-faq__row` 就这么误报过一次）。
+④ 节点 id 是**按文档**发的，跨页缓存 class 会张冠李戴（`.gb-dosed__lead` 一度被报成 `<select>`）。
+⑤ **必须逐宽度跑** —— `.gb-form__disclaimer` 的负边距只写在 `@include narrow` / `tablet` 里，
+只跑 1440 一档完全看不见。
+
+### 文件清单
+
+- `assets/customstyle.scss` — 四处修复 + `$build` → `20260907-r84`
+- `assets/customstyle.css` — 重新编译
+- `*.html`（11 页 + font-check）— `?v=` 129 处
+- `docs/STYLE-GAP.md` — **新增**，本轮清单
+- `tools/gapstyle.py` / `gapreport.py` / `gapwhy.py` / `losers.py` / `wavecheck.py` / `r84check.py` — 新增
+- `docs/CHANGELOG.md` / `docs/HANDOFF.md`
+
+### 验证
+
+- `r84check.py --skip-live`：编译产物 8 条 + 静态站 30 条全绿（静态站必须**零变化**，
+  `.section` 在那边不存在，两条重述块的值与原值相同）
+- `r84check.py --password 1234 --as-served`：**19 红**（就是这四条缺陷）
+- `r84check.py --password 1234`（把本地 css 用 `page.route` 换进 live）：**全绿**，两档都过
+- 回归：`r83`/`r82`/`r81`/`r80`/`r79`/`r78` 全绿，`r64check` 1528 ok / 0 red，`rwd.py` 全绿
+
+### 推送（2026-09-07，已上线）
+
+需求方「先 scss 和 css，其余记录」—— **2 个文件**：`assets/customstyle.css` /
+`assets/customstyle.scss`。`main.js` 本轮未改，不在清单。
+
+⚠ **三方对比抓到对方当天改了 6 个 section**：正在把写死的波浪逐个换成 `scallop_variant`
+下拉（`gb-vs` / `gb-app-section` / `gb-product` / `gb-footer-cta` / `gb-reviews`），
+默认值等于原来的写死值，**渲染结果没变** —— 推完重跑 `wavecheck` 仍是同样 24 行。
+`config/settings_data.json` 与 14 个 `templates/*.json` 也变了。
+**清单内两个文件线上 = 基线，零冲突。**
+
+推送前 diff：**删 15 / 增 43**。删的 15 行全是 `?v=` 版本号从 r83 换到 r84，
+增的除同样 15 行外就是四条新规则的 28 行。**恰好等于本轮改动，零多余。**
+
+回读：**607 → 607**，`live-after-r84` 对 `live-prepush-r84` 只有清单内两个文件不同，
+且与本地逐字节相同 —— 605 个清单外文件零改动。
+线上 `r84check.py --password 1234 --as-served` **全绿**（推之前同一判据 19 红，判据是双向的）。
+新基线 **`baseline-r84/`（607 文件）**；push 副本与推送前快照已删。
+
+### 遗留
+
+- STYLE-GAP 的第二、三节（后台 9 条 / liquid 10 条）一条没动，等裁决。
+  ⚠ 对方的 `scallop_variant` 重构**没有覆盖 `gb-page-hero.liquid` 与 `gb-promo.liquid`**，
+  C1 / C2 / C3 仍然成立；且新下拉**只选颜色不选尺寸**，C2 的「大波浪画成小波浪」那一半
+  在任何 section 上都还不是 setting。
+- `.gb-product__guarantee` 的图标尺寸（5 页）仍未修 —— 第八十轮就登记了，不在点名范围内。
+
+## 第八十三轮（2026-09-07）— science 标题收窄居中 + 卡片正文去掉顶距（`$build` = `20260907-r83`）
+
+需求（对话）：`.gb-science__title` 加 `max-width: 660px; margin: 0 auto;`；
+`.gb-science-card__text` 的 `margin-top` 改 0。然后推送。
+
+### 1. ⚠ `margin: 0 auto` 会压过手机端的 `align-items: flex-start`
+
+`.gb-science__head` 是 `flex-direction: column`，桌面 `align-items: center`，
+**但 `@include narrow` 里是 `align-items: flex-start` + `text-align: left`** ——
+手机稿就是左对齐的（`228:8166`，两个 TEXT 节点都是 `textAlignHorizontal: LEFT`）。
+
+**flex 项目上的 auto margin 优先级高于 `align-items`**，所以直接加 `margin: 0 auto`
+会把手机端的标题也居中。**改前实测（静态站 index）**：
+
+| 档 | `align-items` | 左空隙 | 右空隙 | 结果 |
+|---|---|---|---|---|
+| 1440 | center | 10 | 10 | 居中 ✓ |
+| **390** | **flex-start** | **28** | **28** | **被 auto margin 强制居中** ✗ |
+
+需求没提手机端，而手机端左对齐是稿里定的 —— 按「只点名 A 就只改 A」保持原样，
+在既有的 narrow 块里补一句 `margin: 0`：
+
+```scss
+.gb-science__title {
+  max-width: 660px;
+  margin: 0 auto;
+  // ⚠ margin:0 here is load-bearing -- an auto margin outranks align-items.
+  @include narrow { margin: 0; font-size: 30px; … }
+}
+```
+
+**改后四档实测**：1440 / 1024 居中，767 / 390 左对齐（`margin-left: 0px`）。
+
+ℹ **`max-width: 660` 只在首页咬得住**：`/pages/science` 的两块 science 在所有档位下
+标题都填满了 `__head`（`gapL == gapR == 0`），`max-width` 与 auto margin 都无从发挥。
+原值 `1072px` 同理也从未生效过。
+
+### 2. `card__text` 的顶距
+
+`margin-top: 6px` 是**任务文档第三组第 1 条**点名要的（第五十三轮落地，
+当时还专门记过「这一句没写作用域，所以六张卡全都吃到」）。本轮反转回 0。
+
+`.gb-science-card__text` 是 `<p>`，reset 的 `h1…p { margin: 0 }` 已经保证 0，
+所以**直接删掉那条声明**而不是写 `margin-top: 0` —— 少一条声明，也不会让人误以为在覆盖什么。
+
+### 文件清单
+
+```
+assets/customstyle.scss   .gb-science__title max-width 1072 → 660 + margin: 0 auto
+                          + narrow 补 margin: 0；.gb-science-card__text 删 margin-top；
+                          $build → r83
+assets/customstyle.css    重新编译
+*.html                    129 处 ?v= → 20260907-r83（12 个文件）
+tools/r83check.py         新增，本轮判据（离线 + 静态站 2 页 × 4 档 + 线上 2 页 × 4 档）
+```
+
+### 验证
+
+`python3 tools/r83check.py --password 1234 --as-served` —— **全过，2 条明确跳过**。
+线上首页 1440 / 1024 居中、767 / 390 左对齐且 `margin-left: 0px`；两页所有档
+`card__text` 的 `margin-top` 都是 `0px`。
+
+⚠ **判据自己错了两次，都是"测点/期望值"的问题**：
+
+1. **满宽被误判成居中**。第一版用 `abs(gapL - gapR) < 2` 判居中，
+   而 `/pages/science` 的标题填满了 `__head`，`gapL == gapR == 0` ——
+   满宽和居中在几何上不可区分，判据把它当成了居中。
+2. **给每个页面硬编码了期望对齐**。改成断言**机制**而不是结论：
+   手机档验 `gapL < 2` + `margin-left: 0px` + `align-items: flex-start` 三个锚点；
+   桌面档若标题本来就满宽（没有空间可分配），**明确 SKIP 并打印原因**，不硬编码。
+
+回归：`r82check` / `r81check` / `r80check` / `r79check` 全过，`r64check` 1528 ok / 0 red。
+
+### 推送（2026-09-07，已上线）
+
+**2 个文件**：`assets/customstyle.css` / `assets/customstyle.scss`。`main.js` 三方一致，未列清单。
+
+三方对比（`live-prepush-r83/` 对 `baseline-r82/`）：**两个文件线上都 = 基线，零冲突**。
+对方这期间改了 `sections/gb-reviews.liquid` 与 `templates/product.json`，都不在清单里。
+
+推送前 diff：**删 17 / 增 18**，剔掉 build token 后删的是 `max-width: 1072px` 与
+`margin-top: 6px`，增的是 `max-width: 660px` / `margin: 0 auto` / narrow 的 `margin: 0`。
+**恰好等于本轮三处改动。**
+
+**回读**：文件数 **607 → 607**、2 个文件**逐字节相同**。
+⚠ **清单外有 2 个文件变动**：`templates/index.json` 与 `sections/header-group.json`。
+**证实是对方同期在后台改的，不是误伤** —— index.json 的改动是**文案补空格**
+（`"30 DayMoney Back Guarantee"` → `"30 Day Money Back Guarantee"` 等三处）
+外加给一个 section 设 `"disabled": true`，**只有 Online Store Editor 能做这种改动**；
+header-group.json 格式化后语义零差异（仅空白/键序）。我方推送清单里从来没有任何 JSON
+（铁律：绝不推 `templates/*.json` / `*-group.json` / `settings_data.json`）。
+
+新基线 **`Gumi-Brand-shopify/baseline-r83/`（607 文件）**。
+
+---
+
+## 第八十二轮（2026-09-07）— reel focus 改为镜像 hover + richtext 的 `<p>` 继承标题（`$build` = `20260907-r82`）
+
+需求（对话）两条：① **去掉 `.gb-reel:focus-visible::after`，focus-visible 改为和 hover 效果相同**；
+② **`.gb-stats__title` / `gb-nutrition__title` 等内部的 `<p>` 需要继承 title 的样式**。
+③ 推送，**但先不推 liquid**。
+
+### 1. reel focus：推翻第七十八轮的 `::after` 环
+
+r78 用 `::after` 画环是有原因的（rail 的裁切框就是卡片盒，真 outline 会丢掉上下两条；
+负 `outline-offset` 会被 `.gb-reel__media` 盖掉，三个候选都实测过）。
+本轮需求方改为**和 hover 一样**，环整个撤掉：
+
+```scss
+&:focus-visible {
+  outline: none;
+  .gb-reel__media { transform: scale(1.06); }
+}
+```
+
+⚠ **这条不能放进 `@include hover`** —— 那个 gate 是 `(hover: hover)`，
+触摸设备上接键盘的用户会完全看不到焦点在哪。hover 那条仍单独留在 gate 里。
+
+ℹ **可访问性上这是降级**（缩放比描边弱），但需求方明确要求，已记进「不要报成 bug」。
+
+### 2. richtext 的 `<p>`：标题塌成正文大小
+
+**根因**：Shopify 的 `richtext` setting **强制**把值包进 `<p>`，
+而 `gb-stats.liquid` / `gb-nutrition.liquid` 把它直接印进 `<h2>`：
+
+```liquid
+<h2 class="gb-stats__title" data-line-reveal>{{ s.title }}</h2>
+```
+
+base 的 `p { font-size: 16px; line-height: 24px; letter-spacing: -0.32px; }`（0-0-1）
+直接命中那个 `<p>`，而 `.gb-stats__title` 的规则命中的是 `<h2>` —— **子元素有自己的规则就不再继承**。
+
+**改前线上实测**：
+
+| 宿主 | `<h2>` 计算值 | 内部 `<p>` | 宿主实高 |
+|---|---|---|---|
+| `.gb-stats__title` | 56px / lh 64 / ls -0.56 | **16px / lh 24 / ls -0.32** | 48（两行 56px 本该 128） |
+| `.gb-nutrition__title` | 40px / lh 48 / ls -0.4 | **16px / lh 24 / ls -0.32** | 24 |
+
+```scss
+.gb-stats__title p,
+.gb-nutrition__title p {
+  font: inherit;              // size, line-height, family, weight in one
+  letter-spacing: inherit;    // not part of the font shorthand
+}
+```
+
+**放在 base 的 `p` 规则正下方**，因为它就是来抵消那一条的 —— 因果关系一目了然，
+`grep '__title p'` 一次找齐（铁律 4）。
+
+⚠ **范围判定写进了注释**：宿主是 `*__title` 且 setting 是 `"type": "richtext"` 且**没走
+`gb-rich-inline`**（r71 那个服务端剥壳 snippet）。全主题扫下来只有这两个符合：
+
+| section | title 的 setting 类型 | 会不会带 `<p>` |
+|---|---|---|
+| `gb-stats` / `gb-nutrition` | **`richtext`** | **会** ← 本轮修的 |
+| `gb-science` | `inline_richtext` | 不会（只允许行内标签） |
+| `gb-expert` | `text` + `escape` | 不会 |
+| `gb-hero` / `gb-product` / `gb-footer` / `gb-form-section` | `richtext` 但走 `gb-rich-inline` | 服务端已剥壳 |
+
+静态站的 title 是纯文本 + `<br>`，**这条规则在那边零匹配**。
+
+### 文件清单
+
+```
+assets/customstyle.scss   .gb-reel:focus-visible 换成 media scale（删 ::after 块）；
+                          base p 规则下方新增 title <p> 继承块；$build → r82
+assets/customstyle.css    重新编译
+*.html                    129 处 ?v= → 20260907-r82（12 个文件）
+tools/r82check.py         新增，本轮判据（离线 20 + 静态站 7 + 线上 13）
+tools/r78check.py         改：reel 环的断言交给 r82check，保留「outline 被压掉 +
+                          focus 仍有可见反馈」这个不变契约；像素扫描换成读 transform
+```
+
+### 验证
+
+`python3 tools/r82check.py --password 1234` —— **全过**。
+线上实测两个 title 的 `<p>` 三项（font-size / line-height / letter-spacing）**全部等于宿主**，
+reel 的 `::after` 为 `none`、focus 时 media 是 `matrix(1.06, …)`。
+
+⚠ **`r78check` 报了 5+4 红，全是 reel 环** —— 判据绑死了本轮推翻的实现，不是回归。
+**这是本项目第五次**（前四次：r77check 绑 `--animation-speed`、r78/r73check 绑 `$build`、
+r64check 绑 `object-fit: cover`）。已改成断言不变契约。
+
+⚠ **改 `r78check` 时自己踩了 headless 的老坑**：Tab 之后立刻读 `.gb-reel__media` 的
+transform，拿到的是**过渡起始值** `matrix(1,0,0,1,0,0)`，报红。
+`:focus-visible` 的锚点是绿的，所以一眼能看出「匹配上了但值没动」＝ 时序问题。
+补 400ms 等待后全过。见 memory `headless-transition-reads-start-value`。
+
+回归：`r81check` / `r80check` / `r79check` / `r77check` 全过，`r64check` 1528 ok / 0 red。
+
+### 推送（2026-09-07，已上线）
+
+**2 个文件**：`assets/customstyle.css` / `assets/customstyle.scss`。
+⚠ **线上此前停在 r80**（r81 改完等指令时未推），所以这次推送**同时带上了 r81 与 r82 两轮**。
+`main.js` 三方逐字节相同，未列进清单。**本轮未推任何 liquid**（需求方明确「先不推 liquid」）。
+
+三方对比（`live-prepush-r82/` 对 `baseline-r80/`）：**两个文件线上都 = 基线，零冲突**。
+对方这期间改了 5 个文件（`config/settings_data.json` / `sections/gb-product.liquid` /
+`snippets/gb-nl-modal.liquid` / `templates/index.json` / `templates/product.json`），
+**都不在清单里**。逐条看过 `gb-product.liquid` 的 diff —— 只是给营养标签弹窗加了
+`default_nutrition` 的 metaobject fallback，**scallop 部分一字未动**，
+第八十一轮的波浪结论不受影响。
+
+推送前 diff 核算：**删 25 / 增 25**，剔掉 30 行 build token 后 ——
+删的是 2 条 `object-fit: cover`（r81 改的）+ 8 行 `::after` 环（r82 删的），
+增的是 2 条 `object-fit: contain` + 5 行 title `<p>` 块 + 2 行 focus scale。
+**没有一条误删的既有规则。**
+
+**回读**：文件数 **607 → 607 零增删**、2 个文件**逐字节相同**、**605 个清单外文件零改动**。
+
+**线上实测**：`r82check` / `r81check` 的 `--as-served` **双双全过**。
+
+新基线 **`Gumi-Brand-shopify/baseline-r82/`（607 文件）**。
+
+---
+
+## 第八十一轮（2026-09-07）— 产品图改 `contain` + 查 nutrition/product 交界波浪消失（`$build` = `20260907-r81`）
+
+需求（对话）两条：① `.gb-product__image` 与 `.gb-product__thumb` 下的 `img/video/picture`
+改为 `object-fit: contain`；② **查 `gb-nutrition` 与 `gb-product` 交界处的波浪形状为什么没了**。
+
+### 1. `contain`：这是对第六十四轮的反转
+
+⚠ **第六十四轮第 5 条是需求方点名的**：「占位图容器只有灰底，内部要给 `img` / `video`
+加 100% + **`object-fit: cover`**」，当时 9 个容器一起补的 `@include cover-img`。
+本轮把其中**两个**改成 `contain` —— 产品图不能被裁。
+**代价是灰底 `$c-gray-200` 会在图片周围露成 letterbox**，这是 `contain` 的必然结果，
+不是没盖住。**别按 r64 改回去。**
+
+**做法：给 mixin 加参数，不在调用处叠第二条 `object-fit`。**
+
+```scss
+@mixin cover-img($fit: cover) { width: 100%; height: 100%; object-fit: $fit; display: block; }
+
+.gb-product__image img, video, picture { @include cover-img(contain); }   // 同 __thumb
+```
+
+⚠ 第一版写的是 `@include cover-img; object-fit: contain;` —— **能工作但脏**：
+产物里同一个块出现两条 `object-fit`，靠源码顺序决胜，而且会让**任何「数 cover 用量」的判据虚高**
+（`r64check` 就有这么一条）。加参数后产物里每块只有一条。
+**mixin 的默认值必须留在 `cover`** —— 另外 11 个调用点都读它。
+
+⚠ 注释里原本写了 `@include cover-img` 这个词，导致 `grep -c 'include cover-img'` 从 13 变 14。
+**这正是 `r63check` 踩过的坑**（注释里的词被判据数进去）。措辞已改，
+`r81check` 的对应断言也**先剥 `//` 注释再数**。
+
+ℹ `picture` 那一档实际不起作用（reset 里 `picture { display: contents }`，
+不是替换元素，`object-fit` 对它无意义），但 13 处调用一直是这个三元组，保持一致没有拆。
+
+### 2. 波浪查因：**不是"没了"，是线上从来没有输出过**
+
+`gb-nutrition → gb-product` 的交界**只在首页**。静态站 `index.html` 里，波浪是
+**`gb-product` 的第一个子元素**（第四十几轮把归属从"上面那个 section"反转成"下面那个"）：
+
+```html
+<section class="gb-product gb-product--lg">
+  <div class="gb-scallop gb-scallop--edge-top gb-scallop--lg gb-scallop--lime-to-white gb-scallop--bleed"></div>
+```
+
+**线上三条独立证据都指向同一个结论 —— 那个节点根本不存在：**
+
+| 证据 | 实测 |
+|---|---|
+| `sections/gb-nutrition.liquid` | `scallop` 命中 **0** |
+| `sections/gb-product.liquid` | 只有一处，在 `{% content_for 'blocks' %}` **之后**（section 尾部），class 是 `--edge` 不是 `--edge-top`；setting 只有 `show_scallop`（trailing） |
+| `templates/index.json` | `gb-product` 的 settings 只有 `{"show_scallop": true}`，没有 leading |
+
+**线上首页 DOM 实测**：`gb-nutrition` 与 `gb-product` 之间一条 `.gb-scallop` 都没有，
+`nutrition.bottom == product.top == 4791`（严丝合缝，中间零像素，
+而这条波浪本该占 `--sc-lg-h` ≈ 128px）；`gb-product` 的第一个子元素直接是 `gb-product__inner`。
+
+⚠ **排除了三种猜测**：不是配色填错（r76 那次的病）、不是 setting 被关掉、
+不是本轮或对方最近的改动引起 —— 对方这两天对 `templates/index.json` 的唯一改动是
+**文案**（标题多了空格、`<br>` → `<br/>`），与波浪无关。
+
+**这是结构缺失，CSS 补不出来**（`.gb-scallop` 虽是纯 CSS 画的，但需要一个占位节点）。
+
+**建议的修法：让对方给 `gb-product.liquid` 加 leading scallop —— 他们已有现成范式。**
+线上 `gb-science` 就有 `leading_scallop` / `trailing_scallop` 两个 setting，
+DOM 里实测输出了 `gb-scallop gb-scallop--edge-top gb-scallop--cream-to-sand`。
+`gb-product` 照抄即可。
+
+⚠ **但照抄不够，还要支持 `--bleed`**：静态站这条同时带 `--lime-to-white` **和** `--bleed`，
+而 `--bleed` 在源码里更靠后，会把 `--wave-bg` / `--wave-under` 双双压成 `transparent` ——
+**波浪上半是透明的，让 nutrition 的包装袋从缺口继续往下露**。
+这是设计的有意为之（Figma 里那个 Spacer 的 `frameFill` 是 `none`，全站独一份，
+见 memory `figma-render-locally-from-image-fills` 一族的项目笔记）。
+`gb-science` 的 `cream-to-sand` 是不透明档，直接套过来会**把缺口填实**。
+
+**本轮未动 liquid**（改 liquid 需逐次授权），只出结论。
+
+### 文件清单
+
+```
+assets/customstyle.scss   cover-img mixin 加 $fit 参数；.gb-product__image / __thumb
+                          改 @include cover-img(contain)；$build → r81
+assets/customstyle.css    重新编译
+*.html                    129 处 ?v= → 20260907-r81（12 个文件）
+tools/r81check.py         新增，本轮判据
+tools/r64check.py         改：object-fit 断言从「一律 cover」改成按选择器区分（见下）
+```
+
+### 验证
+
+`python3 tools/r81check.py --password 1234` —— 离线 17 条 + 线上 4 条**全过**。
+线上 PDP 实测两个容器的 `object-fit` 都是 `contain`。
+
+⚠ **`r64check` 报了 72 red，全部是这两个容器的 `object-fit=contain`** ——
+**判据绑死了被本轮推翻的取值**，不是回归。已改成按选择器区分
+（`CONTAIN_BOXES = {".gb-product__image", ".gb-product__thumb"}`，其余 7 个仍断言 cover），
+改后 **1528 ok / 0 red**，总条数不变。
+这是本项目第四次遇到「判据绑死了某一轮的具体取值」——
+前三次是 `r77check` 绑 `--animation-speed`、`r78check` / `r73check` 绑 `$build`。
+**写判据时凡是"客户可能反转的取值"，都应该按 key 区分而不是写死一个常数。**
+
+⚠ **`r81check` 的静态站断言第一版方向写反了**：我断言两个容器里**有** `img`，
+结果 2 红 —— 静态站上它们是**空的灰占位**（scss 注释就写着
+"Grey boxes are the design's own placeholders — no product photos exist yet"）。
+真正该断言的是「盒子在、内容不在」，真实测量只能在线上做。改后全过。
+
+回归：`r80check` / `r79check` / `r77check` 全过。
+
+### 推送
+
+**未单独推，随第八十二轮一并推出**（2026-09-07）。线上此前停在 r80，
+所以那次推送的 2 个文件同时带上了 r81 与 r82 两轮的改动。
+线上实测 `tools/r81check.py --password 1234 --as-served` 全过。
+
+---
+
+## 第八十轮（2026-09-07）— `packed-item` / `taste-item` 的图标：线上换成 `<img>` 后失去尺寸约束（`$build` = `20260907-r80`）
+
+需求（对话）两步：① **「`gb-product__packed` 下面的 `gb-product__packed-item` 需要修改成静态站，
+原来的圆圈换成了图片」**；② 报告了同病的 taste / guarantee 之后，
+需求方点名 **「`gb-product__taste-item` 同样修改」**（guarantee 未点名，未动）。
+
+⚠ **taste 合并进本轮而不是另开 r81** —— r80 当时还没推过 live，
+另开一号会让线上出现一个从未被服务过的 build token（r61 / r64 有过这个教训）。
+
+### 1. 根因：样式只认 `svg`，而 width/height 属性只给比例不给尺寸
+
+对方把 `blocks/_gb-packed.liquid` 的占位圆圈换成了 `image_picker`：
+
+```liquid
+<img src="{{ block.settings.image | image_url: width: 80 }}" width="34" height="32" ...>
+```
+
+我们的规则写的是 `svg { width: 34px; height: 32px; flex-shrink: 0; ... }` —— **`<img>` 一条都不匹配**。
+而 HTML 的 `width` / `height` 属性**只声明宽高比，不是尺寸**（memory
+`img-dims-attrs-give-ratio-not-size`），reset 里的 `img { height: auto }` 又把高度交还给比例，
+于是图片按**固有尺寸**渲染。
+
+**实测（`tools/r80probe.py`，线上 PDP 1440 档）**：
+
+| | 静态站（目标） | 线上（改前） |
+|---|---|---|
+| 图标 | `<svg>` **34×32**，`flex-shrink: 0` | `<img>` **171×161**，`flex-shrink: 1` |
+| 行高 | 32 | **161** |
+
+⚠ 171 而不是 `image_url: width: 80` 请求的 80 —— **固有尺寸不受那个参数控制**，
+所以「liquid 里已经写了尺寸」不能当作约束，CSS 必须自己给。
+
+### 2. 改法
+
+```scss
+.gb-product__packed-item {
+  ...
+  svg, img { width: 34px; height: 32px; flex-shrink: 0; object-fit: contain; color: $c-cream; }
+}
+```
+
+- **`svg, img` 而不是只换成 `img`** —— 静态站与设计稿仍是占位圆圈，两边都要覆盖。
+  静态站上 `img` 那一半零匹配。
+- **特异性 0-1-1** 压过 reset 的 `img { height: auto }`（0-0-1），否则高度会被悄悄丢掉。
+- **`object-fit: contain`** —— 图片未必正好是 34:32，`fill`（默认）会拉变形。
+- `color: $c-cream` 对 `<img>` 无意义，但 svg 那一半需要，保留。
+
+### 文件清单
+
+```
+assets/customstyle.scss   .gb-product__packed-item + .gb-product__taste-item 的图标规则
+                          svg → svg, img（各加 object-fit: contain）；$build → r80
+assets/customstyle.css    重新编译
+*.html                    129 处 ?v= → 20260907-r80（12 个文件）
+tools/r80check.py         新增，本轮判据（离线 22 + 线上 10）
+tools/r80probe.py         新增，量三处图标行的尺寸（静态站 vs 线上对照），可复跑
+```
+
+### 验证
+
+`python3 tools/r80check.py --password 1234` —— **全过**。
+线上 packed 图标 **171×161 → 34×32**、行高 **161 → 32**、`object-fit` 生效。
+
+**判据是双向的**：`--as-served`（线上还没推）**4 红**，
+而锚点 `live icon is an <img>` 仍绿 —— 证明测的是对的元素，红的是尺寸本身。
+
+回归：`r79check` / `r78check` / `r77check` / `r73check` 全过。
+
+### 3. taste：同一处方，但**不加** `flex-shrink`
+
+```scss
+.gb-product__taste-item {
+  ...
+  svg, img { width: 51px; height: 48px; object-fit: contain; color: $c-cream; }
+}
+```
+
+⚠ **和 packed 的差别不是漏写**：`.gb-product__taste-item` 是 `flex-direction: column`，
+图标在列方向上，`flex-shrink` 作用在高度而非宽度；板上没有它，静态站的 svg 也没有。
+**加上去是偏离静态站，不是修得更稳。** 判据专门有一条
+`taste carries no flex-shrink (matches static)` 守着这一点。
+
+**实测线上 taste 图标 `<img> 106×100 → 51×48`**（106 是被 `.gb-product__taste-item`
+自己的 `width: 106px` 卡出来的，不是图的原始尺寸）。
+
+### ⚠ 顺带发现，未修（需求方未点名）
+
+**`.gb-product__guarantee` 是同一个病、同一次改动引入的**：
+`blocks/_gb-guarantee.liquid` 也换成了 `<img>`（`width: 80`，属性 34×32），
+而 `.gb-product__guarantee` 的规则同样只写了 `svg { width: 34px; height: 32px; ... }`。
+
+⚠ **它的影响面比 packed / taste 都大 —— 在 5 个页面上**：
+`index` / `pdp` / `our-story` / `how-gumi-works` / `reviews`（实测 grep）。
+按铁律 20 未动。判据 `r80check.py` 每轮把它的实测尺寸**打印出来但不断言**，
+下一轮能直接看到有没有被处理。
+⚠ 它不在 PDP 页的 `.gb-product__packed` 区域内，**线上探针在 PDP 上测不到它**，
+要验得换一个有它的页面。
+
+### 推送（2026-09-07，已上线）
+
+**2 个文件**：`assets/customstyle.css` / `assets/customstyle.scss`。
+`main.js` 本轮未改 —— 三方对比里本地 / 线上 / 基线**逐字节相同**，不列进清单。
+
+三方对比（`live-20260907-prepush-r80/` 对 `baseline-r79/`）：**两个文件线上都 = 基线，零冲突**。
+对方这期间只改了 `templates/index.json`（Online Store Editor 托管，**我们绝不推**）。
+
+推送前 diff 核算：**删 17 行 / 增 19 行**，剔掉 15 行 build token 后 ——
+**删的 2 行正是被改写的那两条选择器**（`.gb-product__taste-item svg` /
+`.gb-product__packed-item svg`），增的 4 行是新选择器 + 两条 `object-fit`。
+`diff` 里没有一条误删的既有规则。
+
+**回读**（`live-20260907-after-r80/`）：文件数 **607 → 607 零增删**、
+2 个文件**逐字节相同**、**605 个清单外文件零改动**。
+
+**线上实测**：`tools/r80check.py --password 1234 --as-served` **全过**
+（packed 171×161 → 34×32、行高 161 → 32；taste 106×100 → 51×48）。
+
+新基线 **`Gumi-Brand-shopify/baseline-r80/`（607 文件）**。
+
+---
+
+## 第七十九轮（2026-09-07）— 购物车抽屉的退场时长与桌面端滚动锁（`$build` = `20260907-r79`）
+
+需求（对话）：**「先改 BH 和 BI 还原静态站的效果」** —— 第七十七轮登记的两条待裁决。
+
+⚠ **两条改动是耦合的，不能只做一条**：把退场从 0.125s 拉到 0.7s 之后，
+Horizon 提前解锁造成的横向跳（BI 的一部分）从「看不见」变成「一定看得见」。见第 3 点。
+
+### 1. BH —— r77 记的「必须让对方调慢全站 `--animation-speed`」不成立
+
+**改前实测**（`r79check.py --as-served`）：`animationDuration` = `0.125s`，
+关闭后 `dialog[open]` 在 **145ms** 就消失 —— 0.7s 的面板滑出被切在 1/6 处。
+
+r77 的结论是「时长只能是 `var(--animation-speed)`，要还原 0.7s 得让对方调慢全站参数」。
+**重查后不成立。** Horizon 的相位动画写在 dialog 元素上：
+
+```css
+.theme-drawer__dialog--closing { animation: drawer-slide-out var(--animation-speed) ... forwards; }
+```
+
+`--animation-speed` 是**继承的自定义属性**（定义在 `theme-styles-variables.liquid` 的 `:root`），
+但真正决定退场长度的是**这条规则的 `animation-duration`**。改后者只影响 dialog 自己，
+改前者会把抽屉子树里所有 Horizon 组件（按钮 transition、loading 转圈）一起拖慢。
+
+```scss
+#cart-drawer .theme-drawer__dialog--opening,
+#cart-drawer .theme-drawer__dialog--closing { animation-duration: $t-drawer; }
+```
+
+特异性 1-2-0 压过 Horizon 的 0-1-0，**不依赖 `{% stylesheet %}` 与 `customstyle.css` 的加载先后**。
+同时把 overlay / panel 四条动画的 `var(--animation-speed, #{$t-drawer})` 换成直接的 `$t-drawer`。
+
+⚠ **Horizon 那条 `drawer-slide-out` 动的是 dialog 的 `right`**，
+拉长到 0.7s 后它会让 dialog 盒子变形 0.7s —— **视觉上没有任何影响**，
+因为 `.gb-cart` 是 `position: fixed; inset: 0`，包含块是视口不是 dialog，
+`.gb-cart__panel` 又 pin 在 `.gb-cart` 上。所以没有去替换它的动画名，
+留着它正好继续给 `onAnimationEnd` 提供计时。
+
+**改后实测**：`animationDuration` = `0.7s`，`dialog[open]` 在 **717～749ms** 才消失。
+
+### 2. BI —— 桌面端不锁滚动，且锁必须键在 `dialog[open]` 上
+
+Horizon 只在 <990 锁（`theme-drawer.js` 的 `#modalQuery.matches` 分支里 `lockScroll(panel)`），
+≥990 走 `panel.show()`。**改前实测桌面 1440 档 `html` 的 `overflow` 是 `visible`。**
+
+```scss
+html:has(#cart-drawer .theme-drawer__dialog[open]),
+html:has(#cart-drawer .theme-drawer__dialog[open]) body { overflow: hidden; }
+
+html:has(#cart-drawer .theme-drawer__dialog[open]) { padding-right: var(--scrollbar-w, 0px); }
+```
+
+形状照静态站的 `is-modal-open`：**锁加在 html 与 body 两个元素上**（html 扛滚动，
+但 reset 把 `overflow-x` 放在它上面），**补偿只加在 html 上**（padding 已经收窄 body，
+两个都补会把居中布局往左拉半个滚动条，见 memory `scroll-lock-compensation-once-only`）。
+
+### 3. ⚠ 为什么锚点必须是 `dialog[open]`，不是 `theme-drawer[open]` 也不是 `html[scroll-lock]`
+
+`theme-drawer.js` 的 `close()`：
+
+```js
+this.removeAttribute('open');        // theme-drawer[open] 立刻没
+unlockScroll(panel);                 // html[scroll-lock] 立刻没
+if (panel.open) { ...
+  panel.classList.add('--closing');
+  await onAnimationEnd(panel, ...);  // ← 退场动画在这之后才跑
+}
+panel.close();                       // dialog[open] 到这里才没
+```
+
+**两个直觉锚点都在退场动画开始之前就掉了。** 键在它们上面，滚动条会在面板还在滑出时被还回来，
+视口凭空变宽，而 `.gb-cart` 是包含块为视口的 fixed 盒 —— 右贴边的面板会在滑到一半时横向跳。
+`.gb-cart` 自己的 `--modal-exit` 注释里记的就是这个坑，静态站早就踩过。
+
+**实测证据**（`--as-served`，线上仍是 r78）：`lockGone = 10ms`，`openGone = 145ms` ——
+Horizon 确实在动画开始前 135ms 就解了锁。0.125s 下看不出来，0.7s 下必然可见。
+**改后：`lockGone == openGone == 717ms`，锁一直held到面板消失。**
+
+### 4. `--scrollbar-w` 谁来测：新增 `scrollbarProbe` 模块
+
+`modal.open()` 与 `header.set()` 都是自己锁之前当场测。**线上这个抽屉是 Horizon 打开的**，
+而它的 `lockScroll()` 与 `showModal()` 在同一个同步块里 ——
+我们挂任何 observer 都在页面**已经锁上之后**才触发，那时读到的是 0。
+
+所以改成反过来：**在页面明确没锁的时候持续缓存**。
+
+```js
+measure: function () {
+  var de = document.documentElement;
+  if (de.hasAttribute("scroll-lock")) { return; }              // Horizon 的锁
+  if (getComputedStyle(de).overflowY === "hidden") { return; } // 我们自己的锁
+  de.style.setProperty("--scrollbar-w", (window.innerWidth - de.clientWidth) + "px");
+}
+```
+
+`init` + `resize` 各测一次，两道守卫缺一不可（两种锁的实现方式不同）。
+排在 `modules` 列表**第一位** —— 读这个值的锁可能在 init 之后的任何时刻落下。
+静态站上它写的是 `modal.open()` 会写的同一个值，无冲突。
+
+### 文件清单
+
+```
+assets/customstyle.scss   BH 4+1 条规则改时长；BI 新增 2 条锁规则；$build → r79
+assets/customstyle.css    重新编译
+assets/main.js            新增 scrollbarProbe 模块（+27 行），注册进 modules 与 window.gumi
+*.html                    129 处 ?v= → 20260907-r79（12 个文件）
+tools/r79check.py         新增，本轮判据（离线 39 + 线上 16，1 条明确跳过）
+tools/r77check.py         改：四条动画断言不再绑定时长，只验「相位类驱动我们的关键帧」
+tools/r78check.py         改：$build 断言 == → >=
+tools/r73check.py         改：$build 断言 == → >=
+```
+
+### 验证
+
+`python3 tools/r79check.py --password 1234` —— **全过，1 条明确跳过**。
+
+**判据是双向的**（对线上真实状态 `--as-served` 跑应 8 红）：
+
+| 断言 | 改后（本地 css/js） | 改前（线上 r78） |
+|---|---|---|
+| `animationDuration` | `0.7s` | `0.125s` |
+| `openGone`（dialog[open] 消失） | 717ms | 145ms |
+| `lockGone`（锁解除） | 717ms | **10ms** |
+| 桌面 `html.overflow` | `hidden` | `visible` |
+
+⚠ **两处判据毛病，都在本轮修掉**：
+
+1. **测点落在变化区间之外**：`animationDuration` 原本在 open 后等 1000ms 才读，
+   而动画 700ms 就结束、`--opening` 已被 `onAnimationEnd` 摘掉 ——
+   读到的是「没有动画的元素」的 `0s`。改成 `requestAnimationFrame` 双帧内采样，
+   并加一条 `sampled while --opening was on` 的锚点断言。
+2. **自洽陷阱**：线上探针原本只顶替 `customstyle.css`，`main.js` 仍是线上的旧版、
+   没有 `scrollbarProbe`，于是 `--scrollbar-w` 缺席 —— **期望值与实测值都是 `0px`，
+   断言自洽地绿着，却什么都没补偿**。现在 `main.js` 一起顶替，
+   并补 `scrollbarProbe is live (anchor)` 证明跑的是我们那份。
+
+⚠ **`--scrollbar-w` 的真实补偿本机验不了** —— headless chromium 没有屏幕滚动条，
+`innerWidth - clientWidth` 恒 0（铁律 14 / memory `headless-chromium-probe-limits`）。
+判据把这条**明确 SKIP 并打印**，改用**合成 15px** 验 CSS 机制是否响应（`padding-right` → `15px`）。
+**真实宽度下的补偿需要真机 / 真浏览器确认**，本机测不出。
+
+### 顺带发现，未修
+
+- **<990 档 Horizon 自己的锁也没有滚动条补偿**（`base.css` 的 `html[scroll-lock]` 只有
+  `overflow: hidden`）。本轮的规则键在 `dialog[open]` 上，两档都命中，
+  所以这个洞**顺带被补上了** —— 但那是我们的规则在兜，对方的实现没改。
+- **`.gb-cart-item__error`**（`gb-cart-line-item.liquid:83`）我方零样式，
+  出错时会以主题默认外观出现。纯 CSS 可补，不在本轮需求内。
+- **`.gb-cart__gift` 与 `.gb-cart__pay-marks` 线上完全没有输出**（全主题 grep 零命中），
+  样式都是现成的，缺的是宿主节点，**需要对方补 liquid**。见 LIVE-GAP。
+
+### 推送（2026-09-07，已上线）
+
+**3 个文件**：`assets/customstyle.css` / `assets/customstyle.scss` / **`assets/main.js`**。
+⚠ `main.js` 这一轮真的改了，不像 r73/r77 那样可以不列。
+
+三方对比（`live-20260907-prepush-r79/` 对 `baseline-r78/`）：**三个文件线上都 = 基线，零冲突**。
+对方在这期间推了 7 项，**没有一项在我们的清单里**：新增
+`sections/gb-promo.liquid` / `gb-vs.liquid` / `gb-app-section.liquid` / `snippets/gb-nl-modal.liquid`，
+改动 `sections/gb-product.liquid` / `templates/index.json` / `templates/product.json`。
+⚠ **这四个新 section 正是 LIVE-GAP 里登记的缺口**（PDP promo 卡 / PDP 对比表 / 营养标签弹窗
+/ app 挂载点）—— 对方在补 liquid，**LIVE-GAP.md 需要重新核一遍**。
+它们用的类（`gb-promo*` / `gb-vs*` / `gb-nl-*` / `gb-scallop*`）我们都有样式，
+与本轮改动零交集（BH/BI 全部作用在 `#cart-drawer` 内）。
+
+推送前 diff 核算：`customstyle.css` **删 19 行 / 增 33 行**，剔掉 30 行 build token 后
+**删的 4 行全是被改写的旧动画行、增的 14 行全是本轮规则** —— 没有误删任何既有规则。
+`main.js` 只删 2 行（modules 列表首行与 export 尾行，都是被改写的那两行）。
+
+沿用 r73 的推送副本做法：从推送前快照复制 `push-r79/`，只放入 3 个文件，
+与线上的差异恰好等于推送清单，命令写错也推不出清单外的东西。推完即删。
+
+**回读**（`live-20260907-after-r79/`）：文件数 **607 → 607 零增删**、
+3 个文件**逐字节相同**、**604 个清单外文件零改动**。
+⚠ 日志照例打了 `Cleaning your remote theme` —— 带 `--nodelete` 它不删东西，回读才是证据。
+
+**线上实测**：`tools/r79check.py --password 1234 --as-served` **全过、1 条明确跳过**。
+`scrollbarProbe is live` 证明线上跑的是新推的 `main.js`；
+`openGone = lockGone = 752ms`（推送前的同一判据是 145ms / 10ms）。
+
+新基线 **`Gumi-Brand-shopify/baseline-r79/`（607 文件）**。
+
+---
+
+## 第七十八轮（2026-09-07）— reel focus 环被裁 + footer focus 描不出来 + header CTA 收回 40（`$build` = `20260907-r78`）
+
+需求（对话）三条：① `gb-reel` 视频位 Tab 的 focus 样式被切了；
+② footer 位置的 focus 边框不显眼，需换个同字体颜色；③ header `.gb-btn--primary` padding `0 40px`。
+
+⚠ **本轮 cart 样式冻结**（需求方上一条指示），三处都在别的模块，且专门验过没波及购物车。
+
+### 1. reel 的 focus 环：先是被裁，改完发现根本画不出来
+
+**改前实测**：环是全局的 `outline: 2px solid $c-green` + `outline-offset: 2px`，
+而 `.gb-reels.swiper{overflow:hidden}` 的裁切框是 `[0,180,1440,540]`，
+**与卡片盒的上下边完全重合** —— 画在盒外那 2px 的上下两条正好落在框外，
+只剩左右两条竖线，看着就是「样式被切了」。
+
+**第一版改法（`outline-offset: -3px`）不成立。** 像素扫描显示卡内 3~5px 处仍是照片颜色：
+
+> ⚠ **Chrome 把元素的 outline 画在它自己的盒之后、后代之前**，
+> 所以内缩的环会被绝对定位的 `.gb-reel__media`（`inset:0`）盖掉。
+> 加 `isolation: isolate` 不行，加 `position:relative; z-index:1` 也不行 ——
+> **三个候选逐一实测，四条边全都扫不到绿色**。
+
+**最终改法**：换成真元素。
+
+```scss
+&:focus-visible {
+  outline: none;
+  &::after {
+    content: ""; position: absolute; inset: 3px; z-index: 2;
+    border: 2px solid $c-green; border-radius: 18px;   // 21 less the 3 inset
+    pointer-events: none;
+  }
+}
+```
+
+`inset: 3px` 让它离裁切框（＝卡片盒）有 1px 余量，`z-index: 2` 压过 `__media` 与播放图标。
+判据是**四条边各扫 8 个像素找 `#005635`**，改后上/左/右/下全部命中。
+
+### 2. footer 的 focus 环：深绿描在深绿上
+
+**改前实测**：环 `rgb(0,86,53)`（`$c-green`），footer 底 `rgb(0,65,40)`（`$c-green-900`）——
+两个深绿，等于没有环。全局 reset 的注释里其实早就写着这件事
+（「dark green outline on the footer's dark green ground is invisible anyway」），
+但当时只针对输入框做了边框方案，链接这些一直没管。
+
+```scss
+.gb-footer :focus-visible { outline-color: currentColor; }
+.gb-footer__submit:focus-visible { outline-color: $c-lime-200; }
+```
+
+`currentColor` 就是需求说的「同字体颜色」，逐元素跟各自的文字走：
+logo `#daf6b0`、链接 `#f4fce7`、社媒 `#b5ed61`，都是浅色，在深绿底上清楚。
+
+⚠ **`.gb-footer__submit` 必须单列出来**：它是白底药丸、自己的字色是 `$c-green-900`，
+而环画在按钮**外面**、落在深绿底上 —— 用 `currentColor` 会**又一次变成深绿描深绿**。
+给它 footer 自己的文字色 `$c-lime-200`。**这条别当成多余的例外删掉。**
+
+输入框 `.gb-footer__input` 不受影响：它在 reset 里就是 `outline: none` 走边框变色。
+`.gb-footer-cta` 不在 `<footer>` 里（实测），本轮选择器碰不到它，也不需要 —— 它是浅色底。
+
+### 3. header CTA padding 42 → 40
+
+```scss
+.gb-header__cta { padding: 0 40px; }
+```
+
+⚠ **这是把稿值改回去。** `.gb-btn--primary` 的 `0 40px → 0 42px` 是第四十五轮
+「一批间距/尺寸」里按 Figma 改的（同一批还有 header toggle gap 16→18、hero padding 88→91 等）。
+本轮需求方要 40，按指示执行，**记在这里以免下一轮对稿审计又把它改回 42**。
+
+⚠ **作用域挂在 `.gb-header__cta`，不是基类**：`.gb-btn--primary` 全站 22 处，
+其中一处是**购物车抽屉的 Shop Now**，而 cart 本轮冻结。
+判据里有一条负向断言守着基类仍是 `0 42px`。
+
+顺带查到：`.gb-cart__shop` **本来就自带 `padding: 0 40px`**（与线上快照逐字相同），
+不走基类的 42。所以本轮实际效果是**把 header 那颗对齐到了购物车那颗**。
+
+### 文件清单
+
+```
+assets/customstyle.scss     +23 / -1（.gb-reel focus 段、.gb-footer 两条、.gb-header__cta；$build → r78）
+assets/customstyle.css      重新编译
+*.html                      129 处 ?v= → 20260907-r78（12 个文件）
+tools/r78check.py           新增，本轮判据（32 条，全过）
+tools/r78probe.py           新增，focus 环 / 裁切祖先 / 按钮盒探针（真 Tab，非 el.focus()）
+tools/r73shots/reel-focus-{before,after}.png
+```
+
+### 判据要点
+
+- **focus 环只能用真键盘 Tab 取到** —— `el.focus()` 不触发 `:focus-visible`
+  （memory `script-focus-does-not-trigger-focus-visible`）。
+- **拍 reel 之前必须先摘掉 `.wowo`** —— 它停在 `opacity:0`、靠滚动才播，
+  headless 驱动不了，不摘的话截图整张发白，肉眼会误判成「环没画出来」。
+- **负向断言先验锚点**：`.gb-btn--primary` 与 `.gb-cart__shop` 两条都先断言元素/规则存在再比值。
+  ⚠ 判据自己错过一次：预期 `.gb-cart__shop` 是继承来的 42，实际它自带 40 ——
+  **报红的是判据不是实现**，核对线上快照后改正。
+
+### 推送（2026-09-07）
+
+推了 **2 个文件**到 live 主题 `Dev (#180348977399)`，`--only` 逐个 + `--nodelete` + `--allow-live`：
+
+```
+assets/customstyle.css
+assets/customstyle.scss
+```
+
+本次一并带上第七十七轮（cart-drawer）的改动 —— 那一轮编译后按需求方指示压着没推。
+`main.js` 与线上逐字节相同，不进清单。
+
+**三方对比**（基线 `baseline-r76` / 本地 / 推送前快照 `live-20260907-prepush-r78`）：
+两个 css 都是「我改的 → 推」，`main.js`「一致，不推」，无冲突。
+线上相对基线另有 **12 个对方的变动**（10 个新 `blocks/*.liquid` 之外还有
+`sections/gb-product.liquid` / `templates/product.json` 等），本次一律不碰。
+
+**干净副本**：从推送前快照复制一份 `push-r78/`，只覆盖这 2 个文件，
+`diff -rq` 对线上差异**恰好 2 个**，命令写错也推不出清单外的东西。推完即删。
+
+**回读验证**（`theme pull` 到 `live-20260907-after-r78`）：
+
+- 清单内 2 个文件与推送副本**逐字节相同**；**被删除的文件 0 个**。
+- css 差异 126 行，其中 30 行 build token，**`<` 侧（线上有而本地没有的行）为空** ——
+  没有覆盖掉线上任何既有规则。
+
+⚠ **文件数 593 → 603，且清单外有 12 个文件变动 —— 是对方同期推的，不是我们误伤。**
+证据：那 10 个 `blocks/*.liquid` 在**基线和我们推送前的快照里都不存在**，
+而 `--only` 推送不可能创建文件；`sections/gb-product.liquid` 的变动是把内联
+`section.blocks` 循环拆成独立 block 文件，与 CSS 无关。
+**这个店一天能被对方推四五次，回读时先按「基线和推送前快照里有没有」判断归属，再下结论。**
+
+**线上实测**（storefront 密码走 CLI 参数）：
+
+- 12 条新选择器全部在页面已解析的样式表里
+  （`.gb-reel:focus-visible` + `::after`、`.gb-footer :focus-visible`、
+  `.gb-footer__submit:focus-visible`、6 条 `#cart-drawer .theme-drawer__dialog*`、`.gb-header__cta`）。
+- 计算值：`.gb-header__cta` padding `0px 40px`、`.gb-footer__link` 环 `rgb(244,252,231)`、
+  `@keyframes gb-cart-scrim` 存在。
+- **端到端按真 Tab 走到 reel**：`outline: none`、`::after` 的 `inset:3px` /
+  `2px rgb(0,86,53)` / `z-index:2`，四条边像素扫描**全部命中**。
+
+⚠ **两个验证陷阱，都栽了一次**：
+
+1. **非指纹的 `/cdn/shop/t/2/assets/customstyle.css` 回的是 `20260907-r73` 的旧缓存**。
+   页面真正引用的是带 `?v=<digest>` 的指纹 URL。
+   **别拿那个裸路径当判据** —— 它跟主题里的实际文件可以差好几轮。
+2. **CSSOM 遍历一开始命中数全 0，是判据自己的 bug**：
+   `if (r.cssRules) { walk(r.cssRules); continue; }` —— Chrome 的
+   **`CSSStyleRule` 也带 `cssRules` 属性**（嵌套 CSS），于是每条样式规则都被当成容器跳过，
+   一条都没数到。这条早就记在 memory `cssom-stylerule-has-cssrules` 里。
+   ⚠ **当时另外三个直接读数（keyframes 在、padding 对、环色对）与它矛盾** ——
+   矛盾时先查判据，别急着下「没生效」的结论。
+
+新基线 `Gumi-Brand-shopify/baseline-r78/`（603 文件）。
+
+### 顺带发现，**未修**
+
+- **reel 的环画在海报图上，对比度随图而变**。现在是 `$c-green` 内缩环，
+  测试那张（浅绿树叶 + 白兔）很清楚，但深色海报上会弱。
+  稿里根本没有 focus 态设计，全站 focus 都是我们自定的。
+  要保证对比度得加一圈浅色外描（如 `box-shadow: 0 0 0 1px rgba(255,255,255,.6)`），
+  **那是新增视觉设计，没做**，登记为待决 BL。
+
+## 第七十七轮（2026-09-07）— cart-drawer 还原静态站外观 + 抬到 header 之上（`$build` = `20260907-r77`）
+
+需求（对话）：「点击 header 购物车按钮出现的 cart-drawer 弹窗的样式能否在**不改变结构和 js**
+的情况下尽量还原静态站时的样式，并且需要**提高弹窗的层级**」。
+
+**前提：对方已经把这个抽屉做好了**（第七十六轮推送当天新增的
+`snippets/gb-cart-drawer.liquid` / `gb-cart-line-item.liquid` / `gb-cart-scripts.liquid`）。
+他们把 Gumi 的整套类名原样搬进了 Horizon 的 `<theme-drawer>` → `<dialog>` →
+`cart-drawer-component` → `cart-items-component` 里，所以 `.gb-cart*` 的样式本来就够得着。
+本轮**一行 liquid、一行 js 都没动**，全部是 CSS。
+
+### 1. 层级：Horizon 把抽屉排在 8，我们的 header 是 100
+
+`.theme-drawer__dialog { z-index: calc(var(--layer-sticky) + var(--drawer-stack-order,0)) }`，
+而 `--layer-sticky: 8`。`.gb-header` 是 `$z-header: 100` ——
+**header 连同 "Shop now" 按钮整条画在打开的购物车上面**，遮掉了免运费提示条那一行。
+改前实测：header 区域取色 `(231,248,208)` 原色未被压暗；改后 `(115,124,104)`，
+与静态站同点**完全相同**。
+
+`.gb-cart` 自己的 `z-index: $z-modal` 救不了 —— dialog 是 `position:fixed` + `z-index`，
+它开了自己的层叠上下文，里面的 1000 出不去。所以要抬的是 **dialog**，不是 `.gb-cart`。
+
+```scss
+#cart-drawer .theme-drawer__dialog { z-index: calc(#{$z-modal} + var(--drawer-stack-order, 0)); }
+```
+
+用 id 选择器（1-1-0）压 Horizon 的 `.theme-drawer__dialog`（0-1-0），
+不依赖 `{% stylesheet %}` 与 `customstyle.css` 的加载先后。`--drawer-stack-order` 保留，
+两个抽屉同开时仍按各自顺序排。**只针对购物车抽屉**，chat-drawer 不动。
+
+### 2. dialog 本身是个 480 的白侧栏，得把它的盒子拆掉
+
+`.theme-drawer__dialog` 不是个透明容器 —— 它就是 Horizon 的抽屉面板：
+`width: var(--sidebar-width)`（实测 480）、右贴边、`background-color: var(--color-background)`、
+`border-left`、safe-area padding。我们的 `.gb-cart` 是 `position:fixed; inset:0`，
+画在它上面，两者**只在面板左侧那 89px 上不一致** —— 那里 dialog 的白底透过 50% 黑遮罩
+显成一条浅灰竖带（改前截图 x=960..1049，取色 `(127,127,127)`，改后 `(33,46,42)`，
+静态站同点 `(30,43,41)`）。
+
+```scss
+inset: 0; width: auto; max-width: none; height: auto;
+padding: 0; border: 0; background: transparent; color: inherit;
+```
+
+`color: inherit` 是第三处：dialog 断言 `--color-foreground`（纯黑），
+而面板里的文字本该从 body 继承 `$c-ink`。改前 `.gb-cart__totals` 是 `rgb(0,0,0)`，
+改后 `rgb(1,19,7)`，与静态站一致。
+
+### 3. 数量输入框：`<input>` 的固有宽度把 stepper 撑成 272
+
+静态站与设计稿都是 `<span class="gb-cart-item__count">`，线上换成了
+`<input type="number">`（Horizon 的 `/cart/change.js` 要它）。
+`<input>` 的固有宽度约 20 个字符，于是 **stepper 从 102×40 变成 272×46**，价格被挤出面板。
+
+```scss
+.gb-cart-item__stepper input.gb-cart-item__count { width:30px; height:20px; padding:0; border:0; … }
+```
+
+⚠ 选择器**必须挂在 stepper 下**：base.css 的
+`input:not([type='checkbox'], [type='radio'])` 是 0-1-1，
+裸写 `input.gb-cart-item__count` 也是 0-1-1 —— **平手时靠加载顺序定胜负**，赌不得。
+挂上 `.gb-cart-item__stepper` 后是 0-2-1，稳赢。
+另外补了 `::-webkit-inner/outer-spin-button { appearance: none }` 去掉上下箭头。
+
+改后实测 stepper `102×40`、count `30×20`，与静态站**逐像素相同**。
+
+### 4. 配送周期下拉：沿用第七十六轮的判决，只画闭合态
+
+线上的 `.gb-cart-item__interval` 是裸 `<select>`（没有 `data-select`，`selectBox` 不接管），
+所以带着浏览器默认的边框和箭头。**没有去让 main.js 认领它** —— 第七十六轮需求方
+已经就订阅下拉做过一次判决（「不用改点击出来的 drop box 样式」），同一个理由适用，
+何况本轮明写「不改变结构和 js」。
+
+改法与 `.gb-sub__select` 同一套：`select.gb-cart-item__interval:not(.gb-select__native)`，
+`appearance:none` + 去边框 + 蓝色 vee 背景图，`:not(.gb-select__native)` 保证静态站零匹配。
+
+⚠ 两处已知代价，**别报成 bug**：
+① 箭头是背景图，跟不了 `currentColor`，hover 用整图替换 —— **颜色能过渡，箭头是瞬切**；
+② 原生 `<select>` 的宽度取**最长选项**而非选中项，所以它比静态站的 `.gb-select--inline`
+（只有选中项那么宽）宽一些。实测 151 vs 77，差值全部来自 "One Time Purchase" 这一串。
+
+### 5. 空购物车：查的时候是坏的，做完复查时对方已自己修好
+
+**发现时**：线上画空抽屉不加 `is-empty`，而是干脆不输出 `__ship`/`__body`/`__bar`。
+我们的状态开关 `.gb-cart:not(.is-empty) .gb-cart__empty{display:none}` 于是恒真，
+**空态文案被藏死，空购物车打开是一块纯白面板**。当时加了一条按「填充态标志物缺席」判定的救援规则。
+
+**复查时（同日 05:02 的线上快照）对方已经补上 `is-empty`**，并把空态抽成
+`snippets/gb-cart-empty.liquid`：多了两张 `.gb-nav-card`（Shop Gumi 熊图卡 + Refer a Friend 卡）
+和 4 个后台 setting（`gb_empty_cart_card1_*` / `card2_*`）。我们静态站早就有
+`.gb-cart__cards` 那套样式，**一行没改就对上了**。
+
+**所以那条救援规则已删。** 实测依据：在线上把它的 `display` 摘掉，
+`.gb-cart__empty` 仍是 `flex`。
+
+⚠ **没有把它留作"保险"是有理由的** —— 它键在代理信号（没有 `__body`）上，
+万一将来有货的抽屉也不输出 `__body`，它会在**有货时显示空态文案**。
+守卫改放进判据：`live empty drawer carries is-empty`，
+对方哪天再把这个类丢了，判据当场报红并点名，而不是靠一条可能误伤的 CSS 兜着。
+
+线上空态实测与静态站**逐像素相同**：empty-head `1069,80,351,92`、Shop Now `1069,128,351,44`、
+cards `1069,216,351,169`、单卡 `170×169`、熊图 `1106,250,229,276`、tag `1267,232,93,22`。
+
+⚠ **唯一的差异：线上空态没有底部那条置灰的 Secure Checkout 栏**（`__bar` 整个不输出），
+静态站有。这是内容取舍不是还原，**没动**，见「顺带发现」。
+
+### 6. 铺满视口带来的两个连带项
+
+**① `::backdrop` 要压掉。** <990 时 Horizon 走 `showModal()`，dialog 进 top layer，
+浏览器会画它自己的 `::backdrop`（`rgb(--backdrop-color-rgb / 0.15)`）。
+它在我们的 `.gb-cart__overlay`（0.5 黑）**下面**，两层叠起来约 0.575，比稿子深。
+`#cart-drawer .theme-drawer__dialog::backdrop { background: transparent; }`，
+遮罩只留 `.gb-cart__overlay` 一层。
+
+**② Horizon 的「点背景关闭」失效了，但关闭路径没断。**
+`#onBackdropClick` 的判据是 `isClickedOutside(event, panel)` —— 按 dialog 的矩形算「外部」。
+dialog 一铺满视口就**没有外部了**，这个 handler 变成空转。
+
+好在**对方已经在 `.gb-cart__overlay` 上写了 `on:click="#cart-drawer/close"`**，
+真正生效的一直是那条。判据里加了两条实点：桌面 (120,500)、手机 (30,700) 各点一次遮罩，
+断言 `dialog.open` 与 `theme-drawer[open]` 都回到 false。
+**别把 `#onBackdropClick` 空转当成 bug 去"修"。**
+
+### 7. 入场 / 退场：面板是服务端就带 `is-open` 的，原本直接弹出来
+
+`.gb-cart__panel` 的 `transform: translateX(100%)` → `.is-open` 的 `none` 需要一次状态变化才跑，
+而线上的 `is-open` 是 liquid 直接写死的，dialog 一 `[open]` 就已是终态 —— **没有滑入、没有淡入**，
+违反「状态变化必有过渡」。借 Horizon 打在 dialog 上的两个相位类驱动我们自己的关键帧：
+
+```scss
+#cart-drawer .theme-drawer__dialog--opening .gb-cart__panel { animation: gb-cart-slide …; }
+#cart-drawer .theme-drawer__dialog--closing .gb-cart__panel { animation: … reverse forwards; }
+```
+
+⚠ **时长只能是 `var(--animation-speed)`（0.125s），不是我们的 `$t-drawer`（0.7s）**：
+dialog 什么时候 `display:none` 是 Horizon 用**它自己那条动画**的 `animationend` 决定的
+（`onAnimationEnd(panel, …, {subtree:false})`，只看 panel 自身的动画，不看子元素），
+写 0.7s 的话退场会在 0.125s 处被硬切。要还原稿子的 0.7s 得让对方调慢主题的
+`--animation-speed`，那是全站参数 —— **列入待裁决，没动**。
+
+### 复查：对方在本轮期间又改了 7 个文件
+
+需求方要求「查看 cart 的结构和样式有没有改动」。重新 `theme pull`
+（`live-20260907-r77check/`，593 文件）对 `baseline-r76/`（590）比：
+
+| 变化 | 文件 |
+|---|---|
+| 新增 3 | `snippets/gb-cart-empty.liquid`、`assets/nav-card-bear.png` / `.webp` |
+| 改动 7 | `snippets/gb-cart-drawer.liquid` / `gb-cart-line-item.liquid` / `gb-cart-scripts.liquid` / `gb-head.liquid`、`sections/gb-product.liquid`、`config/settings_data.json` / `settings_schema.json` |
+
+**`assets/customstyle.css` / `.scss` 零差异** —— 线上仍是 r76，本轮推送清单不冲突。
+
+购物车这边具体改了什么：
+
+- `gb-cart-drawer.liquid`：空态加 `is-empty`（见上第 5 点）、根节点加
+  `data-hydration-key="gb-cart-root"`、空态内容抽成 `gb-cart-empty` snippet。
+- `gb-cart-line-item.liquid`：删除按钮从 Horizon 的 `on:click="/onLineItemRemove/N"`
+  换成 `data-gb-remove` + 自写 handler（等服务端确认再移除行）。**类名没动，样式不受影响。**
+- `gb-cart-scripts.liquid`：**新增一个内联 `<style>`** —— 行级 loading 遮罩
+  （`.gb-cart-item{position:relative}` + `.gb-cart-item__loading` + `@keyframes gb-cart-spin`），
+  另加「改配送周期时合并同变体同周期的重复行」逻辑。
+- `sections/gb-product.liquid`：`{% form 'product' %}` 换成裸 `<form class="gb-product__form">`，
+  加购按钮加 `is-loading` 并自带内联 `<style>`（`color: transparent !important` + 转圈）。
+- `snippets/gb-head.liquid`：加了一段剥掉 URL 里 `?variant=` 的脚本（Appstle 应用会写）。
+  **`<link rel="stylesheet" href="customstyle.css">` 的位置没动**，我们的加载次序不变。
+
+**对 r77 的影响：一条都没打破。** 在新结构上重跑判据 **55 过 / 0 红 / 7 明确跳过**。
+逐条核过的三处潜在冲突：
+
+1. `@keyframes gb-cart-spin`（对方）vs `gb-cart-scrim` / `gb-cart-slide`（我们）—— **不同名**。
+2. `.gb-cart-item{position:relative}`（对方，内联 `<style>` 在 `<body>` 里、比我们的
+   `<head>` 样式表晚）—— 同权重时它赢，但**我们没设 `position`**，无冲突。
+3. 裸 `<form>` 仍带 `class="gb-product__form"`，加购按钮仍是直接子 ——
+   第七十三轮那条 `.gb-product__form > .gb-product__cta { margin-top:20px }` **照常命中**。
+
+⚠ **对方开始往 liquid 里内联 `<style>` 了**（`gb-cart-scripts` 与 `gb-product` 各一处）。
+这两块不归我们管、目前也不冲突，但**样式源从此不止 `customstyle.scss` 一处** ——
+以后查「这条规则从哪来」要连 `snippets/*.liquid` 一起 grep。
+
+### 文件清单
+
+```
+assets/customstyle.scss     +106 （.gb-cart 模块尾部新增 live-only 段；$build → r77）
+assets/customstyle.css      重新编译
+*.html                      129 处 ?v= → 20260907-r77（12 个文件）
+tools/r77check.py           新增，本轮判据（55 过 / 0 红 / 7 明确跳过）
+tools/r77probe.py           新增，线上抽屉几何/层叠探针
+tools/r77static.py          新增，静态站抽屉基准截图
+tools/r73shots/cart-*.png   改前 / 改后 / 静态站基准 / 空态线上与静态各一张
+```
+
+### 线上验证：53 过 / 0 红 / **7 条明确跳过**
+
+`python3 tools/r77check.py --password 1234` —— 离线 33 条（产物 22 + 静态站 11）
++ 线上 20 条，全过；**7 条跳过并逐条打印在结果里**，不是静默略过。
+
+线上半段的三个写法值得沿用：
+
+1. **顶替而不是追加 `customstyle.css`**（`page.route` fulfill）。`add_style_tag` 追加的规则
+   在同权重时凭顺序必胜，会把判据打得比浏览器实际更宽松。
+2. **一个 context、一个页面、三档视口**（1440 → 390 → 900，靠 `set_viewport_size`）。
+   顺带真跑了一遍 Horizon 的 `#onModalBreakpointChange`。
+3. **跳过要响**：`skip()` 单独计数并在结尾列名，`sys.exit` 只看 FAIL。
+
+⚠ **这家店在 Cloudflare 托管挑战后面，触发器是 `/cart/*` 这个路径本身**：
+
+| 请求 | 结果 |
+|---|---|
+| `/`（首页） | 200，`#cart-drawer` 在 |
+| `/cart/<variant>:<qty>` | **429 + `?__cf_chl_rt_tk=…`，标题 `Verifying your connection...`** |
+| 之后的任何 `/` | 同样被挂住，标题 `Just a moment...` |
+| 反复打 `/products.json`、`/cart/add.js`、甚至 `/password` | 也会累积到 429 / 503 |
+
+**一旦踩中，整个浏览会话（含首页）都废掉**，退避半小时也不一定解。
+所以判据默认**完全不碰 `/cart/*`**：新开 context 本来就是空车，
+空车态足够验完 dialog 几何、层级、遮罩压住 header、`::backdrop`、遮罩点击关闭、
+空态文案、手机档模态性与满宽。**只有行项目的尺寸需要有货**，
+那 7 条走 `--fill` 开关（会踩挑战，实测确实踩），默认跳过。
+
+**那 7 条的证据来自本轮更早的线上实测**（Cloudflare 还没被激怒时，真加了 2 件货跑的）：
+stepper `102×40`、count `30×20`、interval `rgb(3,116,165)` / `appearance:none` / 边框 0，
+截图 `tools/r73shots/cart-live-desktop-{before,after}.png`。
+后来补的 `::backdrop` 一条不影响它们（桌面非模态根本没有 backdrop）。
+
+⚠ **判据自己也错过一条**：390 档原本断言「点遮罩能关」，红了 ——
+**那个宽度下面板是满宽的（`@include narrow { width: 100% }`），根本没有露出来的遮罩**，
+我点的坐标落在面板上。改成点关闭按钮，遮罩点击移到 900 档（仍是模态、但遮罩露着）去验。
+**报红的是判据不是实现**，这类"测点落在错误区域"的假红见铁律 6。
+
+### 顺带发现，**未修**
+
+- **线上空态没有底部那条置灰的 Secure Checkout 栏**，静态站有（`.gb-cart.is-empty`
+  把它做成禁用态）。线上是整个 `__bar` 不输出，CSS 补不出来，也是**内容取舍不是还原**。
+- **加购按钮的 `is-loading` 由对方内联 `<style>` 提供**，不在我们的 scss 里。
+- **购物车行的图是灰占位块** —— 线上 `item.image` 为空（liquid 里 `{%- if item.image != blank -%}`
+  才输出 `<img>`）。这是商品数据没图，不是样式。静态站同样是灰块（稿里就是占位）。
+- **桌面端打开抽屉后，背后的页面仍可滚动**。Horizon 在 ≥990 走 `dialog.show()`（非模态，
+  不锁滚动），<990 才 `showModal()`。静态站两档都锁。CSS 能做
+  `html:has(#cart-drawer[open]){overflow:hidden}`，但**锁滚动必须同时补偿滚动条宽度**，
+  而宽度只能 JS 实测 —— 本轮说好不改 js，所以没做。
+- **`--animation-speed` 0.125s vs 稿的 0.7s**（见上第 7 点）。
+
+### 待推送
+
+尚未推 live。推送清单预计 2 个文件：`assets/customstyle.css` / `assets/customstyle.scss`。
+`main.js` 本轮未改。
+
+## 第七十六轮（2026-09-07）— 订阅下拉退回原生（只改闭合态）+ faq/footer 交界波浪的配色（`$build` = `20260907-r76`）
+
+需求（对话）两条，**都推翻了前面轮次的做法**：
+① 「只需改 `gb-sub__select` 的表单样式就行，不用改点击出来的 drop box 样式，因为这样改可能会有一些问题」；
+② 「修复 gb-faq 缺少波浪的形状的效果」→ 追加澄清：**「是和 footer 交界处缺少波浪形状」**。
+
+### 1. 撤回 selectBox 接管，改纯 CSS 只管闭合态
+
+第七十四轮让 `main.js` 认领线上的订阅下拉（`selectBox` 接管成按钮 + ul），**第七十五轮已推上线**。
+需求方本轮明确要求退回原生控件 —— 顾虑是接管会改 DOM 结构与交互，
+而它正好和对方新装的 cart-drawer、价格逻辑挤在同一块。
+
+- `main.js` 的 adopt 循环整段删除，**回退后与 `baseline-r73/assets/main.js` 逐字节相同**（干净回退）。
+- 新增 `.gb-sub__select:not(.gb-select__native)`：40 高 / 8 圆角 / `$c-gray-350` 边框 /
+  `0 1px 2px $c-ink-05` / 14px·400·-0.28 / `$c-gray-700`，箭头复用
+  **`.gb-field__input--select` 里现成的那个 data URI**（同一个 vee `M5 7.5L10 12.5L15 7.5`，
+  同样 `right 14px center`）—— 不是新画的。
+- `:not(.gb-select__native)` 让它在静态站零匹配（那边 `selectBox` 已接管并隐藏原生控件），
+  同时**顺带成了静态站的降级外观**：脚本万一死了，露出来的原生控件也是这个样子。
+
+⚠ **代价（需求方已知并接受）**：箭头不能旋转（`background-image` 不可 `transform`），
+下拉列表是浏览器/OS 画的、样式够不到。这正是 `selectBox` 当初存在的理由，现在按要求让回去。
+
+线上实测（把 r75 main.js 已做的接管在探针里还原，等价于推 r76 之后的状态）：
+`40/8px/14px/arrow`、`wrapped: False`、原生 select 仍带 `data-gb-plan-select`、
+`change` 事件照常触发。
+
+### 2. faq 与 footer 交界处的波浪：变体用错，上半条透明了
+
+⚠ **第一版修错了位置** —— 需求「修复 gb-faq 缺少波浪的形状」被理解成上边缘，
+做了一套「从 faq 这一侧补画顶部波浪」的方案。需求方澄清是**下边缘（与 footer 交界处）**，
+那套补画已整段撤回，`.gb-scallop` / `--edge-top` 的选择器也还原成单选择器。
+
+**真正的根因**：线上把这条波浪的配色对填成了 `to-lime`，静态站用的是 `mint-to-lime`。
+
+| | `--wave-bg`（上方色） | `--wave-under` | `--wave-fg` |
+|---|---|---|---|
+| 静态站 `--mint-to-lime` | `#e7f8d0` mint | `#b5ed61`（默认取 fg） | `#b5ed61` |
+| 线上 `--to-lime` | **transparent** | **transparent** | `#b5ed61` |
+
+上半条透明 → `.gb-faq` 的 mint 到波浪处**断成白色**，弧形与上方失去分界，
+看上去就是「波浪形状没了」。修前截图里弧形之间的间隙是白的，修后是 mint。
+
+`to-lime` 本身没错 —— **faq 页**的这条波浪上方是白色的 `.gb-cta-band`，透明顶正合适。
+错只错在 `.gb-faq` 直接接 footer 的那三页。
+
+**改法**（纯 CSS，不碰对方的 setting）：
+
+```scss
+#MainContent:has(> .shopify-section:last-child > .gb-faq) + footer .gb-scallop--to-lime {
+  --wave-bg: #{$c-lime-150};
+  --wave-under: var(--wave-fg);
+}
+```
+
+⚠ **`.gb-faq` 和这条波浪不是兄弟** —— 一个在 `#MainContent`，一个在 `<footer>`；
+但那两个容器是兄弟，而且「faq 是 main 的最后一个 section」正好等价于「faq 直接接 footer」。
+实测：pdp / how-gumi-works / reviews 该条为 true，faq 页为 false。
+只用一层 `:has()`，内部是普通选择器 —— **`:has()` 不能嵌套**（第一版的 `@extend` 正是
+把选择器塞进了 `:has()` 里面，判据里现在有一条 `no nested :has()` 常驻盯着）。
+静态站没有 `#MainContent`，规则零匹配。
+
+⚠ **`--wave-under` 必须一起改**：`to-lime` 把它显式设成了 transparent，
+只改 `--wave-bg` 会在分数缩放下露出发丝缝（见 `.gb-scallop` 那段注释）。实测修后为 `#b5ed61`。
+
+### 顺带发现（未修，等需求方拍板）
+
+同一个根因**还影响另外两页**，需求方只点名了 faq，本轮按公约没动：
+
+| 页面 | footer 波浪上方 | 该块背景 | 现状 |
+|---|---|---|---|
+| **index** | `.gb-reviews` | mint `#e7f8d0` | `--wave-bg: transparent` ← 同样断色 |
+| **science** | `.gb-faq-image` | mint `#e7f8d0` | 同上 |
+| our-story | `.gb-reviews` | cream `#faf9f8` | transparent 露出白色，大致对 |
+
+要一并修的话，把上面那个选择器扩成三条（或请对方把这几页的 section setting
+从 `to-lime` 改成 `mint-to-lime`，那是更正的路子）。
+
+### 验证
+
+`tools/r73check.py --password 1234` —— **52 ok / 0 FAIL**，本轮新增：
+
+- `main.js no longer adopts the live select` / `native select restyled for the live theme`
+- `faq stand-in wave spliced into .gb-scallop (not @extend)` /
+  `faq wave withdrawal rule has no nested :has`（**专门盯上面那个坑**）
+- 波浪四页 × 两条：`stand-in drawn/withdrawn` + **`exactly one wave at the edge`**
+  —— 后者同时防住「零条」和「两条」，是这条修复的核心不变量
+- 静态站四页 `rule inert, real wave intact`
+
+另跑：11 页回归全清（波浪数量与改前一致，静态站 select 仍是 40 高的 selectBox 按钮）、
+编译幂等（两次 md5 `f0737ed7…`）。
+截图 `tools/r73shots/`：`faq-edge-static.png` vs `faq-edge-after.png` 形状一致、
+`select-native-r76.png`。
+
+### 文件清单
+
+```
+改  assets/main.js            删除 adopt 循环（回退到 baseline-r73 的状态）
+改  assets/customstyle.scss   .gb-sub__select 原生控件样式；faq→footer 波浪的 --wave-bg/-under
+                              覆盖（live-only，一层 :has）；$build → 20260907-r76
+改  assets/customstyle.css    编译产物（双写）
+改  *.html（12 个）            129 处 ?v= 升到 r76
+改  tools/r73check.py         +15 条；$build 判据改为按声明锚定（插变量时被行号偏移坑过一次）；
+                              新增常驻判据 no nested :has()
+新增 tools/r73shots/footerwave-{before,after,static}.png、select-native-r76.png
+                              （faq-edge-*.png 是第一版改错位置时的，留作对照）
+改  docs/CHANGELOG.md、docs/HANDOFF.md
+```
+
+### 推送（2026-09-07）
+
+推了 **3 个文件**：`assets/customstyle.css` / `.scss` / `main.js`
+（`--only` 逐个 + `--nodelete` + `--allow-live`，副本 `push-r76/` 与线上差异恰好 3 个、liquid 混入 0）。
+
+三方对比：我们的三个文件线上未被动过。**对方同期在改** `gb-product.liquid`
+（加购从 FormData 换成 JSON payload）与三个 `gb-cart-*.liquid`（在做购物车抽屉）——
+都不触及 select 的 DOM 或样式，`gb-sub.liquid` 的 select 仍是纯 `data-gb-plan-select`。
+
+回读：**590 → 590**、三个文件逐字节相同、未推的 587 个文件零改动、
+线上 `main.js` 里 `data-gb-plan-select` 残留 **0 处**（回退确实生效）。
+
+**线上真实状态 `--as-served` 54 条全过**：select 是原生控件且外观为 `40/8px/14px/arrow`、
+footer 波浪三页 `--wave-bg: #e7f8d0`、faq 页仍 `transparent`、角标与 gallery 保持 r75 的结果。
+
+CDN 指纹 URL 回读交叉验证：`#MainContent:has(>.shopify-section:last-child>.gb-faq)+footer
+.gb-scallop--to-lime{--wave-bg: #e7f8d0;--wave-under: var(--wave-fg)}` 完整上线。
+⚠ **判据两次栽在压缩形式上** —— 线上 css 是 minified（`:has(` 里的空格被去掉），
+但**自定义属性的值保留空格**（`--wave-bg: #e7f8d0`）。现在改用
+**「线上命中数 == 本地源命中数」**做判据，不再写死期望值。
+
+新基线 `Gumi-Brand-shopify/baseline-r76/`（590 文件）。
+截图 `tools/r73shots/footerwave-live-r76.png` / `select-live-r76.png`。
+
+### 遗留
+- `liquid/snippets/gb-sub.liquid`（r73 那份加 `data-select` 的）**更不该推了**，
+  它会让线上重新变成接管状态。已在 `liquid/README.md` 标注。
+- **index / science 的同类断色未修**（见上「顺带发现」），等需求方拍板。
+- ⚠ **faq 的上边缘波浪确实也缺**（pdp / how-gumi-works，因为上方的 `gb-app-section` /
+  `gb-product` 线上没有），那是第七十四轮查到的另一回事，本轮的补画方案已撤回。
+  逐条仍在 [LIVE-GAP.md](LIVE-GAP.md) 三之二。
+
+---
+
+## 第七十五轮（2026-09-07）— 购物车角标归位 + gallery 顶距二次反转（`$build` = `20260907-r75`）
+
+需求（对话）两条：① `gb-header__icon` 的 cart-bubble 要定位到右上角、`background: #005635`、
+略缩小；② `.gb-product__media` 的 top 改为 **100px**。
+
+### 1. cart-bubble：Horizon 的定位规则一条都没匹配上
+
+⚠ **对方在第七十四轮之后又改了线上**（`gb-header.liquid` + `gb-product.liquid`）：
+购物车图标从 `<a href="{{ routes.cart_url }}">` 换成了原生抽屉的触发器 ——
+`<cart-icon class="gb-header__icon-wrap …">` 包 `<button on:click="#cart-drawer/toggle">`，
+里面 `{% render 'cart-bubble', limit: 100 %}`。这与第七十三轮记的
+「图标指向 /cart，原生抽屉打不开」已经不同了，LIVE-GAP 第四节需要更新。
+
+**根因**：Horizon 给角标的定位规则**全部挂在基类 `.header-actions__cart-icon` 上**
+（`snippets/header-actions.liquid` 的 stylesheet 块）：
+
+```css
+.header-actions__cart-icon { --cart-bubble-size:20px; --cart-bubble-top:4.5px;
+                             --cart-bubble-right:2.5px; position: relative; }
+.header-actions__cart-icon .cart-bubble { position:absolute; width:var(--cart-bubble-size);
+                                          top:var(--cart-bubble-top); right:var(--cart-bubble-right); }
+```
+
+而对方的 liquid 只写了 `header-actions__cart-icon--has-cart`（**修饰类**，还只在非空车时加），
+**基类从未出现**。于是角标既没有定位祖先、也没有偏移量，`.cart-bubble` 退回 snippet 自带的
+`position: relative` —— **参与流布局**，掉到图标正下方。
+线上实测（模拟 3 件商品）：角标在图标下方 24px、背景 `rgb(0,0,0)`（Horizon 的
+`settings.page_text_color` fallback），**图标盒被撑成 24×44**。
+
+**改法**（纯 CSS，在我们的 `customstyle.scss` 里，不碰对方 liquid）：
+
+```scss
+.gb-header__icon-wrap {
+  --cart-bubble-size: 16px;   --cart-bubble-top: -3px;  --cart-bubble-right: -3px;
+  --cart-bubble-background: #{$c-green};   --cart-bubble-text: #{$c-white};
+  position: relative;  display: inline-flex;
+}
+.gb-header__icon-wrap .cart-bubble {
+  position: absolute; top: var(--cart-bubble-top); right: var(--cart-bubble-right);
+  left: auto; bottom: auto; width: var(--cart-bubble-size); font-size: 10px; font-weight: 500;
+}
+```
+
+取色走 Horizon 自己的 `--cart-bubble-background` 变量，不去改 `.cart-bubble__background`
+的 `background-color` —— 变量是它 doc 注释里明写的对外接口。
+
+| 指标 | 修前 | 修后 |
+|---|---|---|
+| 角标相对图标右上角 | 下方 24px | **右上 (+3, −3)** |
+| 尺寸 | 20×20 | **16×16** |
+| 背景 | `rgb(0,0,0)` | **`rgb(0,86,53)` = #005635** |
+| 图标盒 | 24×**44**（被撑高） | 24×**24** |
+
+⚠ **Horizon 的 donut mask 没有被修好，也修不了** —— 那条规则
+（`.header-actions__cart-icon.header-actions__cart-icon--has-cart svg`，在角标处挖个透明环）
+要求**基类和修饰类同时存在**，基类既然没加就不匹配。实测 `mask-image: none`，修前修后都一样。
+角标直接盖在图标上，没有那圈透明间隙。要那个效果得让对方在 liquid 里补上基类。
+
+### 2. gallery 顶距：104 → 80 → **100**，第二次反转
+
+板上是 `header + 24`（24 量到视口顶）= 104。第七十三轮客户要求贴合改 80，本轮改 **100**。
+pc 档 `calc($h-header + 20px)`；**tablet 档写成 `calc(fluid($h-header-mobile, $h-header) + 20px)`**
+而不是写死 100 —— 该档 header 高度是斜坡，写死会让 768 端的净距变成 36。
+
+⚠ **这个值已经改过两次，别按板或按上一轮改回去**，三次分别是 r53 起的 104 / r73 的 80 / r75 的 100。
+
+### 验证
+
+`tools/r73check.py`（已扩到覆盖 r73–r75）：
+
+- 注入模式 **37 ok / 0 FAIL** —— 含角标四条（位置 (3,−3)、16×16、`rgb(0,86,53)`、图标盒 24）
+- `--as-served` **34 ok / 0 FAIL** —— 线上仍是 r73，角标与 select 都是未修状态，**这是预期**
+- 11 页静态站回归全清：header 全部粘 0、无水平溢出、`media.top` 都是 100px、
+  **`.cart-bubble` / `.gb-header__icon-wrap` 本地零匹配**（live-only 规则不影响静态站）
+- 编译幂等（两次 md5 `6966c831…`）
+
+截图 `tools/r73shots/bubble-before.png` / `bubble-after.png`。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   cart-bubble 定位/配色/尺寸（live-only）；gallery top → header+20；
+                              $build → 20260907-r75
+改  assets/customstyle.css    编译产物（双写）
+改  *.html（12 个）            129 处 ?v= 升到 r75
+改  tools/r73check.py         +6 条（角标四条、gallery 100、静态站零匹配）；修 check() 对元组的格式化
+新增 tools/r73shots/bubble-*.png
+改  docs/CHANGELOG.md、docs/HANDOFF.md、docs/LIVE-GAP.md
+```
+
+### 遗留 / 待推
+
+- **r74 + r75 一起待推**：`assets/customstyle.css` / `.scss` / `main.js` 三个文件。
+- **角标的透明环（donut mask）没做** —— 需要对方在 `gb-header.liquid` 给 `<cart-icon>`
+  补上基类 `header-actions__cart-icon`。已进后台/对方待办。
+- 空车时角标是 `visually-hidden`，本轮所有角标判据都靠**模拟非空车**（加 `--has-cart`、
+  去 `visually-hidden`、填数字）才测得到 —— 直接打开页面看不到角标不是 bug。
+
+---
+
+## 第七十四轮（2026-09-07）— faq 波浪消失查因（非本轮引起）+ 订阅下拉改用 main.js 认领（`$build` = `20260907-r74`）
+
+需求（对话）两条：① 查 live 的 `gb-faq` 波浪为什么没了；
+② `gb-sub__select` 能否**不改结构只改样式**调回原样。
+
+### 1. faq 上边缘的波浪：section 缺失带走的，不是波浪本身出问题
+
+**先排除本轮嫌疑**：用推送前的 r72 CSS 注入线上同一页再测，波浪同样缺失 → **与 r73 推送无关**。
+
+根因是波浪的归属方式：**波浪是上方 section 的最后一个子元素**（不是独立兄弟，见
+PROJECT-STATUS「波浪」一节）。上方那个 section 在线上不存在，波浪就跟着一起没了。
+
+| 页面 | 静态站 faq 上方 | 线上 faq 上方 | 判定 |
+|---|---|---|---|
+| **pdp** | `.gb-app-section`（含 `--edge --cream-to-mint`） | `.gb-reviews` | `gb-app-section` 线上**没有 liquid** |
+| **how-gumi-works** | `.gb-product`（含 `--edge --white-to-mint`） | `.gb-reviews` | `gb-product` **没挂进该页模板** |
+| reviews | `.gb-ingredients` | `.gb-ingredients` ✓ | 在（高度 129 vs 97，`--lg` 变体差异） |
+| faq | `.gb-page-hero` | `.gb-page-hero` ✓ | 三个波浪全一致 |
+
+两条缺口本身早有记录（[LIVE-GAP.md](LIVE-GAP.md) 第一节的 `gb-app-section`、
+[LIVE-BACKLOG.md](LIVE-BACKLOG.md) 一·2 的「4 个模板没挂 gb-product」），
+**但此前只当成"少一个区块"，没意识到它同时带走了下一区块的上边缘波浪** ——
+视觉症状是 faq 上沿变成一条直边。已把这层因果补进两份文档。
+
+⚠ **修法不是给 `.gb-faq` 补一个波浪** —— 那会在区块补回来时变成两个。
+正解是补回上方的 section（how-gumi-works 在后台加 `gb-product` 即可；
+pdp 要新写 `gb-app-section` 的 liquid）。
+
+判据：`tools/r73shots/` 下线上/静态站的逐个波浪截图；比对脚本见本轮对话，
+核心是按**几何相邻**（波浪底边 ≈ faq 顶边，容差 6px）判断归属，
+不能按 DOM 兄弟找 —— 线上隔着 Shopify 的 section 包裹层。
+
+### 2. 订阅下拉：纯 CSS 做不到，改用 main.js 认领（仍然不碰对方的 liquid）
+
+**纯 CSS 的天花板**（这是 `selectBox` 当初存在的原因，注释里就写着）：
+原生 `<select>` 的**下拉列表是浏览器/OS 画的**，CSS 够不到（选项字体、圆角、hover、动画全改不了）；
+箭头若用 `background-image` 画则**不能 `transform` 旋转**。
+能做的只有闭合态那个盒子。线上现状实测：361×26、浏览器默认 `1px solid rgb(118,118,118)`、圆角 4。
+
+**改用 `main.js` 认领**——第七十三轮原本要改 `snippets/gb-sub.liquid` 加 `data-select`，
+现在改成 `selectBox.init()` 自己去认，一条循环：
+
+```js
+var adopt = document.querySelectorAll("select[data-gb-plan-select]:not([data-select])");
+for (var j = 0; j < adopt.length; j++) { adopt[j].setAttribute("data-select", ""); }
+```
+
+- **hook 用对方的 `data-gb-plan-select`，不是 `.gb-sub__select` 类** —— 类名是我们的、随时可能改名，
+  那个 data 属性是他们价格逻辑的命脉，比类稳。符合铁律 17。
+- **静态站零变化**：`:not([data-select])` 在本地不匹配（markup 里已经有），实测
+  `hasVendorHook: False`、按钮仍 40 高、`selectBox.boxes` 仍 3 个、无 JS 报错。
+- **线上实测认领后**：40 高 / 8 圆角 / `rgb(179,179,179)`（`$c-gray-350`）/ 阴影 / 14px
+  —— 与静态站规格逐项一致；箭头存在且展开时旋转；原生 select 与
+  `data-gb-plan-select` 都保留，**change 事件照常触发**（对方价格逻辑不受影响）。
+
+⚠ **`liquid/snippets/gb-sub.liquid` 那份改动因此不必推了**，留作备选并已在
+`liquid/README.md` 标注。要推的变成 `assets/main.js`——**那是我们自己的文件，不需要 liquid 授权**。
+
+### 验证
+
+`tools/r73check.py` 扩到覆盖本轮，两个模式都全绿：
+
+- `--password 1234`（注入模式，验 r74 改动）：**32 ok / 0 FAIL**
+- `--password 1234 --as-served`（线上真实状态）：**33 ok / 0 FAIL**
+  —— select 那条断言为 `False`（仍是原生），**这是预期**：main.js 尚未推。
+
+⚠ 判据里 `BEFORE fix: header scrolls away` 那条**改成了信息输出，不再是断言** ——
+r73 的 CSS 已上线，线上不再复现该 bug，它继续当断言就会永远报红。
+
+### 文件清单
+
+```
+改  assets/main.js                   selectBox.init() 认领线上订阅下拉（一条循环）
+改  assets/customstyle.scss          $build → 20260907-r74
+改  assets/customstyle.css           编译产物（双写）
+改  *.html（12 个）                   129 处 ?v= 升到 r74
+改  tools/r73check.py                +4 条（main.js 认领、静态站零变化、按钮规格）；
+                                     BEFORE 那条降级为信息输出
+新增 tools/r73shots/                  线上/静态站波浪截图各 3 张
+改  docs/CHANGELOG.md、docs/HANDOFF.md、docs/LIVE-GAP.md、docs/LIVE-BACKLOG.md、liquid/README.md
+```
+
+### 遗留 / 待推
+
+- **`assets/main.js` + `customstyle.css` + `.scss` 待推**（升了 `$build` 所以 CSS 也要跟着走）。
+- **faq 波浪要真正修好，得补回上方的 section**：how-gumi-works 后台加 `gb-product`（一步操作），
+  pdp 要新写 `gb-app-section` 的 liquid（工作量大，见 LIVE-GAP 第一节）。**本轮都没做**。
+- reviews 页 faq 上方那个波浪线上是 `--lg`（129 高）、静态站是 97 —— 未查，不在本轮范围。
+
+---
+
+## 第七十三轮（2026-09-07）— live 站五条：header 吸顶失效、gallery 贴合、订阅下拉、按压下沉（`$build` = `20260907-r73`）
+
+需求（对话，任务文档未换版，md5 仍 `2d70c334…`）五条，全部针对**线上**：
+header 缺 sticky / `.gb-product__media` top 改 80 / `gb-sub__select` 调回原样 /
+`.gb-product__cta` margin-top 20 / 按钮点击去掉下沉。
+
+### 1. header 吸顶：规则一直在，是被 Shopify 的包裹层吃掉的
+
+`.gb-header { position: sticky; top: 0 }` 第十四轮就写了，静态站正常。线上实测祖先链：
+
+```
+header#site-header            pos=sticky top=0px  h=81   ← 规则在
+section#shopify-section-...   pos=static          h=81   ← 父盒 = header 自身高度
+div#header-group              pos=static          h=121  ← 40(公告) + 81
+div.gb-page-wrapper           pos=static          h=5409
+```
+
+**sticky 只在父盒内粘**，而父盒高度正好等于 header —— 滚一下就到底。
+实测滚 900：`top 40 → -860`。这正是那条注释预告的情况
+（"A sticky element has to sit directly in `<body>`; inside any wrapper it only sticks
+within that wrapper"），只是当时没有线上环境可验。
+
+**三个候选在线上逐个注入实测**，选 A：
+
+| 方案 | header | 公告条 | 布局 |
+|---|---|---|---|
+| **A `#header-group` + 其直接子都 `display: contents`** | **粘在 0 ✓** | 正常滚走 ✓ | 不变 ✓ |
+| B 只让 section wrapper `contents` | 仍滚走 ✗ | — | — |
+| C sticky 挂 `#header-group` | 粘在 40 | **公告条也粘住 ✗** | 不变 |
+
+B 无效是因为 `#header-group` 自己那 121px 的盒子还在约束；C 违反"公告条不跟着走"的设计。
+A 把两层包裹盒都撤掉，`.gb-header` 的包含块回到 `.gb-page-wrapper`（整页高）。
+
+⚠ **`display: contents` 安全的前提已验**：`theme.liquid` 里读 `headerGroup.children`
+的测量脚本第一行就是 `if (!header || !headerGroup) return`，而它找的 `#header-component`
+是 Horizon 原生 header —— **这个店用的是 `gb-header`，线上实测该节点不存在**，脚本本来就早退。
+
+**静态站零视觉变化**（没有 `#header-group`），与第六十四轮那三处包裹层规则同类。
+
+### 2. PDP gallery 贴合 header（104 → 80）
+
+`top: calc($h-header + 24px)` = 104 改成 `top: $h-header` = 80。板上那 24 是量到视口顶的，
+header 吸顶后这 24 变成了 header 下方的额外空隙，客户要去掉。
+**tablet 档跟着改成 `fluid($h-header-mobile, $h-header)`** —— 该档 header 高度本身是斜坡，
+写死 80 会在 768 端多出 16px 空隙。实测五档全部紧贴：
+
+| 视口 | 768 | 1024 | 1280 | 1281 | 1440 |
+|---|---|---|---|---|---|
+| media.top | 64 | 71.98 | 79.97 | 80 | 80 |
+| header 高 | 64 | 72 | 80 | 80 | 80 |
+
+### 3. `gb-sub__select` 退回了原生下拉：少一个 `data-select`
+
+静态站 `<select class="gb-sub__select" data-select>` → `selectBox` 接管成按钮 + ul（箭头可旋转）。
+**线上是 `data-gb-plan-select`，没有 `data-select`** → `selectBox` 不认，渲染的是原生 `<select>`。
+线上实测 `wrapped: False, button: False`。
+
+改 `snippets/gb-sub.liquid`，**两个属性并存**：`data-select data-gb-plan-select`。
+
+⚠ **不冲突已验**：`selectBox` 是增强不是替换 —— 原生 select 留在 DOM 当值载体，
+选中后 `dispatchEvent(new Event("change", {bubbles: true}))`；对方 `gb-product.liquid:274`
+正是 `planSelect.addEventListener('change', …)` 读 `this.value`。
+线上注入后实测**点选项确实触发了 change**，价格逻辑不受影响。
+
+### 4. `.gb-product__cta` 的 20px：两边结构不同，选择器必须能区分
+
+| | cta 的父 | 与订阅框间距 |
+|---|---|---|
+| 静态站 | `.gb-sub` 内（最后一个孩子） | `.gb-sub` 的 `gap: 20px` → **20** |
+| 线上 | `.gb-product__form` 直接子（它是 submit，必须在 form 里） | **0** |
+
+客户要的 20 正是静态站本来就有的。直接写 `.gb-product__cta { margin-top: 20px }` 会让
+**静态站变成 40**（flex 里 margin 与 gap 叠加不折叠）。
+改用 `.gb-product__form > .gb-product__cta` —— `.gb-product__form` **只存在于线上**
+（静态站 11 页与 scss 里都搜不到），子组合器天然把静态站排除在外。
+
+### 5. 去掉按压下沉
+
+5 处 `&:active { transform: translateY(1px) }` 删除：`.gb-btn` / `.gb-promo-panel__copy` /
+`.gb-footer__submit` / `.gb-product__label-btn` / `.gb-product__cta`。
+这 5 个块里 `transform` 的唯一用途就是这个下沉，所以 `transition` 列表里的 `transform` 一并删掉
+（否则是死代码），`.gb-btn` 上那段讲 press state 的注释也跟着改。
+
+⚠ **8 处 `:active { transform: scale(…) }` 保留** —— 那是缩放不是下沉
+（`.gb-rv-panel__close` / `.gb-cart__close` / `.gb-cart-item__remove` / `.gb-cart-item__step` /
+`.gb-header__icon` / `.gb-header__panel-close` / `.gb-reel` / `.gb-reels__btn`），
+判据里逐个验过它们的 `transition` 仍带 `transform`，没被连带删掉。
+⚠ **代价**：hover 规则都在 `@media (hover: hover)` 后面，下沉原本是触摸端**唯一**的按压反馈，
+现在触摸端点按钮没有任何视觉回应。这是客户明确要求，登记在 HANDOFF「不要报成 bug」。
+
+### 验证
+
+`tools/r73check.py`，**29 条全过**（`--password 1234` 跑线上那段）：
+
+- CSS 文本 15 条：下沉 0 处、scale 8 处仍在、5 个块的 transition 不再带 transform
+  （⚠ 每条负向断言前都先验锚点，第一版正则按压缩形式写、又把 `text-transform` 算成命中，
+  假绿过一次）
+- 静态站 5 条：gallery top=80、cta margin 仍 0 且与上方仍 20、cta 父仍是 `.gb-sub`、header 仍粘 0
+- **线上 9 条**（注入新 css + `data-select`，不推送）：**先复现 bug**（BEFORE header 滚走）
+  → 修后 header 粘 0、公告条仍滚走、gallery 粘 80、cta 20、select 被接管、
+  原生 select 仍在、**点选项触发 change**
+
+另跑：11 页 header 全部粘 0、无水平溢出、按钮数与零宽数正常、无 JS 报错；编译幂等
+（两次 md5 `676fba65…`）。
+
+### 三方对比（推送前）
+
+`theme pull` 到 `live-20260907-0121`（587 文件），与 `baseline-r72` 只差 2 个文件，
+**都是对方改的、不是我们的**：
+
+- `layout/theme.liquid` — 把 `{% render 'cart-drawer' %}` 从注释里放了出来
+- `config/settings_data.json` — 新增 `auto_open_cart_drawer: true`
+
+即**对方启用了 Horizon 原生购物车抽屉**（与我们的 `.gb-cart` 是两条路线，见 LIVE-GAP 第四节）。
+我方三个 assets（`customstyle.css` / `.scss` / `main.js`）线上与基线逐字节相同，基线干净。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss          header 包裹层 contents；gallery top 80；cta 20（live-only）；
+                                     删 5 处按压下沉 + 对应 transition 的 transform；$build → 20260907-r73
+改  assets/customstyle.css           编译产物（双写）
+改  *.html（12 个）                   129 处 ?v= 升到 r73
+改  liquid/snippets/gb-sub.liquid    补 data-select（仓库镜像，未推）
+新增 liquid/r73.patch
+改  liquid/README.md                 状态表加一行
+新增 tools/r73check.py               本轮 29 条判据（含线上注入）
+新增 tools/r73probe.py               sticky 祖先链诊断探针
+改  docs/CHANGELOG.md、docs/HANDOFF.md
+```
+
+### 推送（2026-09-07，需求方指示「liquid 暂先不改，推送样式和 js」）
+
+推了 **2 个文件**：`assets/customstyle.css` + `assets/customstyle.scss`
+（`--only` 逐个 + `--nodelete` + `--allow-live`）。
+
+⚠ **`main.js` 没推，因为本轮根本没改它** —— 三方对比里本地 / 线上 / 基线三者逐字节相同。
+「推送样式和 js」里的 js 这一轮是空集，不是漏推。
+
+推送前建了**不含 liquid 改动的干净副本** `push-r73/`（从推送前快照复制 + 只放入两个 CSS），
+与线上差异恰好 2 个文件、liquid 差异 0 处 —— 这样即使命令写错也推不到 liquid。推完已删。
+
+回读：**587 → 587 文件数不变**，两个文件与推送副本逐字节相同、md5 与本地源一致
+（`676fba65…`），**未推的 585 个文件零改动**。
+CDN 层交叉验证（`https://gumi.com.au/cdn/shop/t/2/assets/customstyle.css`，不受密码保护）：
+服务的是压缩形式，`display:contents` 1 处、`margin-top:20px` 1 处、`translateY(1px)` **0 处**。
+
+**线上真实效果（`--as-served`，不注入任何东西）30 条全过**：header 粘 0、公告条仍滚走、
+gallery 粘 80、cta 20px、`.gb-btn` 的 transition 不再含 transform；
+select 仍是原生控件 —— **这是预期的**，liquid 按指示没推。
+
+新基线 `Gumi-Brand-shopify/baseline-r73/`（587 文件）。
+
+### 遗留 / 待推
+
+- **第 3 条（`gb-sub__select`）未推**：`snippets/gb-sub.liquid` 补 `data-select` 已改好并验过
+  （注入模式下 selectBox 接管且 change 正常派发），存在 `liquid/snippets/` 与 `liquid/r73.patch`，
+  工作副本 `Gumi-Brand-shopify/work-r73/`。⚠ 推 liquid 需逐次授权。
+  **在推之前，线上这个下拉一直是原生控件**，别再报一次。
+- 静态站的 `.gb-product__form` 规则与 `#header-group` 规则在本地是**零匹配**的，
+  静态站上看不出效果，只有线上能验 —— 别当成没生效。
+
+---
+
+## 第七十二轮（2026-09-04）— 「文字先出现」真正修好：行揭示补上 `html.js` 门（`$build` = `20260904-r72`）
+
+需求：第七十一轮推完后**现象仍在**。第七十一轮的 `defer` 只把窗口从 4029ms 压到 3350ms，
+判断「瓶颈是 HTML 体积不是 parser blocking」是对的，但**没解决问题**。
+
+### 根因：两套入场效果只有一套挂了门
+
+`.wowo` 有 `html.js .wowo { opacity: 0 }`（第十四轮建立），`[data-line-reveal]` **没有** ——
+它只有「脚本没跑完就让文字可见」的兜底。所以 main.js 慢多久，文字就裸露多久。
+**这是两套机制长期不一致，不是新引入的 bug。**
+
+### 改动两处，缺一不可
+
+1. **CSS 补门**（`customstyle.scss`）：
+
+```scss
+html.js [data-line-reveal]:not(.is-split) { opacity: 0; }        // 0-3-1
+html.js [data-line-reveal]:not(.is-split) > .gb-ink-halo { opacity: 0; }
+```
+
+压过原有的 `[data-line-reveal]:not(.is-split){opacity:1}`（0-2-0）；`js` 类被摘掉时自动落回它。
+
+2. **门脚本兜底 `4000` → `10000`**（`snippets/gb-head.liquid` + 静态站 12 个 HTML）。
+
+⚠ **只加 CSS 门是无效的，本地实测证明了这一点**：门确实生效（t=4127 opacity=0），
+但 **t=4257 又被摘掉** —— `setTimeout(u, 4000)` 在 4s 时武断判定「脚本挂了」，
+而 main.js 限速下 4.25s 才跑起来，**兜底比脚本早 250ms 误判**。
+
+**为什么可以放心放宽定时**：第七十一轮加的 `defer` 保证 main.js 在 `load` **之前**执行
+（defer 在 DOMContentLoaded 前，load 在其后）。所以门脚本里 `addEventListener("load", u)`
+那条是**完全可靠的主信号**，10s 定时只防 `load` 永不触发的极端情况。
+—— 第七十一轮的 defer 因此不是白做的，它是这一轮能成立的前提。
+
+### 验证（线上实测，跑两次）
+
+| 指标 | r70 前 | r71 后 | **r72 后** |
+|---|---|---|---|
+| CLS | 0.00354 | 0.00000 | **0.00000** |
+| 文字可见窗口 | 4029 ms | 3350 ms | **0 ms** |
+
+线上时序：`t=360 opacity=0 is-split=False` → `t=3815 is-split=True` 才揭示，
+探针不再报 `sat FULLY VISIBLE`。
+
+**降级路径也验了**（这条必须验，否则就是拿铁律 12 的教训换闪烁）：
+`route('**/main.js*', abort)` 拦掉主脚本后 —— `html.class` 里 **`js` 已被摘掉**，
+文字 `opacity=1`、高度 >0 正常可见，而且**在 load 后 1.5s 就恢复，不用等那 10s**。
+
+其余：编译幂等（两次 md5 `eefe6f1a…`）、`theme check` 15 vs 15 无新增、
+回读三个文件逐字节相同、587 → 587 零误伤、线上 CSS 压缩形式里确认到门规则各 1 处。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss          补 html.js 行揭示门；$build → 20260904-r72
+改  assets/customstyle.css           编译产物（双写）
+改  snippets/gb-head.liquid          门脚本兜底 4000 → 10000（线上，已推）
+改  liquid/snippets/gb-head.liquid   仓库镜像
+新增 liquid/r72.patch
+改  *.html（12 个）                   门脚本兜底 4000 → 10000；129 处 ?v= 升到 r72
+改  docs/CHANGELOG.md、docs/HANDOFF.md
+```
+
+推送 `--only` 三个（`customstyle.css` / `.scss` / `gb-head.liquid`）+ `--nodelete` + `--allow-live`。
+新基线 `baseline-r72/`。
+
+### 遗留
+
+- 静态站 12 个 HTML 的兜底也改了，但**静态站尚未有推送目标**（它只是设计基准）。
+- `<h2>`/`<h3>` 宿主装 richtext 4 处仍未动（DOM 不拆，不紧急）。
+- 「swiper 全站无条件加载 154KB」这个优化点仍在，但**窗口已归零，不再是必需**。
+
+---
+
+## 第七十一轮（2026-09-04）— 线上 layout shift 与「文字先出现」：查出 richtext 嵌套 `<p>`
+
+需求：「当前网站出现了 layout shift；wowo 效果刷新时先出现文字然后才执行」。
+需求方给了 storefront 密码（`1234`）。
+⚠ **这个密码第六十四轮就拿到过并用于线上实测**（见本文件第六十四轮「贯穿本轮的根因」段），
+但第六十九、七十轮的记录写成了「密码保护挡住了实测，需向需求方要密码」——
+**信息在轮次之间丢了，白等了两轮**。密码就写在 CHANGELOG 里，以后先 grep 再说没有。
+
+### 先纠正现象归属
+
+**出问题的不是 wowo。** 实测 `.wowo` 门全程 `opacity=0`，工作正常。
+用户看到的是 `[data-line-reveal]` 行揭示。
+
+### 根因一：main.js 太晚 → 行揭示的兜底窗口被拉长到 4 秒
+
+`customstyle.scss:3321` 有一条**故意的**兜底：
+
+```scss
+// Script off or still parsing: text must never be stuck invisible
+[data-line-reveal]:not(.is-split) { opacity: 1; }
+```
+
+main.js 拆行（加 `.is-split`）之前文字必须可见 —— 免得 JS 挂掉时文字永久不可见
+（这正是 [[reveal-gate-must-track-module-liveness]] 那条教训）。问题在窗口长度：
+
+| | 文字完全可见的时长（同样 4x CPU + Fast 3G） |
+|---|---|
+| 静态站 | **657 ms** |
+| 线上 | **4029 ms** |
+
+线上 `main.js` 在 **body 172KB 处、裸 `<script src>` 无 defer**，要等 HTML 解析到那里，
+再等 `lenis.min.js` 与 154KB 的 `swiper-bundle.min.js` 依次下载执行。
+实测 `window.gumi` t=3597 才出现，拆行 t=4603。
+
+### 根因二：CLS 不是字体，是 richtext 嵌套 `<p>` 把 DOM 拆坏
+
+CLS 0.00354 发生在 t=4607，与拆行时刻（t=4603）重合，与 `fonts.ready`（t=3746）无关。
+追下去发现线上真实 HTML 是：
+
+```html
+<p class="gb-hero__lead" data-line-reveal><p>Real fruit, real veg…</p></p>
+```
+
+`gb-hero.liquid` 写 `<p class="gb-hero__lead">{{ s.lead }}</p>`，而 `s.lead` 是 **richtext，
+自带 `<p>` 包裹**。HTML 规范下解析器遇到内层 `<p>` 会**强制关闭外层**，DOM 被拆成三个兄弟。
+浏览器里实测：
+
+- `.gb-hero__lead` **textContent 为空、高度 0**
+- 文字落在一个无 class 的裸 `<p>` 里，**字号 16px（浏览器默认），不是设计的 20px**
+- `data-line-reveal` 挂在空元素上 → 这段文字的行揭示**根本没生效**
+
+全站扫描命中 **5 处**（`<p>` 宿主 + richtext 值）：`gb-footer.tagline`（11 页全部）/
+`gb-hero.lead` / `gb-nutrition` 卡片 `text`（5 页 × 3）/ `gb-form-section.note` /
+`gb-product.guarantee_note`。
+⚠ `<h2>`/`<h3>` 宿主装 richtext 也是无效 HTML，但解析器不像 `<p>` 那样自动闭合，DOM 不拆，本轮未动。
+
+### 改法（需求方两处拍板）
+
+1. **剥掉外层 `<p>`**，不改宿主标签也不动 setting 值 —— 新增
+   `snippets/gb-rich-inline.liquid`，五处改成 `{% render 'gb-rich-inline', html: … %}`。
+   剥离链是 `strip_newlines | replace: '</p><p>', '<br>' | replace: '<p>','' | replace: '</p>','' | strip`，
+   **多段落降级成 `<br>` 而不是粘连**。线上 DOM 因此与静态站一致，行揭示能正常挂在宿主上。
+   （另一个选项是宿主改 `<div>`，没选：那样内部多一层块级 `<p>`，行揭示的拆行逻辑要另外处理。）
+2. **三个脚本加 `defer`** —— defer 保证按文档顺序执行且在 DOMContentLoaded 之前，
+   而 `main.js` 的启动是 `readyState !== "loading" ? fn() : addEventListener(...)`，
+   defer 下 readyState 已是 `interactive`，**行为不变**。
+
+### 验证
+
+- `tools/liveprobe70.py` 是本轮新写的线上探针（storefront 密码走 CLI 参数，**不进仓库**）：
+  逐帧采 `html.className` / 样式表到位情况 / `.wowo` 与 `[data-line-reveal]` 的 opacity 与
+  `is-split`，并用 PerformanceObserver 收 CLS 明细与 `fonts.ready` / `window.gumi` 时刻。
+  静态站与线上跑同一份，**657ms vs 4029ms 的对照就是它测出来的**。
+- `tools/r71check.py` **21 条全过**；对未改动的 `baseline-r70` 跑 **16 条 FAIL**（判据非恒真）。
+- `tools/_apply_r71.py` **可复跑**：从干净副本重跑，产物与 `work-r71` 逐字节相同。
+- `shopify theme check`：**18 → 15 条 offense，无新增** ——
+  消失的正是 `gb-scripts.liquid` 的 3 条 `ParserBlockingScript` error。
+  **Shopify 自己的检查早就在报这个问题**，本轮修复正好消掉它。
+
+⚠ **渲染结果未验**：`shopify theme dev` 起不来，上传阶段就失败 ——
+报错全是 Horizon 基底自带的 `blocks/*.liquid`（`Invalid schema: setting with id=… default
+must be a color or dynamic source access path`），**与本轮改动无交集**（本轮没碰任何 `blocks/`）。
+临时开发主题 `#180447248631` 已 `theme delete`，店里恢复为 `Dev` + `Horizon` 两个。
+
+### 文件清单
+
+```
+新增  liquid/snippets/gb-rich-inline.liquid   剥掉 richtext 外层 <p> 的 snippet
+新增  liquid/r71.patch                        相对 baseline-r70 的 diff
+改    liquid/snippets/gb-scripts.liquid       三个脚本加 defer
+改    liquid/sections/gb-footer.liquid        tagline 走 gb-rich-inline
+改    liquid/sections/gb-hero.liquid          lead 走 gb-rich-inline
+改    liquid/sections/gb-nutrition.liquid     卡片 text 走 gb-rich-inline
+改    liquid/sections/gb-form-section.liquid  note 走 gb-rich-inline
+改    liquid/sections/gb-product.liquid       guarantee_note 走 gb-rich-inline
+改    liquid/README.md                        加各文件推送状态表（两轮混在一起了）
+新增  tools/liveprobe70.py                    线上 CLS / 揭示时序探针
+新增  tools/_apply_r71.py、tools/r71check.py  应用脚本与判据
+改    docs/CHANGELOG.md、docs/HANDOFF.md
+```
+
+工作副本 `Gumi-Brand-shopify/work-r71/`（基于 `baseline-r70` = 当前线上）。
+
+### 推送与实测结果（**一半达标，defer 基本没用**）
+
+分两步推，消除「section 引用了还不存在的 snippet」的窗口：先单推
+`snippets/gb-rich-inline.liquid`（没人引用它，先到无害），再推其余 6 个。
+两步都是 `--only` 逐个列出 + `--nodelete` + `--allow-live`。
+
+回读：7 个文件与本地**逐字节相同**，其余 580 个零误伤，文件数 586 → **587**（新增那个 snippet）。
+`r71check.py` 对线上快照 **21 条全过**。新基线 `baseline-r71/`。
+
+线上实测（`liveprobe70.py --throttle`，跑三次）：
+
+| 指标 | 修复前 | 修复后 |
+|---|---|---|
+| CLS | 0.00354 | **0.00000** ✅ |
+| `[data-line-reveal]` 文字可见窗口 | 4029 ms | 3350 ms ⚠ 只降 17% |
+| `window.gumi` 执行时刻 | t=3597 | t=3634 **几乎没变** |
+
+DOM 侧确认修好：`.gb-hero__lead` 从「空、高度 0」变成**有文字、高度 60、字号 20px**
+（此前文字落在裸 `<p>` 里用浏览器默认 16px），`gb-footer__tagline` / `gb-highlight-card__text`
+同样，全部 `innerP: false`。三个脚本都带 `[defer]`。
+
+⚠ **`defer` 对执行时机几乎没有帮助，之前「窗口降到几百 ms」的预期是错的。**
+原因：脚本本来就在 body 末尾（172KB 处），解析到那里时 HTML 已快下载完、脚本也早被
+preload scanner 取回了 —— **真正的瓶颈是 259KB HTML 的下载与解析**（限速下约 3.5s），
+不是 parser blocking。defer 仍然保留（消掉了 theme check 的 3 条 error，无副作用），
+但它解决不了这个窗口。
+
+**CLS 归零是嵌套 `<p>` 修复的功劳**，与 defer 无关。
+
+### 遗留
+
+- **「文字先出现」仍未解决**，窗口 3350ms。要真正压掉得换手段，三条路：
+  ① 把 `[data-line-reveal]` 纳入 `html.js` 门（像 `.wowo` 那样），窗口 → 0，
+     但门脚本的 4s 兜底 vs main.js 3.6s 执行**余量只有 400ms**，更慢的网络会让兜底先触发；
+  ② 配合 ① 把兜底从 4s 放宽，代价是 JS 真挂时文字要等更久才出现；
+  ③ 减体积 —— `gb-scripts.liquid` 的注释写着「Swiper is loaded only where a carousel
+     exists」，但**实际是全站无条件加载 154KB**，这是注释与实现不符，且是真实的优化点。
+- `<h2>`/`<h3>` 宿主装 richtext 共 4 处未动（`gb-stats.title` / `gb-nutrition.title` ×2）——
+  线上实测 DOM **没有被拆**（`<p>` 老实待在 `<h2>` 里），所以不紧急，但仍是无效 HTML。
+- **顺带发现**：footer 版权行是 `© 2026 My Store` —— `{{ shop.name }}` 还是 Shopify
+  默认占位，店铺设置里没填店名。属于后台设置，已记入 LIVE-BACKLOG。
+- `<h2>`/`<h3>` 宿主装 richtext 共 4 处（`gb-stats.title` / `gb-nutrition.title` ×2）未动 ——
+  DOM 不会被拆，但仍是无效 HTML，且 `<p>` 是块级，可能影响行揭示的拆行。待查。
+
+---
+
+## 第七十轮（2026-09-04）— 线上零碎缺口：10 条查证后只剩 3 条，首次改 liquid
+
+需求：「修复 live 站上的问题」，范围定为 LIVE-GAP 第三节的零碎缺口 + 模板挂载。
+需求方两处拍板：**不碰 Online Store Editor 托管的 JSON**（推它们会覆盖对方后台的设置）、
+**改过的 liquid 进仓库 `liquid/`**。
+
+### 先拉最新线上再动手
+
+`theme pull` 拉 `Dev #180348977399` 为 `live-20260904-1251/`，与 `baseline-r68`
+**逐字节完全一致**（586 vs 586，`diff -r` 无输出）—— 对方那段时间没动过。
+
+### 10 条「缺口」查证后只剩 3 条
+
+判据报的缺失里有 5 条是假信号或已处理，逐条写进了 `docs/LIVE-BACKLOG.md` 第三节：
+
+| 条目 | 真相 |
+|---|---|
+| `gb-acc-body__media` | 对方当天早上补的 `gb-product.liquid` 里已有 |
+| `gb-logo-scroll__img--abc/vogue/wellbeing` | 线上有 `class_suffix` setting，`index.json` 三个 block 的值也填好了，类名由 `{% assign %}` 拼出 |
+| `gb-stats.title` 的换行 | 静态站本就是裸 `<br>`（全断点断行），线上写法正确 |
+| `gb-rv-panel__glyph` | 第六十六轮已适配 —— `customstyle.scss:1888` 特意把规则挂在 `svg` 上，就因为线上是裸的 |
+| overline / lead 两个微调类 | liquid 没有接收口，需先加通道 + 后台填值 → BACKLOG 第二节 |
+
+### 实做的三条
+
+1. **`gb-stats.liquid`** — `.gb-stats__bear` 里补 4 个 `gb-stats__arrow--1..4`。
+   SVG 由脚本从 `index.html` 正则提取**逐字节搬运**，不手抄。位置必须是 bear 的直接子：
+   CSS 的 `left/top` 是百分比，锚在 `.gb-stats__bear`（它 `position: absolute`，
+   stack 档转 `relative`）。
+2. **`gb-reviews.liquid`** — 补法务免责声明 `gb-reviews__disclaimer`，
+   加 `textarea` setting **带 default**。JSON 里没有这个 key 时 `section.settings`
+   取 schema default，所以 index / pdp / how-gumi-works 三个实例都会生效，**不用碰模板 JSON**。
+3. **`gb-expert.liquid`** — `newline_to_br` 产出裸 `<br>`，桌面端也断行；稿上这个标题
+   只在 ≤767 断。改成先备好 `title_html` 再输出，**两种拼写都 replace**
+   （`<br />` 与 `<br>`）——storefront 密码保护读不回渲染结果，无法实测是哪一种，
+   两条互为 no-op，留着都安全。
+
+### 验证
+
+- `tools/_apply_r70.py` **可复跑**：从干净副本重跑，产物与 `work-r70` 逐字节相同。
+- `tools/r70check.py` **24 条全过**。活性自检做了两层：对**未改动的 live 快照**跑
+  → 16 条 FAIL（证明判据测的是本轮改动，不是恒真）；逐处破坏（改 arrow 编号 /
+  改 disclaimer 文案 / 删一条 replace）→ 各自被抓到。
+- `shopify theme check` 对改前改后各跑一次：**18 vs 18 条 offense，逐条相同**
+  （差异全是路径前缀），三个 section 一条都没引入。
+
+⚠ **视觉层一条都没验过** —— 店铺开着 storefront 密码保护，外部访问渲染
+`layout/password.liquid`。判据只能证明结构与 token 正确，证不了渲染对。
+
+### 推送（2026-09-04，**这是我们第一次推 liquid**）
+
+需求方点名只推**两个**：`sections/gb-stats.liquid` + `sections/gb-expert.liquid`。
+`gb-reviews.liquid`（法务免责声明）**留在本地未推**。
+
+```
+--only sections/gb-stats.liquid --only sections/gb-expert.liquid --nodelete --allow-live
+```
+
+三方对比：推前重新 `theme pull` 为 `_precheck`，与 `live-20260904-1251` **无任何差异**
+（586 vs 586）—— 对方没动过，无冲突；`work-r70` 与远端的差异正好是我改的那 3 个文件，无多余。
+
+回读验证（推完再 `theme pull`）：
+
+- 推的两个文件与本地**逐字节相同**
+- **没推的 `gb-reviews.liquid` 与推送前一致**，没被顺手带上去
+- 全主题**只有这两个文件变了**，其余 584 个零误伤；文件数 586 → 586（`--nodelete` 生效）
+- `r70check.py` 对线上回读快照跑：24 条中 18 过 6 红，**红的全部且仅仅是 disclaimer**
+  ——判据精确区分了推了的与没推的
+
+⚠ 推送日志里的 `Cleaning your remote theme` 会吓人，但带了 `--nodelete`，
+**文件数与逐文件比对都证明没删任何东西**。
+
+新基线 `Gumi-Brand-shopify/baseline-r70/`（= 当前线上）。临时目录 `_precheck` / `_verify` 已删。
+
+### 文件清单
+
+```
+新增  liquid/README.md                    新目录的约定：为什么存在、改之前先 pull 比对
+新增  liquid/sections/gb-stats.liquid     改后完整文件（与将推上 live 的逐字节相同）
+新增  liquid/sections/gb-reviews.liquid   同上
+新增  liquid/sections/gb-expert.liquid    同上
+新增  liquid/r70.patch                    相对 live-20260904-1251 的 diff，给对方合入用
+新增  tools/_apply_r70.py                 三处改动的应用脚本，锚点唯一性自检
+新增  tools/r70check.py                   本轮判据，接受 theme 目录作参数
+新增  docs/LIVE-BACKLOG.md                后台待填 / 待加通道 / 不用做的，三节
+改    docs/CHANGELOG.md                   本轮
+改    docs/HANDOFF.md                     头部状态 + 不要报成 bug 清单 + 工作区状态
+```
+
+线上快照：`live-20260904-1251`（推送前证据）→ `work-r70`（工作副本，改动在这里）。
+
+### 遗留
+
+- **`gb-reviews.liquid` 未推**（需求方本轮只点名推另外两个）。改动与判据都在本地，
+  `liquid/sections/gb-reviews.liquid` 与 `work-r70` 里各有一份，随时可推。
+  推之前照例重新 `theme pull` 做三方对比。
+- **B 组一条没做**：footer 22 处换行、page-hero 标题换行、overline、两个 lead 微调类
+  都需要先加 liquid 通道（需求方本轮选了只做 A 组），四页挂 `gb-product` 属于托管 JSON。
+  全部逐条在 `docs/LIVE-BACKLOG.md`。
+- **顺带发现一个线上真 bug，未修**（属于托管 JSON，按纪律不碰）：
+  `index.json` 的 `reviews.title` = `"Aussies are obsessed.Here's why."` —— 少了 `\n`，
+  两句会直接粘连。`page.how-gumi-works.json` 的同一 section 是对的。
+  已写进 BACKLOG 第一节，后台改一下即可。
+
+---
+
+## 第六十九轮（2026-09-04）— 静态站 ↔ live 差距比对 + 补推 r68
+
+需求：「shopify 站除了购物车其他已经完成，检查静态站和 live 的差距」。
+**前提不成立** —— 除购物车外还有 6 个模块线上没有 liquid。全程只读比对，
+`theme pull` 拉 `Dev #180348977399` 全量 586 文件为 `live-20260904-1134/`。
+
+### 三层判据（新增，都接受 live 目录作参数）
+
+| 脚本 | 比什么 | 结论 |
+|---|---|---|
+| `tools/livediff.py` | 两侧 `gb-*` 类名集合差集 | 27 个块静态站有、线上全文搜不到 |
+| `tools/livepages.py` | 11 页 `<main>` 区块序列 vs 模板 section 序列 | 8 处页面级缺口 |
+| `tools/livesect.py` | 两边都有的 section，内部 token 差异 | 81 个 token 缺在 section 内部 |
+
+**写判据时踩的两个假信号**（都改掉了，方法写进 `LIVE-GAP.md` 第六节）：
+
+1. **只扫 `class="..."` 会虚报一堆基础块缺失** —— Liquid 用
+   `{% assign classes = 'gb-ingredients' %}` 和 `{% form class: 'gb-form' %}` 造类名。
+   改成 live 侧扫全文：**全文搜不到才是确凿缺口**。
+2. **HTML 解析器的深度计数被 SVG 自闭合标签搞乱** —— `<path>` 被当成 `<main>` 的直接子，
+   `gb-expert-card` 因此虚报 6 次。改用缩进定位（页面是两空格一级），
+   并加断言：匹配不到就当场报错，不静默出错结果。
+
+`gb-scallop--{{ s.trailing_scallop }}` / `gb-stat--{{ b.variant }}` 这类 setting 拼接
+已在 `livesect.py` 里按前缀抑制；`{% render %}` 会跟进（否则 `gb-sub__*` 虚报 26 条）。
+
+### 比对结论
+
+- **模块级缺口 6 个**：营养标签弹窗 `gb-nl-*`（5 页）/ 首单 promo 弹窗 `gb-promo-modal|panel`
+  （index）/ PDP promo 卡 `gb-promo-card` / PDP 对比表 `gb-vs` / testimonial 卡
+  `gb-testimonial(s)`（在 `gb-reviews` 内部）/ shipping 表格 `gb-rich-table`。
+  另有 app 挂载点 `gb-app-section` 与 `gb-product__app-slot`。
+- **模板挂载缺口**：`gb-product.liquid` 只挂在 `product.json`，静态站另有 4 页带这个区块
+  （index / reviews / how-gumi-works / our-story）—— 只需在模板 JSON 加记录，不用写 liquid。
+- **`gb-br-narrow` 全站缺失**：响应式强制换行辅助类，11 页都在用 → 手机端折行会与稿不一致。
+- **购物车不是「没做」，是装了另一套**：`layout/theme.liquid:172` 渲染 Horizon 原生
+  `cart-drawer`、`cart_type: "drawer"`，但 `gb-header.liquid:18` 的图标是
+  `<a href="{{ routes.cart_url }}">`，既不是原生抽屉的触发器也不是 `data-modal="gb-cart"`。
+  源码上看点图标会跳 `/cart` 页。⚠ **密码保护挡住了实测，这条只是读源码的推断。**
+- **对方在今早 08:30 之后补上了 PDP 订阅模块的 liquid**（新增 `sections/gb-product.liquid` +
+  `snippets/gb-sub.liquid`，改 `templates/product.json`）—— `LIQUID-TODO-subscription.md` 可归档。
+- **52 个本地图不在线上 `assets/` 不是缺口**：线上走 `image_picker` + `image_url`（Files/CDN），
+  19 个 picker、80 处 `image_url`，**15 个已绑定的图片设置全部非空**。
+
+### 顺带发现并处理：r68 从未推上 live
+
+`HANDOFF.md` 头部写着「已推上 live」，实测线上停在 r67。diff 正好只等于第六十八轮那一轮的
+改动（build 号 + 注释 + 两处 `math.round`），无第三方内容混入 → **是没推，不是被覆盖**。
+经需求方指示已补推，详见第六十八轮的「推送」段。
+
+### 文件清单
+
+```
+新增  tools/livediff.py            类名集合差集
+新增  tools/livepages.py           页面级 section 序列对照
+新增  tools/livesect.py            section 内部 token 差异
+新增  docs/LIVE-GAP.md             差距报告（含「不是差距的」一节 + 判据局限）
+改    docs/CHANGELOG.md            本轮 + 第六十八轮补「推送」段
+改    docs/HANDOFF.md              头部 build 状态 / 第八节标题与 $build（停在 r65）/
+                                   提交历史改成 git 与 Shopify 两条线分开 / 挂上 LIVE-GAP
+推    assets/customstyle.css|.scss|main.js   r67 → r68（见第六十八轮「推送」段）
+```
+
+线上主题快照落在 `Gumi-Brand-shopify/`：`live-20260904-1134`（推送前 r67，证据）→
+`baseline-r68`（当前线上）。临时目录 `_precheck` / `_verify` / `push-r68` 跑完已删。
+
+### 遗留
+
+- **视觉层一条都没验过** —— storefront 密码保护，外部访问渲染 `layout/password.liquid`。
+  要验渲染结果得向需求方要密码。购物车那条推断也卡在这里。
+- **git 落后 11 轮**：第五十八～六十八轮未提交（26 个已跟踪改动 + 42 个未跟踪新增，
+  含 `docs/account/`、`images/reel-*.mp4`）。
+- `livesect.py` 报的 81 个 token 里，波浪相关的多数是**架构差异**（线上把波浪做成
+  `leading_scallop` / `trailing_scallop` setting，静态站写死），不是缺口，未逐条清理。
+
+---
+
+## 第六十八轮（2026-09-04）— 板底波浪比顶边浅 0.5px：分数绘制宽度（`$build` = `20260904-r68`）
+
+接第六十七轮补记。上一轮「未复现」，需求方追问「就目前属性来看能否修复」，
+于是不再靠截图，改从属性推 —— **找到了，并修了**。
+
+### 推导
+
+`.gb-cta-band__plate` 的圆瓣是 `border-image` 九宫格：
+
+```scss
+border-image: scallop-tile($r, $px, $py) $r fill / #{$r}px / 0 round;
+//                                       ↑slice      ↑paint width
+```
+
+`$plate-r-pc` = **58.8848**，同时用作 slice（源图坐标）与 paint width（绘制尺寸）。
+**paint width 是分数**：58.8848px 落在半个设备像素上，顶、底两个切片因此朝**相反方向**舍入。
+
+实测（DPR 2，1440）：**顶瓣 20.5 / 底瓣 20.0**。板的理论谷深是 **20.55**，
+所以浅的那一边是底边。差值只有 0.5px，但它是**恒定的、每一档都在**，
+在深色大色块上就是「底边的波浪比上面浅一点」。
+
+### 排除掉的（都做了实验，不是推断）
+
+- **规范压缩**（盒高 < 上下 paint width 之和时切片等比缩小，CSS Backgrounds 3 §6.3）：
+  把板高从 392 一路压到 70（阈值 117.77），波浪**始终上下对称** —— 压缩是等比压两边，
+  不会只削底边。假设证伪。
+- 祖先 `overflow` 裁切、scallop 遮挡、内容溢出、线上 8 页 × 5 档、6 档 DPR：全部排除。
+
+### 改了什么
+
+```scss
+- $plate-r-pc fill / #{$plate-r-pc}px / 0 round
++ $plate-r-pc fill / #{math.round($plate-r-pc)}px / 0 round
+```
+
+⚠ **只动 paint width，slice 保持精确值**。slice 索引源图，动它会切错位置；
+paint width 是渲染尺寸，取整是渲染层的决定，不改设计几何。
+两档都改（pc 58.8848 → 59，mob 39.9189 → 40）。
+
+| 视口 | 改前 顶/底 | 改后 顶/底 |
+|---|---|---|
+| 1440 | 20.5 / **20.0** | 20.5 / **20.5** ✅ |
+| 1280 | 20.5 / **20.0** | 20.5 / **20.5** ✅ |
+| 1024 | 20.5 / **20.0** | 20.5 / **20.5** ✅ |
+| 390 | 18.0 / 18.0 | **18.5 / 18.5** ✅（理论 18.81，更接近） |
+
+取整后不仅对称，**谷深也更接近板的理论值** —— 20.55 对 20.5 比对 20.25 近。
+⚠ DPR 1 下顶底仍差 1px，那是设备像素网格的固有限制，取整与否都一样。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   两处 border-image paint width 取整 + $build → 20260904-r68
+改  assets/customstyle.css    编译产物（双写）
+改  *.html                    129 处 ?v= r67 → r68
+改  tools/platecheck.py       补底/右两条边 + 顶底谷深容差 2.0 → 0.6 + paint width 整数断言
+```
+
+### 判据
+
+`tools/platecheck.py` 这一轮补了三层，全部通过（14 档）：
+
+1. **四条边一起量**（第六十七轮补记时加的）。此前**只量顶边与左边** ——
+   底边被裁平或九宫格最后一行没画出来，历轮全绿也照样漏过。
+2. **顶底谷深容差 2.0 → 0.6**。2px 的窗口正好放过了这次的 0.5px。
+   ⚠ 768 档实测差 0.6，卡在边界上（`padding-block: fluid(3.75px, 52px)` 给出分数板高），
+   所以容差不能再收。
+3. **直接断言 paint width 是整数** —— 因为 0.5px 仍在上面那条容差之下，
+   守结果不够，得守成因。
+
+**活性自检**：把产物里的 `fill/59px` / `fill/40px` 改回分数 → **16 条 FAIL**，
+每一档都报「border-image-width 是分数——顶/底切片会朝相反方向舍入」。
+
+**回归**：`rwd` 全绿 / `assetpath` GREEN / `r63` 158 / `r64` 1528 / `r65` 122 /
+`r66` 36 / `r67` 169 / `r67reel` 26，均 0 red。
+
+### 过程里的两次自我纠正
+
+- **一度把动画中间态当成 bug**：第一版截图只等了 700ms，而行揭示是 1.4s，
+  截出来的标题最后一行底部平切。等到 3500ms 完全正常。
+- **一度靠肉眼下结论**：把顶边和翻转后的底边并排看，觉得底边「明显更扁」，
+  量出来只差 0.5px —— 眼睛把 0.5px 放大了。**铁律 2 不只对设计稿适用，对自查同样适用。**
+
+### 顺带发现 / 未修
+
+- **左/右边谷深仍差 0.5**（如 1440：左 22.0 / 右 21.5）。同一个舍入机制，
+  但发生在宽度方向；paint width 已经取整，剩下的来自板宽本身的分数（如 350×508 的 508）。
+  容差内，**未动**。
+- **768 档顶底差 0.6**，来自 tablet 的 `fluid()` 分数板高，不是这次的成因。
+
+### 推送（2026-09-04，晚于本轮改动，与第六十九轮的比对同一次会话）
+
+本轮改完当时**没有推**，线上停在 r67 —— 是第六十九轮做静态站↔live 比对时发现的
+（`HANDOFF.md` 头部当时写着「已推上 live」，与实测冲突）。
+
+**推送前三方对比**（baseline = `baseline-dev-live`，即推完 r67 的线上快照）：
+
+| 文件 | local≠base | remote≠base | 结论 |
+|---|---|---|---|
+| `assets/customstyle.css` | DIFF | same | 只有我改了，推 |
+| `assets/customstyle.scss` | DIFF | same | 只有我改了，推 |
+| `assets/main.js` | same | same | 本轮没改，一并推（幂等） |
+
+对方在这期间改的是 liquid（新增 `sections/gb-product.liquid`、`snippets/gb-sub.liquid`，
+改 `templates/product.json`），**与推送清单不冲突**。
+
+**产物新鲜度**：`npx sass@1.77.8` 重编译 `customstyle.scss`，与仓库里的 `customstyle.css`
+**逐字节相同** —— 推的不是过期产物（铁律 16 的双写判据）。
+
+**推送清单（3 个文件）**：`assets/customstyle.css` + `assets/customstyle.scss` +
+`assets/main.js`（`--only` 逐个列出 + `--nodelete` + `--allow-live`，
+`--path` 指向线上快照的工作副本，不是静态站根目录 —— 静态站没有主题目录结构）。
+
+**回读验证（三道，全过）**：
+
+1. **CLI 拉回三个文件**：逐字节与本地相同。
+2. **build token**：线上 `customstyle.css` 与 `.scss` 都是 `20260904-r68`（双写都到位）。
+3. **关键改动**：线上压缩产物里 `fill/59px` × 1 + `fill/40px` × 1，
+   分数形式 `fill/58.8848px` / `fill/39.9189px` **0 处**。
+4. **零误伤**：全量拉回，文件数 **586 → 586**，除这三个文件外 `diff -rq` 无输出。
+
+**基线滚动**：`live-20260904-1134`（推送前的线上证据，r67）→ `baseline-r68`（当前线上）。
+
+## 第六十七轮补记（2026-09-04）— 查 `.gb-cta-band__plate` 底部被裁：未复现，补上判据盲点
+
+需求方报「`.gb-cta-band__plate` 底部出现了被裁掉的情况」。**查完没能复现，没有改任何样式。**
+下面是查了什么、排除了什么，以及顺带补上的判据。
+
+### 排除的
+
+| 怀疑 | 实测 |
+|---|---|
+| 祖先 `overflow` 裁掉板底 | 两个页面 × 4 档，plate 到文档根的整条祖先链 `overflow-y` 全是 `visible`，无一裁切 |
+| 下方 scallop 盖住板底 | 与 plate 矩形相交的 `.gb-scallop` **0 个**；plate 完全在 `.gb-cta-band` 之内（板底距 band 底还有 98–247px） |
+| 板底圆瓣画不全 | 逐列扫像素：**26 个档位**（2 页 × 13 档，390–2560）顶/底起伏差 ≤1.5px，底边一直在起伏 |
+| 内容溢出板底 | 内容底始终在瓣谷之内（我第一版的"溢出"判定用错了基准 —— `border-image-width` 是九宫格切片的绘制宽度，不是内容禁区） |
+| 线上结构不同 | 线上 faq / our-story 的 plate 几何与本地一致，祖先链同样无裁切 |
+
+### 唯一能做出「底部被裁」的情形
+
+**入场动画播放中**。`.gb-cta-band__title` 带 `data-line-reveal`，文字从
+`.gb-line-mask`（`overflow: hidden`）里升起，升到一半时最后一行的下半截确实是被切平的；
+`.gb-cta-band__plate` 自己还带 `wowo fadeInUp`（30px 位移，0.7s）。
+⚠ **我第一次截图就踩了这个坑** —— 只等了 700ms（行揭示是 1.4s），
+截出来的 "sufficient" 底部平切，一度当成了 bug。等到 3500ms 再截完全正常。
+
+### 补上的判据盲点
+
+`tools/platecheck.py` **只量顶边和左边**，底边和右边从来没进过判据 ——
+**板底若被裁平或九宫格最后一行没画出来，历轮全绿也照样漏过**。
+本轮补齐四条边：底/右的瓣数必须等于顶/左，谷深差不得超过 2px。
+
+实测四边一致（如 1440：顶 14 瓣谷深 20.5 / 底 14 瓣谷深 20.0 / 左 4 瓣 21.5 / 右 4 瓣 21.5）。
+**活性自检**：把底边剖面强制成常量（模拟削平）→ 立刻报 5 条，含
+「底边 1 瓣 != 顶边 14 瓣——底边被裁或没画全」。
+
+### 结果：第六十八轮找到了
+
+需求方追问「就目前属性来看能否修复」，于是从属性本身推，**找到了**：
+`border-image` 的**绘制宽度是分数**（58.8848px），顶、底两个切片因此朝相反方向舍入，
+底边谷深比顶边浅 0.5px。见下一轮。
+
+⚠ 本节「未复现」的结论是**在把容差放宽到 2px 的判据下得出的** —— 偏差真实存在，
+只是当时的判据和我的肉眼都没分辨出 0.5px。
+
+---
+
+## 第六十七轮（2026-09-04）— halo 逐行化 + reel 在 1440 以上随视口缩放（`$build` = `20260904-r67`）
+
+需求：
+1. 「`gb-ink-halo` 能否由下往上出现和文字同步」
+2. 「`gb-reel` 1440 及上能否始终保持设计显示的那种状态，中间显示三张、两端显示被裁掉一点的一张，
+   类似静态站，并且 1440 以上卡片的宽度需要跟随屏幕宽度变化，高度跟随宽度比例变化」
+
+---
+
+### 一、halo 与文字同步 —— 第六十四轮只修对了一半
+
+第六十四轮把 halo 从「等文字升完再淡入」改成了 `gm-halo-up`（clip 窗口 + 位移）。
+**单行宿主确实同步了，多行的没有**，而当时的判据看不出来。
+
+**实测（线上 + 本地，逐帧截图）**：`.gb-dosed__title` 在 1440 是 2 行，
+mask 的 delay 是 `['0s', '0.15s']`，halo 的 delay 是 `0s` ——
+第 80ms 那一帧，**光晕已经是完整两行的一整条，文字才露出第一行**。
+
+**根因**：halo 是**整块**副本，只有一个 clip 窗口；文字是**逐行**揭示、每行错峰 150ms。
+一个刚性移动的整块，其揭示前沿必然在第 2 行的 mask 启动之前就越过了第 2 行 ——
+**整块 halo 与逐行揭示在原理上就无法对齐**，与参数无关。
+
+**改法**：`main.js` 的 `groupLines()` 在拆完行之后，**为每一行克隆一份 halo**
+（`.gb-ink-halo--line`），偏移到该行的 `offsetTop`，并把该行的 `--line-i` 写在上面。
+于是每份光晕走自己那一行的 delay，和它背后的字一起升。
+
+⚠ **halo 不能放进 mask 里**（第一版就是这么写的，随即推翻）：`.gb-line-mask` 要
+`overflow: hidden` 才能裁住文字的滑动，而描边是 15px 的 `text-shadow` ——
+放进去会被行盒**切平**。所以每份 halo 都停在 mask 外面，各自带一个 clip 窗口。
+
+⚠ **`.gb-ink-halo--line` 必须补 `padding-bottom: $line-descend`**。
+`translateY(100%)` 是相对元素**自身高度**解析的，而 `.gb-line-mask__inner` 带着
+0.12em 的降部余量。不补的话 halo 的行程比文字短 0.12em，**中途快约 2px、提前到位**。
+判据的 mid-flight 断言就是抓这个的（截图上看不出来）。
+
+原来那份整块副本**留在 markup 里当无 JS 兜底**，拆行后 `display: none`。
+
+### 二、reel 在 1440 以上随视口缩放
+
+板上（1440）：卡片 304×540、gap 24，**三张完整 + 两端各一张被裁**。
+1440 以上原本卡片钉死在 304，屏幕越宽挤进来的卡越多（2560 实测 7.8 张），取景就散了。
+
+```scss
+.gb-reel {
+  width:  max(304px, 21.1111vw);   // 304/1440
+  height: max(540px, 37.5vw);      // 540/1440
+}
+```
+
+两条腿取的是**同一个 1440 分数**，所以 304:540 被锁死、高度跟着宽度走。
+用 `max()` 而不是媒体查询：它在 1440 及以下正好回到 304/540，**边界不跳变**，
+也不用新开断点（铁律 18 的值档不受影响）。
+
+⚠ **gap 刻意不缩放**。`main.js` 的 `options()` 只在 `create()` 时读一次 `column-gap`，
+而 resize 不会重建 Swiper —— 响应式的 gap 一动窗口就过期。
+钉在 24 的代价只是可见张数从 4.39（1440）走到 4.54（2560），取景不变。
+
+| 视口 | 卡片 | 比例 | 可见槽位 | 完整/触边 |
+|---|---|---|---|---|
+| 1280 | 304 × 539.7 | 0.5632 | 3.90 | 3 / 5 |
+| **1440** | **304 × 540** | 0.5630 | 4.39 | 3 / 5 |
+| 1600 | 337.8 × 600 | 0.5629 | 4.42 | 3 / 5 |
+| 1920 | 405.3 × 720 | 0.5630 | 4.47 | 3 / 5 |
+| 2560 | 540.4 × 960 | 0.5630 | 4.54 | 3 / 5 |
+
+### 文件清单
+
+```
+改  assets/main.js             groupLines() 每行克隆一份 halo；flatten() 负责清理
+改  assets/customstyle.scss    .gb-ink-halo--line 一族 + .gb-reel 改 max()
+                               + $build → 20260904-r67
+改  assets/customstyle.css     编译产物（双写）
+改  *.html                     129 处 ?v= r66 → r67
+新  tools/r67check.py          169 条，halo 逐行同步
+新  tools/r67reel.py           26 条，reel 取景与比例
+改  tools/r64check.py          halo 断言移交 r67（见下）
+```
+
+### 判据
+
+- `tools/r67check.py` **169 ok / 0 red**：2 个宿主 × 多档宽度，逐行断言
+  halo 数 == 行数、halo top == mask offsetTop、`--line-i` 递增、
+  **每行 halo 的 delay == 同一行 mask 的 delay**、动画名对，
+  外加一条 **mid-flight**：触发后 260ms 读两层的 `transform.m42`，差值须 ≤1px。
+  还有一条 resize 后 halo 不累积（`flatten` 有没有清干净）。
+  三处**活性守卫**：没有 mask、没有 halo、260ms 时没有东西在动，都直接判红 ——
+  否则「都同步」会是个空命题。
+- `tools/r67reel.py` **26 ok / 0 red**：5 档宽度的卡片尺寸、比例、可见槽位、
+  完整/触边张数。
+- **活性自检**（逐项反向改回产物）：
+  | 改回 | 转红 |
+  |---|---|
+  | halo 去掉 `padding-bottom` | 8（全是 mid-flight 的 2~3px 提前） |
+  | halo delay 去掉 `--line-i`（回到 r64 的整块时序） | 9（含 delay 不匹配、mid-flight 13.8 vs 25.7） |
+  | reel 去掉 `max()` 缩放 | 6（2560 挤进 7.80 张） |
+
+⚠ **`tools/r64check.py` 的 halo 断言已移除**，改由 r67 接管，并在原处写明了原因：
+它**只把 halo 和 line 0 比**，所以整块 halo 在多行标题上出问题时它照样全绿 ——
+这正是本轮要修的盲点。移除后 r64 仍是 **1528 ok / 0 red**（包裹层那部分不受影响）。
+
+**回归**（全部 0 red）：
+
+```
+rwd 全绿   assetpath GREEN
+r58 44   r59 96   r60 242  r61 151  r62 133  r63 158
+r64 1528 r65 122  r66 36   r65interact 36
+r67 169  r67reel 26                          合计 2741 条
+```
+
+### 推送（2026-09-04）
+
+**推送前三方对比**：`assets/` **零差异**。对方改了三个文件，都不在推送清单：
+`config/settings_data.json`（主题编辑器设置，**永远不推**）、`templates/index.json`（后台配区块）、
+以及 `sections/gb-reviews.liquid` —— 后者是好消息：**他们补上了 `data-modal-media`**
+（`docs/LIQUID-TODO-reels.md` 第 1 条的一半），reel 视频的播放器终于建得出来了。
+⚠ 但 `.gb-rv-panel__glyph` 包裹层仍然没有，**这正好印证第六十六轮把 play 图标的隐藏规则
+挂在 `svg` 而不是 `.gb-rv-panel__glyph` 上是对的** —— 挂在包裹层上到今天都不会生效。
+
+**差异核对**：css 56 行（剔除 build token 后 26 行）、`main.js` 40 行，逐条都是本轮改动。
+⚠ 核对时发现 `main.js` 里一句注释是旧的（第一版写的「放进 mask 里」，改成放在 mask 外后
+没跟着更新）。**注释会误导下一个人**，先修了再推。
+
+**推送清单（3 个文件）**：`assets/customstyle.css` + `assets/customstyle.scss` +
+`assets/main.js`（`--only` 逐个列出 + `--nodelete` + `--allow-live`）。
+
+**回读验证（三道）**：
+
+1. **CLI 拉回**：3 个文件逐字节与本地相同，**零误伤**，文件数 584 → 584。
+2. **线上 halo**（how-gumi-works，1440）：2 行 → **2 份 `.gb-ink-halo--line`**，
+   `top` `['0px','48px']` 与 mask 的 offsetTop 一致，整块副本 `display: none`，
+   `padding-bottom` 解析为 4.8px（0.12em × 40 行高）。
+   **mid-flight：`mask=[19.9, 36.6]` / `halo=[19.9, 36.6]` —— 逐行完全相同。**
+   这是最强的一条：两层在动画中途的 `transform.m42` 一致，才说明光晕真的贴着它那一行的字在走。
+3. **线上 reel**：
+
+| 视口 | 卡片 | 比例 | 完整 / 触边 |
+|---|---|---|---|
+| 1440 | 304.0 × 540.0 | 0.5630 | 3 / 5 |
+| 1920 | 405.3 × 720.0 | 0.5630 | 3 / 5 |
+| 2560 | 540.4 × 960.0 | 0.5630 | 3 / 5 |
+
+线上实测 **22 ok / 0 red**（含三条活性守卫：dosed 必须多行、260ms 时必须有东西在动、
+reel 必须存在，否则判红而不是静默通过）。
+
+**基线滚动**：`baseline-pre-r67`（推送前，r66）/ `baseline-dev-live`（当前线上，r67）。
+
+### 顺带发现 / 未修
+
+- ⚠ **第六十四轮的记录里有一句是错的**：那里写「单行宿主（每个 `.gb-stat__value` 和
+  `.gb-usp__value`）」。实测 **`.gb-usp__value` 根本没有 `data-line-reveal`** ——
+  它带 halo 但从不参与拆行，那份光晕是静态显示的整块副本。
+  本轮判据据此把它排除在外，已在 r67check 里注明。
+- **play 图标不跟着卡片缩放**（`.gb-reel__play` 固定 85×53）。2560 时卡片 540 宽，
+  图标相对更小。稿里没有 1440 以上的规格，**需求也只点了卡片**，没动。
+- **2560 时卡片高 960px**，比多数笔记本视口还高。这是「高度跟随宽度比例」的直接结果，
+  是需求指定的，不是 bug。若要封顶，给 `height` 再套一层 `min()` 即可，一处回退。
+- **`.gb-ink-halo--line` 是运行时生成的节点**，页面 DOM 数会随行数增加
+  （`cssnap.py diff` 对这些页本来就无效，见「不要报成 bug」三·3）。
+
+## 第六十六轮（2026-09-04）— reel 弹窗的 play 图标隐藏（`$build` = `20260904-r66`）
+
+需求：「`gb-rv-panel__video` 的 svg 隐藏起来」+「只推送修改的文件」。
+
+### 改之前先看了线上是什么样
+
+线上首页有 **10 个 `.gb-reel`，但带 `data-video` 的是 0 个** —— 对方按
+`docs/LIQUID-TODO-reels.md` 第 2 条把属性名从 `data-video-url` 改成了 `data-video`，
+**但后台还没填视频 URL**。所以点开任何一个 reel 都不会加 `.has-video`，
+弹窗里就是稿的 fallback：灰底 + 一个 play 图标（实测 `svgVisible: true`）。需求指的就是这个图标。
+
+### 改了什么
+
+```scss
+.gb-rv-panel__video {
+  svg { display: none; }        // was: width: 85px; height: 53px
+}
+```
+
+⚠ **选择器落在 `svg` 上，不是 `.gb-rv-panel__glyph` 上**。两边的 markup 不一样：
+
+| | 结构 |
+|---|---|
+| 静态站（r62 起） | `<div class="gb-rv-panel__video" data-modal-media><span class="gb-rv-panel__glyph"><svg>…` |
+| 线上 liquid | `<div class="gb-rv-panel__video"><svg>…`（裸的，LIQUID-TODO 第 1 条仍未做） |
+
+挂在 `.gb-rv-panel__glyph` 上的规则在静态站会通过、**在线上会静默失配** ——
+这正是第六十二轮那条 `.gb-rv-modal.has-video .gb-rv-panel__glyph { display: none }`
+今天在线上不生效的原因。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   1 条规则 + $build → 20260904-r66
+改  assets/customstyle.css    编译产物（双写）
+改  *.html                    129 处 ?v= r65 → r66
+新  tools/r66check.py         36 条
+```
+
+### 判据
+
+`tools/r66check.py` **36 ok / 0 red**，4 个页面 × 两种 markup：
+`wrapped`（原样）与 **`bare`（JS 剥掉 `.gb-rv-panel__glyph`，复现线上的裸 svg）**。
+每一遍都断言 `display: none` **且** 盒宽为 0，并带**活性守卫**——
+先断言 `svg` 至少有 1 个，否则「它被隐藏了」是个空命题。
+
+**活性自检**：把产物里的 `display: none` 改成 `block` → **12 red**，
+`wrapped` 与 `bare` 两遍各 6 条，两种结构都被覆盖到。
+
+**回归**（全部 0 red）：
+
+```
+rwd.py 全绿   assetpath.py GREEN
+r58 44  r59 96  r60 242  r61 151  r62 133  r63 158
+r64 1744  r65 122  r65interact 36  r66 36        合计 2762 条
+```
+
+### 推送（2026-09-04）
+
+**推送前三方对比**：`assets/` **零差异**；对方在改 `templates/`（8 个 json 有变化，
+另新增 `page.get-in-touch.json` / `page.referral.json`），与推送清单不冲突。
+css diff 剔除 build token 后**恰好 3 行** —— `-width:85px` `-height:53px` `+display:none`。
+
+**推送清单（2 个文件）**：`assets/customstyle.css` + `assets/customstyle.scss`
+（`--only` 逐个列出 + `--nodelete` + `--allow-live`）。`main.js` 本轮没改，未推。
+
+**回读验证**：
+
+1. **CLI 拉回**：两个文件逐字节与本地相同。⚠ 另有 `templates/index.json` 变化 ——
+   **不是本次推送造成的**（清单里没有 templates），是对方在后台配 usp 区块的 settings，
+   推送前的对比里就已经在改这批文件了。
+2. **CDN**：裸路径 `…/assets/customstyle.css` 一开始仍返回旧版（208144 字节）——
+   **是边缘缓存滞后，不是没推上去**。带随机查询参数取回即为新版：214796 字节、
+   build `20260904-r66`、压缩形式 `gb-rv-panel__video svg{display:none}` 1 处。
+3. **线上浏览器实测**（首页）：`.gb-rv-panel__video` 内 svg **1 个**（非空断言），
+   `display: none`、盒宽 `0` ✅。
+
+⚠ **顺带修正一条对 CDN 滞后的理解**：页面里引用的样式表 URL 是
+`…/customstyle.css?v=4420320884865616021788508178` —— **Shopify 的 `asset_url` 自带指纹**，
+所以裸路径的边缘缓存滞后**不影响用户实际拿到的版本**。
+以后验证「线上有没有生效」应当以**浏览器里页面实际加载的那个 URL** 为准，
+拿裸路径 curl 出来的旧内容会误判成「没推上去」。
+
+**基线滚动**：`baseline-pre-r66`（推送前）/ `baseline-dev-live`（当前线上）。
+
+### 顺带发现 / 未修
+
+- **`.gb-rv-panel__video` 的 `@include hover { color: $c-green }` 现在没有视觉效果了**。
+  那个 hover 是给 svg 的 `currentColor` 用的，svg 一隐藏就没有承载者了。
+  规则留着无害（第五十轮需求方点名加的），**没删**，但下轮如果看到它「不生效」，
+  这就是原因，不是 bug。
+- **第六十二轮的 `.gb-rv-modal.has-video/.has-embed .gb-rv-panel__glyph { display: none }`
+  现在是冗余的**（svg 已无条件隐藏）。它是当时的既有设计，且真接上视频后仍是正确的语义，
+  **没删**。
+- ⚠ **如果本意是「只在有视频时隐藏、没视频时仍显示 play 图标」**，把这条规则包进
+  `.gb-rv-modal.has-video, .gb-rv-modal.has-embed` 里即可，一处回退。
+  现在的写法是**无条件隐藏**，所以没有视频的 reel 点开是纯灰底空弹窗。
+
+## 第六十五轮（2026-09-04）— PDP 订阅模块（`$build` = `20260904-r65`）
+
+需求：「之前 pdp 没有做订阅相关的东西（Autoship and Save 以及下面的模块），现在需要补上」
++「加上 `Delivers every:` 的点击交互效果」。
+
+⚠ **这一轮推翻了既有的实现边界。** `docs/PROJECT-STATUS.md`「实现边界：Shopify app 生成的
+内容不做」把 PDP 订阅选购列为「由订阅 app 渲染，前端不做」，第一轮只留了占位槽
+`data-app="subscription"`，第二十二轮把那个虚线占位框也删了。需求方本轮明确要求补上，
+所以**视觉与交互都做，价格/折扣/档位仍归 app**。边界表已更新。
+
+### 数据来源
+
+桌面 `I324:52733;316:18227`（401 宽）/ 手机 `I324:53797;191:2419`（350 宽），
+两块稿的节点数据全量落盘，**没有一个数取自截图**。三处只有节点数据才看得出来的：
+
+| 项 | 节点字段 | 若照截图做会怎样 |
+|---|---|---|
+| `$79.99` 是**删除线** | `textDecoration: STRIKETHROUGH` | 小字灰色，截图上像普通副标 |
+| banner **全大写** | `textCase: UPPER`（`characters` 本身是混合大小写 `MOST POPULAR: get 49% off`） | 照 `characters` 写就是小写，**第一版就漏了，靠对稿图才发现** |
+| 卡片描边**画在盒内** | `strokeAlign: INSIDE`（bbox == renderBounds） | 用 `border` 会让卡片高 336/306，稿是 334/304 |
+
+第三条决定了写法：`.gb-sub__plan` 用 `box-shadow: inset 0 0 0 1px`，**不是 `border`**。
+border 除了撑高 2px，还会把顶部 banner 往里推 1px，而稿里 banner 是齐着卡片边的
+（Most popular 334 = Banner 36 + option 298，没有给边框留位置）。
+
+### 结构
+
+```
+.gb-sub                       gap 20（= 稿 Subscription frame）
+├ .gb-sub__heading            "Autoship and Save" 16/500
+├ .gb-sub__plans              gap 16
+│ ├ .gb-sub__plan--sub        radius 16/8，inset 1px 描边
+│ │ ├ .gb-sub__banner         绿底 lime 字，uppercase
+│ │ └ .gb-sub__panel          lime-150 底，pad 20/16，gap 16
+│ │   ├ label.gb-sub__pick    radio + 名称/价格/份数/日均
+│ │   ├ .gb-sub__works        "How subscription works:" + 三条对勾
+│ │   └ .gb-sub__every        "Delivers every:" + 下拉
+│ └ label.gb-sub__plan--once  一次性档，同一套 radio
+└ .gb-product__cta            "Start Now"
+```
+
+⚠ **CTA 移进了 `.gb-sub` 里**。稿里 Start Now 就是 Subscription frame 的第三个孩子，
+而 `Product Details` 的 gap 24 正好等于现有 `.gb-product__info` 的 gap —— 结构对上了，
+`.gb-product__cta` 的样式不依赖父级，移动后 narrow 的 `max-width:520 + margin-inline:auto`
+照常居中。
+
+### 交互
+
+- **`Delivers every:` 下拉**复用 `main.js` 的 `selectBox` 默认变体：HTML 里只是
+  `<select data-select>`，JS 自动换成 button + ul，箭头能转、能键盘操作、原生 select 同步提交。
+  稿的盒子比表单字段矮（40 vs 44），所以 `.gb-sub__every .gb-select__button` 就地覆盖
+  高度/圆角/边框色/阴影 —— 0-2-0 压过 `.gb-field__input` 的 0-1-0。
+- **单选没有写 JS**。`:has(.gb-sub__radio:checked)::before` 纯 CSS 就能画选中态，
+  两张卡本身都是 `<label>`，点整块即选中。第一版 HTML 里写了个 `is-selected` 类，
+  没有任何东西维护它 —— **死类会误导下一轮**，已删。
+- radio 走 `.gb-form__check` 同一路子（原生控件 visually-hidden，圆点画在 label 的
+  `::before`）：选中时底色填绿，再用**卡片自己的底色**做 3.5px inset 环，把稿的 11px 芯
+  从 18px 内容区里切出来 —— 稿里 Checkbox 的 fill 正是卡片底色 `#E7F8D0`，印证了这个画法。
+
+### 文件清单
+
+```
+改  pdp.html                  订阅模块 HTML（替换掉 app 占位注释，CTA 移入）
+改  assets/customstyle.scss   .gb-sub 全套 + $c-gray-350（#b3b3b3，稿的下拉边框色）
+                              + $build → 20260904-r65
+改  assets/customstyle.css    编译产物（双写）
+改  *.html                    129 处 ?v= r64 → r65
+新  tools/r65node.py          通用节点 dump（几何/样式/填充/描边/特效），可查任意 board
+新  tools/r65check.py         122 条：逐项比对两块稿的字号/行高/字距/间距/颜色/高度
+新  tools/r65interact.py      36 条：真点击驱动的下拉与单选行为
+```
+
+### 判据
+
+- `tools/r65check.py` **122 ok / 0 red** — 20 个选择器 × 2 档的 computed 值直接对节点数据，
+  外加 banner 36/28、下拉 40、一次性卡 90/76、popular 卡 334/304 四个盒高。
+- `tools/r65interact.py` **36 ok / 0 red** — 点开列表 → 断言 `is-open`/`visibility`/
+  `aria-expanded`/箭头 transform 变化 → 选第 4 项 → 断言值与**原生 select 同步**、列表收起 →
+  断言**用下拉不会改动套餐选择** → 点一次性卡 → 断言两个圆点的填充互斥 → 点回订阅行。
+- **活性自检**：把 `inset` 描边改回 `border` → **8 red**，转红的正是四个盒高与描边写法两条。
+- **视觉**：`figma/screenshots/` 的两张整页稿按节点坐标裁出订阅区，与 DPR2 元素截图并排。
+  桌面 402×564 vs 稿 401×564、手机 350×513 vs 稿 350×512。
+  banner 大小写就是这一步看出来的 —— **122 条 computed 判据当时全绿，因为我根本没想到去断言
+  `text-transform`**。补进判据后才有覆盖。
+
+**回归**（全部 0 red）：
+
+```
+rwd.py      全绿      assetpath.py  GREEN
+r58    44   r59    96   r60   242   r61   151
+r62   133   r63   158   r64  1744
+r65   122   r65interact 36            合计 2726 条
+```
+
+### ⚠ 交付前必须替换的占位内容（本轮新增）
+
+| 内容 | 现值 | 说明 |
+|---|---|---|
+| 订阅价 / 原价 / 日均 | `$40.40` `$79.99` `$1.46/day` | 稿上的占位数字，须由订阅 app 输出 |
+| 一次性价 / 原价 / 日均 | `$54.40` `$79.99` `$1.94/day` | 同上 |
+| 折扣幅度 | `MOST POPULAR: get 49% off` | 同上 |
+| 配送档位 | `2 / 4 / 6 / 8 Weeks` | **稿上只有 `4 Weeks` 一个值**。第五十九轮需求方对 cart 的同类下拉裁决过「补成常见订阅档位」，这里沿用同一套，见待决 BD |
+
+### 推送（2026-09-04）— r64 + r65 一并推上 live，并修好线上被回退的 JS
+
+需求方指令：「关于上述的样式传到 live 上去」+「还有相关 js」。
+
+**推送前取证**：线上 `assets/main.js` 与本地整份不同（65493 vs 70995 字节）。
+逐一比对历史快照后确认它**逐字节等于我们自己的 `baseline-r61`** —— 是我们的旧版本被推回去了，
+不是别人写的新代码（缺 `playVideo` / `data-video` / `wouldOverflow` 等第五十九～六十二轮的功能）。
+**所以推本地新版是恢复 + 更新，不覆盖任何人的新工作。**
+
+**顺带发现 `assets/bear-icon.png` / `.webp` 在线上缺失**，而 `customstyle.css` 里
+`url("bear-icon.webp?v=…")` 引用它们 —— 不补就是静默 404（正是第六十一轮修过的病）。
+它们是样式的直接依赖，一并推。css 里所有 `url()` 目标都扫过，其余 10 个字体都在。
+
+**推送清单（5 个文件，`--only` 逐个列出 + `--nodelete` + `--allow-live`）**：
+
+```
+assets/customstyle.css     244540 → 257296   (r58 → r65)
+assets/customstyle.scss    329614 → 348003
+assets/main.js              65493 →  70995   (r61 版 → r65)
+assets/bear-icon.png       新增（线上缺失）
+assets/bear-icon.webp      新增（线上缺失）
+```
+
+推送前 `diff -rq` 确认推送源与线上的差异**恰好是这 5 个**，无夹带。
+
+**回读验证（四道）**：
+
+1. **CLI 拉回**：5 个文件逐字节与本地相同，除它们之外**零误伤**，文件数 580 → 582。
+2. **CDN**：build token = `20260904-r65`；`gb-sub__plan` 11 处 / `gm-halo-up` 2 处 /
+   `gb-dosed__inner>*` 1 处 / `grid-auto-rows:1fr` 2 处；`main.js` 的 `playVideo`、
+   `wouldOverflow` 各 2 处；`bear-icon.webp` 200。**这次 CDN 没有滞后。**
+3. **`r64check.py --live` 2056 ok / 0 red**（比本地多的 312 条即 live 那一遍）。
+   ⚠ 该判据在元素缺失时会静默跳过，所以另跑了**锚点存活检查**：
+   `gb-dosed__inner` 1 / `gb-dosed__block` 2 / `gb-faq__item` 6·4·10 /
+   `gb-science-card` 3·6 / `gb-highlight-card` 3 —— 元素都在，0 red 不是空转。
+4. **逐条需求的线上实测**：
+
+| 需求 | 改前线上 | 改后线上 |
+|---|---|---|
+| 3 FAQ 行距 | 6 行 `padding-bottom` **全 0px** | `[0, 16, 16, 16, 16, 0]` ✅ |
+| 3 分隔线 | 每行都丢 `border-top` | 除首行外都是 1px ✅ |
+| 4 `.gb-dosed__block` | 391.8（媒体图 138） | **1250**（媒体图 598），与静态站一致 ✅ |
+| 2 卡片等高 | — | science `[384.3×3]` / highlight `[457.7×3]` ✅ |
+| — bear-icon | 404 | 背景指向 CDN 的 `assets/bear-icon` ✅ |
+
+**⚠ 线上结构已被对方重构**：`div.shopify-block` 现在**全站 0 处**（blocks 搬进了 sections）。
+第六十四轮那三处「锚到列表直接子元素」的修复因此从"必需"变成"防御性" —— 新结构下与原写法等价，
+**不要因为「包裹层没了」就改回 `:first-child` / `:last-child`**，下次再有人用 block 就又会坏。
+
+**⚠ 订阅模块（r65）的样式推上去了，但线上不会显示** —— 线上 PDP 没有 `.gb-sub` 的 liquid
+结构（实测 `.gb-sub` 0 处）。需要 liquid 那边照 `pdp.html` 加 HTML，
+交接见 `docs/LIQUID-TODO-subscription.md`。
+
+**基线滚动**：`baseline-pre-r65`（推送前线上，r58）/ `baseline-dev-live`（当前线上，r65）。
+
+
+### 顺带发现 / 未修
+
+- **稿里 `Subscribe & Save` 的份数说明与 `One Time Purchase` 一模一样，都是
+  `28 Packs delivered once`**。订阅档写 "delivered once"（只送一次）讲不通，
+  两块稿都是这样，不是导出问题。**按铁律 3 照抄了稿，没有自己改写**，需设计方裁决 → 待决 BF。
+- **一次性档没有 `MOST POPULAR` 之外的任何折扣说明**，但它也有划线原价 `$79.99` 和
+  `$54.40` 的现价 —— 稿如此，未加旁注。
+- **`Frame 992437`（Product Details 的第三个孩子）在稿里是 radius 16 + `#E7F8D0` 底的盒子**，
+  对应现有 `.gb-product__guarantee-note`，实现一致，本轮核对时顺带确认，无需改。
+- 手机稿 `$40.40` 与 `$79.99` 之间的视觉间隙看起来比 `itemSpacing: 2` 宽一点点（约 2px），
+  疑似 Figma 文本框的 trailing space（见 [[figma-centred-text-counts-trailing-space]]）。
+  **按节点数据取 2，没有目测调整。**
+
+## 第六十四轮（2026-09-04）— 任务文档 5 条 + 三处 Shopify 包裹层结构病（`$build` = `20260904-r64`）
+
+需求（对话给出，5 条）：
+
+1. `.gb-stat` 的第一个 `.gb-stat__value` 出现之后 `.gb-ink-halo` 才出现，希望与 `.gb-line-mask` 同步
+2. `.gb-science-card` / `.gb-highlight-card` `height: 100%`
+3. `.gb-faq__row` `padding-bottom: 16px`
+4. `.gb-dosed__inner` 线上与静态站不一致，查原因；若是结构问题，以线上结构为准改样式还原静态站效果
+5. 占位图容器只有灰底，内部要给 `img` / `video` 加 100% + `object-fit: cover`
+
+### 贯穿本轮的根因：Shopify 给每个 block 套一层 `div.shopify-block`
+
+线上（storefront password `1234`，本轮首次拿到）实测，三处独立需求是同一个病：
+`.gb-dosed__block` / `.gb-faq__item` / `.gb-product__acc-item` 在线上各自被包进一层
+**裸 `div.shopify-block`**，于是
+
+- `:first-child` / `:last-child` 判的是**那层包裹**，每个 item 都同时是首也是末；
+- `width: 100%` / `height: 100%` 的百分比参照的是**包裹层**，不是原来的容器。
+
+`tools/r64wrap.py` 扫了 8 个线上页面，16 处选择器/页面对失配，全部集中在这两族选择器上。
+
+| 症状 | 实测 |
+|---|---|
+| `.gb-dosed__block` 塌宽 | 1440 档 **391.8** vs 静态站 **1250**；媒体图 138 vs 598。`align-items:center` 让包裹层 shrink-to-fit，块的 `width:100%` 于是参照塌掉的盒子 |
+| FAQ 行距全没了 | `.gb-faq__item:last-child{--acc-gap:0}` 命中**每一个** item → 线上 6 行的 `padding-bottom` 全是 **0px**（静态站 24px） |
+| FAQ 手机端分隔线全没了 | `.gb-faq__item:first-child .gb-faq__row{border-top:0}` 同理命中每一行 |
+
+⚠ `.gb-product__acc-row` 的注释里已经记过一次同形的坑（"rows now wrapped in
+.gb-product__acc-item → first child of EVERY item"）。**这是第二次，包裹层又多了一层。**
+以后写结构选择器一律锚在**列表容器的直接子元素**上，别锚在 item 上。
+
+### 改了什么
+
+```scss
+// 位置判定锚到列表的直接子元素，穿透任意深度的包裹层
+.gb-faq__list > :last-child,
+.gb-faq-image__list > :last-child,
+.gb-product__accordion > :last-child { --acc-gap: 0px; }        // was .gb-faq__item:last-child
+
+.gb-faq--plain .gb-faq__list > :first-child .gb-faq__row { … }  // 三处 :first-child 同办法
+.gb-dosed__inner > * { width: 100%; }                            // 抵消 align-items:center 的 shrink
+```
+
+- **第 1 条**：`.gb-ink-halo` 改走新的 `gm-halo-up`，与 `.gb-line-mask__inner` **同起点、同时长、同曲线**
+  （`1.4s var(--e-power4-out)`，delay 由 `base*150ms + 1.05s` 改为 `base*150ms`）。
+  halo 是绝对定位副本、进不了遮罩，所以给它自己的窗口：`clip-path` 的 bottom 从
+  `100%` 走到 `-20px`，与位移同一条插值 —— 等价于一个**停在文字终位的窗口**，
+  正是 `.gb-line-mask` 的 `overflow` 对真实文字做的事。
+  收尾 `-20px` 而不是 0，是因为描边是 15px 的 `text-shadow`，窗口齐平行盒会削掉它。
+- **第 2 条**：两个卡片加 `height: 100%`。当前线上这两组**没有**包裹层，所以视觉零变化；
+  加了之后即使将来做成独立 block 也不会塌（判据里用注入包裹层的方式验过）。
+- **第 3 条**：`.gb-faq__list` 的 `--acc-gap` 24 → 16。⚠ 改的是变量不是 `padding-bottom`：
+  面板尾部读同一个变量，写死属性会让两者脱钩。`.gb-faq-image__list` 保持自己的 16/24 斜坡。
+- **第 5 条**：9 个占位容器补 `img, video, picture { @include cover-img; }`。
+  其中 4 个（`.gb-acc-body__media` / `.gb-product__thumb` / `.gb-product__image` /
+  `.gb-promo-card__media`）有圆角却没有 `overflow: hidden`，一并补上 —— 不补的话图片会顶掉圆角。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   6 组改动 + $build → 20260904-r64
+改  assets/customstyle.css    编译产物（双写）
+改  *.html                    129 处 ?v= token r63 → r64（12 个页面）
+新  tools/r64check.py         本轮判据，1744 条
+新  tools/r64wrap.py          扫线上 8 页，找被 shopify-block 打断的选择器
+新  tools/r64dosed.py         dosed 塌宽的线上/静态站几何对比
+新  tools/r64probe.py         卡片高度与 faq padding 的线上基线
+改  tools/r63check.py         修假阳性（见下）
+```
+
+### 判据
+
+`tools/r64check.py` **1744 ok / 0 red**。它跑三遍：
+`plain`（原样）/ `wrapped`（**JS 注入 shopify-block 包裹，在本地复现线上 DOM**）/ `live`（`--live`）。
+wrapped 这一遍是本轮的核心 —— 没有它，所有修复都只能推上线才知道对不对。
+
+**活性自检**（逐项反向改回产物，判据必须转红）：
+
+| 项 | 转红数 |
+|---|---|
+| A `.gb-dosed__inner > *` → `width:auto` | 11 |
+| B `--acc-gap` 锚点改回 `.gb-faq__item:last-child` | 132 |
+| D `--acc-gap` 16 → 24 | 184 |
+| E 两个 `height: 100%` 删掉 | 33 |
+| F halo 改回 `gm-fade-in` | 144 |
+| 第 5 条 `object-fit: cover` → `fill` | 276 |
+
+⚠ **E 项第一次自检是 0 red —— 判据当时漏了这两个网格**（`WRAP` 的注入清单里没有
+`.gb-science__cards > *` / `.gb-nutrition__cards > *`）。补进去后才转红 33。
+**活性自检抓到的是判据的洞，不是代码的洞**；没跑这一步就会把"冗余改动"当成"已验证"。
+
+**回归**：`r58` 44 / `r59` 96 / `r60` 242 / `r61` 151 / `r62` 133 / `r63` 158、
+`assetpath` GREEN、`rwd.py` 全绿，均 0 red。
+
+`tools/r63check.py` 修了一处假阳性：它用 `findall(r"grid-auto-rows:\s*1fr")` 数 scss 应为 2 处，
+而本轮在 `.gb-science-card` 的注释里写了这个词 → 数成 3 → 报红。改成先剥 `//` 注释再数；
+剥完仍能抓真缺失（把一处规则改成 `auto`，照样 1 red）。
+
+### 推送（2026-09-04）⚠ 推上去了，但随即被第三方覆盖
+
+推送本身成功：`--only assets/customstyle.css --only assets/customstyle.scss --nodelete --allow-live`
+→ `The theme 'Dev' (#180348977399) was pushed successfully.`
+
+**推送前**三方对比干净：线上 596 文件 / 120 blocks / css 是 r63，
+唯一的他方改动是 `sections/gb-reviews.liquid`（他们按 `docs/LIQUID-TODO-reels.md`
+把 `data-video-url` 改成了 `data-video`，还改用了 Shopify 的 video 对象 —— TODO 第 2 条已完成，
+第 1 条 `data-modal-media` 仍未做），与推送清单不冲突。
+差异核对：线上→本地 css diff 共 128 行，剔除 build token 后 98 行，**逐行都是本轮六项改动，无一行多余**。
+
+**推送后回读，线上变成了另一个版本**：
+
+| | 文件数 | blocks | `assets/customstyle.css` | `assets/main.js` |
+|---|---|---|---|---|
+| 推送前（我拉的） | 596 | 120 | `20260903-r63` 249137B | `5f89a00b` |
+| 我推的 | — | — | `20260904-r64` 251156B | 未推 |
+| 推送后（回读） | **571** | **96** | **`20260831-r58`** 244540B | **`c9133d61`** |
+
+- 24 个 `blocks/gb-*.liquid` 与 `sections/gb-page.liquid` 不在了；
+  线上 how-gumi-works 的 `gb-dosed` 由 20 处变成 **0 处**，`shopify-block` 也变成 0 处。
+- `assets/main.js` 变了 —— **本轮从未推过它**，本地/基线/推送前三者的 md5 都是 `5f89a00b`。
+- `config` 之外还有 `sections/footer-group.json` 变化。
+
+**判断**：这不是本次推送造成的，理由是 ① 只推了 2 个文件且带 `--nodelete`；
+② 线上现在的 css **不是我推的内容**（是 r58），说明我推之后另有写入；
+③ `main.js` 这个我从未碰过的文件也变了；④ 被删的 blocks 与推送清单毫无关系。
+**确定性边界**：能确认"线上当前内容不是我推的、且含我从未推过的文件的改动"；
+不能从客户端证明对方的具体操作（Shopify 无法从 CLI 查文件级操作日志）。
+
+⚠ **2026-09-04 第六十五轮推送时更正**：上面说的「24 个 blocks 被删」**不准确** ——
+它们是被**搬进了 `sections/`**（blocks 120→95、sections 49→63），是一次
+block → section 的重构，不是删除。当时的 `diff -rq` 输出被 `head -15` 截断，
+只看到 `Only in baseline/blocks:` 那半边，漏了 `Only in remote/sections:` 那半边。
+**`assets/customstyle.css`（r63→r58）与 `assets/main.js`（r62 版→r61 版）确实被回退到旧版**，
+这一条不变 —— `main.js` 经比对逐字节等于我们自己的 `baseline-r61` 快照。
+
+
+**当前状态：已停手，等需求方裁决，未做任何恢复动作。** CDN 仍在服务 r63（滞后，实测过 20 分钟）。
+
+恢复源俱全（`/home/ly/project/Gumi-Brand-shopify/`）：
+
+```
+baseline-dev-live                          596 文件 120 blocks  r63  ← 完整的推送前线上快照
+remote-pre-r64                             596 文件 120 blocks  r64  ← 上面那份 + 本轮两个文件
+remote-post-r64                            571 文件  96 blocks  r58  ← 现在的线上
+evidence-20260904-0656-live-after-r64-push 571 文件  96 blocks  r58  ← 证据留存
+```
+
+### 顺带发现 / 未修
+
+- **`.gb-faq-image__list` 的 narrow 首行规则与 `.gb-faq__row` 里的那条重复**
+  （8130 与 7953 同值，后者已覆盖前者）。既有冗余，非本轮引入，没动。
+- **`.gb-rv-panel__video` 没有跟着改** —— 它刻意是 `contain` 不是 `cover`（16:9 占位片），
+  见「不要报成 bug」1c。第 5 条不适用于它。
+- **稿里 `Subscribe & Save` 的说明文案与 `One Time Purchase` 一样是 `28 Packs delivered once`**
+  （订阅档写 "delivered once" 讲不通），做 PDP 订阅模块时需要设计方裁决。
+- 静态站没有 `.shopify-block`，所以本轮三处结构修复**在静态站上是零视觉变化**；
+  它们的价值只在线上，判据靠注入包裹层来覆盖。
+
+## 第六十三轮（2026-09-03）— 两组卡片全档等高（`$build` = `20260903-r63`）
+
+需求：「`gb-science__cards` 内部的 card 的高度应该保持一致，还有 `gb-nutrition__cards` 的 card」。
+
+### 现状（实测，不是目测）
+
+两个容器都是 grid，item 默认 `align-self: stretch`，所以**同一行内**本来就等高 ——
+1201 以上三列一行时三张齐平，需求里说的不齐**只发生在换行之后**：
+
+| 视口 | 布局 | 改前高度（index） |
+|---|---|---|
+| 1440 | 三列一行 | `[384.3, 384.3, 384.3]` ✅ |
+| 1199 | 两列两行 | `[379, 379, 355]` ← 第三张自己一行，行高由它自己的内容定 |
+| 576 | 两列两行 | `[319.6, 319.6, 271.6]` |
+| 575 | 一列三行 | `[410.7, 386.7, 386.7]` ← 每张各自一行，三个高度 |
+
+差值来自文案行数：index 的第一张 science 卡是两行正文，另两张一行；
+nutrition 的前两张两行，第三张一行。
+
+### 改了什么
+
+两个容器各加一行：
+
+```scss
+grid-auto-rows: 1fr;
+```
+
+`stretch` 只拉平**同一行**，要跨行拉平得让所有行本身等高。这里所有行都是隐式行，
+而在**高度为 auto 的 grid 容器**里，`fr` 轨道会全部解到最高那一行的内容高
+（CSS Grid §12.7，可用空间无限时的 fr 求解），正好就是「所有卡等于最高的那张」。
+
+改后每一档都是三个相同值，且**没有把整体抬高** —— 1199 档从 `[379, 379, 355]`
+变成 `[379, 379, 379]`，取的是原本的最大值，不是新算出来的更大值。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   2 处 grid-auto-rows: 1fr（+ $build → 20260903-r63）
+改  assets/customstyle.css    编译产物（双写）
+新  tools/r63check.py         158 条判据
+```
+
+### 判据
+
+`tools/r63check.py`：2 页 × 13 档，断言每个容器内所有直接子元素高度极差 ≤ 0.5px，
+外加无横向溢出、scss 与 css 双写各 2 处。**158 ok / 0 red**。
+
+活性自检：把产物里的 `grid-auto-rows:1fr` 改成 `auto` 重跑 → **20 red**，
+且转红的**全部**是 1200 及以下的档（1201 以上本来就等高，不该红，也确实没红）。
+
+回归：`rwd.py` 全绿、`assetpath.py` GREEN、`scrolllock` 44、`r58`–`r62` 共 666 条全绿。
+
+### 顺带发现 / 未修
+
+- **拉高出来的空间落在卡片底部**。卡是 `flex-direction: column`，内容顶对齐，
+  所以矮卡被拉平后是下方留白（science 卡表现为 bear meter 之下多 24px，
+  nutrition 卡是正文之下）。要让内容跟着分布得另加 `justify-content: space-between`
+  或给某个子元素 `margin-top: auto` —— 那是版式决策不是还原，**没动**。
+- **`.gb-story__inner` 没跟着改**。它是同一套 3→2→1 装置，但注释里写着
+  `align-items: start` 是有意的：稿 324:72839 的三张卡就是 538/510/538 不等高。
+  需求只点了 science 与 nutrition，按「点名 A 就只改 A」没动。
+  ⚠ **这条别当 bug 报**。
+- **`.gb-testimonials` 也没动** —— 它是 flex-wrap 不是 grid，同一句改法不适用，
+  需求也没点它。
+- 单列档（575 以下）等高意味着三张卡都等于最高那张，手机上是纯留白。
+  需求原话没有限定断点，所以全档一致；若只想在多列档等高，
+  把这行包进 `@media (min-width: 576px)` 即可，一处回退。
+
+### 推送（2026-09-03）
+
+推了**两个文件**到 live 主题 `Dev (#180348977399)`，`--only` 逐个列出 + `--nodelete`：
+
+```
+assets/customstyle.css
+assets/customstyle.scss
+```
+
+`main.js` 本轮没改（线上与本地逐字节相同），未推。HTML 只改了 `?v=` token，
+它们不是主题文件，不进推送清单。
+
+**三方对比**（推送前）：线上比上次基线多出别人的 4 个文件
+（`blocks/gb-compare.liquid` / `blocks/_gb-compare-row.liquid` / `blocks/gb-faq-image.liquid` /
+`sections/gb-expert.liquid`）并改了 4 个 `templates/page.*.json`。
+**`assets/` 目录零差异** —— 与本轮推送清单不冲突。
+
+**差异核对**：线上 → 本地的 css diff 共 32 行，剔除 build token 后
+**恰好剩两行 `grid-auto-rows: 1fr`**，没有一行多余。
+
+**回读验证**（两道）：
+
+1. CLI 拉回：线上差异恰好是这 2 个文件、与本地逐字节一致；别人的 4 个新文件、
+   `sections/gb-reviews.liquid`、`blocks/gb-ingredients.liquid`、5 个 templates json、
+   `config/settings_data.json` **全部未动**。文件数 596 → 596。
+2. CDN 回读 `https://gumi.com.au/cdn/shop/t/2/assets/customstyle.css`：
+   `grid-auto-rows:1fr` 出现 **2 次**，分别落在 `.gb-science__cards{…}` 与
+   `.gb-nutrition__cards{…}` 里；build token 是 `20260903-r63`。
+
+⚠ **CDN 上的 css 是 Shopify 压缩过的**（249137 → 208144 字节，9998 行 → 2 行），
+所以它与本地的 md5 **本来就不同**，别拿 md5 当判据。
+判据要用压缩形式（`grid-auto-rows:1fr` 而不是 `grid-auto-rows: 1fr`），
+且 **`grep -c` 在单行文件上恒返回 1**，必须 `grep -o … | wc -l`。
+
+基线滚动：`baseline-r62`（上一版线上）/ `baseline-pre-r63`（本次推送前）/
+`baseline-dev-live`（当前线上）。
+
+### ⚠ 店铺开着密码保护
+
+`https://gumi.com.au/` 外部访问返回的是 **`layout/password.liquid` 渲染的密码页**
+（section 只有 `template--…__main` 与 `password-footer`，页面里 **0 个 `gb-` 类、
+0 处 `customstyle`**）。`Shopify.theme` 确认就是 `Dev #180348977399`、role main，
+所以不是主题选错了 —— **是密码墙**。
+
+因此**线上视觉验证做不了**（没有店铺密码），只能验到 CDN 上的 asset 层：
+`/cdn/shop/t/2/assets/` 不受密码保护，可以直接 curl。
+下次要在浏览器里看线上效果，需要向需求方要 storefront password。

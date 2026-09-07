@@ -33,7 +33,7 @@
 // font url()s read it. Previewing over file:// caches css/js/woff2 until a hard
 // refresh, so without it a real change reads as "nothing happened".
 // font-check.html prints the value the browser actually got.
-$build: "20260831-r58";
+$build: "20260907-r88";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -53,6 +53,7 @@ $c-sand:        #f5f1e9;
 $c-lilac:       #e9d7fe;
 $c-gold:        #eec644;
 $c-coral:       #dd655e;   // the cross mark on comparison rows / 324:70523 subhead
+$c-blue:        #0374a5;   // 341:42573 only — cart delivery interval + "Continue Shopping"
 
 // Neutral
 $c-white:       #ffffff;
@@ -63,8 +64,11 @@ $c-gray-800:    #333333;
 $c-gray-700:    #4d4d4d;
 $c-gray-600:    #666666;
 $c-gray-500:    #737373;
+$c-gray-400:    #808080;   // 341:42573 stepper border / disabled checkout label
+$c-gray-350:    #b3b3b3;   // 316:18260 subscription dropdown border
 $c-gray-300:    #cccccc;
 $c-gray-200:    #d9d9d9;
+$c-gray-150:    #e6e6e6;   // 341:42573 cart line rule / disabled checkout fill
 $c-gray-100:    #eeeeee;
 $c-gray-050:    #f3f3f3;   // 326:83143 table header / zebra fill
 $c-navy:        #101828;
@@ -160,6 +164,10 @@ $z-modal:    1000;
 @mixin mobile { @media (max-width: $bp-mobile) { @content; } }
 @mixin narrow { @media (max-width: $bp-narrow) { @content; } }
 @mixin tablet { @media (min-width: #{$bp-narrow + 1px}) and (max-width: $bp-tablet) { @content; } }
+// r59: the promo card keeps its two-column layout all the way down to 768 (it
+// is scaled, not reflowed -- see --pp-k), so it needs one query that spans
+// tablet and pc rather than the two separate tiers.
+@mixin panel-wide { @media (min-width: #{$bp-narrow + 1px}) { @content; } }
 @mixin pc     { @media (min-width: #{$bp-tablet + 1px}) { @content; } }
 
 @mixin tight  { @media (max-width: $bp-tight)  { @content; } }
@@ -199,28 +207,11 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 // after a tap. ⚠ (hover: hover) is always false in headless chromium; verify with Playwright.
 @mixin hover { @media (hover: hover) { &:hover { @content; } } }
 
-// Link hover underline. Pseudo-element + scaleX, not text-decoration:
-// text-decoration cannot interpolate, so it can only jump.
-@mixin link-underline($color: currentColor, $bottom: -2px, $height: 1px) {
-  position: relative;
-
-  &::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: $bottom;
-    height: $height;
-    background: $color;
-    transform: scaleX(0);
-    transform-origin: right center;
-    transition: transform $t-fast $ease-out;
-  }
-
-  @include hover {
-    &::after { transform: scaleX(1); transform-origin: left center; }
-  }
-}
+// Client r86: link hover is a colour change, full stop -- the sliding underline
+// this mixin drew is gone from all four users (header link / sublink, footer
+// link / legal link), each of which already carried its own hover colour.
+// ⚠ The always-on `text-decoration: underline` on inline links (rich text,
+// legal copy, cart continue) is a different thing and stays.
 
 // Expands a property list into one transition value: trans(color, background-color)
 @function trans($props...) {
@@ -260,10 +251,10 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 }
 
 // Parent needs a fixed height or aspect-ratio plus overflow: hidden
-@mixin cover-img {
+@mixin cover-img($fit: cover) {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: $fit;
   display: block;
 }
 
@@ -898,6 +889,23 @@ h4 {
 
 p { font-size: 16px; line-height: 24px; letter-spacing: -0.32px; }
 
+// Live only. A `richtext` setting always wraps its value in <p>, and the theme
+// prints two of them straight into a heading host, where the rule above wins
+// over the inherited heading type -- a 56px title rendered at 16px.
+// Placed under that rule because it exists to cancel it.
+//
+// ⚠ Scope is "richtext settings printed raw into a *__title host". To extend:
+//   grep the section schema for `"type": "richtext"`, then check the host is a
+//   title and that it does not already go through `gb-rich-inline` (r71), which
+//   strips the wrapper server-side. `inline_richtext` (gb-science) emits no <p>,
+//   and escaped `text` (gb-expert) cannot. Neither belongs here.
+// The static pages carry plain text plus <br>, so this matches nothing there.
+.gb-stats__title p,
+.gb-nutrition__title p {
+  font: inherit;              // size, line-height, family, weight in one
+  letter-spacing: inherit;    // not part of the font shorthand
+}
+
 small { font-size: 14px; line-height: 20px; letter-spacing: -0.28px; }
 
 // ==========================================================================
@@ -1174,8 +1182,13 @@ html.js {
 // The last item has no next row, so its gap does not belong here. Row padding and
 // the panel's tail both read the same variable, so zeroing it once keeps the
 // container's total height pixel-identical.
-.gb-faq__item:last-child,
-.gb-product__acc-item:last-child { --acc-gap: 0px; }
+// ⚠ Anchored on the LIST's direct child, not on the item: Shopify gives every
+// block its own <div class="shopify-block">, which makes each item both
+// :first-child and :last-child of that wrapper and zeroed every row's gap on the
+// live site. The custom property inherits down through a wrapper of any depth.
+.gb-faq__list > :last-child,
+.gb-faq-image__list > :last-child,
+.gb-product__accordion > :last-child { --acc-gap: 0px; }
 
 .gb-acc-body {
   display: flex;
@@ -1207,9 +1220,11 @@ html.js {
   height: 218px;
   background: $c-gray-200;
   border-radius: $r-lg;
+  overflow: hidden;   // clip the image to the radius
 
   @include narrow { height: 180px; }
   @include tablet { height: fluid(180px, 218px); }
+  img, video, picture { @include cover-img; }
 }
 
 // Plus -> minus, drawn as two CSS lines (no SVG icon). Open rotates the vertical
@@ -1275,11 +1290,7 @@ html.js {
   // on green (#005635 -> #004128) is technically a change but reads as none.
   // The exception is a button already sitting on lime (.gb-footer-cta__btn), which
   // flips to white instead. Transform stays in the list for the press state.
-  transition: trans(background-color, color, border-color, transform);
-
-  // Press still nudges down 1px; that is the only tactile feedback touch gets,
-  // since hover rules are behind @media (hover: hover).
-  &:active { transform: translateY(1px); }
+  transition: trans(background-color, color, border-color);
 }
 
 .gb-btn--primary {
@@ -1569,7 +1580,10 @@ $nl-ease-out: $ease-in-out;
 }
 
 .gb-nl-pane {
-  padding: 18px 10px 24px 24px;
+  // Client r87: right gutter 10 -> 24. ⚠ .gb-nl-panel__body's scrollbar is 16px
+  // wide, so where the pane scrolls the copy now clears the edge by 40 against
+  // the left's 24; the old 10 made the two read equal.
+  padding: 18px 24px 24px 24px;
 
   &[hidden] { display: none; }
 
@@ -1776,9 +1790,18 @@ $nl-ease-out: $ease-in-out;
 // the modal opens. --scrollbar-w is measured in main.js modal.open() right
 // before this class lands (while the real scrollbar is still there to
 // measure), and padding-right eats the freed space back.
-html.is-modal-open,
-body.is-modal-open {
+html.is-modal-open {
   overflow: hidden;
+}
+
+// ⚠ `clip`, NOT `hidden` -- see the note on body.is-menu-open. With html locked,
+// body stops handing its overflow to the viewport and a `hidden` here would make
+// body the sticky header's scrollport; body never scrolls, so the header drops to
+// its static position (measured top -868 at 390, -860 at 1440). The lock itself
+// lives on html, which is also the only thing Gecko honours.
+body.is-modal-open {
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 // The scrollbar goes away once, so the freed width is padded back ONCE. html is
@@ -1833,13 +1856,16 @@ $rv-in: 0.28s;
   pointer-events: none;
 }
 
-// 304 x 540 is the reel card in the design; keep that ratio and let height be
-// the constraint, so the frame never grows past the viewport on a short screen.
+// Client-set (r62): 16/9 at up to 960 wide, replacing the design's 304/540 reel
+// card ratio -- the panel frames a landscape video now, not the card. Width
+// leads (16/9 meets the side edges first); the svh term shrinks the whole box on
+// a short viewport instead of letting a max-height squash the ratio. The 80 is
+// __wrap's own 40px top+bottom padding.
 .gb-rv-panel {
   position: relative;
-  aspect-ratio: 304 / 540;
-  height: min(100%, 720px);
-  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  width: min(100%, 960px);
+  max-width: calc((100svh - 80px) * 16 / 9);
   border-radius: $r-xl;
   overflow: hidden;
   pointer-events: auto;
@@ -1852,8 +1878,8 @@ $rv-in: 0.28s;
   }
 }
 
-// Same grey Video placeholder + Play glyph the cards carry, at panel size.
-// TODO client asset: swap for the real <video> when the reels are delivered.
+// Grey box + play glyph, kept as the fallback for a card with no data-video.
+// main.js puts `has-video` on the dialog when the trigger names one.
 .gb-rv-panel__video {
   display: flex;
   align-items: center;
@@ -1866,9 +1892,72 @@ $rv-in: 0.28s;
   // lightbox at all), so the colour is the house accent -- see PROJECT-STATUS.
   transition: trans(color);
 
-  svg { width: 85px; height: 53px; }
+  // Client-set: the play glyph stays out of the panel entirely. Targets the svg
+  // itself, not .gb-rv-panel__glyph, because the live liquid still ships it bare
+  // (docs/LIQUID-TODO-reels.md item 1) — the wrapper only exists on the static
+  // pages, so a rule hung on it would miss on the live site.
+  svg { display: none; }
 
   @include hover { color: $c-green; }
+}
+
+// main.js builds one of these into .gb-rv-panel__video according to what
+// data-video turns out to be -- a file gets the <video>, a hosted page
+// (YouTube, Vimeo) can only be embedded and gets the <iframe>. Neither needs a
+// display toggle: the one that is not wanted is never created.
+.gb-rv-panel__player,
+.gb-rv-panel__embed {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: $c-ink;
+}
+
+// contain, not cover: the panel and the placeholder footage are both 16/9,
+// but a real portrait reel must not be cropped to fit the frame.
+.gb-rv-panel__player { object-fit: contain; }
+
+// file:// has a null origin and YouTube refuses to configure its player for
+// one, painting its own "Error 153" where the video should be. The client
+// previews by double-clicking, so playVideo() puts this note there instead.
+// Never rendered off file://.
+.gb-rv-panel__offline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  height: 100%;
+  padding: 24px;
+  background: $c-ink;
+  color: $c-white;
+  text-align: center;
+}
+
+.gb-rv-panel__offline-text {
+  max-width: 34ch;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.gb-rv-panel__offline-link {
+  // lime, not $c-green: on $c-ink the green reads 2.2:1, under AA. The footer
+  // already pairs this lime with a dark green ground.
+  color: $c-lime;
+  text-decoration: underline;
+  transition: trans(opacity);
+
+  @include hover { opacity: 0.75; }
+}
+
+.gb-rv-modal.has-video,
+.gb-rv-modal.has-embed {
+  .gb-rv-panel__glyph { display: none; }
+  // The node is removed the moment the dialog closes (the only way to stop a
+  // third-party player), but the panel keeps fading for another --modal-exit.
+  // Without this the grey placeholder ground flashes through that fade.
+  .gb-rv-panel__video { background: $c-ink; }
 }
 
 .gb-rv-panel__close {
@@ -1914,6 +2003,16 @@ $promo-ease:     cubic-bezier(0.32, 0.72, 0, 1);
 $promo-fade-out: 0.5s;
 
 .gb-promo-modal {
+  // Client-set (r59): row layout from 768 up. 768-1109 has no board, so instead
+  // of reflowing the desktop card into a tier nobody drew, it is scaled as one
+  // piece -- 1 at >=1110 (the first width that fits 1062 inside the 24 gutters),
+  // and the fraction that fits below that. Every number inside the card stays
+  // the board's own. 48 is the wrap's two 24 gutters.
+  // ⚠ zoom, not transform: transform would leave the card's old box in the
+  // layout and break the centring. A browser without zoom falls back to
+  // max-width:100% -- squashed, not broken.
+  --pp-k: calc(min(1062px, 100vw - 48px) / 1062px);
+
   position: fixed;
   inset: 0;
   z-index: $z-modal;
@@ -1980,21 +2079,11 @@ $promo-fade-out: 0.5s;
     transition: opacity $promo-fade $promo-ease;
   }
 
-  // Client-set: full-screen is for phones only. 768-1280 has no board, and
-  // shrinking the desktop card is not an option -- its two 531 columns carry the
-  // bear art at px offsets solved for that width, so a narrower column crops it.
-  // This tier shows the PHONE board at its own size instead: 285:19373 is
-  // 390x744 and every value in the stacked layout (art 252, the bears, the 71
-  // wave inset) is already solved for 390, space-between included -- 744 - 460 -
-  // 252 is the board's own 32 gap. Width and tier are decision AT.
-  @include tablet {
-    width: 390px;
-    height: 744px;
-    max-height: 100%;
-    border-radius: $r-xl;
-  }
-
-  @include pc {
+  // Client-set: full-screen is for phones only; from 768 up it is the desktop
+  // two-column card, scaled by --pp-k. Decision AT is closed by this -- the
+  // earlier answer (show the 390 phone board at its own size in 768-1280) is
+  // withdrawn.
+  @include panel-wide {
     flex-direction: row;
     justify-content: flex-start;
     width: 1062px;
@@ -2002,6 +2091,7 @@ $promo-fade-out: 0.5s;
     max-width: 100%;
     max-height: 100%;
     border-radius: $r-xl;
+    zoom: var(--pp-k);
   }
 }
 
@@ -2053,14 +2143,7 @@ $promo-fade-out: 0.5s;
     background: $c-cream;
   }
 
-  // The card is pinned to the phone board's 390 in this tier, so its wave has to
-  // be pinned with it: --sc-w is a viewport ramp, and an unpinned one draws a
-  // desktop-scale wave inside a phone-size card (1280 measured a 268.8 pitch
-  // against the board's 144.85). 144.64 is the ramp's own floor, i.e. the value
-  // every phone width already resolves to.
-  @include tablet { --sc-w: 144.64px; }
-
-  @include pc {
+  @include panel-wide {
     order: 0;
     width: 531px;
     height: 100%;
@@ -2089,7 +2172,7 @@ $promo-fade-out: 0.5s;
   width: 384.83px;
   height: 296.49px;
 
-  @include pc {
+  @include panel-wide {
     left: -86.84px;
     top: 13px;
     width: 624.54px;
@@ -2109,7 +2192,7 @@ $promo-fade-out: 0.5s;
 .gb-promo-panel__divider {
   display: none;
 
-  @include pc {
+  @include panel-wide {
     display: block;
     position: absolute;
     // 285:19373 puts the 126-wide Union at panel x 489, i.e. 42 short of the
@@ -2144,7 +2227,7 @@ $promo-fade-out: 0.5s;
   gap: 64px;                 // 285:19013 / 336:27155 both space head to body by 64
   overflow-y: auto;
 
-  @include pc { order: 0; width: 531px; height: 100%; }
+  @include panel-wide { order: 0; width: 531px; height: 100%; }
 }
 
 // 336:27156 — 64 tall: 16 padding around the 32 close button. The logo is
@@ -2201,7 +2284,7 @@ $promo-fade-out: 0.5s;
 
   // email state adds up to exactly 400, so centring is a no-op there; it only
   // does anything in the revealed-code state, which has no board of its own
-  @include pc {
+  @include panel-wide {
     justify-content: center;
     padding: 0 64px 32px;
   }
@@ -2222,7 +2305,7 @@ $promo-fade-out: 0.5s;
   padding-top: 0.5px;
   margin-bottom: -0.5px;
 
-  @include pc {
+  @include panel-wide {
     max-width: 403px;
     font-size: 40px;
     line-height: 48px;
@@ -2243,7 +2326,7 @@ $promo-fade-out: 0.5s;
   letter-spacing: -0.32px;
   color: $c-gray-700;
 
-  @include pc {
+  @include panel-wide {
     max-width: 403px;
     font-size: 18px;
     line-height: 28px;
@@ -2258,7 +2341,7 @@ $promo-fade-out: 0.5s;
   width: 100%;
   max-width: 310px;
 
-  @include pc { max-width: 403px; }
+  @include panel-wide { max-width: 403px; }
 }
 
 // Frame 427319585 — input+button block to the "No thanks" line. ⚠ [hidden]
@@ -2334,12 +2417,10 @@ $promo-fade-out: 0.5s;
   letter-spacing: -0.32px;
   color: $c-white;
   cursor: pointer;
-  transition: trans(background-color, color, border-color, transform);
-
-  &:active { transform: translateY(1px); }
+  transition: trans(background-color, color, border-color);
   @include hover { background: $c-lime; border-color: $c-lime; color: $c-green-900; }
 
-  @include pc {
+  @include panel-wide {
     height: 52px;
     padding: 0 64px;
     line-height: 28px;
@@ -2361,8 +2442,758 @@ $promo-fade-out: 0.5s;
 
   @include hover { color: $c-green; }
 
-  @include pc { font-size: 16px; line-height: 24px; letter-spacing: -0.32px; }
+  @include panel-wide { font-size: 16px; line-height: 24px; letter-spacing: -0.32px; }
 }
+
+
+// ==========================================================================
+// Cart drawer
+// ==========================================================================
+
+// 341:42573 / 336:36516 filled, 341:42749 / 336:34942 empty. The four boards are
+// one drawer, not a page: each desktop frame is a 1440x768 canvas holding a 0.5
+// black scrim and a 391 panel pinned right. The mobile frames' 96px browser
+// chrome and 78px home indicator are mockup staging and are not built.
+//
+// 391 is both boards' panel width, so 768-1280 needs no ramp; only <=767 changes.
+//
+// Slides rather than cross-fades: this belongs to the header-drawer family
+// ($t-drawer / $ease-drawer). The r28 "modals fade" decision was about centred
+// dialogs, and the board draws a side sheet.
+$cart-w: 391px;
+
+.gb-cart {
+  position: fixed;
+  inset: 0;
+  z-index: $z-modal;
+  visibility: hidden;
+  transition: visibility 0s linear $t-drawer;
+  // How long the exit runs. main.js holds the scroll lock this long after
+  // `is-open` drops: give the scrollbar back while the panel is still on screen
+  // and this fixed box -- whose containing block is the viewport -- widens under
+  // it, shifting the right-pinned panel mid-slide.
+  --modal-exit: #{$t-drawer};
+
+  &.is-open {
+    visibility: visible;
+    transition-delay: 0s;
+  }
+}
+
+.gb-cart__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity $t-drawer $ease-drawer;
+
+  .gb-cart.is-open & { opacity: 1; }
+}
+
+.gb-cart__panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  width: $cart-w;
+  max-width: 100%;
+  height: 100%;
+  background: $c-white;
+  transform: translateX(100%);
+  transition: transform $t-drawer $ease-drawer;
+  will-change: transform;
+
+  .gb-cart.is-open & { transform: none; }
+
+  @include narrow { width: 100%; }
+}
+
+// Head ---------------------------------------------------------------------
+.gb-cart__head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 12px 20px;
+  background: $c-cream;
+}
+
+.gb-cart__title {
+  font-family: $font-brand-stack;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: $c-ink;
+}
+
+.gb-cart__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: $c-black;          // board strokes this one plain black, not $c-ink
+  cursor: pointer;
+  transition: trans(color, transform);
+
+  svg { width: 24px; height: 24px; }
+
+  @include hover { color: $c-green; }
+  &:active { transform: scale(0.92); }
+}
+
+// Free-delivery bar. Height is 12 + the 24 icon + 12; left to the padding so a
+// wrapped message grows the bar instead of clipping.
+.gb-cart__ship {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: $c-lime-200;
+  font-family: $font-brand-stack;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: normal;   // base `p` tracks -0.32; the board tracks nothing here
+  color: $c-green-900;
+
+  svg { flex: none; width: 24px; height: 24px; }
+}
+
+// Scroll area. The board stacks a 602 lines block and a 278 totals block, each
+// with its own 24 padding -- that 48 between them is the design, not a gap.
+.gb-cart__body {
+  flex: 1 1 auto;
+  min-height: 0;           // or the flex item refuses to shrink and never scrolls
+  overflow-y: auto;
+}
+
+.gb-cart__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px 20px;
+
+  @include narrow { padding: 26px 20px; }   // client r59
+}
+
+.gb-cart__sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: $font-brand-stack;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: $c-ink;
+
+  svg { flex: none; width: 24px; height: 24px; }
+}
+
+// Line items ---------------------------------------------------------------
+// No gap: every row carries its own 24 top/bottom padding and the rule that
+// separates it from the row above.
+.gb-cart__items {
+  display: flex;
+  flex-direction: column;
+}
+
+.gb-cart-item {
+  display: flex;
+  gap: 19px;
+  padding: 23px 0 24px;     // 23 + the 1px rule = the board's 24 (stroke is INSIDE)
+  border-top: 1px solid $c-gray-150;
+}
+
+// Board ships a #D9D9D9 placeholder here, so the box is the artwork until the
+// client supplies one (decision AZ).
+.gb-cart-item__media {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  background: $c-gray-200;
+
+  img, video, picture { @include cover-img; }
+}
+
+.gb-cart-item__main {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gb-cart-item__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gb-cart-item__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.gb-cart-item__name {
+  font-family: $font-brand-stack;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: $c-ink;
+}
+
+.gb-cart-item__remove {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;            // client r59, board says 16
+  height: 20px;
+  color: $c-black;
+  cursor: pointer;
+  transition: trans(color, transform);
+
+  svg { width: 16px; height: 20px; }
+
+  @include hover { color: $c-coral; }
+  &:active { transform: scale(0.92); }
+}
+
+.gb-cart-item__variant {
+  font-family: $font-brand-stack;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: $c-gray-600;
+}
+
+.gb-cart-item__qty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.gb-cart-item__stepper {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 11px;        // board says 10/12 with an INSIDE stroke, so less the border
+  background: $c-white;
+  border: 1px solid $c-gray-400;
+  border-radius: $r-sm;
+}
+
+.gb-cart-item__step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: $c-ink;
+  cursor: pointer;
+  transition: trans(color, transform);
+
+  svg { width: 16px; height: 16px; }
+
+  @include hover { color: $c-green; }
+  &:active { transform: scale(0.88); }
+}
+
+// 2 borders + 22 padding + two 16 icons + two 8 gaps is 72; the board's 102
+// leaves this much for the count, so it does not reflow at 2 digits.
+.gb-cart-item__count {
+  min-width: 30px;
+  font-family: $font-brand-stack;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: $c-gray-900;
+  text-align: center;
+}
+
+.gb-cart-item__price {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;               // client r59, board says 4
+}
+
+.gb-cart-item__was {
+  font-family: $font-brand-stack;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px;
+  color: $c-gray-600;
+  text-decoration: line-through;
+}
+
+.gb-cart-item__now {
+  font-family: $font-brand-stack;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  color: $c-ink;
+}
+
+.gb-cart-item__plan {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: $font-brand-stack;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: $c-gray-600;
+}
+
+// A real <select>, so the control still works with no JS; selectBox draws its
+// `inline` variant over it (r59). The board only ever shows the closed state --
+// the option list itself is decision BD.
+.gb-cart-item__interval {
+  font-family: $font-brand-stack;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: normal;   // the board tracks the label but not this control
+  color: $c-blue;
+}
+
+// Free gift ----------------------------------------------------------------
+.gb-cart__gift {
+  display: flex;
+  gap: 16px;
+  padding: 15px;            // board says 16 with an INSIDE stroke, so less the border
+  background: $c-sand;
+  border: 1px solid $c-gray-050;
+  border-radius: $r-sm;
+}
+
+.gb-cart__gift-media {
+  flex: none;
+  width: 47px;
+  height: 47px;
+  background: $c-gray-200;   // placeholder, same as the line-item media
+
+  img, video, picture { @include cover-img; }
+}
+
+.gb-cart__gift-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;              // client r59, board says 8
+}
+
+.gb-cart__gift-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.gb-cart__gift-name {
+  font-family: $font-brand-stack;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: $c-ink;
+}
+
+.gb-cart__gift-text {
+  font-family: $font-brand-stack;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  letter-spacing: -0.24px;
+  color: $c-gray-600;
+}
+
+// Totals -------------------------------------------------------------------
+.gb-cart__totals {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px 20px;
+}
+
+.gb-cart__sums {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gb-cart__sum {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-family: $font-brand-stack;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: normal;
+  color: $c-gray-600;
+
+  b {
+    font-weight: 400;
+    letter-spacing: -0.28px;
+    color: $c-ink;
+  }
+}
+
+.gb-cart__sum-pair {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 19px;
+}
+
+.gb-cart__grand {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gb-cart__grand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-family: $font-brand-stack;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: normal;
+  color: $c-ink;
+}
+
+.gb-cart__pay {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gb-cart__pay-note {
+  font-family: $font-brand-stack;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  letter-spacing: normal;
+  color: $c-gray-600;
+}
+
+// 5 marks of 35 across 203 leaves 7 between them. The row is HUG in the frame,
+// so it must not stretch to the column's width.
+.gb-cart__pay-marks {
+  display: flex;
+  align-self: flex-start;
+  gap: 7px;
+
+  svg { flex: none; width: 35px; height: 24px; }
+}
+
+.gb-cart__continue {
+  align-self: flex-start;
+  font-family: $font-brand-stack;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  color: $c-blue;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: trans(color);
+
+  @include hover { color: $c-green; }
+}
+
+// Empty state --------------------------------------------------------------
+.gb-cart__empty {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 44px;
+  padding: 32px 20px;
+  overflow-y: auto;
+}
+
+.gb-cart__empty-head {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.gb-cart__empty-title {
+  font-family: $font-brand-stack;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: normal;
+  color: $c-ink;
+  text-align: center;
+}
+
+// 44 is not one of .gb-btn's three heights, so this one sets its own box.
+.gb-cart__shop {
+  width: 100%;
+  height: 44px;
+  padding: 0 40px;
+  letter-spacing: -0.32px;
+}
+
+.gb-cart__cards {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+// The panel is 391 at every width, so the cards stay on their phone values even
+// when the viewport is on the desktop tier.
+.gb-cart__cards .gb-nav-card {
+  flex: 1;
+  width: auto;
+  height: 169px;
+  padding: 16px;
+  border-radius: $r-sm;
+  font-size: 12px;
+  line-height: 18px;
+  letter-spacing: -0.24px;
+}
+
+.gb-cart__cards .gb-nav-card__tag {
+  margin-bottom: 8px;
+  padding: 2px 6px;
+  border-radius: $r-xs;
+}
+
+.gb-cart__cards .gb-nav-card__action {
+  width: 32px;
+  height: 32px;
+
+  svg { width: 20px; height: 20px; }
+}
+
+// __art is display:none until .gb-header.is-open -- that pairing with lazy is
+// what keeps the bear off the wire on pages whose menu was never opened. The
+// cart is a second host for the same card and needs its own gate.
+.gb-cart.is-open .gb-nav-card__art { display: block; }
+
+// Checkout bar -------------------------------------------------------------
+.gb-cart__bar {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px;
+  background: $c-white;
+  box-shadow: 0 -4px 28px 0 rgba(51, 49, 49, 0.05), 0 -4px 10px 0 rgba(51, 49, 49, 0.01);
+}
+
+.gb-cart__bar-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-family: $font-brand-stack;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: normal;
+  color: $c-ink;
+}
+
+.gb-cart__bar-pair {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gb-cart__bar-was {
+  font-weight: 400;
+  color: $c-gray-600;
+  text-decoration: line-through;
+}
+
+// .gb-btn--lg already carries 52 / 0 64 / 28 / .48 / capitalize. The board's
+// max-width 223 is dropped here for the same reason .gb-promo-panel__cta drops
+// it: the button is FILL in the frame and 223 only bounds its label.
+.gb-cart__checkout {
+  width: 100%;
+
+  svg { flex: none; width: 24px; height: 24px; }
+}
+
+// State switch -------------------------------------------------------------
+// No class means filled, so a page that forgets it still renders the cart.
+// Same 0-2-0 weight the `is-open` state class carries, so the two stack freely.
+.gb-cart:not(.is-empty) .gb-cart__empty { display: none; }
+
+.gb-cart.is-empty {
+  .gb-cart__ship,
+  .gb-cart__body,
+  .gb-cart__bar-total { display: none; }
+
+  // Visual only -- there is no JS to keep an aria-disabled in step with the
+  // class, and the real state comes from Shopify later.
+  .gb-cart__checkout {
+    background: $c-gray-150;
+    border-color: $c-gray-150;
+    color: $c-gray-400;
+    pointer-events: none;
+  }
+}
+
+// Live only ----------------------------------------------------------------
+// Horizon re-homes this markup inside <theme-drawer> > <dialog>, neither of
+// which exists on the static pages, so every rule below is a no-op there.
+
+// 1. The dialog IS a drawer: 480 wide, right-pinned, its own white ground and
+//    left border. Our .gb-cart is fixed to the viewport and paints over it, so
+//    the two only disagree in the 89 beside the panel -- where the ground shows
+//    through the 50% scrim as a lighter column. Stripping the box leaves the
+//    dialog as a transparent host and .gb-cart as the whole drawer again.
+// 2. z-index: Horizon stacks drawers at --layer-sticky (8) and .gb-header is
+//    100, so the header painted over the open cart. --drawer-stack-order is
+//    kept so two open drawers still order among themselves.
+// 3. color: the dialog asserts --color-foreground (black); the panel's own text
+//    is meant to inherit $c-ink from body, as it does on the static pages.
+#cart-drawer .theme-drawer__dialog {
+  z-index: calc(#{$z-modal} + var(--drawer-stack-order, 0));
+  inset: 0;
+  width: auto;
+  max-width: none;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+// <990 Horizon opens this with showModal(), so the top layer paints its own
+// ::backdrop UNDER our scrim -- 0.15 on top of our 0.5 reads darker than the
+// boards. .gb-cart__overlay is meant to be the only scrim.
+//
+// ⚠ Filling the viewport also makes Horizon's #onBackdropClick inert: it closes
+// on a click OUTSIDE the dialog's rect, and there is no longer an outside. The
+// vendor already wired `on:click="#cart-drawer/close"` onto .gb-cart__overlay,
+// which is the path that still runs -- r77check asserts it in both modes.
+#cart-drawer .theme-drawer__dialog::backdrop { background: transparent; }
+
+// The panel is server-rendered with `is-open`, so its own transitions have no
+// start state to run from and the drawer appears in place. Horizon marks the
+// two phases on the dialog; borrow them.
+//
+// Horizon times display:none off the dialog's OWN animation
+// (onAnimationEnd(panel, ..., {subtree:false})), so the exit ran for
+// --animation-speed (0.125s) and cut the panel mid-slide. Override the duration
+// ON THE DIALOG rather than the variable: --animation-speed is inherited, and
+// retiming it here would slow every vendor component inside the drawer too.
+// The vendor keyframes animate the dialog's `right`; nothing visible rides on
+// that, since .gb-cart is fixed to the viewport and .gb-cart__panel pins to it.
+#cart-drawer .theme-drawer__dialog--opening,
+#cart-drawer .theme-drawer__dialog--closing {
+  animation-duration: $t-drawer;
+}
+
+#cart-drawer .theme-drawer__dialog--opening {
+  .gb-cart__overlay { animation: gb-cart-scrim $t-drawer $ease-drawer; }
+  .gb-cart__panel   { animation: gb-cart-slide $t-drawer $ease-drawer; }
+}
+
+#cart-drawer .theme-drawer__dialog--closing {
+  .gb-cart__overlay { animation: gb-cart-scrim $t-drawer $ease-drawer reverse forwards; }
+  .gb-cart__panel   { animation: gb-cart-slide $t-drawer $ease-drawer reverse forwards; }
+}
+
+@keyframes gb-cart-scrim { from { opacity: 0; } }
+@keyframes gb-cart-slide { from { transform: translateX(100%); } }
+
+// The live line carries <input type="number"> where the boards and the static
+// pages carry a <span>: an input's intrinsic width is ~20ch, which stretched
+// the stepper from 102 to 272 and pushed the price off the panel. Scoped to the
+// stepper so it outweighs base.css's `input:not([type=checkbox], [type=radio])`
+// (0-1-1) -- a bare `input.gb-cart-item__count` only ties it.
+.gb-cart-item__stepper input.gb-cart-item__count {
+  appearance: textfield;   // Firefox spinner
+  width: 30px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button { appearance: none; margin: 0; }
+}
+
+// Same call as the subscription plan control (r76): live ships a bare <select>,
+// so the closed state is drawn on the native element instead of by selectBox.
+// :not(.gb-select__native) keeps it off the static pages, where the native is
+// the hidden value carrier under the drawn button.
+// The chevron is a background image, so it cannot follow currentColor -- hover
+// swaps the whole image, which means the vee snaps while the label transitions.
+select.gb-cart-item__interval:not(.gb-select__native) {
+  appearance: none;
+  padding: 0 18px 0 0;
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%230374a5' stroke-width='1.667' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right center;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  transition: trans(color);
+
+  @include hover {
+    color: $c-green;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%23005635' stroke-width='1.667' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+}
+
+// >=990 Horizon opens the cart with dialog.show() -- non-modal, no scroll lock,
+// so the page scrolled behind the open drawer; the static pages lock both tiers.
+// Killing the scrollbar widens the viewport, so the freed width is padded back
+// (measured in main.js scrollbarProbe while the bar is still on screen).
+//
+// ⚠ Keyed on dialog[open], NOT theme-drawer[open] or html[scroll-lock]: close()
+// drops both of those BEFORE awaiting the exit animation, which would hand the
+// scrollbar back mid-slide and widen the viewport under .gb-cart -- a fixed box
+// whose containing block IS the viewport -- stepping the right-pinned panel
+// sideways. dialog[open] survives until panel.close(), after the animation.
+// Same trap .gb-cart guards with --modal-exit on the static pages.
+html:has(#cart-drawer .theme-drawer__dialog[open]) {
+  overflow: hidden;
+}
+
+// Same `clip` as the two locks above; this one mattered most -- the cart is a
+// side drawer, so the header sits in plain view beside it.
+html:has(#cart-drawer .theme-drawer__dialog[open]) body {
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+// Padded once, on the scrolling element only -- see the modal lock.
+html:has(#cart-drawer .theme-drawer__dialog[open]) {
+  padding-right: var(--scrollbar-w, 0px);
+}
+
 
 
 // ==========================================================================
@@ -2577,20 +3408,52 @@ $line-descend: 0.12em;
   to   { transform: translateY(0); }
 }
 
+// opacity is held at 1 in both frames because the base rule hides the halo and
+// `both` would otherwise keep it hidden for the whole run.
+@keyframes gm-halo-up {
+  from { opacity: 1; transform: translateY(100%); clip-path: inset(-100px -100px 100% -100px); }
+  to   { opacity: 1; transform: translateY(0);    clip-path: inset(-100px -100px -20px -100px); }
+}
+
 // .gb-ink-halo is an absolutely positioned duplicate of the copy, so the line
-// splitter leaves it outside the masks: it cannot ride up inside a mask, and
-// fading it alongside the slide leaves a full-size lime blob over a half-risen
-// number. It waits for the slide to finish and then stickers on.
+// splitter cannot put it inside a mask — the mask clips to the line box and the
+// outline is a 15px text-shadow, which would come out sliced flat. main.js
+// instead builds ONE COPY PER LINE (.gb-ink-halo--line), parks it outside the
+// masks at that line's offset, and stamps the line's own --line-i on it.
+//
+// Each copy then gets its own window: the clip's bottom edge counts down
+// 100% -> 0 on the same curve as the slide, which is a window standing still at
+// that line's resting position — exactly what .gb-line-mask's overflow does for
+// the glyphs. Because the delay is the line's own, the outline rises WITH the
+// text on every line, not just the first.
+// ⚠ One whole-string halo cannot do this: its window would cross line 2 before
+//   line 2's mask had started, so the outline landed ahead of its glyphs.
+// ⚠ The bottom offset ends at -20px, not 0: a window flush with the line box
+//   would shave the outline. Ramping the overshoot in over the same
+//   interpolation keeps the start state fully clipped.
 [data-line-reveal] > .gb-ink-halo {
   opacity: 0;
 }
 
-.is-revealed > .gb-ink-halo {
-  animation: gm-fade-in 0.35s #{$ease-out} both;
-  animation-delay: calc(var(--line-base, 0) * 150ms + 1.05s);
+// The original whole-string copy stays in the markup as the no-JS fallback; once
+// the split has run the per-line copies replace it.
+.is-split > .gb-ink-halo:not(.gb-ink-halo--line) {
+  display: none;
 }
 
-.is-settled > .gb-ink-halo {
+// ⚠ Same descender headroom as .gb-line-mask__inner. translateY(100%) resolves
+//   against the element's OWN height, so without this the halo travels 0.12em
+//   less than the glyphs it sits behind and arrives ~2px early.
+.gb-ink-halo--line {
+  padding-bottom: $line-descend;
+}
+
+.is-revealed > .gb-ink-halo--line {
+  animation: gm-halo-up 1.4s var(--e-power4-out) both;
+  animation-delay: calc((var(--line-base, 0) + var(--line-i, 0)) * 150ms);
+}
+
+.is-settled > .gb-ink-halo--line {
   animation: none;
   opacity: 1;
 }
@@ -2604,6 +3467,19 @@ $line-descend: 0.12em;
 .no-js [data-line-reveal] > .gb-ink-halo,
 [data-line-reveal]:not(.is-split) > .gb-ink-halo {
   opacity: 1;
+}
+
+// ...but hold it hidden while main.js is still on its way, same gate as .wowo:
+// html.js is dropped by the <head> script if window.gumi never shows up, so a
+// dead main.js still falls back to the rules above. Without this the live theme
+// (259KB of HTML, main.js booting at ~3.6s) showed the text for 3.3s before the
+// reveal yanked it back down. 0-3-1 beats the 0-2-0 fallback above.
+html.js [data-line-reveal]:not(.is-split) {
+  opacity: 0;
+}
+
+html.js [data-line-reveal]:not(.is-split) > .gb-ink-halo {
+  opacity: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2630,6 +3506,12 @@ $line-descend: 0.12em;
 
   .is-revealed .gb-line-mask__inner,
   .is-settled .gb-line-mask__inner {
+    animation: gm-fade-in 0.4s ease-out both;
+    animation-delay: calc((var(--line-base, 0) + var(--line-i, 0)) * 20ms);
+  }
+
+  // No slide to track, so the window would only clip
+  .is-revealed > .gb-ink-halo--line {
     animation: gm-fade-in 0.4s ease-out both;
     animation-delay: calc((var(--line-base, 0) + var(--line-i, 0)) * 20ms);
   }
@@ -2766,6 +3648,22 @@ $line-descend: 0.12em;
 // the 6 pages that end white, so the base is transparent and the five pages that
 // really do end mint use the named variant below.
 .gb-scallop--to-lime       { --wave-bg: transparent;      --wave-fg: #{$c-lime}; --wave-under: transparent; }
+
+// Live only. The theme fills the footer wave's colour pair from a section
+// setting and it is set to `to-lime`, whose transparent top is right when the
+// block above is the white cta band (the faq page) but wrong when .gb-faq runs
+// straight into the footer (pdp / how-gumi-works / reviews): the mint stops
+// dead at the wave and the arcs lose their edge against it. Restore the pair
+// `mint-to-lime` carries, only in that case.
+//
+// .gb-faq and the wave are not siblings -- one is in #MainContent, the other in
+// <footer> -- but those two are, and "faq is the last section in main" is
+// exactly the condition. One level of :has() only; it cannot nest.
+// No #MainContent on the static pages, so this never matches there.
+#MainContent:has(> .shopify-section:last-child > .gb-faq) + footer .gb-scallop--to-lime {
+  --wave-bg: #{$c-lime-150};
+  --wave-under: var(--wave-fg);
+}
 .gb-scallop--mint-to-lime  { --wave-bg: #{$c-lime-150};   --wave-fg: #{$c-lime}; }
 .gb-scallop--to-green      { --wave-bg: #{$c-lime};     --wave-fg: #{$c-green-900}; }
 .gb-scallop--to-white      { --wave-bg: #{$c-lime-150}; --wave-fg: #{$c-white}; }
@@ -3012,6 +3910,47 @@ $line-descend: 0.12em;
   &.is-open { background: $c-cream; }
 }
 
+// Live only. Shopify wraps every section in its own div and puts the header
+// sections inside #header-group; a sticky element sticks within its parent's
+// box, and those boxes are exactly the header's own height, so the pin dies on
+// the first scroll (measured live: top 40 -> -860). Dropping the wrapper boxes
+// hands .gb-header back to .gb-page-wrapper, which spans the page. The
+// announcement bar is a sibling, so it still scrolls away.
+// No-op on the static site, which has no wrappers.
+#header-group,
+#header-group > * { display: contents; }
+
+// Live only. The theme renders Horizon's cart-bubble inside our cart button,
+// but the class Horizon's own rules key on (.header-actions__cart-icon) is
+// never applied -- the liquid adds only the --has-cart modifier -- so the
+// bubble gets neither a positioning ancestor nor offsets and lands on the
+// icon's bottom left (measured live: 24px below the icon top, bg #000) while
+// still taking part in flow -- the icon box measured 24x44 with a full cart.
+// ⚠ Horizon's donut mask (the transparent ring between bubble and glyph) needs
+// BOTH its classes and stays off here; the variables below are consumed only by
+// these rules. Measured mask-image: none, before and after.
+.gb-header__icon-wrap {
+  --cart-bubble-size: 16px;      // Horizon's own is 20; client asked for smaller
+  --cart-bubble-top: -3px;
+  --cart-bubble-right: -3px;
+  --cart-bubble-background: #{$c-green};
+  --cart-bubble-text: #{$c-white};
+
+  position: relative;
+  display: inline-flex;
+}
+
+.gb-header__icon-wrap .cart-bubble {
+  position: absolute;
+  top: var(--cart-bubble-top);
+  right: var(--cart-bubble-right);
+  left: auto;
+  bottom: auto;
+  width: var(--cart-bubble-size);
+  font-size: 10px;
+  font-weight: 500;
+}
+
 .gb-header__bar {
   @include container;
   display: grid;
@@ -3069,10 +4008,13 @@ $line-descend: 0.12em;
   justify-self: center;
   display: block;
 
-  svg { width: 124px; height: 32px; }
+  // <img> as well as <svg>: snippets/gb-logo.liquid swaps to an <img> the
+  // moment settings.logo is uploaded, and its width/height attributes carry the
+  // desktop pair only -- svg-only rules left the phone drawer at 124x32.
+  svg, img { width: 124px; height: 32px; object-fit: contain; }
 
   @include narrow {
-    svg { width: 93px; height: 24px; }
+    svg, img { width: 93px; height: 24px; }
   }
 }
 
@@ -3107,6 +4049,11 @@ $line-descend: 0.12em;
 }
 
 .gb-header__cta {
+  // Client-set r78, back to the 40 this button carried before the r45 batch
+  // took it to the board's 42. Scoped to the header on purpose: .gb-btn--primary
+  // is also the cart drawer's Shop Now, which is frozen.
+  padding: 0 40px;
+
   @include narrow { display: none; }   // mobile design drops the bar CTA
 }
 
@@ -3117,16 +4064,31 @@ $line-descend: 0.12em;
   left: 0;
   width: 100%;
   background: $c-cream;
-  border-bottom: 1px solid $c-sand;
+  // Client r86: the top edge belongs to the OPEN panel. Shut, the panel is a 0fr
+  // row and this reads as a second hairline right under the bar's own border.
+  // Transparent rather than 0 width so the box never steps, and so the colour can
+  // fade in on the row's own curve.
+  border-top: 1px solid transparent;
+  // r87 extends r86 to the bottom edge: shut, the panel is a 0fr row and BOTH
+  // hairlines stack under the bar's own border.
+  border-bottom: 1px solid transparent;
   border-radius: 0 0 32px 32px;
   overflow: hidden;
   display: grid;
   grid-template-rows: 0fr;             // 0fr -> 1fr animates an auto height
-  transition: grid-template-rows $t-panel $ease-in-out;
+  transition: grid-template-rows $t-panel $ease-in-out,
+              border-top-color $t-panel $ease-in-out,
+              border-bottom-color $t-panel $ease-in-out;
 
   > * { min-height: 0; }               // required for the 0fr row to clamp
 
-  .gb-header.is-open & { grid-template-rows: 1fr; }
+  // The narrow block below zeroes border-top's WIDTH, so this colour paints
+  // nothing there -- the phone drawer keeps both edges off.
+  .gb-header.is-open & {
+    grid-template-rows: 1fr;
+    border-top-color: $c-sand;
+    border-bottom-color: $c-sand;
+  }
 
   // Mobile: a full-viewport drawer, not a dropdown under the bar. Board
   // 283:14915 starts it at the very top of the viewport, over the announcement
@@ -3141,6 +4103,9 @@ $line-descend: 0.12em;
     height: 100svh;
     z-index: $z-overlay;           // over .gb-header__bar, under the modals
     border-radius: 0;
+    // Both edges off: the phone drawer is full-viewport from y=0, so the top
+    // hairline would land under the status bar and the board draws neither.
+    border-top: 0;
     border-bottom: 0;
     display: block;
     transform: translateX(-100%);
@@ -3190,7 +4155,7 @@ $line-descend: 0.12em;
   display: block;
   transition: trans(opacity);
 
-  svg { display: block; width: 93px; height: 24px; }
+  svg, img { display: block; width: 93px; height: 24px; object-fit: contain; }
 
   @include hover { opacity: 0.75; }
 }
@@ -3205,7 +4170,7 @@ $line-descend: 0.12em;
   @include container;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 40px;
   padding-top: 32px;
   padding-bottom: 32px;
@@ -3274,7 +4239,6 @@ a.gb-header__link {
   display: inline-flex;
   width: auto;
 
-  @include link-underline($c-lime-stroke, 14px);
 }
 
 // Shop / Learn more / Get in Touch only exist in the mobile design
@@ -3312,7 +4276,6 @@ a.gb-header__link {
   letter-spacing: -0.32px;
   transition: trans(color);
 
-  @include link-underline($c-green, 8px);
   @include hover { color: $c-green; }
 }
 
@@ -3410,6 +4373,10 @@ a.gb-header__link {
   pointer-events: none;
   z-index: 1;
 
+  // Client r85: the phone drawer's card is far narrower than the desktop one, so
+  // the 135.2% overhang ran the artwork outside it.
+  @include narrow { width: 100%; }
+
   .gb-header.is-open & { display: block; }
 }
 
@@ -3444,9 +4411,19 @@ a.gb-header__link {
 // below: html carries the scroll, and killing the scrollbar widens the viewport
 // unless the freed width is padded back in. main.js measures --scrollbar-w while
 // the bar is still on screen.
-html.is-menu-open,
-body.is-menu-open {
+html.is-menu-open {
   @include narrow { overflow: hidden; }
+}
+
+// ⚠ NOT `overflow: hidden` on body. The reset gives body `overflow-x: hidden`,
+// which the viewport takes over only while html's own overflow is `visible`; the
+// moment html is locked that rule starts applying to body itself, body becomes
+// the sticky header's scrollport, and since body never scrolls the header snaps
+// to its static position -- measured top 0 -> -868 at scrollY 900, i.e. gone for
+// as long as the drawer is open. `clip` keeps the horizontal cut the reset wants
+// without creating a scroll container.
+body.is-menu-open {
+  @include narrow { overflow-x: clip; overflow-y: visible; }
 }
 
 // Padded once, on the scrolling element only -- see the modal lock.
@@ -3650,9 +4627,11 @@ html.is-menu-open {
   @include hover { opacity: 0.75; }
 }
 
-.gb-footer__logo svg {
+.gb-footer__logo svg,
+.gb-footer__logo img {
   width: 193px;
   height: 50px;
+  object-fit: contain;
 
   @include narrow { width: 167px; height: 43px; }
   @include tablet { width: fluid(167px, 193px); height: fluid(43px, 50px); }
@@ -3715,6 +4694,16 @@ html.is-menu-open {
   gap: 16px;
 }
 
+// Live only. Horizon's `input:not([type="checkbox"], [type="radio"])` is 0-1-1 --
+// one element more than the class below -- and repaints both colours from its own
+// variables (#dfdfdf against the board's 10% ink). Restated here at 0-2-0.
+// ⚠ Deliberately ABOVE the rule it repairs: the :focus-visible inside is 0-2-0
+// too and has to keep winning on source order.
+.gb-footer__input.gb-footer__input {
+  background-color: $c-white;
+  border-color: rgba(1, 19, 7, 0.1);
+}
+
 .gb-footer__input {
   height: 44px;
   padding: 0 14px;
@@ -3745,14 +4734,23 @@ html.is-menu-open {
   font-weight: 500;
   line-height: 24px;
   letter-spacing: -0.32px;
-  transition: trans(background-color, border-color, transform);
+  transition: trans(background-color, border-color);
 
   @include hover {
     background: $c-lime;
     border-color: $c-lime;
   }
-  &:active { transform: translateY(1px); }
 }
+
+// Client-set: the global ring is $c-green on the footer's $c-green-900 ground --
+// measured as 2px solid rgb(0,86,53) over rgb(0,65,40), i.e. no ring at all.
+// Take it from the text beside it instead.
+.gb-footer :focus-visible { outline-color: currentColor; }
+
+// ...except the submit pill: its own text is $c-green-900 on white while the ring
+// lands on the dark ground outside it, so currentColor would be invisible again.
+// This one takes the footer's own text colour.
+.gb-footer__submit:focus-visible { outline-color: $c-lime-200; }
 
 .gb-footer__link-groups {
   display: flex;
@@ -3801,8 +4799,6 @@ html.is-menu-open {
   line-height: 24px;
   letter-spacing: -0.32px;
   transition: trans(color);
-
-  @include link-underline($c-white, -3px);
 
   // 9 of the 11 mobile boards draw these at 14/20/-0.28; the two that differ
   // (Privacy 326:83399, Shipping 326:83129, both 16/24/600/0) use a different
@@ -3857,6 +4853,7 @@ html.is-menu-open {
 .gb-footer__divider {
   height: 1px;
   background: $c-lime;
+  opacity: 0.2;
   border: 0;
   margin: 0;
 }
@@ -3893,7 +4890,6 @@ html.is-menu-open {
   a {
     transition: trans(color);
 
-    @include link-underline($c-white, -3px);
     @include hover { color: $c-white; }
   }
 }
@@ -4045,6 +5041,8 @@ html.is-menu-open {
   }
 
   img { @include cover-img; }
+
+  img, video, picture { @include cover-img; }
 }
 
 // 324:63924 sets its lead one step larger and darker than 324:56865 does.
@@ -4502,7 +5500,11 @@ html.is-menu-open {
   // width and the track slides by translateX(-100%), so the seam follows.
   // ⚠ Speed is pitch/15s, so the strip crawls slower down here (3x106+3x30=408
   //   against 669) -- change the duration too if that reads wrong.
-  @include narrow { width: 106px; height: 44px; }
+  // Client r86: one step smaller again. ⚠ The pitch shrinks with it and the
+  // duration did not, so the strip crawls ~13% slower here than it did at 106
+  // (354px/15s against 408px/15s) -- an `animation-duration: 13s` in this block
+  // holds the old speed if that reads wrong.
+  @include narrow { width: 88px; height: 36px; }
 }
 
 // These used to be the Figma *frame* sizes driven through object-fit: cover,
@@ -4529,8 +5531,8 @@ html.is-menu-open {
 // 106 wide and keeps its own height, centred on the shared line as before.
 @include narrow {
   .gb-logo-scroll__img {
-    width: 106px;
-    height: 44px;
+    width: 88px;
+    height: 36px;
     object-fit: contain;
   }
 }
@@ -4916,12 +5918,16 @@ html.is-menu-open {
   text-align: center;
 
   @include narrow {
-    margin-top: -16px;   // client-set
     font-size: 18px;
     line-height: 26px;
     letter-spacing: -0.36px;
   }
   @include tablet { font-size: fluid(18px, 20px); line-height: fluid(26px, 30px); letter-spacing: fluid(-0.36px, -0.4px); }
+
+  // Client r87: no pull at all below 992, replacing the phone tier's own -16.
+  // ⚠ Last on purpose -- `mid` overlaps `narrow`, and only source order decides.
+  // The base -34 therefore survives only in 992-1280, so 991/992 steps by 34.
+  @include mid { margin-top: 0; }
 }
 
 // The bear that rides the cream→sand wave.
@@ -5057,13 +6063,17 @@ html.is-menu-open {
 }
 
 .gb-science__title {
-  max-width: 1072px;
+  max-width: 660px;
+  margin: 0 auto;
   font-size: 40px;
   line-height: 48px;
   letter-spacing: -0.4px;
   color: $c-ink;
 
-  @include narrow { font-size: 30px; line-height: 36px; letter-spacing: -0.3px; }
+  // ⚠ margin:0 here is load-bearing. The phone board aligns this left (228:8166,
+  // both TEXT nodes LEFT) and __head switches to align-items:flex-start for it --
+  // but an auto margin outranks align-items, so leaving it on centres the title.
+  @include narrow { margin: 0; font-size: 30px; line-height: 36px; letter-spacing: -0.3px; }
   @include tablet { font-size: fluid(30px, 40px); line-height: fluid(36px, 48px); letter-spacing: fluid(-0.3px, -0.4px); }
 }
 
@@ -5081,6 +6091,10 @@ html.is-menu-open {
 .gb-science__cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  // Same height for every card, not just the ones sharing a row: in an
+  // auto-height grid all 1fr rows resolve to the tallest row's content,
+  // so the ladder's 2-up and 1-up states stay level too.
+  grid-auto-rows: 1fr;
   gap: 24px;
   width: 100%;
 
@@ -5120,6 +6134,9 @@ html.is-menu-open {
 .gb-science-card {
   display: flex;
   flex-direction: column;
+  // grid-auto-rows:1fr already levels the rows, but only stretches the grid item
+  // itself — a Shopify .shopify-block wrapper would take that stretch instead.
+  height: 100%;
   gap: 16px;
   padding: 32px;
   background: $c-white;
@@ -5184,10 +6201,15 @@ html.is-menu-open {
   // grows the outline by 1.1px at 56. em, so the phone tier scales with it.
   text-shadow: ink-outline(0.145em, $c-lime);
 
-  // Client-set, and it reverses the earlier "56/44 at every width" call: the
-  // phone tier now matches what 324:58044 draws on the nutrient cards. ls is
-  // given as -1%, which CSS has no unit for -- -0.36px is that at 36.
-  // The tablet ramp is not in the brief; without it 767/768 would jump 36 -> 56.
+}
+
+// ⚠ THIRD reversal of the same figures, and the first one with a scope: r43 put
+// the phone tier at 36/40, r49 moved it onto --nutrient, r50 deleted it (56/44
+// everywhere), r?? brought it back globally -- and r87 says only the tight board
+// keeps it. Everything else is 56/44/0 at every width, which is why there is no
+// tablet ramp outside this block: nothing changes across 767/768 there.
+// ls is given as -1%, which CSS has no unit for -- -0.36px is that at 36.
+.gb-science--tight .gb-science-card__value {
   @include narrow { font-size: 36px; line-height: 40px; letter-spacing: -0.36px; }
   @include tablet {
     font-size: fluid(36px, 56px);
@@ -5197,9 +6219,7 @@ html.is-menu-open {
 }
 
 .gb-science-card__text {
-  // Client-set, unscoped in the brief while the line above it named the tight
-  // group explicitly -- so it applies to all six cards, index included.
-  margin-top: 6px;
+  // r83 (client) took the 6px top margin back off; <p> is already reset to 0.
   font-size: 16px;
   line-height: 24px;
   letter-spacing: -0.32px;
@@ -5226,11 +6246,13 @@ html.is-menu-open {
   width: 100%;
   height: auto;
   aspect-ratio: 13.5 / 22;
+  // Bare filename like the fonts above: assets/ is flat, and on Shopify the css
+  // is served from the CDN's assets/ with no images/ sibling to walk up into.
   // PNG first as the fallback declaration; a browser that understands
   // image-set() takes the second and picks the WebP.
-  background: url("../images/bear-icon.png") center / contain no-repeat;
-  background: image-set(url("../images/bear-icon.webp") type("image/webp"),
-                        url("../images/bear-icon.png")  type("image/png"))
+  background: url("bear-icon.png?v=#{$build}") center / contain no-repeat;
+  background: image-set(url("bear-icon.webp?v=#{$build}") type("image/webp"),
+                        url("bear-icon.png?v=#{$build}")  type("image/png"))
               center / contain no-repeat;
 }
 
@@ -5304,6 +6326,10 @@ html.is-menu-open {
 .gb-nutrition__cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  // Same height for every card, not just the ones sharing a row: in an
+  // auto-height grid all 1fr rows resolve to the tallest row's content,
+  // so the ladder's 2-up and 1-up states stay level too.
+  grid-auto-rows: 1fr;
   gap: 24px;
   @include container;
 
@@ -5332,6 +6358,8 @@ html.is-menu-open {
 .gb-highlight-card {
   display: flex;
   flex-direction: column;
+  // See .gb-science-card: survives a wrapper between the grid and the card
+  height: 100%;
   gap: 24px;
   padding: 24px 24px 36px;
   background: $c-green;
@@ -5361,6 +6389,8 @@ html.is-menu-open {
   @include tablet {
     border-radius: fluid(8px, 16px) fluid(8px, 16px) fluid(0px, 8px) fluid(0px, 8px);
   }
+
+  img, video, picture { @include cover-img; }
 }
 
 // Scalloped lip along the bottom of the image, in the card's own green.
@@ -5610,17 +6640,17 @@ html.is-menu-open {
 .gb-product__media {
   @include pc {
     position: sticky;
-    // The board's 24 is to the viewport top; with the header sticky that 24 sits
-    // under it, so add the header's own height (fixed at $h-header in this tier)
-    top: calc(#{$h-header} + 24px);
+    // Client-set, second revision: header + 20. Was header + 24 (the board's own
+    // number, measured to the viewport top), then flush at r73, now 100.
+    top: calc(#{$h-header} + 20px);
     align-self: flex-start;
   }
 
-  // Same offset, but the header's height ramps in this tier so the pin has to
-  // ramp with it.
+  // Same 20px gap, but the header's height ramps in this tier so the pin has to
+  // ramp with it -- a flat 100 would read as 36 of clearance at 768.
   @include tablet {
     position: sticky;
-    top: calc(#{fluid($h-header-mobile, $h-header)} + 24px);
+    top: calc(#{fluid($h-header-mobile, $h-header)} + 20px);
     align-self: flex-start;
   }
 }
@@ -5696,14 +6726,23 @@ html.is-menu-open {
   background: $c-gray-200;
   border: 2px solid transparent;
   border-radius: $r-xs;
+  overflow: hidden;   // clip the image to the radius
   scroll-snap-align: center;
   transition: trans(border-color, opacity);
 
   &.is-active { border-color: $c-green; }
 
+  // Client r85: focus reads as the active thumb rather than a ring. The rail
+  // scrolls, and an overflow on either axis forces the other to auto too, so
+  // .gb-product__thumbs clipped the global 2px/2px outline on all four sides --
+  // the same reason .gb-reel dropped its ring in r81.
+  &:focus-visible { outline: none; border-color: $c-green; }
+
   @include hover { opacity: 0.75; }
 
   @include narrow { width: 52px; height: 52px; }   // 324:53792
+  // contain, not the shared cover -- same call as .gb-product__image above.
+  img, video, picture { @include cover-img(contain); }
 }
 
 // Main stage — one slide at a time, cross-faded, driven by Swiper (client-set;
@@ -5735,6 +6774,7 @@ html.is-menu-open {
 .gb-product__image {
   background: $c-gray-200;
   border-radius: $r-xl;
+  overflow: hidden;   // clip the image to the radius
   // Client-set: the stage is draggable, so say so on the slide itself.
   cursor: grab;
 
@@ -5742,6 +6782,11 @@ html.is-menu-open {
 
   @include narrow { border-radius: $r-lg; }
   @include tablet { border-radius: fluid($r-lg, $r-xl); }
+  // contain, not the shared cover: a product shot must not be cropped. The grey
+  // ground below shows as letterboxing wherever the source is off-ratio.
+  // ⚠ the other eleven placeholder boxes still want cover -- pass the fit here,
+  // do not change the mixin's default.
+  img, video, picture { @include cover-img(contain); }
 }
 
 .gb-product__label-btn {
@@ -5762,7 +6807,7 @@ html.is-menu-open {
   line-height: 28px;
   color: $c-green;
   text-transform: capitalize;
-  transition: trans(background-color, color, transform);
+  transition: trans(background-color, color);
 
   // Mobile boards draw this at 350x52, 16px, ls +0.48 (desktop 60/18 is correct)
   @include narrow {
@@ -5776,7 +6821,6 @@ html.is-menu-open {
     background: $c-green;
     color: $c-white;
   }
-  &:active { transform: translateY(1px); }
 }
 
 // Info --------------------------------------------------------------------
@@ -5793,6 +6837,21 @@ html.is-menu-open {
   @include tight { padding: 0; }
   @include narrow { flex: none; width: 100%; }
 }
+
+// Live only. The features <ul> is an editor block, so `{% content_for 'blocks' %}`
+// emits it at the END of .gb-product__info together with the other four. Order
+// pulls it back under the head, where the static site keeps it -- there it is a
+// child of .gb-product__head, so neither selector matches and this is a no-op.
+// ⚠ Visual order only: the DOM order a screen reader follows is unchanged, and
+// the gap above it is .gb-product__info's 24 rather than the head's 16. Moving
+// it for real needs sections/gb-product.liquid -- docs/STYLE-GAP.md C12.
+.gb-product__info > .gb-product__head { order: -2; }
+// ⚠ Two selectors on purpose: `{% content_for 'blocks' %}` wraps every block in
+// a `div.shopify-block`, so on live the <ul> is a GRANDCHILD and the direct-child
+// form alone matched nothing (measured order 0 on live against -1 on the static
+// site). Keep both -- the static markup has no wrapper.
+.gb-product__info > .gb-product__features,
+.gb-product__info > .shopify-block:has(> .gb-product__features) { order: -1; }
 
 .gb-product__head {
   display: flex;
@@ -5876,7 +6935,7 @@ html.is-menu-open {
   font-weight: 500;
   line-height: 28px;
   text-transform: capitalize;
-  transition: trans(background-color, color, transform);
+  transition: trans(background-color, color);
 
   // Mobile boards draw this at 350x52, 16px, ls +0.48 (desktop 60/18 is correct)
   // ⚠ The cap is client-set without a number; 520 matches .gb-product__media's
@@ -5895,7 +6954,326 @@ html.is-menu-open {
     background: $c-lime;
     color: $c-green-900;
   }
-  &:active { transform: translateY(1px); }
+}
+
+// Live only. The board keeps Start Now inside the picker, where .gb-sub's 20px
+// gap spaces it; live it is the form's submit button and therefore a child of
+// .gb-product__form, where nothing does (measured live: 0). The child combinator
+// is what keeps this off the static site's copy, which sits inside .gb-sub.
+.gb-product__form > .gb-product__cta { margin-top: 20px; }
+
+// ==========================================================================
+// Subscription picker (PDP)
+// ==========================================================================
+// Desktop I324:52733;316:18227 (401 wide) / mobile I324:53797;191:2419 (350).
+// Prices, discounts and the plan list are the subscription app's job — this is
+// the board's own copy plus the picker's behaviour (docs/PROJECT-STATUS.md,
+// "implementation boundary"). The board keeps Start Now inside this frame, so
+// .gb-product__cta is a child here and .gb-product__info's 24 gap is the
+// board's Product Details gap.
+
+.gb-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.gb-sub__heading {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: $c-ink;
+}
+
+.gb-sub__plans {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// ⚠ Overlay ring, NOT a border: the board's stroke is strokeAlign INSIDE, so
+// it paints over the 90/76 box instead of adding to it. A real border would also
+// push the banner 1px in and make the popular card 336 where the board is 334.
+// ⚠ And not the inset shadow it was until r85 either: an inset shadow paints
+// UNDER the children, and --sub's .gb-sub__panel fills the card edge to edge, so
+// the stroke only ever showed on --once, whose background sits on the card.
+.gb-sub__plan {
+  position: relative;
+  border-radius: 16px;
+  // the banner is flush with the top corners, so the card has to clip it
+  overflow: hidden;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1px solid $c-green;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  @include narrow { border-radius: 8px; }
+  @include tablet { border-radius: fluid(8px, 16px); }
+}
+
+.gb-sub__banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: $c-green;
+  color: $c-lime;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0.56px;
+  text-align: center;
+  text-transform: uppercase;   // node style: textCase UPPER
+
+  @include narrow { font-size: 12px; line-height: 12px; letter-spacing: 0.48px; }
+  @include tablet {
+    font-size: fluid(12px, 14px);
+    line-height: fluid(12px, 20px);
+    letter-spacing: fluid(0.48px, 0.56px);
+  }
+}
+
+.gb-sub__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  background: $c-lime-150;
+
+  @include narrow { padding: 16px; }
+  @include tablet { padding: fluid(16px, 20px); }
+}
+
+// The radio is hidden and the dot drawn on the label — same reason as
+// .gb-form__check: a native control paints accent-color with no transition.
+// The ring is the label's ::before; checked fills it green and an inset ring in
+// the card's OWN colour cuts the board's 11px core back out of the 18 of
+// content (20 less the 1px border each side).
+.gb-sub__pick,
+.gb-sub__plan--once {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+
+  &::before {
+    content: "";
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;          // the board's Radio button frame pads 2 on top
+    border: 1px solid $c-green;
+    border-radius: 50%;
+    transition: trans(background-color, box-shadow);
+  }
+}
+
+.gb-sub__radio { @include visually-hidden; }
+
+.gb-sub__pick {
+  width: 100%;
+
+  &:has(.gb-sub__radio:checked)::before {
+    background: $c-green;
+    box-shadow: inset 0 0 0 3.5px $c-lime-150;
+  }
+}
+
+.gb-sub__plan--once {
+  padding: 20px;
+  background: $c-white;
+
+  &::before { background: $c-white; }
+
+  &:has(.gb-sub__radio:checked)::before {
+    background: $c-green;
+    box-shadow: inset 0 0 0 3.5px $c-white;
+  }
+
+  @include narrow { padding: 16px; }
+  @include tablet { padding: fluid(16px, 20px); }
+}
+
+.gb-sub__info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+
+  @include narrow { gap: 2px; }
+}
+
+.gb-sub__line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.gb-sub__line--meta {
+  align-items: baseline;
+  gap: 4px;
+}
+
+.gb-sub__name {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: $c-ink;
+}
+
+.gb-sub__price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+
+  @include narrow { gap: 2px; }
+}
+
+.gb-sub__price-now {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: $c-ink;
+
+  @include narrow { letter-spacing: 0; }
+  @include tablet { letter-spacing: fluid(0px, -0.32px); }
+}
+
+// node style: textDecoration STRIKETHROUGH — it is the pre-discount price
+.gb-sub__price-was {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: $c-gray-700;
+  text-decoration: line-through;
+
+  @include narrow { font-size: 12px; }
+  @include tablet { font-size: fluid(12px, 14px); }
+}
+
+.gb-sub__packs,
+.gb-sub__rate {
+  font-size: 14px;
+  line-height: 22px;
+  letter-spacing: -0.28px;
+  color: $c-gray-600;
+
+  @include narrow { font-size: 12px; line-height: 18px; letter-spacing: -0.24px; }
+  @include tablet {
+    font-size: fluid(12px, 14px);
+    line-height: fluid(18px, 22px);
+    letter-spacing: fluid(-0.24px, -0.28px);
+  }
+}
+
+.gb-sub__rate { white-space: nowrap; }
+
+.gb-sub__works,
+.gb-sub__every {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gb-sub__works-title,
+.gb-sub__every-label {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: $c-ink;
+
+  @include narrow { font-size: 14px; line-height: 20px; letter-spacing: 0; }
+  @include tablet {
+    font-size: fluid(14px, 16px);
+    line-height: fluid(20px, 24px);
+    letter-spacing: fluid(0px, -0.32px);
+  }
+}
+
+.gb-sub__points {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+}
+
+.gb-sub__point {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: $c-gray-700;
+}
+
+.gb-sub__tick {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  color: $c-lime-stroke;
+}
+
+// Client-set: on the live theme this select keeps the browser's own popup --
+// only the closed control is restyled to the board. So the box below mirrors
+// .gb-sub__every .gb-select__button, and the chevron is the painted one from
+// .gb-field__input--select (same vee, same 14px inset); it cannot rotate, which
+// is the trade accepted for leaving the native list alone.
+// :not(.gb-select__native) keeps it off the static pages, where selectBox has
+// taken over and hidden the native control -- and makes this the fallback look
+// there if the script ever dies.
+.gb-sub__select:not(.gb-select__native) {
+  appearance: none;
+  width: 100%;
+  height: 40px;
+  padding: 10px 40px 10px 16px;
+  background-color: $c-white;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%234d4d4d' stroke-width='1.667' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  border: 1px solid $c-gray-350;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px $c-ink-05;
+  font-family: $font-brand-stack;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: $c-gray-700;
+  cursor: pointer;
+
+  transition: trans(border-color);
+
+  // appearance:none takes the UA's hover highlight with it, same as the fields
+  @include hover { border-color: $c-gray-500; }
+  &:focus-visible { border-color: $c-green; }
+}
+
+// main.js selectBox's default variant carrying the board's own box: 40 tall,
+// not the 44 the form fields use. Board shadow is rgba(16,24,40,.05) — at 5%
+// that is indistinguishable from $c-ink-05, which every other shadow here uses.
+.gb-sub__every .gb-select__button {
+  height: 40px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border-color: $c-gray-350;
+  box-shadow: 0 1px 2px $c-ink-05;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: $c-gray-700;
 }
 
 .gb-product__guarantee-note {
@@ -5921,6 +7299,14 @@ html.is-menu-open {
 
   @include narrow { gap: 16px; }
   @include tablet { gap: fluid(16px, 30px); }
+
+  // Client r87. Layout threshold, so it carries no values of its own -- the gap
+  // above still owns the spacing. 369.98 rather than 369 so a fractional
+  // viewport between the two still counts as "under 370".
+  @media (max-width: 369.98px) {
+    flex-direction: column;
+    align-items: center;
+  }
 }
 
 .gb-product__guarantee {
@@ -5940,7 +7326,10 @@ html.is-menu-open {
   @include narrow { width: 106px; line-height: 20px; }
   @include tablet { width: fluid(106px, 120px); line-height: fluid(20px, 22px); }
 
-  svg { width: 34px; height: 32px; color: $c-cream; }
+  // Same <img> swap as .gb-product__taste-item -- see the note there.
+  // blocks/_gb-guarantee.liquid renders <img width="80">, which the svg-only
+  // rule never sized; the static site still ships the svg.
+  svg, img { width: 34px; height: 32px; object-fit: contain; color: $c-cream; }
 
   // Copy is one step narrower than the icon; that is where the board's two-line breaks come from
   span { max-width: 86%; }
@@ -5989,8 +7378,10 @@ html.is-menu-open {
   cursor: pointer;
 
   // Was `&:first-child` — with the rows now wrapped in .gb-product__acc-item the
-  // button is first child of EVERY item, which would drop every divider.
-  .gb-product__acc-item:first-child & { padding-top: 0; border-top: 0; }
+  // button is first child of EVERY item, which would drop every divider. The
+  // item is the wrong anchor too: on Shopify each one sits in its own
+  // .shopify-block and is that wrapper's first child, so test the list instead.
+  .gb-product__accordion > :first-child & { padding-top: 0; border-top: 0; }
 
   .gb-product__acc-item[open] > & { padding-bottom: 0; }
 
@@ -6049,7 +7440,10 @@ html.is-menu-open {
   color: $c-ink;
   text-align: center;
 
-  svg { width: 51px; height: 48px; color: $c-cream; }
+  // Same <img> swap as .gb-product__packed-item -- see the note there. No
+  // flex-shrink: this item is column-flow, so the icon is sized on the axis
+  // the board pins, and the static svg carries none either.
+  svg, img { width: 51px; height: 48px; object-fit: contain; color: $c-cream; }
 }
 
 .gb-product__packed-list {
@@ -6067,7 +7461,12 @@ html.is-menu-open {
   letter-spacing: -0.32px;
   color: $c-ink;
 
-  svg { width: 34px; height: 32px; flex-shrink: 0; color: $c-cream; }
+  // Live renders the icon as an <img> (image_picker) where the boards and the
+  // static pages carry a placeholder <svg> circle. The width/height attributes
+  // only declare the ratio, so without a CSS width the image lands at its
+  // intrinsic size -- measured 171x161 against the board's 34x32, which pushed
+  // the row from 32 to 161 tall. object-fit keeps a non-34:32 source unstretched.
+  svg, img { width: 34px; height: 32px; flex-shrink: 0; object-fit: contain; color: $c-cream; }
 }
 
 // ==========================================================================
@@ -6143,6 +7542,8 @@ html.is-menu-open {
 }
 
 .gb-reviews__title {
+  // Client r87. .gb-reviews__head is a centred column, so the cap centres itself.
+  max-width: 570px;
   font-size: 40px;
   line-height: 48px;
   letter-spacing: -0.4px;
@@ -6181,6 +7582,20 @@ html.is-menu-open {
   @include tablet { column-gap: fluid(16px, 24px); }
 }
 
+// Too few cards to fill the track: main.js leaves Swiper off -- there is nothing
+// to scroll and `loop` has no room to wrap -- and marks the rail .is-static.
+// Without Swiper the slide margins that carried the spacing are gone, so the gap
+// has to come off the wrapper; `inherit` keeps the responsive column-gap above as
+// its single source instead of restating the ramp.
+[data-slider].is-static > [data-slider-track] > .swiper-wrapper {
+  justify-content: center;
+  column-gap: inherit;
+}
+
+// Nothing left for them to do, and the desktop board draws no nav wherever the
+// whole set is already side by side.
+[data-slider].is-static .gb-reels__nav { display: none; }
+
 // Grey box with a play glyph is the design's own placeholder for the reel.
 // Hover scales the INNER IMAGE only; the card itself does not move and takes no
 // shadow, so the image needs its own .gb-reel__media layer and the play glyph and
@@ -6193,9 +7608,20 @@ html.is-menu-open {
   justify-content: center;
   // Explicit width, not a flex-basis: `slidesPerView: "auto"` measures the slide
   // box, and .swiper-slide's own width: 100% has to lose to it.
-  width: 304px;
+  //
+  // Client-set: from 1440 up the card tracks the viewport instead of staying at
+  // the board's 304, so the rail keeps the board's framing (three whole cards
+  // with a clipped one at each end) on any wide screen. Both legs are the same
+  // fraction of 1440 — 304/1440 and 540/1440 — so the 304:540 ratio is locked
+  // and the height follows the width. max() rather than a media query: it hands
+  // back exactly 304/540 at and below 1440, so nothing steps at the boundary.
+  // ⚠ The gap deliberately does NOT scale. Swiper reads column-gap once, in
+  //   options(), and create() is not re-run on resize — a responsive gap would
+  //   go stale the moment the window moved. Holding it at 24 moves the visible
+  //   count only from 4.39 to 4.54 between 1440 and 2560.
+  width: max(304px, 21.1111vw);
   flex: 0 0 auto;
-  height: 540px;
+  height: max(540px, 37.5vw);
   border-radius: 21px;
   color: $c-ink;
 
@@ -6204,6 +7630,18 @@ html.is-menu-open {
   transition: trans(transform);
 
   &:active { transform: scale(0.99); }
+
+  // Client r81: focus-visible mirrors hover instead of drawing a ring. The rail
+  // (.gb-reels.swiper) clips at exactly this card's top and bottom, so the
+  // global outline lost both horizontal runs; r78 answered that with an inset
+  // ::after, which this replaces.
+  //
+  // ⚠ NOT inside @include hover: that gate is (hover: hover), and a keyboard
+  // user on a touch device still has to see where focus is.
+  &:focus-visible {
+    outline: none;
+    .gb-reel__media { transform: scale(1.06); }
+  }
 
   // :hover sticks after a tap on touch, so this goes through @include hover.
   // The scale lands on .gb-reel__media only: the card, its radius and the play
@@ -6415,6 +7853,16 @@ html.is-menu-open {
 // Promo
 // ==========================================================================
 
+// Live only. These three are the only gb-* sections the vendor mounted with
+// Horizon's own `section` class on the Shopify wrapper, and `.section > *`
+// (0-1-0) parks every child in the grid's centred column: 1360 wide at 1440
+// against the full width every other gb-* section gets, which walks the inner's
+// container gutter 40px inward. They are full-bleed blocks -- the gutter is
+// @include container's job. No-op on the static site, which has no .section.
+.section > .gb-promo,
+.section > .gb-vs,
+.section > .gb-app-section { grid-column: 1 / -1; }
+
 // Promo cards — Figma 324:52658 "discount xx" (1440x1460) / 324:53792 (390x1779).
 // Two 1062x528 cards; each is a 50/50 split with a scalloped seam down the middle.
 .gb-promo {
@@ -6467,8 +7915,10 @@ html.is-menu-open {
   position: relative;
   flex: 0 0 50%;
   background: $c-gray-200;
+  overflow: hidden;   // clip the image to the radius
 
   @include narrow { flex: 0 0 auto; width: 100%; aspect-ratio: 1; border-radius: $r-lg; }
+  img, video, picture { @include cover-img; }
 }
 
 .gb-promo-card__art {
@@ -7203,7 +8653,7 @@ html.is-menu-open {
 
   // No heading above the list on this page, so the first row's rule would read
   // as a stray line under the page header.
-  .gb-faq__item:first-child .gb-faq__row { padding-top: 0; border-top: 0; }
+  .gb-faq__list > :first-child .gb-faq__row { padding-top: 0; border-top: 0; }
 }
 
 .gb-faq__inner {
@@ -7229,7 +8679,7 @@ html.is-menu-open {
 }
 
 .gb-faq__list {
-  --acc-gap: 24px;
+  --acc-gap: 16px;      // client-set (was 24)
 
   display: flex;
   flex-direction: column;
@@ -7266,7 +8716,8 @@ html.is-menu-open {
 
   // 324:53792 drops the rule above the first row on mobile
   @include narrow {
-    .gb-faq__item:first-child & { padding-top: 0; border-top: 0; }
+    .gb-faq__list > :first-child &,
+    .gb-faq-image__list > :first-child & { padding-top: 0; border-top: 0; }
   }
 }
 
@@ -7319,6 +8770,256 @@ html.is-menu-open {
 // .gb-app-slot (the dashed placeholder box) was dropped on client request --
 // pdp lost it in r40, reviews in r42, so the rules went with it. .gb-product__app-slot
 // is a different class and is still in use on four pages.
+
+// ==========================================================================
+// Customer reviews — 324:64032 (1440) / 324:64978 (390)
+// ==========================================================================
+
+// Sits inside .gb-app-section, which already holds the block padding, the cream
+// ground and the 48 gap. Not .gb-reviews -- that is the testimonial carousel on
+// index / pdp / our-story / how-gumi-works.
+// The board's 272 / 112 side padding is carried as a max-width instead, so the
+// phone tier needs no override: both caps clear the 350 it draws at 390.
+
+.gb-crev__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  width: 100%;
+  max-width: 736px;
+}
+
+.gb-crev__score {
+  font-size: 66.18px;
+  font-weight: 800;
+  line-height: 52px;
+  color: $c-green;
+  text-align: center;
+
+  @include narrow { font-size: 56px; line-height: 44px; }
+  @include tablet { font-size: fluid(56px, 66.18px); line-height: fluid(44px, 52px); }
+}
+
+.gb-crev__summary {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+
+  // 324:64978 stacks the pair at 390. Layout threshold only -- the gap below is
+  // the phone board value and the row still fits at 768.
+  @include narrow { flex-direction: column; gap: 16px; }
+}
+
+.gb-crev__stars {
+  display: block;
+  flex: none;
+  width: 160px;
+  height: 32px;
+}
+
+.gb-crev__count {
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: $c-gray-700;
+  text-align: center;
+
+  @include narrow { font-size: 14px; line-height: 20px; letter-spacing: -0.28px; }
+  @include tablet {
+    font-size: fluid(14px, 16px);
+    line-height: fluid(20px, 24px);
+    letter-spacing: fluid(-0.28px, -0.32px);
+  }
+}
+
+.gb-crev__list {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+  max-width: 1056px;
+}
+
+// 324:64978 draws the button at 220x44 / 40 40; .gb-btn--lg carries the 1440
+// board (52 / 64) and is shared with the header and the cart, so the phone
+// values land here. Double class because both selectors are 0-1-0.
+.gb-btn.gb-crev__more {
+  @include narrow {
+    height: 44px;
+    padding: 0 40px;
+    line-height: 24px;
+    letter-spacing: -0.32px;
+  }
+  @include tablet {
+    height: fluid(44px, 52px);
+    padding: 0 fluid(40px, 64px);
+    line-height: fluid(24px, 28px);
+    letter-spacing: fluid(-0.32px, 0.48px);
+  }
+}
+
+// Review card --------------------------------------------------------------
+
+.gb-crev-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid $c-ink-05;
+}
+
+.gb-crev-card__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+// 191:5449 outlines 48 at 1.09, 191:5450 fills 39.27 inside it, both $c-green.
+.gb-crev-card__avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border: 1.09px solid $c-green;
+  border-radius: 50%;
+
+  &::before {
+    content: "";
+    position: absolute;
+    width: 39.27px;
+    height: 39.27px;
+    background: $c-green;
+    border-radius: 50%;
+  }
+}
+
+.gb-crev-card__initials {
+  position: relative;   // paints over the ::before disc
+  font-size: 15.27px;
+  font-weight: 500;
+  line-height: 21.82px;
+  color: $c-white;
+}
+
+.gb-crev-card__ident {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gb-crev-card__name {
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: $c-ink;
+}
+
+.gb-crev-card__verified {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: $c-gray-600;
+
+  svg { flex: none; width: 16px; height: 16px; }
+}
+
+.gb-crev-card__meta,
+.gb-crev-card__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.gb-crev-card__rating {
+  display: block;
+  flex: none;
+  width: 100px;
+  height: 20px;
+
+  // 4.5 dims the fifth point to 30%; the board never half-fills one (191:5463).
+  &[data-rating="4.5"] path:last-of-type { fill-opacity: 0.3; }
+}
+
+.gb-crev-card__time {
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: $c-gray-600;
+  text-align: right;
+}
+
+.gb-crev-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gb-crev-card__title {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: $c-ink;
+}
+
+.gb-crev-card__text {
+  font-size: 16px;
+  line-height: 24px;
+  color: $c-gray-700;
+}
+
+// TODO client image: 191:5468 is a flat grey block on both boards.
+.gb-crev-card__image {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  background: #d5d4d4;
+  border-radius: $r-xs;
+}
+
+.gb-crev-card__recommend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: $c-gray-600;
+
+  svg { flex: none; width: 16px; height: 16px; }
+}
+
+.gb-crev-card__feedback {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// The count is the board's own figure -- nothing counts behind it yet, so the
+// button carries the hover / press state and no handler.
+.gb-crev-card__vote {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: $c-gray-600;
+  transition: trans(color, transform);
+
+  svg { flex: none; width: 16px; height: 16px; }
+
+  @include hover { color: $c-green; }
+  &:active { transform: scale(0.94); }
+}
 
 // ==========================================================================
 // FAQ with image
@@ -7380,6 +9081,8 @@ html.is-menu-open {
   }
 
   img { @include cover-img; }
+
+  img, video, picture { @include cover-img; }
 }
 
 .gb-faq-image__body {
@@ -7443,7 +9146,7 @@ html.is-menu-open {
   @include narrow {
     --acc-gap: 24px;
 
-    .gb-faq__item:first-child .gb-faq__row { padding-top: 0; border-top: 0; }
+    > :first-child .gb-faq__row { padding-top: 0; border-top: 0; }
   }
   @include tablet { --acc-gap: #{fluid(24px, 16px)}; }
 }
@@ -7702,6 +9405,11 @@ html.is-menu-open {
   // 48 at 768 and 80 at 1281, so neither seam moves.
   @include narrow { gap: 48px; padding-inline: var(--pad-x); }
   @include tablet { gap: fluid(48px, 80px); padding-inline: var(--pad-x); }
+
+  // align-items:center makes every flex item shrink-to-fit. On Shopify the item
+  // is a bare <div class="shopify-block">, not .gb-dosed__block, so the block's
+  // width:100% resolved against that collapsed box — 1250 -> 392 at 1440.
+  > * { width: 100%; }
 }
 
 .gb-dosed__block {
@@ -7970,8 +9678,15 @@ html.is-menu-open {
   // nine-slice inward over the padding box instead. border-style must not be
   // `none` or the image is never painted.
   border: 0 solid transparent;
+  // ⚠ The SLICE keeps the board's exact radius (it indexes the source image and
+  //   has to stay put), but the PAINT width is rounded to a whole CSS px.
+  //   58.8848px lands mid-device-pixel and the top and bottom slices then round
+  //   opposite ways: measured at DPR 2 the top lobe came out 20.5 and the bottom
+  //   20.0. With a whole number both read 20.5 — and 20.55 is the board's own
+  //   valley depth, so this is also the closer value. At DPR 1 the grid is too
+  //   coarse to fix either way (1px apart regardless).
   border-image: scallop-tile($plate-r-pc, $plate-px-pc, $plate-py-pc)
-                $plate-r-pc fill / #{$plate-r-pc}px / 0 round;
+                $plate-r-pc fill / #{math.round($plate-r-pc)}px / 0 round;
   @include plate-pad($plate-r-pc, $plate-px-pc, $plate-py-pc);
 
   // 324:73697 draws the plate 507.5 tall around a 500-tall content block, so
@@ -7979,7 +9694,7 @@ html.is-menu-open {
   // which pushed the whole block 20px down inside the scallops.
   @include narrow {
     border-image: scallop-tile($plate-r-mob, $plate-px-mob, $plate-py-mob)
-                  $plate-r-mob fill / #{$plate-r-mob}px / 0 round;
+                  $plate-r-mob fill / #{math.round($plate-r-mob)}px / 0 round;
     @include plate-pad($plate-r-mob, $plate-px-mob, $plate-py-mob);
 
     padding-block: 3.75px;
@@ -8129,6 +9844,14 @@ html.is-menu-open {
   color: $c-gray-600;
 }
 
+// Same 0-1-1 loss as .gb-footer__input; same placement rule -- :focus-visible
+// and .gb-field__input--select's hover are both 0-2-0 and follow this.
+.gb-field__control.gb-field__control,
+.gb-field__input.gb-field__input {
+  background-color: $c-white;
+  border-color: $c-gray-300;
+}
+
 .gb-field__control,
 .gb-field__input {
   width: 100%;
@@ -8242,6 +9965,16 @@ html.is-menu-open {
     transform: none;
     transition: trans(opacity, transform), visibility 0s;
   }
+
+  // Opens upward when the list would fall past whatever clips it; the entry
+  // offset mirrors with it so the list still slides out of the trigger.
+  .gb-select.is-up & {
+    top: auto;
+    bottom: calc(100% + 4px);
+    transform: translateY(4px);
+  }
+
+  .gb-select.is-up.is-open & { transform: none; }
 }
 
 .gb-select__option {
@@ -8289,6 +10022,43 @@ html.is-menu-open {
     right: auto;
     width: max-content;
     min-width: 100%;
+  }
+
+  // Same 14 mirrored: the field pads 10 top and bottom, so the trigger's line
+  // box clears each edge by the same 10, and 10 + the default 4 gap = 14.
+  &.is-up .gb-select__list { bottom: calc(100% + 14px); }
+}
+
+// Client-set (r59): the cart's delivery interval is the same widget again, with
+// no box at all -- it is a run of text inside "Delivers every ___".
+.gb-select--inline {
+  display: inline-flex;
+
+  .gb-select__button {
+    gap: 2px;              // the board's own gap between label and chevron
+    padding-right: 0;
+    font-family: $font-brand-stack;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    letter-spacing: normal;
+    color: $c-blue;
+    transition: trans(color);
+
+    @include hover { color: $c-green; }
+  }
+
+  // The board draws a 16 chevron here; the module's is the same vee at 20.
+  .gb-select__arrow { flex: 0 0 16px; width: 16px; height: 16px; }
+
+  // Content-wide and left-aligned -- the trigger is only as wide as its label.
+  .gb-select__list {
+    left: 0;
+    right: auto;
+    width: max-content;
+    min-width: 100%;
+    font-size: 14px;
+    line-height: 20px;
   }
 }
 
@@ -8470,6 +10240,14 @@ html.is-menu-open {
     font-size: fluid(16px, 14px); line-height: fluid(24px, 20px); letter-spacing: fluid(-0.32px, -0.28px);
     margin: fluid(16px, 0px) 0 fluid(-2px, 0px);
   }
+}
+
+// Live only. Horizon zeroes the trailing margin of any last-child <p> with
+// `:last-child:is(p,h1..h6)` (0-1-1), which outranks the class above and dropped
+// the negative bottom that pulls this line onto the submit button's spacing.
+.gb-form__disclaimer.gb-form__disclaimer {
+  @include narrow { margin: 16px 0 -2px; }
+  @include tablet { margin: fluid(16px, 0px) 0 fluid(-2px, 0px); }
 }
 
 // ==========================================================================
@@ -9011,4 +10789,25 @@ html.is-menu-open {
 // lands on the first visible sibling either way.
 .gb-ingredients__body > * + * {
   @include narrow { margin-top: 16px; }
+}
+
+// ==========================================================================
+// Collection
+// ==========================================================================
+
+// Live only. The collection template is Horizon's own -- there is no static
+// counterpart and no board for it. Its section padding comes from a theme
+// editor setting (inline `--padding-block-end: 32px`), and 32 is too tight for
+// our footer CTA: .gb-deco-bear--a overhangs the scallop by 196 desktop / 108
+// mobile, so at 32 it lands on the product names. .gb-rich-page's bottom
+// padding is the site's answer for "content, then scallop" and restores the
+// same 20px / 4px clearance every static page has.
+// ⚠ Overriding the longhand, not the custom property: the inline style sets the
+// variable, so --padding-block-end would need !important. .product-grid-container
+// carries the only rule that reads it and is 0-1-0, so 0-2-0 here is enough.
+.gb-page-wrapper .product-grid-container {
+  padding-block-end: 120px;
+
+  @include narrow { padding-block-end: 64px; }
+  @include tablet { padding-block-end: fluid(64px, 120px); }
 }

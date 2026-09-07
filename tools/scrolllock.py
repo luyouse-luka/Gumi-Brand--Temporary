@@ -18,8 +18,10 @@ to lose. (memory: headless-chromium-probe-limits, negative-assert-needs-liveness
 Sampled: every VISIBLE element. Three exclusions, each for a reason:
   - the overlay being opened, and any other overlay sitting idle in the DOM: a
     fixed element's containing block is the viewport, and the viewport really did
-    get wider, so growing by the scrollbar width is correct. They are invisible
-    while closed, so checkVisibility() drops them without naming them.
+    get wider, so growing by the scrollbar width is correct. Most are invisible
+    while closed, so checkVisibility() drops them without naming them; the mobile
+    drawer is not -- it parks off-canvas with a transform -- so anything whose box
+    lies wholly outside the viewport is dropped too.
   - marquee tracks: .gb-logo-scroll is animating, so it moves between the two
     samples on its own. Animations are paused (not killed -- killing would snap
     reveal blocks back to frame 0, see memory kill-animations-blanks-reveal-blocks)
@@ -48,6 +50,11 @@ RECTS = """(sel) => {
                                                    checkVisibilityCSS: true})) continue;
     const r = el.getBoundingClientRect();
     if (r.width < 0.5) continue;
+    // Parked off-canvas: the mobile drawer hides with translateX(-100%), not with
+    // visibility, so checkVisibility() keeps it. It is a fixed box, so it grows by
+    // the scrollbar width like every other overlay (HANDOFF 2b) -- correct, and
+    // nobody can see it happen. Judge only what is on screen.
+    if (r.right <= 0 || r.left >= window.innerWidth) continue;
     const cs = getComputedStyle(el);
     const key = i + '|' + el.tagName + '.' + (el.className || '').toString().split(' ')[0]
                 + '[' + cs.position + ']';
@@ -75,6 +82,10 @@ CASES = [
     # a real desktop scrollbar, which a phone's overlay scrollbar never does
     ("index",           700, ".gb-header__toggle",               ".gb-header__panel"),
     ("faq",             700, ".gb-header__toggle",               ".gb-header__panel"),
+    # r60: the cart drawer is the fourth thing that locks the page
+    ("index",          1440, '[data-modal="gb-cart"]',           ".gb-cart"),
+    ("shipping",       1440, '[data-modal="gb-cart"]',           ".gb-cart"),
+    ("get-in-touch",    700, '[data-modal="gb-cart"]',           ".gb-cart"),
 ]
 
 fails, checks = [], 0

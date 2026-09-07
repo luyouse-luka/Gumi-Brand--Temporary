@@ -2,7 +2,8 @@
 
 Shopify 前端项目（gumi.com.au）的静态实现阶段：**11 个页面全部落地**，
 设计源为 Figma `Internal - Gumi Brand & Website` 的 SECTION `401:31719`
-「Desktop & Mobile MVP (14/08/26)」。当前 `$build` = `20260828-r54`（第五十二轮）。
+「Desktop & Mobile MVP (14/08/26)」。
+当前 `$build` 以 `assets/customstyle.scss` 顶部为准（这里不写死，会过期）。
 
 > ⚠ **这是临时同步仓库**。设计源（`figma/`）与验证产物（`tools/snap`、`tools/shots`）
 > 不在这里，它们留在服务器上的 `/home/ly/project/Gumi-Brand/`。
@@ -33,7 +34,10 @@ assets/         ⚠ 扁平，不建任何子目录（Shopify 主题 assets 的�
                 lenis.min.js / swiper-bundle.min.js  vendor 原件，勿手改；
                   Swiper 用到的样式摘进了 customstyle.scss 的「Vendor」分区，
                   没有第二个样式表
-images/         ⚠ 图片在顶层，与 assets 平级（不是 assets/images）
+images/         ⚠ <img src> 的图片在顶层，与 assets 平级（不是 assets/images）
+                ⚠ 但 CSS 里 url() 引用的图片必须放 assets/ 并写裸文件名
+                  （Shopify 扁平服务 assets/，`../images/` 上线即 404）
+                  判据 python3 tools/assetpath.py
 tools/          验证脚本，不进交付
 docs/           项目文档，不进交付
 ```
@@ -70,6 +74,11 @@ python3 tools/r42rect.py r41 1440   # 不变量档矩形比对（cssnap 跑不�
 
 ## 上线前必须替换的占位内容
 
+- **reels 的视频与截图全是公开测试片**（Big Buck Bunny / Jellyfish / Sintel / MDN flower
+  + 卡 5 的一个 YouTube 链接），与 Gumi 毫无关系 —— 换 `.gb-reel` 的 `data-video`
+  与 poster `src` 即可，机制不用动。`data-video` 直链文件与 YouTube／Vimeo 链接都吃。
+  ⚠ **YouTube 那张在 `file://` 预览下报 Error 153**（origin 为 null，YouTube 拒绝），
+  上真实域名才正常 —— 见 docs/HANDOFF.md 的「不要报成 bug」1c
 - **Reviews 专家卡引用里有竞品名 Grüns**（设计师抄的参考站文案）
 - **Shipping 全页写的是美国配送**（Alaska / Hawaii / US Territories / $65 门槛），而 Gumi 是澳洲品牌
 - **Privacy Policy 正文是 lorem ipsum**

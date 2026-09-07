@@ -38,9 +38,21 @@ Homepage 有 3 处 mobile 字号是凭手感缩的（已修）。判据是把每
 ## 待用户确认的事项
 
 ### 开工前必须定的
-1. **店铺与主题** — Shopify 店铺域名、主题基底（Dawn？既有主题？）、是否已有 dev 主题
-2. **实现形态** — 直接写 Shopify 主题（sections/snippets/liquid），还是先出静态 HTML 再套主题
-3. **接入方式** — Shopify CLI（本机需走 device code 流，见 memory `shopify-cli-headless-device-code`）/ GitHub 集成 / 手工上传
+~~1. **店铺与主题**~~ / ~~2. **实现形态**~~ / ~~3. **接入方式**~~ — **2026-09-03 全部确定**
+（拉线上主题才发现三项其实早已落地，此前文档一直记着「未定」）：
+
+| 项 | 值 |
+|---|---|
+| 店铺 | `je1ka9-er.myshopify.com`（admin `/store/je1ka9-er/`） |
+| 主题基底 | Shopify **Horizon 4.1.5** |
+| live 主题 | **`Dev` (#180348977399)** ⚠ 名字叫 Dev，role 却是 **live** —— 看角色不看名字 |
+| 另一个 | `Horizon` (#179976765687)，unpublished |
+| 实现形态 | 静态 HTML 先行，再手工搬进主题：已有 5 个 `gb-` section + 21 个 `gb-` block |
+| 接入方式 | Shopify CLI（device code 流），账号 **john@mockuptocode.com** |
+
+⚠ **主题的 liquid 只存在于线上，本地没有源。** 静态站是 CSS/JS 的源，
+liquid 是线上唯一副本 —— 与 EuroCave 同形，动手前先 `theme pull` 拉基线到
+`/home/ly/project/Gumi-Brand-shopify/`。推送一律 `--only` + `--nodelete`。
 4. **PP Palma 授权文件** — 三个免费字体（Inter / Lexend / Playpen Sans）已下载到位；
    **PP Palma 是 Pangram Pangram 商业字体，试用包 EULA 明确排除商业用途**。
    ⚠ **第六轮起已接入试用包**（Figtree 退为 `$font-brand-alt` 兜底，不再是主字体）：
@@ -627,6 +639,76 @@ bear-meter 只有 293.7。本轮把这个区间从 [1281, ~1361] 往下扩到 [1
 修法与弹窗同形：`header.set(false)` 里把 `is-menu-open` 的摘除推迟到抽屉滑出结束。
 **一句话就能授权。**
 
+### 第七十八轮新开的（2026-09-07）— focus 态
+
+- **BL —— reel 的 focus 环画在海报图上，对比度随图而变。**
+  卡片被 `.gb-reels.swiper{overflow:hidden}` 裁在自己的盒边上，环只能画在**卡内**，
+  也就是压在海报图上。现在是 `$c-green` 2px 内缩环，测试图（浅绿树叶 + 白兔）很清楚，
+  **深色海报上会弱**。稿里没有任何 focus 态设计，全站 focus 都是我们自定的。
+  要保证任意海报下的对比度，得给环加一圈浅色外描
+  （如 `box-shadow: 0 0 0 1px rgba(255,255,255,.6)`）——**那是新增视觉设计，没做。**
+  **需要裁决：接受随图变化，还是加浅色外描？**
+
+- **`.gb-btn--primary` 在 header 的 padding 从 42 改回 40（2026-09-07 需求方指定，已执行）。**
+  ⚠ **不是待决，是已决，记在这里防止下一轮对稿审计把它改回去。**
+  `0 40px → 0 42px` 原本是第四十五轮按 Figma 改的（同批还有 header toggle gap 16→18 等）。
+  本轮需求方要 40，**只改了 `.gb-header__cta`，基类仍是 42**
+  （基类还服务着购物车抽屉的 Shop Now，而 cart 当时冻结）。
+  顺带查明 `.gb-cart__shop` 自带 `padding: 0 40px`，所以实际效果是两颗按钮对齐到了 40。
+
+### 第七十七轮新开的（2026-09-07）— cart-drawer 上线适配
+
+线上的购物车抽屉是**我们的 `.gb-cart*` 结构装在 Horizon 的 `<theme-drawer>` / `<dialog>` 里**，
+以下四条是那层壳带来的、CSS 够不到或属于取舍的差异。**都不是漏做。**
+
+- ~~**BH —— 抽屉的进出动效被主题参数压到 0.125s，稿是 0.7s。**~~ **第七十九轮关闭：**
+  **不需要动全站参数** —— 覆盖 dialog 那条规则自己的 `animation-duration` 即可
+  （`--animation-speed` 是继承变量，改它会拖慢抽屉里所有 Horizon 组件）。
+  实测退场 145ms → 717ms。以下为原文：
+  `.gb-cart__panel` 的滑入借 Horizon 打在 dialog 上的 `--opening` / `--closing` 相位类驱动，
+  但 dialog 何时 `display:none` 由 Horizon 用**它自己那条动画**的 `animationend` 决定
+  （`onAnimationEnd(panel, …, {subtree:false})`，只看 panel 自身、不看子元素）——
+  写 `$t-drawer` 0.7s 会让退场在 0.125s 处被硬切，所以取了主题的 `--animation-speed`。
+  **要还原稿的 0.7s，得请对方把主题的 `--animation-speed` 调慢** —— 那是全站参数，
+  会连带影响所有抽屉与弹窗。**需要裁决：是接受 0.125s，还是让对方改全站？**
+  关联待决 BC（抽屉滑入而非淡入，第五十八轮）。
+
+- ~~**BI —— 桌面端打开抽屉后，背后的页面仍可滚动。**~~ **第七十九轮关闭：**
+  `html:has(#cart-drawer .theme-drawer__dialog[open])` 两档都锁 + `--scrollbar-w` 补偿，
+  `main.js` 新增 `scrollbarProbe` 在页面未锁时缓存宽度。
+  ⚠ **锚点必须是 `dialog[open]`**：`close()` 在 await 退场动画之前就摘掉了
+  `theme-drawer[open]` 与 `html[scroll-lock]`（实测 10ms vs 145ms）。以下为原文：
+  Horizon 在 ≥990 走 `dialog.show()`（非模态，不锁滚动），<990 才 `showModal()`（锁）。
+  静态站两档都锁。CSS 单独锁得到（`html:has(#cart-drawer[open]){overflow:hidden}`），
+  但**锁滚动必须同时补偿滚动条宽度**，宽度只能 JS 实测（铁律 14），
+  而本轮需求明确「不改变结构和 js」。**需要裁决：要不要为此动 js？**
+
+- **BJ —— 线上空态没有底部那条置灰的 Secure Checkout 栏，静态站有。**
+  线上是整个 `.gb-cart__bar` 不输出，不是样式没生效，CSS 补不出来。
+  静态站那条是 `.gb-cart.is-empty` 把 checkout 做成禁用态（`#e6e6e6` 底 / `#808080` 字）。
+  **需要裁决：空态要不要保留这条禁用栏？** 要的话得请对方在空态分支里输出 `__bar`。
+  关联待决 BB（空态 checkout 只有视觉禁用，第五十八轮）。
+
+- **BK —— 配送周期下拉是原生 `<select>`，两处与稿不一致。**
+  第七十六轮需求方已就订阅下拉定过调子（「不用改点击出来的 drop box 样式」），
+  购物车行内的这个沿用同一判决，只 restyle 闭合态。代价：
+  ① **宽度取最长选项而不是选中项**（实测 151 vs 静态站 `.gb-select--inline` 的 77），
+  长选项会让标签与箭头之间空出一段；
+  ② **hover 时箭头是整图替换**，背景图跟不了 `currentColor`，颜色能过渡、箭头瞬切。
+  **需要裁决：接受，还是允许让 `selectBox` 接管这一个控件？**
+  关联待决 BD（下拉展开态的样式，第五十八轮）。
+
+### 第六十五轮新开的（2026-09-04）
+
+- **BF —— 订阅档与一次性档的份数说明是同一句，订阅那句讲不通。**
+  两块稿（`I324:52733;316:18244` 与 `I324:52733;316:18271`）里，
+  `Subscribe & Save` 和 `One Time Purchase` 的副标都是 **`28 Packs delivered once`**。
+  「delivered once」＝只送一次，用在订阅档上是矛盾的；两块稿一致，不是导出错误。
+  按铁律 3 **照抄了稿、没有自己改写**。需设计方给订阅档的正确文案
+  （例如 `28 Packs per delivery`）。
+- **BG —— 一次性档也带划线原价。** `One Time Purchase` 显示 `$54.40` + 划掉的 `$79.99`，
+  但它没有任何折扣说明（折扣徽章只在订阅卡上）。稿如此，未加旁注，需确认是否有意。
+
 ### 交付前必须替换的占位内容
 
 - **Reviews 专家卡的引用文案里有竞品名**：三张卡都写着「Grüns has everything I need…」，
@@ -640,6 +722,17 @@ bear-meter 只有 293.7。本轮把这个区间从 [1281, ~1361] 往下扩到 [1
   真实 reels 到位后**整组替换**，最终张数由客户的内容决定 ——
   ⚠ 但**不能少于可见张数的两倍**（1440 处 4.3 张 → 至少 9 张），否则 loop 会在一侧留空，
   那时要么补够张数、要么退回 `rewind`。
+- **购物车 delivery interval 的三个档位是编的**（第五十九轮）：下拉里的
+  `2 Weeks` / `6 Weeks` / `8 Weeks` 稿里**从来没有出现过** —— 全站只有
+  `One Time Purchase` 与 `4 Weeks`（PDP 的订阅区也只有单值，且那块归 app）。
+  需求方要求「补成常见订阅档位」，所以补了。**上线前必须换成真实档位**，见待决 BD。
+- **PDP 订阅模块的所有数字都是稿上的占位**（第六十五轮）：`$40.40` / `$79.99` /
+  `$1.46/day` / `$54.40` / `$1.94/day` / `get 49% off`。这些**必须由订阅 app 输出**，
+  前端只是把稿上的字摆到位。配送档位 `2 / 4 / 6 / 8 Weeks` 同购物车那条（见上），
+  稿上只有 `4 Weeks`。
+- **购物车的产品缩略图与礼物图是灰色方块**（第五十八轮）：`341:42573` 里那两个
+  56×56 / 47×47 导出来就是 `#D9D9D9` 实心占位，不是图片节点，按铁律 3 原样保留。
+  见待决 AZ。
 - Get in Touch 的 **Enquiry Type 选项列表**稿里只给了「Contact Us」一个。现在的四项
   对应 header/footer 指向本页的四个链接（Partners & Influencers / Press Inquiries /
   Careers / Contact），并支持 `?type=` 预填（批注要求照搬 Funky 的做法）。需客户确认最终列表。
@@ -698,6 +791,41 @@ bear-meter 只有 293.7。本轮把这个区间从 [1281, ~1361] 往下扩到 [1
   （index 是 3 张），第 4 张单独落到第二行居中；但**四张卡在 1440 / 1024 / 768 / 390
   四档下 `text-align` 全是 `center`，子元素也全是 center，与 pc 端没有任何差别**。
   是要「第 4 张对齐到第一列而不是居中」，还是别的意思？
+
+### 第五十九轮新开的（2026-09-01）
+
+**BD. 下拉的五个档位里三个是我编的** — `.gb-cart-item__interval` 展开后是
+`One Time Purchase / 2 Weeks / 4 Weeks / 6 Weeks / 8 Weeks`。稿里**全站**只出现过
+第一个和第三个（PDP 的订阅区也只有单值 `4 Weeks`，且那块归 app）。
+需求方选择「补成常见订阅档位」，于是有了 `2 / 6 / 8 Weeks`。
+**这三个必须在上线前换成真实档位** —— 已登记进本文的「交付前必须替换的占位内容」一节。
+
+**AT 关闭（2026-09-01）** — 需求方裁决：**767 以上一直用 row**。
+实现是**缩放而不是重排**（`zoom: var(--pp-k)`，1110 起为 1），所以 AT 里担心的
+「缩栏把熊切掉」不成立：`@include panel-wide` 块里的每个数都还是板值。
+
+### 第五十八轮新开的（2026-09-01）— 购物车抽屉
+
+**AZ. 产品缩略图与礼物图是稿里的占位** — `341:42573` 里那两个 56×56 与 47×47
+导出来是 `#D9D9D9` 实心方块，不是图片节点。按铁律 3 保留成灰色块，没拿站上现成的
+`product-pack.png` 顶上去（那是「复用一张图冒充多张」）。
+**要换成真图吗？** 礼物那张 47×47 站上没有对应素材，需要设计方给。
+
+**BA. totals / bar 的内容宽按 fill 351 做了** — 稿里 `totals` 的子块是 fixed **344**、
+bar 的子块是 fixed **343**，而两者父级都是 351 可用宽的 auto-layout。
+**两个值不一致**，判定为手拖残留而不是设计语言：照抄会让 Subtotal 的 `$60` 与
+Total 的 `$45` 互相错开 1px，也与上方 items 的价格右缘对不齐。
+**要按稿钉死 344 / 343 就说一声。**
+
+**BB. 空态的 Secure Checkout 只有视觉禁用** — `#e6e6e6` 底 / `#808080` 字 /
+`pointer-events: none`，但没有 `aria-disabled`。静态站里状态靠手加
+`.is-empty` 类，没有 JS 同步；真实状态以后由 Shopify 给。
+**要不要现在就写一对固定的 aria 属性？**（那样有货态就永远带着 disabled 语义，更糟。）
+
+**BC. 抽屉用滑入而不是淡入** — 稿画的是右侧滑出，且它与手机菜单同族
+（`$t-drawer` 0.7s + `$ease-drawer`）。第二十八轮「全站弹窗改纯淡入淡出」是需求方
+明确要求的，但那条针对的是**居中弹窗**（nl / rv / promo 三个），不含侧边抽屉。
+**这条是我判断的，需求方只说了「可以」**，要改成淡入随时说。
 
 ### 第五十七轮新开的（2026-08-31）
 
@@ -777,8 +905,9 @@ Gumi-Brand/
 │   ├── customstyle.css    # 编译产物，勿手改
 │   ├── main.js
 │   ├── *.woff2            # 19 个：PP Palma / Figtree / Inter / Lexend / Playpen Sans
-│   └── *.svg              # 44 个图标
-├── images/             # ⚠ 图片在顶层，与 assets 平级（不是 assets/images）
+│   ├── *.svg              # 44 个图标
+│   └── bear-icon.png/webp # ⚠ CSS 里 url() 引用的图片只能放这儿（第六十一轮）
+├── images/             # ⚠ <img src> 的图片在顶层，与 assets 平级（不是 assets/images）
 ├── figma/              # 设计源，只读，不进交付
 ├── tools/              # 验证脚本（cssnap / rwd / sect / shoot / webp），不进交付
 └── docs/               # 项目文档，不进交付
@@ -789,7 +918,15 @@ Gumi-Brand/
 
 ⚠ 与 Terra / EuroCave 的既往约定**有一处不同**：那两个项目图片在 `assets/images/`，
 本项目图片提到**顶层 `images/`**。写路径时别顺手抄旧项目。
-（上 Shopify 主题时 `images/` 也得进 `assets/`，届时一并处理。）
+
+⚠ **CSS 里 `url()` 引用的图片是例外，必须放 `assets/` 并写成裸文件名**（第六十一轮）。
+Shopify 从 CDN 扁平地服务 `assets/`，样式表旁边没有 `images/` 兄弟目录可以 `../` 上去 ——
+`url("../images/x.png")` 在 `file://` 和静态主机上都解析得到，**一上主题就 404**，
+而且是静默的（背景图空掉，不报错）。字体一直是裸文件名写法，
+`.gb-bear-meter__bear` 是唯一漏网的，第六十一轮修掉。
+判据：`python3 tools/assetpath.py`。
+`<img src="images/…">` 那 21 处不受此限 —— 主题化时走 Liquid filter 改写，
+届时 `images/` 其余文件一并进 `assets/`。
 
 ⚠ 样式**只有 `assets/customstyle.scss` 一个源文件**（原 7-1 的 36 个 partial 已合并）。
 文件分「定义」「输出」两段，改之前先看文件头那段说明 —— 块的相对顺序是层叠依赖，
@@ -1004,15 +1141,23 @@ npx sass@1.77.8 assets/customstyle.scss assets/customstyle.css --no-source-map
 搭前端时**跳过会由 Shopify app / metafield 产出的内容**，只留结构占位与样式外壳，不实现逻辑、不填假数据。
 已核实设计稿中受此影响的区块：
 
+⚠ **2026-09-04 第六十五轮：订阅选购这一条已被需求方推翻**，视觉与交互都做了，
+只有价格/折扣/真实档位仍归 app。
+⚠ **2026-09-07 第八十九轮：评论区两条也被推翻** —— Real Customer Reviews 在
+`reviews.html` 与 `pdp.html` 上做成了真前端（`gb-crev`），内容、星级、赞踩数都取自板上
+那 5 条。**仍归 app 的只剩「计数与分页」**：赞踩不累加、See More 不展开，因为板上没有
+第 6 条评论，编出来就是造假数据。逐条在 `HANDOFF.md` 的 1t。
+
 | 页面 | 区块 | 稿中表现 | 处理 |
 |---|---|---|---|
-| PDP `324:52658` / `324:53792` | **订阅选购** | Autoship and Save / Subscribe & Save / One Time Purchase / Delivers every 4 Weeks / How subscription works | 由订阅 app 渲染，前端不做选项逻辑与价格计算 |
+| PDP `324:52658` / `324:53792` | ~~**订阅选购**~~ **已实现（r65）** | Autoship and Save / Subscribe & Save / One Time Purchase / Delivers every 4 Weeks / How subscription works | **前端做视觉 + 单选 + 配送周期下拉**（`.gb-sub`）；价格、折扣、真实配送档位仍由订阅 app 提供 |
 | PDP | **产品详细信息 accordion** | Why Gumi / Ingredients & Allergies / Science / Directions | 内容走 metafield/app，前端只做 accordion 壳 |
-| PDP | **评论区** | Real Customer Reviews 4.76 / Based on 123,000 reviews / 5 张评论卡 / 点赞点踩计数 / See More Reviews | 由评论 app 渲染，前端不做 |
-| **Reviews 页** `324:63924` / `324:64961` | 整页评论列表 | 同上 | 由评论 app 渲染，前端不做 |
+| PDP | ~~**评论区**~~ **已实现（r89）** | Real Customer Reviews 4.76 / Based on 123,000 reviews / 5 张评论卡 / 点赞点踩计数 / See More Reviews | **前端做完整视觉**（`.gb-crev`）；只有赞踩累加与 See More 分页仍归 app |
+| **Reviews 页** `324:63924` / `324:64961` | ~~整页评论列表~~ **已实现（r89）** | 同上 | 同上 —— 与 PDP 共用一份实现 |
 | 全站 header | **Trustpilot 徽章** | `Excellent` / `Truspilot` | 第三方嵌入 |
 
-⚠ 连带作废：批注 `401:31223`（评论支持选传图、点赞点踩排序）**属于评论 app 的能力，本次不实现**。
+⚠ 批注 `401:31223`（评论支持选传图、点赞点踩排序）**仍属评论 app 的能力，r89 也没做** ——
+r89 做的是板上那 5 条的静态呈现，排序、上传、累加都不在内。
 ⚠ 仍要做的：**营养标签弹窗**（`401:31227` 底部上滑）不是 app 内容，是自定义模块，照做。
 ⚠ PDP 页脚「And Last Questions?」的 6 条 accordion 稿中就是 `Accordion Closed` / `Text here` 占位 ——
 按铁律 3 **保留占位**，不编造问答。
@@ -1052,8 +1197,16 @@ npx sass@1.77.8 assets/customstyle.scss assets/customstyle.css --no-source-map
    EULA 明确排除商业用途，且不随 git 仓库分发。400/500/800 第二十六轮起已换成客户授权文件
    （`assets/PPPalma-Regular/FizzyMedium/FizzyHeavy.woff2`，大写驼峰命名）。
    **上线前必须补齐 300**。切换点是 `customstyle.scss` 的四条 `@font-face`，只改 `src`。
-2. **Shopify 店铺 / 主题基底 / 接入方式未定** —— 只影响后续主题化，静态阶段不受影响。
-3. **Figma `/v1/images` 账号级限流**（2026-08-26 实测 429，`retry-after` ≈ 2.8 天 → 约 08-29 解除）。
+2. **reels 的视频是公开测试片**（第六十二轮）—— 五个源与 Gumi 无关，交付前整组替换。
+   连带一条待决：**弹窗第六十二轮改成了 16:9，而 reel 本该是竖版 9:16**。
+   16:9 是需求方点名要的，占位片也是横版；真实竖版素材进来后 `contain` 会左右留黑边，
+   届时是面板跟素材走、还是素材裁成横版，需要裁决。
+3. ~~**Shopify 店铺 / 主题基底 / 接入方式未定**~~ —— **2026-09-03 关闭**，三项都已落地
+   （见本文件「开工前必须定的」一节）。仍未做的是：**静态站与主题之间没有同步机制**，
+   两边各改各的，靠人肉搬。**第六十九轮把差距逐条量了出来** —— 6 个模块 + 模板挂载
+   + `gb-br-narrow`，清单与判据在 [LIVE-GAP.md](LIVE-GAP.md)，三个脚本可随时复跑。
+   ⚠ 购物车不是没做，是线上装了 Horizon 原生抽屉而 header 图标指向 `/cart` 页。
+4. **Figma `/v1/images` 账号级限流**（2026-08-26 实测 429，`retry-after` ≈ 2.8 天 → 约 08-29 解除）。
    ⚠ 限流只打在**导出端点**：`/v1/files/nodes`（带 `geometry=paths` 可自生成 SVG）与
    `/v1/files/:key/images`（image fill 原图映射）都不受影响，撞限流先走这两条，别直接等。
    可用 PAT：**ly-design / `dev@mockuptocode.com`**；`~/.claude/settings.json` 里的 `figd_NR7GZ…` 已耗尽。

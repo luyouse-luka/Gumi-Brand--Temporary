@@ -512,6 +512,11 @@
        is the only state in which the browser wraps the paragraph AS A PARAGRAPH.
        groupLines() starts with this; resize calls it on its own — see init(). */
     flatten: function (root) {
+      /* Per-line halo copies are rebuilt on every pass; leaving them in would
+         make each resize add another layer. */
+      var stale = root.querySelectorAll(".gb-ink-halo--line");
+      for (var d = 0; d < stale.length; d++) stale[d].parentNode.removeChild(stale[d]);
+
       var masks = root.querySelectorAll(".gb-line-mask");
       for (var u = 0; u < masks.length; u++) {
         var mask = masks[u];
@@ -531,8 +536,22 @@
       var current = null;
       var lastTop = null;
 
+      /* The halo is one absolutely positioned copy of the WHOLE string, so it
+         cannot ride a per-line reveal: a single clip window crosses line 2
+         before line 2's own mask has started, and the outline lands ahead of
+         its glyphs. It is kept out of the grouping here and re-created per line
+         below — parked OUTSIDE the masks, see the second pass. */
+      var halo = null;
+      for (var h0 = 0; h0 < nodes.length; h0++) {
+        if (nodes[h0].nodeType === 1 && nodes[h0].classList.contains("gb-ink-halo")) {
+          halo = nodes[h0];
+          break;
+        }
+      }
+
       for (var i = 0; i < nodes.length; i++) {
         var node = nodes[i];
+        if (node === halo) continue;
         var isWord = node.nodeType === 1 && node.classList.contains("gb-line-word");
         if (!isWord) {
           if (current) current.push(node);
@@ -556,6 +575,27 @@
         for (var n = 0; n < lines[l].length; n++) innerEl.appendChild(lines[l][n]);
         maskEl.appendChild(innerEl);
         root.appendChild(maskEl);
+      }
+
+      /* One halo per line, parked OUTSIDE the masks. It cannot go inside: the
+         mask clips to the line box and the outline is a 15px text-shadow, so it
+         would come out sliced flat. Each copy is offset onto its own line and
+         carries that line's --line-i, so it rides the same 150ms stagger as the
+         glyphs it sits behind. Read the offsets after every mask exists —
+         reading them inside the loop above would measure a half-built column. */
+      if (halo) {
+        var built = root.querySelectorAll(".gb-line-mask");
+        for (var m = 0; m < built.length; m++) {
+          var lineHalo = halo.cloneNode(false);
+          lineHalo.classList.add("gb-ink-halo--line");
+          lineHalo.style.top = built[m].offsetTop + "px";
+          lineHalo.style.setProperty("--line-i", m);
+          var srcInner = built[m].firstChild;
+          for (var q = 0; q < srcInner.childNodes.length; q++) {
+            lineHalo.appendChild(srcInner.childNodes[q].cloneNode(true));
+          }
+          root.appendChild(lineHalo);
+        }
       }
 
       if (wasRevealed) {
@@ -697,6 +737,9 @@
   // Exit length, declared by the modal itself in CSS next to the transition that
   // uses it. Reduced motion zeroes every duration and delay, so the exit is over
   // before the next frame and there is nothing to wait for.
+  var EMBED_ALLOW = "accelerometer; autoplay; clipboard-write; encrypted-media; " +
+                    "gyroscope; picture-in-picture; web-share";
+
   function modalExitMs(el) {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) { return 0; }
     var v = getComputedStyle(el).getPropertyValue("--modal-exit").trim();
@@ -718,7 +761,7 @@
         var open = t.closest("[data-modal]");
         if (open) {
           e.preventDefault();
-          self.open(document.getElementById(open.getAttribute("data-modal")));
+          self.open(document.getElementById(open.getAttribute("data-modal")), open);
           return;
         }
         if (t.closest("[data-modal-close]")) self.close();
@@ -733,13 +776,14 @@
       this.tabs();
     },
 
-    open: function (el) {
+    open: function (el, trigger) {
       if (!el || this.current === el) return;
       // Only one at a time: close() tracks a single `current`, so a stacked
       // dialog would be orphaned on screen with its overlay still hit-testable.
       if (this.current) { this.close(); }
       this.lastFocus = document.activeElement;
       this.current = el;
+      this.playVideo(el, trigger);   // before is-open: an empty frame would fade in first
       el.classList.add("is-open");
       el.setAttribute("aria-hidden", "false");
       /* html carries the scroll, body does not: the reset sets overflow-x on
@@ -764,19 +808,20 @@
       var el = this.current;
       if (!el) return;
       this.current = null;
+      this.stopVideo(el);   // not in unlockAfter: sound must stop before the fade
       el.classList.remove("is-open");
       el.setAttribute("aria-hidden", "true");
       // The lock stays on until the exit has played. Dropping it here hands the
       // scrollbar back while the panel is still fully opaque, and this modal is
       // position:fixed -- its containing block is the viewport, which narrows by
       // the scrollbar width -- so the centred panel jumps sideways mid-fade.
-      this.unlockAfter(modalExitMs(el));
+      this.unlockAfter(modalExitMs(el), el);
       if (this.lastFocus) this.lastFocus.focus();
     },
 
     // A token rather than a stored timer id: open() can land inside the wait, and
     // the stale callback must not unlock the modal that replaced this one.
-    unlockAfter: function (ms) {
+    unlockAfter: function (ms, el) {
       var self = this;
       var token = ++this.unlockToken;
       var run = function () {
@@ -784,8 +829,112 @@
         document.documentElement.classList.remove("is-modal-open");
         document.body.classList.remove("is-modal-open");
         smoothScroll.resume();
+        // Media state goes only once the exit has played: drop it in close()
+        // and the emptied black frame is swapped for the grey placeholder
+        // while the panel is still fully opaque.
+        if (el) { el.classList.remove("has-video", "has-embed"); }
       };
       if (ms > 0) { setTimeout(run, ms); } else { run(); }
+    },
+
+    // data-video takes either a media file or a hosted page (YouTube, Vimeo).
+    // Only a file can go in <video>: given a watch URL it fetches an HTML page
+    // and fails silently, black frame and no error. A hosted page has to be
+    // embedded instead, so this returns the player URL when it recognises one.
+    // youtube-nocookie is YouTube's own privacy-enhanced host.
+    embedUrl: function (src) {
+      var m = src.match(/(?:youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{6,})/);
+      if (m) {
+        var t = src.match(/[?&#]t=(\d+)/);
+        return "https://www.youtube-nocookie.com/embed/" + m[1] +
+               "?autoplay=1&rel=0&playsinline=1" + (t ? "&start=" + t[1] : "");
+      }
+      m = src.match(/(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/);
+      if (m) { return "https://player.vimeo.com/video/" + m[1] + "?autoplay=1"; }
+      return null;
+    },
+
+    // One dialog serves all ten reel cards. [data-modal-media] is an empty box:
+    // the element is built here from what data-video turns out to be, so the
+    // markup carries neither a <video> nor an <iframe> it may not need.
+    playVideo: function (el, trigger) {
+      var box = el.querySelector("[data-modal-media]");
+      if (!box) { return; }
+      this.stopVideo(el);
+      var src = trigger ? trigger.getAttribute("data-video") : null;
+      var embed = src ? this.embedUrl(src) : null;
+      el.classList.toggle("has-video", !!src && !embed);
+      el.classList.toggle("has-embed", !!embed);
+      if (!src) { return; }
+
+      var node;
+      // YouTube (and Vimeo) refuse a null origin, which is exactly what a
+      // file:// page has, and render their own "Error 153" in place of the
+      // video. The client previews by double-clicking, so say why instead of
+      // leaving them to read that as a broken page. Never runs off file://.
+      if (embed && location.protocol === "file:") {
+        node = document.createElement("div");
+        node.className = "gb-rv-panel__offline";
+        node.setAttribute("data-modal-node", "");
+        var msg = document.createElement("p");
+        msg.className = "gb-rv-panel__offline-text";
+        msg.textContent = "Hosted video needs a real address. Opened from a local " +
+                          "file, YouTube blocks its own player (error 153).";
+        var link = document.createElement("a");
+        link.className = "gb-rv-panel__offline-link";
+        link.href = src;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.textContent = "Open the video in a new tab";
+        node.appendChild(msg);
+        node.appendChild(link);
+        box.appendChild(node);
+        return;
+      }
+      if (embed) {
+        node = document.createElement("iframe");
+        node.className = "gb-rv-panel__embed";
+        node.setAttribute("data-modal-node", "");
+        node.title = "Customer reel";
+        // Set before src: permissions are read when the frame starts loading.
+        node.setAttribute("allow", EMBED_ALLOW);
+        node.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+        node.setAttribute("allowfullscreen", "");
+        node.src = embed;
+        box.appendChild(node);
+        return;
+      }
+
+      node = document.createElement("video");
+      node.className = "gb-rv-panel__player";
+      node.setAttribute("data-modal-node", "");
+      node.playsInline = true;
+      node.controls = true;
+      node.setAttribute("aria-label", "Customer reel");
+      node.src = src;
+      box.appendChild(node);
+      // Inside the click's gesture, so audio is allowed; a refusal still
+      // rejects and must not surface as an unhandled rejection.
+      var pr = node.play();
+      if (pr && pr.catch) { pr.catch(function () {}); }
+    },
+
+    stopVideo: function (el) {
+      var box = el ? el.querySelector("[data-modal-media]") : null;
+      if (!box) { return; }
+      // By hook, not by tag name: what got built depends on the source, and
+      // file:// gets a plain <div> explaining why the embed cannot run.
+      var node = box.querySelector("[data-modal-node]");
+      if (!node) { return; }
+      // Pausing first stops the audio in the same frame the node goes away;
+      // for the iframe, removing it is the only way to stop a third-party
+      // player, which otherwise keeps running for as long as it has a src.
+      if (node.tagName === "VIDEO") {
+        node.pause();
+        node.removeAttribute("src");
+        node.load();
+      }
+      box.removeChild(node);
     },
 
     trap: function (e) {
@@ -1027,16 +1176,49 @@
         });
       }
 
-      if (!(until > 0)) { create(); return; }
+      // Client r85: a rail whose cards already fit the track has nothing to
+      // scroll, and `loop` has no room to wrap -- Swiper parks the set against
+      // the left edge instead of centring it. Measured, not counted: the card
+      // width is a vw ramp, so "enough cards" is a different number at every
+      // viewport (four fit at 1440, no count fits at 390).
+      // ⚠ loop rails only. `rewind` is built to dead-end at any count, and the
+      // expert rail's three cards fit their track in the last 30px before it
+      // becomes a grid -- going static there is a layout nobody asked for.
+      var fits = function () {
+        if (!loop) { return false; }
+        var sl = track.querySelectorAll(".swiper-slide");
+        if (!sl.length) { return false; }
+        var total = 0;
+        for (var i = 0; i < sl.length; i++) {
+          total += sl[i].getBoundingClientRect().width;
+        }
+        var gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+        return total + gap * (sl.length - 1) <= track.clientWidth;
+      };
 
       // Rails that only exist below a breakpoint. matchMedia rather than
       // Swiper's own `breakpoints: {enabled: false}`: disabling leaves the loop
       // duplicates in the DOM, and above the threshold those show up as extra
       // grid cells.
-      var mq = matchMedia("(max-width: " + until + "px)");
-      var apply = function () { if (mq.matches) { create(); } else { destroy(); } };
-      if (mq.addEventListener) { mq.addEventListener("change", apply); }
-      else if (mq.addListener) { mq.addListener(apply); }
+      var mq = until > 0 ? matchMedia("(max-width: " + until + "px)") : null;
+      var apply = function () {
+        var railed = !mq || mq.matches;
+        var stat = railed && fits();
+        if (railed && !stat) { create(); } else { destroy(); }
+        root.classList.toggle("is-static", stat);
+      };
+      if (mq) {
+        if (mq.addEventListener) { mq.addEventListener("change", apply); }
+        else if (mq.addListener) { mq.addListener(apply); }
+      }
+      // Width only: the mobile toolbar sliding away fires resize at the same
+      // width, and tearing the rail down on that is a visible jump.
+      var lastW = window.innerWidth;
+      window.addEventListener("resize", function () {
+        if (window.innerWidth === lastW) { return; }
+        lastW = window.innerWidth;
+        apply();
+      });
       apply();
     }
   };
@@ -1195,13 +1377,16 @@
       if (!native.options.length) { return; }
       var self = this;
       var id = native.id || ("gb-select-" + this.boxes.length);
-      // "bare" = the phone field's country code: same widget with no box of its
-      // own, because .gb-field__phone already draws the border around it.
-      var bare = native.getAttribute("data-select") === "bare";
+      // Variants that draw no box of their own, because something around them
+      // already does: "bare" is the phone field's country code (.gb-field__phone
+      // has the border), "inline" is the cart's delivery interval (it is a run of
+      // text inside a sentence).
+      var variant = native.getAttribute("data-select") || "";
+      var boxless = variant === "bare" || variant === "inline";
       var aria = native.getAttribute("aria-label");
 
       var wrap = document.createElement("div");
-      wrap.className = bare ? "gb-select gb-select--bare" : "gb-select";
+      wrap.className = "gb-select" + (variant ? " gb-select--" + variant : "");
       native.parentNode.insertBefore(wrap, native);
       wrap.appendChild(native);
       native.classList.add("gb-select__native");
@@ -1211,15 +1396,18 @@
       var btn = document.createElement("button");
       btn.type = "button";
       btn.id = id + "-button";
-      btn.className = bare ? "gb-select__button"
-                           : "gb-field__input gb-field__input--select gb-select__button";
+      btn.className = boxless ? "gb-select__button"
+                              : "gb-field__input gb-field__input--select gb-select__button";
       btn.setAttribute("aria-haspopup", "listbox");
       btn.setAttribute("aria-expanded", "false");
       btn.setAttribute("aria-controls", id + "-list");
       btn.innerHTML =
         '<span class="gb-select__value"></span>' +
         '<svg class="gb-select__arrow" viewBox="0 0 20 20" fill="none" aria-hidden="true">' +
-        '<path d="M5 7.5L10 12.5L15 7.5" stroke="#4d4d4d" stroke-width="1.667" ' +
+        // currentColor, not #4d4d4d: both existing triggers compute to that anyway
+        // (.gb-field__input and --bare are both $c-gray-700), and the cart's
+        // inline variant needs the chevron to follow its own blue.
+        '<path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.667" ' +
         'stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
       // The label pointed at a control that is now off-screen. A button is not a
@@ -1304,10 +1492,36 @@
     show: function (box) {
       if (box.open) { return; }
       box.open = true;
+      box.wrap.classList.remove("is-up");
       box.wrap.classList.add("is-open");
       box.btn.setAttribute("aria-expanded", "true");
+      // AFTER move(): its scrollIntoView can scroll an ancestor out from under a
+      // measurement taken before it. A list that would fall past whatever clips
+      // it (the cart drawer's scroll area, else the viewport) opens upwards.
       this.move(box, box.native.selectedIndex);
+      if (this.wouldOverflow(box)) { box.wrap.classList.add("is-up"); }
       box.list.focus();
+    },
+
+    // Where the list would end up, computed WITHOUT reading its own rect: the
+    // entry transform is mid-flight at this point, so a rect here is short by
+    // however much of the 4px slide is still to play. `top` resolves the
+    // calc(100% + n) against the wrap, and offsetHeight ignores transforms.
+    wouldOverflow: function (box) {
+      var wrap = box.wrap.getBoundingClientRect();
+      var top = parseFloat(getComputedStyle(box.list).top) || 0;
+      return wrap.top + top + box.list.offsetHeight > this.clipBottom(box.wrap);
+    },
+
+    // Bottom edge of the nearest ancestor that actually clips, or the viewport.
+    clipBottom: function (el) {
+      for (var p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+        var o = getComputedStyle(p).overflowY;
+        if (o !== "visible" && o !== "clip") {
+          return Math.min(p.getBoundingClientRect().bottom, window.innerHeight);
+        }
+      }
+      return window.innerHeight;
     },
 
     close: function (box, refocus) {
@@ -1382,7 +1596,7 @@
    * ------------------------------------------------------------------- */
   var smoothScroll = {
     // Every overflow-y:auto container on the site has to be registered here
-    PREVENT: ".gb-product__thumbs, .gb-header__panel, .gb-nl-panel__body, .gb-select__list",
+    PREVENT: ".gb-product__thumbs, .gb-header__panel, .gb-nl-panel__body, .gb-select__list, .gb-cart__body, .gb-cart__empty",
 
     lenis: null,
 
@@ -1435,6 +1649,32 @@
     resume: function () { if (this.lenis) { this.lenis.start(); } }
   };
 
+  /* ---------------------------------------------------------------------
+   * scrollbarProbe — keeps --scrollbar-w current for locks we do not open.
+   *
+   * modal.open() and header.set() measure the bar themselves right before they
+   * lock. The live cart drawer is opened by Horizon, whose lockScroll() lands in
+   * the same synchronous block as showModal() -- any observer of ours fires
+   * after the page is already locked, where the reading is 0. So cache the
+   * width whenever the page is demonstrably unlocked instead.
+   * Static pages: harmless, it writes the value the other two would.
+   * ------------------------------------------------------------------- */
+  var scrollbarProbe = {
+    init: function () {
+      var self = this;
+      this.measure();
+      window.addEventListener("resize", function () { self.measure(); });
+    },
+
+    measure: function () {
+      var de = document.documentElement;
+      // A locked page reports no bar; keep the last good value rather than 0.
+      if (de.hasAttribute("scroll-lock")) { return; }
+      if (getComputedStyle(de).overflowY === "hidden") { return; }
+      de.style.setProperty("--scrollbar-w", (window.innerWidth - de.clientWidth) + "px");
+    }
+  };
+
   function ready(fn) {
     if (document.readyState !== "loading") { fn(); }
     else { document.addEventListener("DOMContentLoaded", fn); }
@@ -1444,7 +1684,8 @@
     // One IIFE, ten modules: without a boundary the first throw takes every
     // module after it with it, silently -- the page renders and simply stops
     // responding from that point on. Failing one module is the smaller loss.
-    var modules = [["wowo", wowo], ["header", header], ["bearMeter", bearMeter],
+    var modules = [["scrollbarProbe", scrollbarProbe],
+                   ["wowo", wowo], ["header", header], ["bearMeter", bearMeter],
                    ["packBand", packBand],
                    ["popText", popText], ["countUp", countUp], ["lineReveal", lineReveal], ["modal", modal], ["promoModal", promoModal],
                    ["slider", slider], ["gallery", gallery], ["accordion", accordion],
@@ -1464,5 +1705,5 @@
                   lineReveal: lineReveal, modal: modal, promoModal: promoModal, slider: slider,
                   gallery: gallery, accordion: accordion,
                   smoothScroll: smoothScroll, enquiryPrefill: enquiryPrefill,
-                  selectBox: selectBox };
+                  selectBox: selectBox, scrollbarProbe: scrollbarProbe };
 })();

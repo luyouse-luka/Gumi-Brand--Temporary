@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gumi — FAQs</title>
 <meta name="description" content="Here's the stuff people ask us most.">
-<script>(function(h){h.classList.add("js");function u(){window.gumi||h.classList.remove("js")}addEventListener("load",u);setTimeout(u,4000)})(document.documentElement)</script>
-<link rel="icon" href="images/favicon.ico?v=20260831-r58" sizes="32x32">
-<link rel="icon" href="images/favicon.svg?v=20260831-r58" type="image/svg+xml">
-<link rel="apple-touch-icon" href="images/favicon-180.png?v=20260831-r58">
-<link rel="stylesheet" href="assets/customstyle.css?v=20260831-r58">
+<script>(function(h){h.classList.add("js");function u(){window.gumi||h.classList.remove("js")}addEventListener("load",u);setTimeout(u,10000)})(document.documentElement)</script>
+<link rel="icon" href="images/favicon.ico?v=20260907-r88" sizes="32x32">
+<link rel="icon" href="images/favicon.svg?v=20260907-r88" type="image/svg+xml">
+<link rel="apple-touch-icon" href="images/favicon-180.png?v=20260907-r88">
+<link rel="stylesheet" href="assets/customstyle.css?v=20260907-r88">
 <noscript><style>.wowo{opacity:1 !important}</style></noscript>
 </head>
 <body>
@@ -39,7 +39,7 @@
         <a class="gb-btn gb-btn--primary gb-header__cta" href="pdp.html">Shop now</a>
         <div class="gb-header__icons">
           <a class="gb-header__icon" href="#" aria-label="Account"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 20.5C5.33579 18.0226 8.50702 16.5 12 16.5C15.493 16.5 18.6642 18.0226 21 20.5M16.5 8C16.5 10.4853 14.4853 12.5 12 12.5C9.51472 12.5 7.5 10.4853 7.5 8C7.5 5.51472 9.51472 3.5 12 3.5C14.4853 3.5 16.5 5.51472 16.5 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-          <a class="gb-header__icon" href="#" aria-label="Cart"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.0025 8C16.0025 9.06087 15.5811 10.0783 14.8309 10.8284C14.0808 11.5786 13.0634 12 12.0025 12C10.9417 12 9.92424 11.5786 9.17409 10.8284C8.42395 10.0783 8.00252 9.06087 8.00252 8M3.63574 7.40138L2.93574 15.8014C2.78536 17.6059 2.71017 18.5082 3.0152 19.2042C3.2832 19.8157 3.74755 20.3204 4.3347 20.6382C5.00299 21 5.90838 21 7.71916 21H16.2859C18.0967 21 19.002 21 19.6703 20.6382C20.2575 20.3204 20.7218 19.8157 20.9898 19.2042C21.2949 18.5082 21.2197 17.6059 21.0693 15.8014L20.3693 7.40138C20.2399 5.84875 20.1752 5.07243 19.8314 4.48486C19.5286 3.96744 19.0778 3.5526 18.537 3.29385C17.9229 3 17.1439 3 15.5859 3L8.41916 3C6.86114 3 6.08213 3 5.46803 3.29384C4.92726 3.5526 4.47642 3.96744 4.17364 4.48486C3.82982 5.07243 3.76512 5.84875 3.63574 7.40138Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          <a class="gb-header__icon" href="#" data-modal="gb-cart" aria-label="Cart"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.0025 8C16.0025 9.06087 15.5811 10.0783 14.8309 10.8284C14.0808 11.5786 13.0634 12 12.0025 12C10.9417 12 9.92424 11.5786 9.17409 10.8284C8.42395 10.0783 8.00252 9.06087 8.00252 8M3.63574 7.40138L2.93574 15.8014C2.78536 17.6059 2.71017 18.5082 3.0152 19.2042C3.2832 19.8157 3.74755 20.3204 4.3347 20.6382C5.00299 21 5.90838 21 7.71916 21H16.2859C18.0967 21 19.002 21 19.6703 20.6382C20.2575 20.3204 20.7218 19.8157 20.9898 19.2042C21.2949 18.5082 21.2197 17.6059 21.0693 15.8014L20.3693 7.40138C20.2399 5.84875 20.1752 5.07243 19.8314 4.48486C19.5286 3.96744 19.0778 3.5526 18.537 3.29385C17.9229 3 17.1439 3 15.5859 3L8.41916 3C6.86114 3 6.08213 3 5.46803 3.29384C4.92726 3.5526 4.47642 3.96744 4.17364 4.48486C3.82982 5.07243 3.76512 5.84875 3.63574 7.40138Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
         </div>
       </div>
     </div>
@@ -286,8 +286,161 @@
       </div>
     </div>
   </footer>
+    <div class="gb-cart" id="gb-cart" role="dialog" aria-modal="true" tabindex="-1"
+         aria-labelledby="gb-cart-title" aria-hidden="true">
+      <div class="gb-cart__overlay" data-modal-close></div>
+      <div class="gb-cart__panel">
+        <div class="gb-cart__head">
+          <h2 class="gb-cart__title" id="gb-cart-title">Your Cart</h2>
+          <button class="gb-cart__close" type="button" data-modal-close aria-label="Close cart"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17 7L7 17M7 7L17 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
 
-  <script src="assets/lenis.min.js?v=20260831-r58"></script>
-  <script src="assets/main.js?v=20260831-r58"></script>
+        <p class="gb-cart__ship"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.9023 15.8076V6.00762C15.9023 4.88751 15.9023 4.32746 15.6844 3.89964C15.4926 3.52331 15.1866 3.21735 14.8103 3.0256C14.3825 2.80762 13.8224 2.80762 12.7023 2.80762H5.10234C3.98224 2.80762 3.42219 2.80762 2.99436 3.0256C2.61804 3.21735 2.31208 3.52331 2.12033 3.89964C1.90234 4.32746 1.90234 4.88751 1.90234 6.00762V12.6076C1.90234 13.7277 1.90234 14.2878 2.12033 14.7156C2.31208 15.0919 2.61804 15.3979 2.99436 15.5896C3.42219 15.8076 3.98224 15.8076 5.10234 15.8076H15.9023ZM15.9023 15.8076H20.3023C20.8624 15.8076 21.1424 15.8076 21.3563 15.6986C21.5445 15.6028 21.6975 15.4498 21.7934 15.2616C21.9023 15.0477 21.9023 14.7677 21.9023 14.2076V11.4704C21.9023 11.2258 21.9023 11.1035 21.8747 10.9884C21.8502 10.8863 21.8098 10.7888 21.755 10.6993C21.6931 10.5984 21.6067 10.5119 21.4337 10.339L19.371 8.27625C19.198 8.10329 19.1115 8.01682 19.0106 7.95498C18.9212 7.90015 18.8236 7.85974 18.7216 7.83525C18.6065 7.80762 18.4842 7.80762 18.2396 7.80762H15.9023M8.90234 18.3076C8.90234 19.6883 7.78306 20.8076 6.40234 20.8076C5.02163 20.8076 3.90234 19.6883 3.90234 18.3076C3.90234 16.9269 5.02163 15.8076 6.40234 15.8076C7.78306 15.8076 8.90234 16.9269 8.90234 18.3076ZM19.9023 18.3076C19.9023 19.6883 18.7831 20.8076 17.4023 20.8076C16.0216 20.8076 14.9023 19.6883 14.9023 18.3076C14.9023 16.9269 16.0216 15.8076 17.4023 15.8076C18.7831 15.8076 19.9023 16.9269 19.9023 18.3076Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Spend another $20 for FREE Delivery</p>
+
+        <div class="gb-cart__body">
+          <div class="gb-cart__lines">
+            <p class="gb-cart__sub"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.9297 10.4359C19.9297 10.4359 18.3616 8.29948 17.0878 7.02472C15.8139 5.74996 14.0535 4.96143 12.109 4.96143C8.22162 4.96143 5.07031 8.11274 5.07031 12.0001C5.07031 15.8874 8.22162 19.0387 12.109 19.0387C15.3179 19.0387 18.0253 16.8914 18.8725 13.9553M15.2373 10.4359H19.9297V5.7435" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Subscribe &amp; Save</p>
+            <ul class="gb-cart__items">
+          <li class="gb-cart-item">
+            <span class="gb-cart-item__media" aria-hidden="true"></span>
+            <div class="gb-cart-item__main">
+              <div class="gb-cart-item__head">
+                <div class="gb-cart-item__row">
+                  <span class="gb-cart-item__name">Superfood Greens Gummies</span>
+                  <button class="gb-cart-item__remove" type="button" aria-label="Remove Superfood Greens Gummies"><svg aria-hidden="true" viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.6667 6.00016V5.46683C10.6667 4.72009 10.6667 4.34672 10.5213 4.06151C10.3935 3.81063 10.1895 3.60665 9.93865 3.47882C9.65344 3.3335 9.28007 3.3335 8.53333 3.3335H7.46667C6.71993 3.3335 6.34656 3.3335 6.06135 3.47882C5.81046 3.60665 5.60649 3.81063 5.47866 4.06151C5.33333 4.34672 5.33333 4.72009 5.33333 5.46683V6.00016M6.66667 9.66683V13.0002M9.33333 9.66683V13.0002M2 6.00016H14M12.6667 6.00016V13.4668C12.6667 14.5869 12.6667 15.147 12.4487 15.5748C12.2569 15.9511 11.951 16.2571 11.5746 16.4488C11.1468 16.6668 10.5868 16.6668 9.46667 16.6668H6.53333C5.41323 16.6668 4.85318 16.6668 4.42535 16.4488C4.04903 16.2571 3.74307 15.9511 3.55132 15.5748C3.33333 15.147 3.33333 14.5869 3.33333 13.4668V6.00016" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                </div>
+                <span class="gb-cart-item__variant">28 Packs</span>
+              </div>
+              <div class="gb-cart-item__qty">
+                <div class="gb-cart-item__stepper">
+                  <button class="gb-cart-item__step" type="button" aria-label="Decrease quantity"><svg aria-hidden="true" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.33398 8H12.6673" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                  <span class="gb-cart-item__count">1</span>
+                  <button class="gb-cart-item__step" type="button" aria-label="Increase quantity"><svg aria-hidden="true" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.00065 3.3335V12.6668M3.33398 8.00016H12.6673" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                </div>
+                <span class="gb-cart-item__price">
+                  <s class="gb-cart-item__was">$60</s>
+                  <span class="gb-cart-item__now">$45</span>
+                </span>
+              </div>
+              <p class="gb-cart-item__plan">Delivers every
+                <select class="gb-cart-item__interval" data-select="inline" aria-label="Delivery interval for Superfood Greens Gummies">
+                  <option>One Time Purchase</option>
+                  <option>2 Weeks</option>
+                  <option selected>4 Weeks</option>
+                  <option>6 Weeks</option>
+                  <option>8 Weeks</option>
+                </select>
+              </p>
+            </div>
+          </li>
+          <li class="gb-cart-item">
+            <span class="gb-cart-item__media" aria-hidden="true"></span>
+            <div class="gb-cart-item__main">
+              <div class="gb-cart-item__head">
+                <div class="gb-cart-item__row">
+                  <span class="gb-cart-item__name">Superfood Greens Gummies</span>
+                  <button class="gb-cart-item__remove" type="button" aria-label="Remove Superfood Greens Gummies"><svg aria-hidden="true" viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.6667 6.00016V5.46683C10.6667 4.72009 10.6667 4.34672 10.5213 4.06151C10.3935 3.81063 10.1895 3.60665 9.93865 3.47882C9.65344 3.3335 9.28007 3.3335 8.53333 3.3335H7.46667C6.71993 3.3335 6.34656 3.3335 6.06135 3.47882C5.81046 3.60665 5.60649 3.81063 5.47866 4.06151C5.33333 4.34672 5.33333 4.72009 5.33333 5.46683V6.00016M6.66667 9.66683V13.0002M9.33333 9.66683V13.0002M2 6.00016H14M12.6667 6.00016V13.4668C12.6667 14.5869 12.6667 15.147 12.4487 15.5748C12.2569 15.9511 11.951 16.2571 11.5746 16.4488C11.1468 16.6668 10.5868 16.6668 9.46667 16.6668H6.53333C5.41323 16.6668 4.85318 16.6668 4.42535 16.4488C4.04903 16.2571 3.74307 15.9511 3.55132 15.5748C3.33333 15.147 3.33333 14.5869 3.33333 13.4668V6.00016" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                </div>
+                <span class="gb-cart-item__variant">28 Packs</span>
+              </div>
+              <div class="gb-cart-item__qty">
+                <div class="gb-cart-item__stepper">
+                  <button class="gb-cart-item__step" type="button" aria-label="Decrease quantity"><svg aria-hidden="true" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.33398 8H12.6673" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                  <span class="gb-cart-item__count">1</span>
+                  <button class="gb-cart-item__step" type="button" aria-label="Increase quantity"><svg aria-hidden="true" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.00065 3.3335V12.6668M3.33398 8.00016H12.6673" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                </div>
+                <span class="gb-cart-item__price">
+                  <s class="gb-cart-item__was">$60</s>
+                  <span class="gb-cart-item__now">$45</span>
+                </span>
+              </div>
+              <p class="gb-cart-item__plan">Delivers every
+                <select class="gb-cart-item__interval" data-select="inline" aria-label="Delivery interval for Superfood Greens Gummies">
+                  <option selected>One Time Purchase</option>
+                  <option>2 Weeks</option>
+                  <option>4 Weeks</option>
+                  <option>6 Weeks</option>
+                  <option>8 Weeks</option>
+                </select>
+              </p>
+            </div>
+          </li>
+            </ul>
+            <div class="gb-cart__gift">
+              <span class="gb-cart__gift-media" aria-hidden="true"></span>
+              <div class="gb-cart__gift-body">
+                <div class="gb-cart__gift-row">
+                  <span class="gb-cart__gift-name">Gift Name Here</span>
+                  <span class="gb-cart-item__price">
+                    <s class="gb-cart-item__was">$60</s>
+                    <span class="gb-cart-item__now">FREE</span>
+                  </span>
+                </div>
+                <p class="gb-cart__gift-text">This here is a gift description that can go over two lines or even possibly three lines depending on what it says.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="gb-cart__totals">
+            <div class="gb-cart__sums">
+              <p class="gb-cart__sum">Subtotal <b>$60</b></p>
+              <p class="gb-cart__sum">Discount
+                <span class="gb-cart__sum-pair">Automatic <b>-$15</b></span>
+              </p>
+              <p class="gb-cart__sum">Shipping <b>Calculated at checkout</b></p>
+            </div>
+            <div class="gb-cart__grand">
+              <p class="gb-cart__grand-row"><span>Total</span> <span>$45</span></p>
+              <div class="gb-cart__pay">
+                <p class="gb-cart__pay-note">Discount codes applied at checkout</p>
+                <div class="gb-cart__pay-marks">
+            <img src="images/pay-visa.svg?v=20260907-r88" alt="visa" width="35" height="24" loading="lazy" decoding="async">
+            <img src="images/pay-mastercard.svg?v=20260907-r88" alt="mastercard" width="35" height="24" loading="lazy" decoding="async">
+            <img src="images/pay-applepay.svg?v=20260907-r88" alt="applepay" width="35" height="24" loading="lazy" decoding="async">
+            <img src="images/pay-amex.svg?v=20260907-r88" alt="amex" width="35" height="24" loading="lazy" decoding="async">
+            <img src="images/pay-paypal.svg?v=20260907-r88" alt="paypal" width="35" height="24" loading="lazy" decoding="async">
+                </div>
+              </div>
+              <button class="gb-cart__continue" type="button" data-modal-close>Continue Shopping</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="gb-cart__empty">
+          <div class="gb-cart__empty-head">
+            <p class="gb-cart__empty-title">Oops! Your cart is empty</p>
+            <a class="gb-btn gb-btn--primary gb-cart__shop" href="pdp.html">Shop Now</a>
+          </div>
+        <div class="gb-cart__cards">
+          <a class="gb-nav-card" href="pdp.html">
+            <span class="gb-nav-card__title">Shop Gumi</span>
+            <picture>
+              <source srcset="images/nav-card-bear.webp" type="image/webp">
+              <img class="gb-nav-card__art" src="images/nav-card-bear.png" alt="" width="523" height="631" loading="lazy" decoding="async">
+            </picture>
+            <span class="gb-nav-card__action"><svg aria-hidden="true" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.79519 11.4995H18.2114M11.5033 4.79146L18.2114 11.4995L11.5033 18.2076" stroke="currentColor" stroke-width="2.29991" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </a>
+          <a class="gb-nav-card" href="referral.html">
+            <span class="gb-nav-card__body">
+              <span class="gb-nav-card__tag">Refer a Friend</span>
+              <span class="gb-nav-card__text">Earn rewards and $20 for every referral.</span>
+            </span>
+            <span class="gb-nav-card__action"><svg aria-hidden="true" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.79519 11.4995H18.2114M11.5033 4.79146L18.2114 11.4995L11.5033 18.2076" stroke="currentColor" stroke-width="2.29991" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </a>
+        </div>
+        </div>
+
+        <div class="gb-cart__bar">
+          <p class="gb-cart__bar-total"><span>Total</span>
+            <span class="gb-cart__bar-pair"><s class="gb-cart__bar-was">$60</s> <span>$45</span></span>
+          </p>
+          <a class="gb-btn gb-btn--lg gb-cart__checkout" href="#"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17 10V8C17 5.23858 14.7614 3 12 3C9.23858 3 7 5.23858 7 8V10M12 14.5V16.5M8.8 21H15.2C16.8802 21 17.7202 21 18.362 20.673C18.9265 20.3854 19.3854 19.9265 19.673 19.362C20 18.7202 20 17.8802 20 16.2V14.8C20 13.1198 20 12.2798 19.673 11.638C19.3854 11.0735 18.9265 10.6146 18.362 10.327C17.7202 10 16.8802 10 15.2 10H8.8C7.11984 10 6.27976 10 5.63803 10.327C5.07354 10.6146 4.6146 11.0735 4.32698 11.638C4 12.2798 4 13.1198 4 14.8V16.2C4 17.8802 4 18.7202 4.32698 19.362C4.6146 19.9265 5.07354 20.3854 5.63803 20.673C6.27976 21 7.11984 21 8.8 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Secure Checkout</a>
+        </div>
+      </div>
+    </div>
+
+
+  <script src="assets/lenis.min.js?v=20260907-r88"></script>
+  <script src="assets/main.js?v=20260907-r88"></script>
 </body>
 </html>
