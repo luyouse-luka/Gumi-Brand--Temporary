@@ -33,7 +33,7 @@
 // font url()s read it. Previewing over file:// caches css/js/woff2 until a hard
 // refresh, so without it a real change reads as "nothing happened".
 // font-check.html prints the value the browser actually got.
-$build: "20260907-r88";
+$build: "20260907-r90";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -353,6 +353,12 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 //              (324:63924 Union, 573x94).
 
 $mask-scallop-box: url("data:image/png;base64,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");
+
+// scallop-lip   the promo card's vertical seam. Same seven circles the static
+//               build ships as an SVG child (126x764, r=63 at 106 pitch);
+//               the theme's gb-promo.liquid renders no such element, so the
+//               shape has to arrive as a mask instead.
+$mask-promo-lip: url("data:image/svg+xml,%3Csvg width='126' height='764' viewBox='0 0 126 764' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='63' cy='63.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='169.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='275.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='381.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='487.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='593.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='699.5' r='63' fill='%23000'/%3E%3C/svg%3E");
 
 // scallop-band  the CTA plate. Two of them, because the boards do NOT draw one
 //               shape at two sizes: desktop (324:75854, 1280x393) is 14 lobes
@@ -6563,33 +6569,43 @@ html.is-menu-open {
 .gb-product {
   position: relative;
   background: $c-white;
-  padding: 96px 0 calc(96px + var(--sc-h));
+  padding: 32px 0 calc(96px + var(--sc-h));
 
-  // 243:22226 opens with paddingTop 32 and its first child (Product image,
-  // 191:2214) adds another 20 -- the build has no element for that inner frame,
-  // so the two collapse into one 52 here.
+  // Client-set: a flat 32 at the top, every width. --lg and --page both restate
+  // padding-top below, so this reaches only the plain tiles.
   // Client-set 46 at the foot. --lg and --page both restate padding-bottom in
   // this tier, so the 46 reaches only the plain tiles (reviews / our-story /
   // how-gumi-works) — which is exactly the :not() the brief named.
-  @include narrow { padding: 52px 0 calc(46px + var(--sc-h)); }
-  @include tablet { padding: fluid(52px, 96px) fluid(0, 0) calc(fluid(46px, 96px) + var(--sc-h)); }
+  @include narrow { padding: 32px 0 calc(46px + var(--sc-h)); }
+  @include tablet { padding: 32px fluid(0, 0) calc(fluid(46px, 96px) + var(--sc-h)); }
 }
 
 .gb-product--lg {
+  // Client-set: --lg keeps the top ramp the base class used to carry. 52 is
+  // 243:22226's own paddingTop 32 plus the 20 its first child (Product image,
+  // 191:2214) adds -- the build has no element for that inner frame, so the two
+  // collapse into one value here.
+  padding-top: 96px;
   padding-bottom: calc(96px + var(--sc-lg-h));
 
   // 191:2468 (Product USP) is paddingBottom 48 and the board hands the wave to
   // the section BELOW; here the wave is this section's own --edge child, so the
   // reserve is that 48 plus the wave's height.
-  @include narrow { padding-bottom: calc(50px + var(--sc-lg-h)); }
-  @include tablet { padding-bottom: calc(fluid(50px, 96px) + var(--sc-lg-h)); }
+  @include narrow { padding-top: 52px; padding-bottom: calc(50px + var(--sc-lg-h)); }
+  @include tablet {
+    padding-top: fluid(52px, 96px);
+    padding-bottom: calc(fluid(50px, 96px) + var(--sc-lg-h));
+  }
 }
 
 .gb-product--page {
+  // ⚠ Restated, not inherited: the base class dropped to a flat 32 and the PDP
+  // board is unchanged at 96 here.
+  padding-top: 96px;
   padding-bottom: calc(96px + var(--sc-lg-h));
 
-  // The base .gb-product opens with 52 on mobile (the board's 32 + the inner
-  // frame's 20 collapsed into one). The PDP's own board starts at 20 instead.
+  // --lg opens with 52 on mobile (the board's 32 + the inner frame's 20
+  // collapsed into one). The PDP's own board starts at 20 instead.
   @include narrow { padding-top: 20px; padding-bottom: calc(64px + var(--sc-lg-h)); }
   @include tablet {
     padding-top: fluid(20px, 96px);
@@ -7906,7 +7922,40 @@ html.is-menu-open {
   }
 }
 
-.gb-promo-card--green { background: $c-green; }
+// Client-set: the green rides the copy half rather than the card, so the
+// pseudo-element below can hang a scallop off its left edge. Below 768 the halves
+// stack and .gb-promo-card__media takes a radius of its own, so down there the
+// card still has to carry the green behind it.
+.gb-promo-card--green {
+  @include narrow { background: $c-green; }
+
+  .gb-promo-card__body {
+    background: $c-green;
+
+    // The static build draws this seam as an SVG child of the media half, clipped
+    // by that half's overflow:hidden down to the 31px that bite in (client-set
+    // -95 on a 126-wide box). gb-promo.liquid renders no such element, so it is
+    // rebuilt here: same box, same seven circles, offset to show the same 31.
+    // ⚠ z-index -1 is load-bearing. .gb-promo-card__body carries z-index 1 and so
+    // opens a stacking context of its own: a negative child paints above that
+    // element's background but under the copy -- the order the SVG got for free.
+    &::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: -31px;
+      z-index: -1;
+      width: 126px;
+      height: 764px;
+      transform: translateY(-50%);
+      background: $c-green;
+      -webkit-mask: $mask-promo-lip 0 0 / 126px 764px no-repeat;
+      mask: $mask-promo-lip 0 0 / 126px 764px no-repeat;
+
+      @include narrow { display: none; }   // the phone tier draws lip--h instead
+    }
+  }
+}
 .gb-promo-card--white { background: $c-white; }
 
 // Halves -------------------------------------------------------------------
@@ -8796,6 +8845,11 @@ html.is-menu-open {
   line-height: 52px;
   color: $c-green;
   text-align: center;
+  // 324:64038 strokes the figure $c-lime at OUTSIDE 0.25em (16.55 @ 66.18 and
+  // 14 @ 56 -- the same em on both boards). That is twice what
+  // .gb-science-card__value carries, and the ring's gaps grow with the radius,
+  // so the step count doubles with it or the outline comes out dotted.
+  text-shadow: ink-outline(0.25em, $c-lime, $steps: 72);
 
   @include narrow { font-size: 56px; line-height: 44px; }
   @include tablet { font-size: fluid(56px, 66.18px); line-height: fluid(44px, 52px); }
@@ -8812,11 +8866,14 @@ html.is-menu-open {
   @include narrow { flex-direction: column; gap: 16px; }
 }
 
+// Five separate <img> now (client r90). 5 x 32 touching = the board's 160x32,
+// so the row needs no gap -- and each point must opt out of flex shrinking or
+// a narrow summary column squashes them.
 .gb-crev__stars {
-  display: block;
+  display: flex;
   flex: none;
-  width: 160px;
-  height: 32px;
+
+  img { flex: none; }
 }
 
 .gb-crev__count {
@@ -8846,6 +8903,10 @@ html.is-menu-open {
 // board (52 / 64) and is shared with the header and the cart, so the phone
 // values land here. Double class because both selectors are 0-1-0.
 .gb-btn.gb-crev__more {
+  // Same trap as the card: .gb-btn is inline-flex, so [hidden] needs restating.
+  // main.js sets it when the list is short enough that paging is pointless.
+  &[hidden] { display: none; }
+
   @include narrow {
     height: 44px;
     padding: 0 40px;
@@ -8868,6 +8929,10 @@ html.is-menu-open {
   gap: 20px;
   padding-bottom: 32px;
   border-bottom: 1px solid $c-ink-05;
+
+  // Paged out by main.js. The UA's [hidden] rule is display:none at 0-0-0 and
+  // loses to the flex above, so it has to be restated here.
+  &[hidden] { display: none; }
 }
 
 .gb-crev-card__head {
@@ -8939,14 +9004,15 @@ html.is-menu-open {
 }
 
 .gb-crev-card__rating {
-  display: block;
+  display: flex;
   flex: none;
-  width: 100px;
-  height: 20px;
 
-  // 4.5 dims the fifth point to 30%; the board never half-fills one (191:5463).
-  &[data-rating="4.5"] path:last-of-type { fill-opacity: 0.3; }
+  img { flex: none; }
 }
+
+// 4.5 dims the whole fifth point to 30%; the board never half-fills one
+// (191:5463). On the <img> itself, since the mark is no longer inline SVG.
+.gb-crev-card__star--dim { opacity: 0.3; }
 
 .gb-crev-card__time {
   font-size: 14px;
@@ -8976,13 +9042,18 @@ html.is-menu-open {
   color: $c-gray-700;
 }
 
-// TODO client image: 191:5468 is a flat grey block on both boards.
+// 191:5468 is a flat grey block on both boards. The bear standing in it is a
+// placeholder the client asked for -- contain, so the grey still reads as the
+// empty slot behind it rather than the image bleeding to the corners.
 .gb-crev-card__image {
   flex: none;
   width: 64px;
   height: 64px;
   background: #d5d4d4;
   border-radius: $r-xs;
+  overflow: hidden;
+
+  img { width: 100%; height: 100%; object-fit: contain; }
 }
 
 .gb-crev-card__recommend {

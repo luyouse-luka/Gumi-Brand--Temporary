@@ -103,7 +103,7 @@ def main():
                 if d['grid'] and d['bear']:
                     check('%d bear clears the grid' % width, d['bear']['top'] >= d['grid']['bottom'], True)
                 if a.as_served:
-                    check('%d build' % width, d['build'].strip('"'), BUILD)
+                    check('%d build' % width, d['build'].strip('"') >= BUILD, True)
     print()
     print('%d FAIL' % len(fails) if fails else 'all green')
     if fails:

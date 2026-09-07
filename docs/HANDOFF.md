@@ -4,6 +4,45 @@
 > 项目定位与已确立的规范在 [PROJECT-STATUS.md](PROJECT-STATUS.md)；
 > 改动史在 [CHANGELOG.md](CHANGELOG.md)（近 10 轮）+ [CHANGELOG-ARCHIVE.md](CHANGELOG-ARCHIVE.md)（第一～三十轮），**两份一起 grep**。
 >
+> 状态：`$build` = **`20260907-r90`**（第九十轮，2026-09-07）—— 评论卡四处改造：
+> 星级拆成 `<img>`、附件放小熊占位、More/Less 分页、4.76 补上 r89 漏掉的 `$c-lime` 描边。
+> **未推 live**（`gb-app-section` 线上仍没有 liquid，推 css 也渲染不出来）。
+> 判据 **`tools/crevcheck.py`**：正向全绿、`--strip` 反向 68 红；`rwd.py` 两页全绿。
+> 逐条与「别报成 bug」在 **1u**。
+> ⚠ **判据从 `r89check.py` 改名成 `crevcheck.py`** —— 另一个会话同日也做了 r89 并
+> **覆盖了那个文件**。gb-crev 的判据从此按模块命名、不带轮次号，别再改回去。
+> ⚠ **`$build` 一天之内被两个会话各推进过一次**（我 r88 → 它 r89 → 我 r90）。
+> 动 token 前先 `grep '\$build' assets/customstyle.scss`，别按记忆推断。
+
+> 状态：`$build` = **`20260907-r89`**（第八十八～八十九轮，2026-09-07，**已推 live**）。
+> 推的是 `assets/customstyle.css` / `.scss` 两个。回读 **616 → 616**、逐字节相同、
+> **614 个清单外文件零改动**。新基线 **`baseline-r89`（616 文件）**。
+> `r88check` / `r89check` 的 `--as-served` 推前 12 红 / 6 红，推后**全部全绿**。
+> 四件事：collection 页底距 32→120/64（照 `.gb-rich-page`，顺带解决小熊压产品名）、
+> `.gb-product` 顶距三档拉平到 32、`--lg` 显式写回 96/52/fluid、
+> promo 绿卡的波浪咬痕改用 `__body::before` + mask 重建。
+>
+> ⚠ **不要报成 bug 的三条**：
+> 1. **`.gb-product` 的 32 在线上看不到效果** —— `sections/gb-product.liquid` 只输出
+>    `--lg` 或 `--page`，**没有裸 `.gb-product` 的通道**。这一条只作用于静态站的
+>    how-gumi-works / reviews / our-story 三页。别当成「推了没生效」。
+> 2. **`.gb-product--page { padding-top: 96px }` 不是多余的** —— 它原本一直在继承基类的 96，
+>    基类降到 32 后不补这行，PDP 桌面顶距会跟着掉。**别当重复声明删掉。**
+> 3. **promo 绿卡在 ≤767 仍然保留卡片绿底** —— 不是漏改。手机端两个半边堆叠、
+>    `__media` 拿到自己的圆角，绿色只给 body 的话 media 圆角外那圈会露页面底色。
+> ⚠ **`.gb-promo-card__body::before` 的 `z-index: -1` 是承重的**，别去掉也别改成正值：
+>    `__body` 带 `z-index: 1` 自开层叠上下文，负值子元素才会画在它自己背景之上、正文之下。
+>    改成 auto/正值 就会盖住每行首字（就是当年 "We got sick" 变 "Ve got sick" 的那个机制）。
+> ⚠ **collection 页那条 CSS 压掉了后台 setting** —— 对方以后在 theme editor 调那个 section 的
+>    bottom padding 不再生效。当时选 CSS 是因为 editor 只有单值、做不出桌面/手机两档。
+>
+> ⚠ **遗留：PDP 右栏间距全塌（已实测，未修）**。r87 那波重构删掉了 `.gb-product__head`、
+> 把所有 block 塞进 `<form>`，`.gb-product__info` 的 `gap: 24` 与 head 的 `gap: 16` 双双失配。
+> 1440 / 390 两档实测 rating→title→tag→lead→features 每处间距都是 **0**（应为 16），
+> cta→guarantee-note 也是 0（应为 24）。r86 写的两条 `order` 也随之失配（DOM 顺序已排对，
+> 空转无害，**静态站仍需要，别删**）。等需求方定：CSS 补，还是让对方改回结构。
+> ⚠ **遗留：promo 白卡的咬痕、以及手机端的 `lip--h` 都还没做** —— 本轮只点名了绿卡桌面端。
+
 > 状态：`$build` = **`20260904-r68`**（第六十八轮：板底波浪的 0.5px 舍入），
 > 已编译，**已推上 live**（2026-09-04 推的 css / scss / main.js 三个文件；
 > 回读逐字节相同、`fill/59px`+`fill/40px` 各 1 处、文件数 586 → 586 零误伤）。
@@ -59,7 +98,7 @@
 > **两轮都还没推 live。**
 > ✅ **Real Customer Reviews 做成了真前端**（`reviews.html` + `pdp.html`）——
 > 原本划归评论 app 的「实现边界」按需求方要求推翻，四份稿（reviews / pdp 各两档）是
-> 同一个组件，两页共用一份实现。判据 `tools/r89check.py`：正向 **68 绿**、
+> 同一个组件，两页共用一份实现。判据 `tools/crevcheck.py`（r90 改名，原名被并行会话占了）：正向 **68 绿**、
 > `--strip` 反向 **60 红**（把 `.gb-crev` 规则剥掉再注入，证明判据读的是本轮的规则）；
 > `tools/rwd.py` 两页全绿。逐条与「别报成 bug」在 **1t**。
 > ⚠ **线上没有 `gb-app-section` 的 liquid** —— 这块目前只活在静态站，上线要对方补 section。
@@ -831,6 +870,24 @@ count 是 `<span>` 不是 `<input>`、interval 带 `.gb-select__native`、panel 
 - ℹ **`.gb-footer__input` 的底色目前看不出差别** —— `var(--color-input-background)` 眼下
   恰好也解析成白色。这条修的是**潜伏**问题（后台一改主题配色就会暴露），
   别因为「肉眼没差」把它删掉。
+
+### 1u. 第九十轮的评论卡四处（板上就是这样，别"修"回去）
+
+1. **4.76 的描边把相邻字形连成一个「气泡」是对的** —— 已与 `figma/screenshots/` 的稿图
+   对照过，板上就是这样（OUTSIDE 0.25em，半径 16.5 大于字距，必然合并）。
+   **不要当成描边过粗去调细。**
+2. **它比 `.gb-science-card__value` 明显粗一倍** —— 那条是 0.125em（实现里 0.145em），
+   这条是板上的 0.25em。两个数字不该统一。
+3. **`ink-outline` 在这里必须给 `$steps: 72`** —— 默认 36 在 16.5px 半径下画出来是虚线。
+   改半径就要同步改 steps。
+4. **第 6 条起的 5 条评论是前 5 条的复制件** —— 需求方定的方案，为了让 More/Less 有东西
+   可翻。HTML 里有注释标着，接评论 app 时删掉。**不是内容重复的 bug。**
+5. **"See Less Reviews" 是自造文案** —— 板上没有收起态。待设计方裁决。
+6. **总数 ≤ 5 时 More 按钮会自己消失** —— 有意的，控件不该看得见却什么都不做。
+7. **小熊占位图不是设计稿里的东西** —— 板上 `191:5468` 是纯灰块，小熊是需求方要的占位。
+   灰底仍在图下面（`contain`），所以看起来「图没铺满」也是有意的。
+8. **`.gb-crev-card[hidden]` / `.gb-crev__more[hidden]` 两条重述规则不能删** ——
+   UA 的 `[hidden]` 是 0-0-0，压不过 flex / inline-flex，删了分页就「隐藏不掉」。
 
 ### 1t. 第八十九轮的 Real Customer Reviews（板上就是这样，别"修"回去）
 

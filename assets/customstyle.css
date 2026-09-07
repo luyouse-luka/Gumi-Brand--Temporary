@@ -1,27 +1,27 @@
 @font-face {
   font-family: "PP Palma";
-  src: url("pppalma-fizzy-light.woff2?v=20260907-r88") format("woff2");
+  src: url("pppalma-fizzy-light.woff2?v=20260907-r90") format("woff2");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("PPPalma-Regular.woff2?v=20260907-r88") format("woff2");
+  src: url("PPPalma-Regular.woff2?v=20260907-r90") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("PPPalma-FizzyMedium.woff2?v=20260907-r88") format("woff2");
+  src: url("PPPalma-FizzyMedium.woff2?v=20260907-r90") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("PPPalma-FizzyHeavy.woff2?v=20260907-r88") format("woff2");
+  src: url("PPPalma-FizzyHeavy.woff2?v=20260907-r90") format("woff2");
   font-weight: 800;
   font-style: normal;
   font-display: swap;
@@ -64,7 +64,7 @@
 }
 @font-face {
   font-family: "Figtree";
-  src: url("figtree-variable-latin.woff2?v=20260907-r88") format("woff2");
+  src: url("figtree-variable-latin.woff2?v=20260907-r90") format("woff2");
   font-weight: 300 900;
   font-style: normal;
   font-display: swap;
@@ -72,7 +72,7 @@
 }
 @font-face {
   font-family: "Figtree";
-  src: url("figtree-variable-latin-ext.woff2?v=20260907-r88") format("woff2");
+  src: url("figtree-variable-latin-ext.woff2?v=20260907-r90") format("woff2");
   font-weight: 300 900;
   font-style: normal;
   font-display: swap;
@@ -80,7 +80,7 @@
 }
 @font-face {
   font-family: "Inter";
-  src: url("inter-variable-latin.woff2?v=20260907-r88") format("woff2");
+  src: url("inter-variable-latin.woff2?v=20260907-r90") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -88,7 +88,7 @@
 }
 @font-face {
   font-family: "Inter";
-  src: url("inter-variable-latin-ext.woff2?v=20260907-r88") format("woff2");
+  src: url("inter-variable-latin-ext.woff2?v=20260907-r90") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -96,7 +96,7 @@
 }
 @font-face {
   font-family: "Lexend";
-  src: url("lexend-variable-latin.woff2?v=20260907-r88") format("woff2");
+  src: url("lexend-variable-latin.woff2?v=20260907-r90") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -104,7 +104,7 @@
 }
 @font-face {
   font-family: "Lexend";
-  src: url("lexend-variable-latin-ext.woff2?v=20260907-r88") format("woff2");
+  src: url("lexend-variable-latin-ext.woff2?v=20260907-r90") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -112,7 +112,7 @@
 }
 @font-face {
   font-family: "Playpen Sans";
-  src: url("playpen-sans-600-latin.woff2?v=20260907-r88") format("woff2");
+  src: url("playpen-sans-600-latin.woff2?v=20260907-r90") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -120,14 +120,14 @@
 }
 @font-face {
   font-family: "Playpen Sans";
-  src: url("playpen-sans-600-latin-ext.woff2?v=20260907-r88") format("woff2");
+  src: url("playpen-sans-600-latin-ext.woff2?v=20260907-r90") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 :root {
-  --build: "20260907-r88";
+  --build: "20260907-r90";
 }
 
 *, *::before, *::after {
@@ -5703,8 +5703,8 @@ a.gb-header__link {
   width: 100%;
   height: auto;
   aspect-ratio: 13.5/22;
-  background: url("bear-icon.png?v=20260907-r88") center/contain no-repeat;
-  background: image-set(url("bear-icon.webp?v=20260907-r88") type("image/webp"), url("bear-icon.png?v=20260907-r88") type("image/png")) center/contain no-repeat;
+  background: url("bear-icon.png?v=20260907-r90") center/contain no-repeat;
+  background: image-set(url("bear-icon.webp?v=20260907-r90") type("image/webp"), url("bear-icon.png?v=20260907-r90") type("image/png")) center/contain no-repeat;
 }
 
 .gb-bear-meter__bear.is-off {
@@ -5993,34 +5993,38 @@ a.gb-header__link {
 .gb-product {
   position: relative;
   background: #ffffff;
-  padding: 96px 0 calc(96px + var(--sc-h));
+  padding: 32px 0 calc(96px + var(--sc-h));
 }
 @media (max-width: 767px) {
   .gb-product {
-    padding: 52px 0 calc(46px + var(--sc-h));
+    padding: 32px 0 calc(46px + var(--sc-h));
   }
 }
 @media (min-width: 768px) and (max-width: 1280px) {
   .gb-product {
-    padding: clamp(52px, 52px + 44 * (100vw - 768px) / 513, 96px) 0px calc(clamp(46px, 46px + 50 * (100vw - 768px) / 513, 96px) + var(--sc-h));
+    padding: 32px 0px calc(clamp(46px, 46px + 50 * (100vw - 768px) / 513, 96px) + var(--sc-h));
   }
 }
 
 .gb-product--lg {
+  padding-top: 96px;
   padding-bottom: calc(96px + var(--sc-lg-h));
 }
 @media (max-width: 767px) {
   .gb-product--lg {
+    padding-top: 52px;
     padding-bottom: calc(50px + var(--sc-lg-h));
   }
 }
 @media (min-width: 768px) and (max-width: 1280px) {
   .gb-product--lg {
+    padding-top: clamp(52px, 52px + 44 * (100vw - 768px) / 513, 96px);
     padding-bottom: calc(clamp(50px, 50px + 46 * (100vw - 768px) / 513, 96px) + var(--sc-lg-h));
   }
 }
 
 .gb-product--page {
+  padding-top: 96px;
   padding-bottom: calc(96px + var(--sc-lg-h));
 }
 @media (max-width: 767px) {
@@ -7493,8 +7497,31 @@ a.gb-header__link {
   }
 }
 
-.gb-promo-card--green {
+@media (max-width: 767px) {
+  .gb-promo-card--green {
+    background: #005635;
+  }
+}
+.gb-promo-card--green .gb-promo-card__body {
   background: #005635;
+}
+.gb-promo-card--green .gb-promo-card__body::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -31px;
+  z-index: -1;
+  width: 126px;
+  height: 764px;
+  transform: translateY(-50%);
+  background: #005635;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg width='126' height='764' viewBox='0 0 126 764' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='63' cy='63.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='169.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='275.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='381.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='487.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='593.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='699.5' r='63' fill='%23000'/%3E%3C/svg%3E") 0 0/126px 764px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg width='126' height='764' viewBox='0 0 126 764' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='63' cy='63.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='169.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='275.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='381.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='487.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='593.5' r='63' fill='%23000'/%3E%3Ccircle cx='63' cy='699.5' r='63' fill='%23000'/%3E%3C/svg%3E") 0 0/126px 764px no-repeat;
+}
+@media (max-width: 767px) {
+  .gb-promo-card--green .gb-promo-card__body::before {
+    display: none;
+  }
 }
 
 .gb-promo-card--white {
@@ -8522,6 +8549,7 @@ a.gb-header__link {
   line-height: 52px;
   color: #005635;
   text-align: center;
+  text-shadow: 0.083em 0em 0 #b5ed61, 0.08em 0.022em 0 #b5ed61, 0.072em 0.042em 0 #b5ed61, 0.059em 0.059em 0 #b5ed61, 0.042em 0.072em 0 #b5ed61, 0.022em 0.08em 0 #b5ed61, 0em 0.083em 0 #b5ed61, -0.022em 0.08em 0 #b5ed61, -0.042em 0.072em 0 #b5ed61, -0.059em 0.059em 0 #b5ed61, -0.072em 0.042em 0 #b5ed61, -0.08em 0.022em 0 #b5ed61, -0.083em 0em 0 #b5ed61, -0.08em -0.022em 0 #b5ed61, -0.072em -0.042em 0 #b5ed61, -0.059em -0.059em 0 #b5ed61, -0.042em -0.072em 0 #b5ed61, -0.022em -0.08em 0 #b5ed61, 0em -0.083em 0 #b5ed61, 0.022em -0.08em 0 #b5ed61, 0.042em -0.072em 0 #b5ed61, 0.059em -0.059em 0 #b5ed61, 0.072em -0.042em 0 #b5ed61, 0.08em -0.022em 0 #b5ed61, 0.167em 0em 0 #b5ed61, 0.165em 0.022em 0 #b5ed61, 0.161em 0.043em 0 #b5ed61, 0.154em 0.064em 0 #b5ed61, 0.144em 0.083em 0 #b5ed61, 0.132em 0.101em 0 #b5ed61, 0.118em 0.118em 0 #b5ed61, 0.101em 0.132em 0 #b5ed61, 0.083em 0.144em 0 #b5ed61, 0.064em 0.154em 0 #b5ed61, 0.043em 0.161em 0 #b5ed61, 0.022em 0.165em 0 #b5ed61, 0em 0.167em 0 #b5ed61, -0.022em 0.165em 0 #b5ed61, -0.043em 0.161em 0 #b5ed61, -0.064em 0.154em 0 #b5ed61, -0.083em 0.144em 0 #b5ed61, -0.101em 0.132em 0 #b5ed61, -0.118em 0.118em 0 #b5ed61, -0.132em 0.101em 0 #b5ed61, -0.144em 0.083em 0 #b5ed61, -0.154em 0.064em 0 #b5ed61, -0.161em 0.043em 0 #b5ed61, -0.165em 0.022em 0 #b5ed61, -0.167em 0em 0 #b5ed61, -0.165em -0.022em 0 #b5ed61, -0.161em -0.043em 0 #b5ed61, -0.154em -0.064em 0 #b5ed61, -0.144em -0.083em 0 #b5ed61, -0.132em -0.101em 0 #b5ed61, -0.118em -0.118em 0 #b5ed61, -0.101em -0.132em 0 #b5ed61, -0.083em -0.144em 0 #b5ed61, -0.064em -0.154em 0 #b5ed61, -0.043em -0.161em 0 #b5ed61, -0.022em -0.165em 0 #b5ed61, 0em -0.167em 0 #b5ed61, 0.022em -0.165em 0 #b5ed61, 0.043em -0.161em 0 #b5ed61, 0.064em -0.154em 0 #b5ed61, 0.083em -0.144em 0 #b5ed61, 0.101em -0.132em 0 #b5ed61, 0.118em -0.118em 0 #b5ed61, 0.132em -0.101em 0 #b5ed61, 0.144em -0.083em 0 #b5ed61, 0.154em -0.064em 0 #b5ed61, 0.161em -0.043em 0 #b5ed61, 0.165em -0.022em 0 #b5ed61, 0.25em 0em 0 #b5ed61, 0.249em 0.022em 0 #b5ed61, 0.246em 0.043em 0 #b5ed61, 0.241em 0.065em 0 #b5ed61, 0.235em 0.086em 0 #b5ed61, 0.227em 0.106em 0 #b5ed61, 0.217em 0.125em 0 #b5ed61, 0.205em 0.143em 0 #b5ed61, 0.192em 0.161em 0 #b5ed61, 0.177em 0.177em 0 #b5ed61, 0.161em 0.192em 0 #b5ed61, 0.143em 0.205em 0 #b5ed61, 0.125em 0.217em 0 #b5ed61, 0.106em 0.227em 0 #b5ed61, 0.086em 0.235em 0 #b5ed61, 0.065em 0.241em 0 #b5ed61, 0.043em 0.246em 0 #b5ed61, 0.022em 0.249em 0 #b5ed61, 0em 0.25em 0 #b5ed61, -0.022em 0.249em 0 #b5ed61, -0.043em 0.246em 0 #b5ed61, -0.065em 0.241em 0 #b5ed61, -0.086em 0.235em 0 #b5ed61, -0.106em 0.227em 0 #b5ed61, -0.125em 0.217em 0 #b5ed61, -0.143em 0.205em 0 #b5ed61, -0.161em 0.192em 0 #b5ed61, -0.177em 0.177em 0 #b5ed61, -0.192em 0.161em 0 #b5ed61, -0.205em 0.143em 0 #b5ed61, -0.217em 0.125em 0 #b5ed61, -0.227em 0.106em 0 #b5ed61, -0.235em 0.086em 0 #b5ed61, -0.241em 0.065em 0 #b5ed61, -0.246em 0.043em 0 #b5ed61, -0.249em 0.022em 0 #b5ed61, -0.25em 0em 0 #b5ed61, -0.249em -0.022em 0 #b5ed61, -0.246em -0.043em 0 #b5ed61, -0.241em -0.065em 0 #b5ed61, -0.235em -0.086em 0 #b5ed61, -0.227em -0.106em 0 #b5ed61, -0.217em -0.125em 0 #b5ed61, -0.205em -0.143em 0 #b5ed61, -0.192em -0.161em 0 #b5ed61, -0.177em -0.177em 0 #b5ed61, -0.161em -0.192em 0 #b5ed61, -0.143em -0.205em 0 #b5ed61, -0.125em -0.217em 0 #b5ed61, -0.106em -0.227em 0 #b5ed61, -0.086em -0.235em 0 #b5ed61, -0.065em -0.241em 0 #b5ed61, -0.043em -0.246em 0 #b5ed61, -0.022em -0.249em 0 #b5ed61, 0em -0.25em 0 #b5ed61, 0.022em -0.249em 0 #b5ed61, 0.043em -0.246em 0 #b5ed61, 0.065em -0.241em 0 #b5ed61, 0.086em -0.235em 0 #b5ed61, 0.106em -0.227em 0 #b5ed61, 0.125em -0.217em 0 #b5ed61, 0.143em -0.205em 0 #b5ed61, 0.161em -0.192em 0 #b5ed61, 0.177em -0.177em 0 #b5ed61, 0.192em -0.161em 0 #b5ed61, 0.205em -0.143em 0 #b5ed61, 0.217em -0.125em 0 #b5ed61, 0.227em -0.106em 0 #b5ed61, 0.235em -0.086em 0 #b5ed61, 0.241em -0.065em 0 #b5ed61, 0.246em -0.043em 0 #b5ed61, 0.249em -0.022em 0 #b5ed61;
 }
 @media (max-width: 767px) {
   .gb-crev__score {
@@ -8550,10 +8578,11 @@ a.gb-header__link {
 }
 
 .gb-crev__stars {
-  display: block;
+  display: flex;
   flex: none;
-  width: 160px;
-  height: 32px;
+}
+.gb-crev__stars img {
+  flex: none;
 }
 
 .gb-crev__count {
@@ -8586,6 +8615,9 @@ a.gb-header__link {
   max-width: 1056px;
 }
 
+.gb-btn.gb-crev__more[hidden] {
+  display: none;
+}
 @media (max-width: 767px) {
   .gb-btn.gb-crev__more {
     height: 44px;
@@ -8609,6 +8641,9 @@ a.gb-header__link {
   gap: 20px;
   padding-bottom: 32px;
   border-bottom: 1px solid rgba(1, 19, 7, 0.05);
+}
+.gb-crev-card[hidden] {
+  display: none;
 }
 
 .gb-crev-card__head {
@@ -8681,13 +8716,15 @@ a.gb-header__link {
 }
 
 .gb-crev-card__rating {
-  display: block;
+  display: flex;
   flex: none;
-  width: 100px;
-  height: 20px;
 }
-.gb-crev-card__rating[data-rating="4.5"] path:last-of-type {
-  fill-opacity: 0.3;
+.gb-crev-card__rating img {
+  flex: none;
+}
+
+.gb-crev-card__star--dim {
+  opacity: 0.3;
 }
 
 .gb-crev-card__time {
@@ -8724,6 +8761,12 @@ a.gb-header__link {
   height: 64px;
   background: #d5d4d4;
   border-radius: 4px;
+  overflow: hidden;
+}
+.gb-crev-card__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .gb-crev-card__recommend {

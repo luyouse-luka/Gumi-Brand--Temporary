@@ -1,18 +1,24 @@
 #!/usr/bin/env python3
-"""r89 judge -- the Real Customer Reviews block on reviews.html and pdp.html.
+"""r89 judge -- product padding-top tiers plus the promo card's rebuilt scallop.
 
-  python3 tools/r89check.py
+  python3 tools/r89check.py --password 1234              # live runs OUR css
+  python3 tools/r89check.py --password 1234 --as-served  # live as it is now
+  python3 tools/r89check.py --skip-live
 
-Static site only: gb-app-section has no liquid on live, so there is nothing to
-probe there yet. Every expected number is the Figma board -- 324:64032 at 1440,
-324:64978 at 390. Two widths, because the two boards disagree on the score
-figure, the summary axis and the button.
+--as-served must go RED before a push.
+
+⚠ The base .gb-product has NO live counterpart: sections/gb-product.liquid only
+ever emits `gb-product gb-product--lg` or `gb-product gb-product--page`, so the
+flat 32 is graded on the static build (how-gumi-works / reviews / our-story).
 """
-import io, pathlib, re, sys
+import argparse, io, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CHROME = '/home/ly/.cache/ms-playwright/chromium-1217/chrome-linux64/chrome'
-PAGES = ['reviews.html', 'pdp.html']
+SITE = 'https://gumi.com.au'
+BUILD = '20260907-r89'
+GREEN = 'rgb(0, 86, 53)'
+CLEAR = 'rgba(0, 0, 0, 0)'
 
 fails = []
 
@@ -24,163 +30,125 @@ def check(name, got, want):
         fails.append(name)
 
 
-PROBE = r"""() => {
-  const q = s => document.querySelector(s);
-  const all = s => [...document.querySelectorAll(s)];
-  const cs = s => { const e = q(s); return e ? getComputedStyle(e) : null; };
-  const box = e => { const r = e.getBoundingClientRect();
-                     return [Math.round(r.width * 100) / 100, Math.round(r.height * 100) / 100]; };
-  const out = {};
+print('== compiled css ==')
+css = io.open(ROOT / 'assets/customstyle.css', encoding='utf-8').read()
+scss = io.open(ROOT / 'assets/customstyle.scss', encoding='utf-8').read()
+check('1 $build at or past r89', re.search(r'\$build:\s*"([^"]+)"', scss).group(1) >= BUILD, True)
+# The base class must be a flat 32 -- no tier may reintroduce 52 or 96 on top.
+# Parsed rather than substring-matched: a bare `in css` would pass on any other
+# block that happens to open with 32.
+def _shorthand_top(block):
+    for decl in ' '.join(block.split()).split(';'):
+        name, _, value = decl.partition(':')
+        if name.strip() == 'padding':
+            return value.split()[0]
+    return None
 
-  const head = q('.gb-crev__head'), list = q('.gb-crev__list');
-  out.head = head && [getComputedStyle(head).maxWidth, box(head)[0]];
-  out.list = list && [getComputedStyle(list).maxWidth, box(list)[0], getComputedStyle(list).rowGap];
 
-  const sc = cs('.gb-crev__score');
-  out.score = sc && [sc.fontSize, sc.lineHeight, sc.fontWeight, sc.color];
+_base_tops = [t for _, b in re.findall(r'(?m)^(\s*)\.gb-product \{([^}]*)\}', css)
+              for t in [_shorthand_top(b)] if t]
+check('2 base has exactly three tiers', len(_base_tops), 3)
+check('2b every base tier opens at 32', set(_base_tops), {'32px'})
+check('3 --lg restates the ramp', re.search(
+    r'\.gb-product--lg \{\s*padding-top: 96px;', css) is not None, True)
+check('4 --lg narrow 52', re.search(
+    r'\.gb-product--lg \{\s*padding-top: 52px;', css) is not None, True)
+check('5 --page restates 96', re.search(
+    r'\.gb-product--page \{\s*padding-top: 96px;', css) is not None, True)
+# The green must have left the card except below 768.
+check('6 card keeps green only under 768', re.search(
+    r'@media \(max-width: 767px\) \{\s*\.gb-promo-card--green \{\s*background: #005635;', css) is not None, True)
+check('7 green moved to the copy half',
+      '.gb-promo-card--green .gb-promo-card__body {\n  background: #005635;' in css, True)
+check('8 scallop is masked, not an element',
+      css.count('.gb-promo-card--green .gb-promo-card__body::before') == 2, True)
+check('9 webkit prefix shipped', css.count('-webkit-mask: url("data:image/svg+xml,%3Csvg width=\'126\'') == 1, True)
 
-  const su = cs('.gb-crev__summary');
-  out.summary = su && [su.flexDirection, su.columnGap, su.rowGap];
-
-  const st = q('.gb-crev__stars');
-  out.stars = st && box(st);
-
-  const ct = cs('.gb-crev__count');
-  out.count = ct && [ct.fontSize, ct.lineHeight, ct.letterSpacing, ct.color];
-
-  const cards = all('.gb-crev-card');
-  out.nCards = cards.length;
-  if (cards.length) {
-    const c0 = getComputedStyle(cards[0]);
-    out.card = [c0.rowGap, c0.paddingBottom, c0.borderBottomWidth, c0.borderBottomColor];
-    // The board hangs an image on reviews 1 and 3 only (191:5468 hidden elsewhere).
-    out.withImage = cards.map(c => !!c.querySelector('.gb-crev-card__image'));
-    out.ratings = cards.map(c => {
-      const r = c.querySelector('.gb-crev-card__rating');
-      const last = r.querySelector('path:last-of-type');
-      return [r.dataset.rating, box(r).join('x'), getComputedStyle(last).fillOpacity];
-    });
-  }
-
-  const av = q('.gb-crev-card__avatar');
-  out.avatar = av && [box(av).join('x'), getComputedStyle(av).borderRadius,
-                      getComputedStyle(av, '::before').width];
-
-  const btn = q('.gb-crev__more');
-  out.btn = btn && [box(btn)[1], getComputedStyle(btn).paddingLeft,
-                    getComputedStyle(btn).lineHeight, getComputedStyle(btn).letterSpacing];
-
-  const vote = cs('.gb-crev-card__vote');
-  out.vote = vote && [vote.color, vote.transitionDuration, vote.transitionProperty];
-  return out;
+PROBE = """() => {
+  const cs=(s,p)=>{const e=document.querySelector(s); return e?getComputedStyle(e)[p]:null;};
+  const bef=(s,p)=>{const e=document.querySelector(s); return e?getComputedStyle(e,'::before')[p]:null;};
+  const L=s=>{const e=document.querySelector(s); if(!e)return null; return Math.round(e.getBoundingClientRect().left);};
+  return {
+    base: cs('.gb-product:not(.gb-product--lg):not(.gb-product--page)','paddingTop'),
+    lg: cs('.gb-product--lg','paddingTop'),
+    page: cs('.gb-product--page','paddingTop'),
+    cardBg: cs('.gb-promo-card--green','backgroundColor'),
+    bodyBg: cs('.gb-promo-card--green .gb-promo-card__body','backgroundColor'),
+    befDisp: bef('.gb-promo-card--green .gb-promo-card__body','display'),
+    befLeft: bef('.gb-promo-card--green .gb-promo-card__body','left'),
+    hasMask: (bef('.gb-promo-card--green .gb-promo-card__body','maskImage')||'none') !== 'none',
+    bodyL: L('.gb-promo-card--green .gb-promo-card__body'),
+    lipL: L('.gb-promo-card--green .gb-promo-card__lip--v'),
+    build: getComputedStyle(document.documentElement).getPropertyValue('--build').trim(),
+  };
 }"""
 
 
-def grade(tag, res, desktop):
-    print('\n== %s ==' % tag)
-    for page, d in res.items():
-        p = lambda s: '%s %s' % (page, s)
-        check(p('5 cards'), d['nCards'], 5)
-        # 736 / 1056 are the board's 272 / 112 side padding expressed as a cap.
-        check(p('head cap 736'), d['head'][0], '736px')
-        check(p('list cap 1056'), d['list'][0], '1056px')
-        check(p('list gap 32'), d['list'][2], '32px')
-        check(p('card 20 / 32 / hairline'), d['card'],
-              ['20px', '32px', '1px', 'rgba(1, 19, 7, 0.05)'])
-        check(p('image on 1 and 3 only'), d['withImage'],
-              [True, False, True, False, False])
-        # 4.5 dims the fifth point to 30%; only review 1 is a full five.
-        check(p('ratings'), d['ratings'],
-              [['5', '100x20', '1'], ['4.5', '100x20', '0.3'], ['4.5', '100x20', '0.3'],
-               ['4.5', '100x20', '0.3'], ['4.5', '100x20', '0.3']])
-        # Chromium quantises lengths to 1/64px, so assert the band, not 39.27 itself.
-        check(p('avatar 48 ring'), d['avatar'][:2], ['48x48', '50%'])
-        # Stays a FAIL rather than a crash when the disc rule is absent ('auto').
-        try:
-            disc = float(d['avatar'][2][:-2])
-        except (TypeError, ValueError):
-            disc = None
-        check(p('avatar disc ~39.27'), disc is not None and 39.2 < disc < 39.3, True)
-        check(p('stars 160x32'), d['stars'], [160, 32])
-        check(p('score colour'), d['score'][3], 'rgb(0, 86, 53)')
-        check(p('score weight 800'), d['score'][2], '800')
-        check(p('count colour'), d['count'][3], 'rgb(77, 77, 77)')
-        # Rule 13: a pressable thing transitions. 0s here means the rule was lost.
-        check(p('vote transitions'), d['vote'][1] != '0s', True)
-
-        if desktop:
-            check(p('score 66.18/52'), d['score'][:2], ['66.18px', '52px'])
-            check(p('count 16/24/-0.32'), d['count'][:3], ['16px', '24px', '-0.32px'])
-            check(p('summary row gap 12'), d['summary'], ['row', '12px', '12px'])
-            check(p('button 52 / 64 / 28 / .48'), d['btn'],
-                  [52, '64px', '28px', '0.48px'])
-        else:
-            check(p('score 56/44'), d['score'][:2], ['56px', '44px'])
-            check(p('count 14/20/-0.28'), d['count'][:3], ['14px', '20px', '-0.28px'])
-            check(p('summary column gap 16'), d['summary'], ['column', '16px', '16px'])
-            check(p('button 44 / 40 / 24 / -.32'), d['btn'],
-                  [44, '40px', '24px', '-0.32px'])
+def grade(tag, d, width):
+    if width == 1440:
+        if d['lg']: check(tag + ' --lg 96', d['lg'], '96px')
+        if d['page']: check(tag + ' --page 96', d['page'], '96px')
+        if d['base']: check(tag + ' base 32', d['base'], '32px')
+        if d['bodyBg']:
+            check(tag + ' card transparent', d['cardBg'], CLEAR)
+            check(tag + ' body green', d['bodyBg'], GREEN)
+            check(tag + ' scallop painted', d['befDisp'] == 'block' and d['hasMask'], True)
+            check(tag + ' scallop offset', d['befLeft'], '-31px')
+            # Static build still ships the real SVG: the two must sit on top of
+            # each other, or the rebuild is in the wrong place.
+            if d['lipL'] is not None and d['bodyL'] is not None:
+                check(tag + ' scallop lines up with the svg', d['bodyL'] - 31, d['lipL'])
+    else:
+        if d['lg']: check(tag + ' --lg narrow 52', d['lg'], '52px')
+        if d['page']: check(tag + ' --page narrow 20', d['page'], '20px')
+        if d['base']: check(tag + ' base narrow 32', d['base'], '32px')
+        if d['bodyBg']:
+            check(tag + ' card keeps green', d['cardBg'], GREEN)
+            check(tag + ' scallop hidden', d['befDisp'], 'none')
 
 
-def strip_crev(css):
-    """Drops every .gb-crev rule so --strip can prove the judge reads OUR rules
-    and not something the page had already. Brace matching, because the block
-    also lives inside @media."""
-    out, i, n = [], 0, len(css)
-    while i < n:
-        j = css.find('{', i)
-        if j < 0:
-            out.append(css[i:]); break
-        sel = css[i:j]
-        if '.gb-crev' in sel and '@media' not in sel:
-            depth, k = 1, j + 1
-            while k < n and depth:
-                if css[k] == '{': depth += 1
-                elif css[k] == '}': depth -= 1
-                k += 1
-            i = k
-        else:
-            out.append(css[i:j + 1]); i = j + 1
-    return ''.join(out)
-
-
-def run(width, strip=False):
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--password')
+    ap.add_argument('--as-served', action='store_true')
+    ap.add_argument('--skip-live', action='store_true')
+    a = ap.parse_args()
     from playwright.sync_api import sync_playwright
-    res = {}
-    body = strip_crev(css) if strip else None
     with sync_playwright() as pw:
-        b = pw.chromium.launch(executable_path=CHROME)
-        ctx = b.new_context(viewport={'width': width, 'height': 900})
-        if body is not None:
-            ctx.route(re.compile(r'customstyle\.css'), lambda route: route.fulfill(
-                status=200, content_type='text/css', body=body))
-        for name in PAGES:
-            pg = ctx.new_page()
-            pg.goto((ROOT / name).as_uri(), wait_until='load', timeout=30000)
-            pg.wait_for_timeout(400)
-            res[name] = pg.evaluate(PROBE)
-            pg.close()
-        b.close()
-    return res
+        br = pw.chromium.launch(executable_path=CHROME, args=['--no-sandbox'])
+        for width in (1440, 390):
+            print('== static %d ==' % width)
+            pg = br.new_context(viewport={'width': width, 'height': 900}).new_page()
+            for name in ('how-gumi-works', 'index', 'pdp'):
+                pg.goto('file://%s/%s.html' % (ROOT, name), wait_until='load')
+                pg.wait_for_timeout(700)
+                grade('%s %d' % (name, width), pg.evaluate(PROBE), width)
+            if a.skip_live:
+                continue
+            print('== live %d %s ==' % (width, 'as-served' if a.as_served else 'our css'))
+            ctx = br.new_context(viewport={'width': width, 'height': 900})
+            r = ctx.request.post(SITE + '/password', form={
+                'form_type': 'storefront_password', 'utf8': '✓', 'password': a.password})
+            if r.status in (429, 503):
+                br.close()
+                raise SystemExit('Cloudflare (HTTP %d) -- back off, do not retry' % r.status)
+            if not a.as_served:
+                ctx.route(re.compile(r'customstyle\.css'), lambda route: route.fulfill(
+                    status=200, content_type='text/css', body=css))
+            for name, path in (('pdp', '/products/superfood-greens-gummies'), ('home', '/')):
+                pg = ctx.new_page()
+                pg.goto(SITE + path, wait_until='networkidle')
+                pg.wait_for_timeout(700)
+                d = pg.evaluate(PROBE)
+                pg.close()
+                grade('live %s %d' % (name, width), d, width)
+                if a.as_served and width == 1440 and name == 'pdp':
+                    check('live build', d['build'].strip('"') >= BUILD, True)
+            ctx.close()
+        br.close()
+    print()
+    print(('%d FAIL' % len(fails)) if fails else 'all green')
+    sys.exit(1 if fails else 0)
 
 
-print('== source ==')
-css = io.open(ROOT / 'assets/customstyle.css', encoding='utf-8').read()
-# Rule 13: hover must sit behind (hover: hover) or it sticks after a tap.
-check('vote hover is gated', '@media (hover: hover)' in css and
-      re.search(r'@media \(hover: hover\) \{\s*\.gb-crev-card__vote:hover', css) is not None, True)
-check('more button is the shared gb-btn', all(
-    'gb-btn gb-btn--lg gb-crev__more' in io.open(ROOT / p, encoding='utf-8').read()
-    for p in PAGES), True)
-
-STRIP = '--strip' in sys.argv
-grade('desktop 1440', run(1440, STRIP), True)
-grade('mobile 390', run(390, STRIP), False)
-
-if STRIP:
-    # Inverted run: without our rules the numbers must NOT match. Green here
-    # would mean the judge is reading something else.
-    print('\n--strip: %d FAIL (expected: many)' % len(fails))
-    sys.exit(0 if fails else 1)
-print('\n%d FAIL' % len(fails) if fails else '\nall green')
-sys.exit(1 if fails else 0)
+main()

@@ -4410,6 +4410,82 @@ poster 换成该片的 YouTube 缩略图，`images/reel-5.mp4` 随之删除。
 
 ---
 
+## 第九十轮（2026-09-07）— 评论卡四处改造：img 星级 / 小熊占位 / More-Less 分页 / 评分描边（`$build` = `20260907-r90`）
+
+需求方点名四条，全部落在 r89 建的 `gb-crev` 上。
+
+⚠ **轮次号在并行下乱过一次**：另一个会话同日做了第八十八轮（collection 底距）与
+第八十八～八十九轮（product 顶距 + promo 波浪，已推 live），并**用它自己的判据覆盖了
+`tools/r89check.py`**。本轮起 gb-crev 的判据改名 **`tools/crevcheck.py`** ——
+按模块命名、不带轮次号，永不撞；内容从 git `79611e2` 恢复后扩写。
+
+### 1. 星级拆成五个 `<img>`
+
+`images/star.svg`（单颗，取自 `reviews-desktop-reviews-2.svg` 的第一个 path —— 它的坐标
+本来就在 0–20 盒里，不用改）。容器改 flex 并给 `img { flex: none }`，否则窄屏下 summary
+那一列会把星压扁。标题那组是同一个文件按 32 渲染（5 × 32 = 板上的 160×32）。
+
+⚠ **4.5 星的暗点从 `path:last-of-type { fill-opacity }` 挪到了
+`.gb-crev-card__star--dim { opacity: 0.3 }`** —— 拆成 `<img>` 之后 CSS 够不着内部的 path。
+
+### 2. 评论配图放小熊占位
+
+`images/review-bear.png` / `.webp`，128×128，从 `gumi-bear-front.png` 居中补方后缩下来的
+（**不是新画的素材**）。灰底 `#d5d4d4` 留在下面，`object-fit: contain` —— 让灰块仍读作
+「空槽位」，而不是图片铺满到角。
+
+### 3. More / Less 分页（`crevPager`）
+
+`assets/main.js` 新增模块，IIFE + `data-*` hook + 早退守卫（铁律 17）。默认 5 条，每次 +4，
+全出来后按钮文字翻成 "See Less Reviews"，再点收回 5 条。`data-crev-start` /
+`data-crev-step` 挂在列表上，将来主题 setting 能直接驱动。
+
+⚠ **`[hidden]` 输给作者的 `display`**：`.gb-crev-card` 是 flex、`.gb-btn` 是 inline-flex，
+而 UA 的 `[hidden]{display:none}` 只有 0-0-0 —— 两处都必须重述，否则「隐藏」的行照样在屏幕上。
+⚠ **收起时列表顶会跑到视口上方**（消失的是按钮上方的行），所以收起后只在 `top < 0` 时滚回。
+⚠ **总数 ≤ 起始数时按钮自我隐藏** —— 看得见却什么都不做的控件比没有更糟。
+
+⚠ **板上只有 5 条评论，第 6 条起是那 5 条的复制件**（需求方定的方案），HTML 里有注释标着。
+接评论 app 时**删掉后 5 条**。
+
+### 4. 评分数字补上描边 —— r89 漏了
+
+`324:64038` 给 4.76 挂了 `$c-lime` 的 **OUTSIDE 0.25em** stroke（桌面 16.55 @ 66.18、
+手机 14 @ 56，两档同一个 em）。r89 当时只读了 `effects`（空的）**没读 `strokes`**，所以漏掉。
+
+⚠ **这是 `.gb-science-card__value` 那条的两倍粗**（那边 0.125em、实现里调到 0.145em），
+而 `ink-outline` 的环间隙随半径变大，所以 steps 也得翻倍：
+`ink-outline(0.25em, $c-lime, $steps: 72)` → 24 + 48 + 72 = 144 个副本。
+**36 steps 在这个半径下会画成虚线。**
+⚠ **相邻字形的描边合并成一个「气泡」是对的** —— 已与 `figma/screenshots/` 的稿图对照过，
+板上就是这样，不要当成描边过粗去调细。
+
+### 文件清单
+
+- `assets/customstyle.scss` / `assets/customstyle.css` — 星级容器改 flex、`--dim`、附件图、
+  评分描边、`.gb-crev-card[hidden]` 与 `.gb-crev__more[hidden]` 两处重述
+- `assets/main.js` — 新增 `crevPager`，注册进 modules 与 `window.gumi`
+- `reviews.html` / `pdp.html` — 星级 img、附件 img、10 张卡、按钮 data-*
+- `images/star.svg` / `images/review-bear.png` / `images/review-bear.webp` — 新增
+- `tools/crevcheck.py` — 判据（由 `r89check.py` 改名并扩写）
+- 全站 13 页的 `?v=` 与 `$build` → `20260907-r90`（245 处）
+
+### 判据
+
+`python3 tools/crevcheck.py` —— 两页 × 1440/390 + 分页交互，**全绿**；
+`--strip` 反向 **68 红**。`tools/rwd.py` 两页全绿。
+分页那组验的是 `5 → 9 → 10 → 5`、文案翻转、`aria-expanded` 跟随、按钮始终可见。
+
+⚠ 判据一开始把 `naturalWidth === 0` 报成红 —— 那是 `loading="lazy"` 在视口外没解码，
+**不是路径坏了**。探针改成先把列表滚进视口再读。
+
+### 遗留
+
+1. **"See Less Reviews" 是自造文案** —— 板上没有收起态。待设计方裁决。
+2. 后 5 条评论是复制件，接 app 时删掉。
+3. 第八十九轮那三条仍未决：第 1 条标题断句、按钮文字色（板 `#F5F1E9` vs 基类白）、
+   手机端 `--lg` 只在本模块改 44。
+
 ## 第八十九轮（2026-09-07）— Real Customer Reviews 静态实现（`$build` 与 r88 共用 `20260907-r88`）
 
 需求：把 reviews / pdp 两页的 Real Customer Reviews 从 app 挂载壳做成真的前端，对照设计还原。
@@ -4458,11 +4534,12 @@ poster 换成该片的 YouTube 缩略图，`images/reel-5.mp4` 随之删除。
 - `assets/customstyle.scss` / `assets/customstyle.css` — 新增 `gb-crev` / `gb-crev-card` 块
 - `reviews.html` — 壳换成完整实现，原来的 `<h2>` 移进 `.gb-crev__head`
 - `pdp.html` — 同上；这页原本连标题都没有，按板补上
-- `tools/r89check.py` — 判据（新增）
+- `tools/r89check.py` — 判据（新增；r90 改名为 `tools/crevcheck.py`）
 
 ### 判据
 
-`python3 tools/r89check.py` —— 两页 × 1440/390，68 条断言全绿。
+`python3 tools/crevcheck.py`（r90 由 `r89check.py` 改名，那个名字被并行会话占了）
+—— 两页 × 1440/390，68 条断言全绿。
 `--strip`（把 `.gb-crev` 规则从 css 里剥掉再注入）应报 **60 红** ——
 证明判据读的是本轮加的规则，而不是页面本来就有的东西。
 `tools/rwd.py reviews.html` / `pdp.html` 两页全绿。
@@ -4478,6 +4555,92 @@ line-reveal 在新父层级下仍正常：`is-split` 生效、标题两档都是
 4. **手机端按钮 44 高只在本模块作用域内**；`.gb-btn--lg` 基类手机端仍是 52。
    其它页面的手机稿是否也该 44，**没查，待裁决**。
 5. 线上没有 `gb-app-section` 的 liquid，这块**目前只活在静态站**。要上线得对方补 section。
+
+## 第八十八～八十九轮（2026-09-07）— collection 页底距 + product 顶距改档 + promo 波浪重建（`$build` = `20260907-r89`）
+
+两批需求一次推送。第一批一条（collection 页底部间距），第二批三条（两个 padding-top、promo 还原）。
+
+### 1. `/collections/all` 底部留白 32 → 120 / 64
+
+线上 collection 用的是 Horizon 自己的模板，**没有静态站对应页、也没有稿**。
+它的 section padding 来自 theme editor 的 setting（inline `--padding-block-end: 32px`），
+32 太紧：`.gb-deco-bear--a` 相对波浪固定上溢 196（桌面）/ 108（手机），
+在 32 的留白下直接骑在产品名上。
+
+取值照 `.gb-rich-page`（全站「内容 + 波浪」结构的既有定义）：**120 / 64 / `fluid` 插值**。
+套用后小熊相对产品名的富余量是桌面 20px、手机 4px，**与静态站每一页实测完全一致**。
+
+⚠ **覆盖的是 longhand 不是变量**：inline style 设的是 `--padding-block-end`，
+改变量得用 `!important`；`.product-grid-container` 自己那条规则只有 0-1-0，所以 0-2-0 就够。
+⚠ **代价**：对方以后在后台调这个 section 的 bottom padding 不再生效。
+选 CSS 是因为 editor 的 padding setting 只有单值，做不出桌面/手机两档。
+
+### 2. `.gb-product` 顶距三档拉平到 32
+
+基类原来是 `96 / 52 / fluid(52,96)`。现在三档都是 32。
+⚠ **线上没有匹配** —— `sections/gb-product.liquid` 只输出 `gb-product gb-product--lg`
+或 `gb-product gb-product--page` 两种，**没有裸 `.gb-product` 的通道**。
+这一条只影响静态站的 how-gumi-works / reviews / our-story 三页。
+
+### 3. `--lg` 显式写回原来的斜坡，`--page` 补上它一直在继承的 96
+
+`--lg` 之前不写 padding-top、直接吃基类的 96。基类降到 32 后必须显式restate：
+`96 / 52 / fluid(52,96)`（52 = 稿 243:22226 的 paddingTop 32 加上内层 frame 的 20）。
+
+⚠ **`--page` 是顺带必须做的防护**：它同样只在 narrow/tablet 写了 padding-top，
+pc 档一直吃基类的 96。不补这一行，PDP 桌面顶距会跟着掉到 32 —— 需求没点名 PDP。
+
+### 4. promo 绿卡的波浪咬痕：从 SVG 元素改成 mask
+
+静态站的咬痕是 `.gb-promo-card__lip--v`（126×764 的 SVG，7 个 r=63 的圆），
+**线上 `sections/gb-promo.liquid` 根本不渲染这个元素**（实测线上 0 个、静态站 4 个），
+所以线上是直线分界。两边的 computed style 其实完全一致，差的只是这个元素。
+
+不改对方的 liquid，改用 `.gb-promo-card__body::before` + `$mask-promo-lip` 重建：
+同样的盒子、同样七个圆，`left: -31px` 让露出来的正好是原来那 31px。
+绿色随之从 `.gb-promo-card--green` 移到 `.gb-promo-card__body`。
+
+- ⚠ **`z-index: -1` 是承重的**：`__body` 带 `z-index: 1`、自开层叠上下文，
+  负值子元素画在它自己的背景之上、正文之下 —— 正是原来 SVG 靠 body 的 z-index 白拿的顺序。
+  不写就盖住首字（r? 那次 "We got sick" 被画成 "Ve got sick" 是同一个机制）。
+- ⚠ **≤767 卡片仍要留绿底**：手机端两个半边堆叠、`__media` 拿到自己的圆角，
+  绿色若只在 body 上，media 圆角外那一圈会露出页面底色。所以 narrow 档把绿还给卡片。
+- 静态站不受影响：实测伪元素落在绝对位置 689，**与真 SVG 的 689 完全重合**。
+
+### 文件清单
+
+| 文件 | 改动 |
+|---|---|
+| `assets/customstyle.scss` | 新增 `// Collection` 分区；`.gb-product` / `--lg` / `--page` 的 padding-top；`$mask-promo-lip` + `.gb-promo-card--green` 重写；`$build` → `20260907-r89` |
+| `assets/customstyle.css` | 重编译（双写） |
+| `tools/r88check.py` / `tools/r89check.py` | 两轮判据（新增） |
+
+### 推送
+
+`--only assets/customstyle.css --only assets/customstyle.scss --nodelete --allow-live`。
+三方对比：我们要推的两个文件线上 = `baseline-r87`，无第三方改动；
+产物新鲜度验过（重编译 scss 与仓库 css 逐字节相同）。
+回读 **616 → 616**、两个文件逐字节相同、**614 个清单外文件零改动**。
+新基线 **`baseline-r89`**。`r88check` / `r89check` 的 `--as-served` 推前分别 12 红 / 6 红，
+推后**全部全绿**。
+
+### 对方同期在动的（三方对比抓到，我们没碰）
+
+- 10:44 改 5 个 PDP block：`gb-features` 换成 `{% content_for 'blocks' %}`（**卖点列表终于不空了**，
+  线上实测 4 条，代价是每个 `<li>` 外多一层 `div.shopify-block`）；
+  `gb-price` / `gb-title` / `gb-variants` / `gb-subscription` 加 `| default: product` 容错。
+- 11:19 `gb-footer.liquid` 三个社交链接加 `target="_blank" rel="noopener noreferrer"`。
+- 推送前又抓到 `gb-header.liquid` / `footer-group.json` / `templates/product.json` 也动过。
+
+### 遗留
+
+- **PDP 右栏间距塌陷（未修，未登记）**：r87 那波重构把 `.gb-product__head` 删了、
+  所有 block 塞进 `<form>`，于是 `.gb-product__info` 的 `gap: 24` 和 head 的 `gap: 16` 双双失配。
+  实测 1440 与 390 两档下 rating→title→tag→lead→features 每一处间距都是 **0**（应为 16），
+  cta→guarantee-note 也是 0（应为 24）。等需求方定用 CSS 补还是让对方改回结构。
+- **promo 白卡的咬痕没做**：本轮只点名了绿卡。白卡的 `lip--v`（`left: -100px`，咬 26）线上同样缺。
+- **手机端的 `lip--h` 没做**：静态站 ≤767 画的是卡片底部的水平波浪，线上也没有这个元素。
+- collection 页是自定值、无稿，需登记进「待设计方裁决」。
 
 ## 第八十七轮（2026-09-07）— 需求方点名的六处 + logo liquid 落地（`$build` = `20260907-r87`）
 
