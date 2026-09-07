@@ -1,0 +1,65 @@
+{%- liquid
+  assign s = section.settings
+  assign modifier = ''
+  if s.center
+    assign modifier = ' gb-page-hero--center'
+  endif
+  if s.size == 'lg'
+    assign modifier = modifier | append: ' gb-page-hero--lg'
+  endif
+-%}
+<section class="gb-page-hero{{ modifier }}">
+  <div class="gb-page-hero__inner">
+    <div class="gb-page-hero__text" data-line-sequence>
+      {%- if s.title != blank -%}
+        <h1 class="gb-page-hero__title" data-line-reveal>{{ s.title | escape }}</h1>
+      {%- endif -%}
+      {%- if s.lead != blank -%}
+        <p class="gb-page-hero__lead gb-page-hero__lead--lg gb-page-hero__lead--text-page" data-line-reveal>{{ s.lead }}</p>
+      {%- endif -%}
+    </div>
+    {%- if s.image != blank -%}
+      <div class="gb-page-hero__media wowo fadeIn delay-in-1">
+        <img
+          src="{{ s.image | image_url: width: 1440 }}"
+          srcset="{{ s.image | image_url: width: 720 }} 720w, {{ s.image | image_url: width: 1080 }} 1080w, {{ s.image | image_url: width: 1440 }} 1440w"
+          sizes="100vw"
+          width="{{ s.image.width }}"
+          height="{{ s.image.height }}"
+          alt="{{ s.image.alt | escape }}"
+          loading="eager"
+          decoding="async"
+        >
+      </div>
+    {%- endif -%}
+  </div>
+  {%- if s.show_scallop -%}
+    <div class="gb-scallop gb-scallop--edge gb-scallop--down gb-scallop--to-white"></div>
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "Gumi Page Hero",
+  "settings": [
+    { "type": "text", "id": "title", "label": "Title", "default": "Page title" },
+    { "type": "textarea", "id": "lead", "label": "Subheading" },
+    { "type": "image_picker", "id": "image", "label": "Media (optional)" },
+    { "type": "checkbox", "id": "center", "label": "Center layout", "default": true },
+    {
+      "type": "select",
+      "id": "size",
+      "label": "Size",
+      "options": [
+        { "value": "default", "label": "Default" },
+        { "value": "lg", "label": "Large" }
+      ],
+      "default": "lg"
+    },
+    { "type": "checkbox", "id": "show_scallop", "label": "Show scallop divider", "default": true }
+  ],
+  "presets": [
+    { "name": "Gumi Page Hero" }
+  ]
+}
+{% endschema %}

@@ -4681,6 +4681,137 @@ PDP / reviews / home 三页渲染后 `[class*=gb-crev]` 元素数均为 **0** �
 - 手机端的 `lip--h`（卡片底部水平波浪）线上仍缺，两张卡都是。
 - collection 页（r88）仍是无稿的自定值，待设计方裁决。
 
+## 第九十四轮（2026-09-07）— compare 头像/图标对齐 + expert 卡等高 + hero media 淡入（`$build` = `20260907-r93`）
+
+需求方三条：① `.gb-compare__avatar--bear` / `__avatar` 响应式下与下方表格的 icon 不对齐；
+② `gb-page-hero__media` 加 fade in；③ `gb-expert-card` 高度保持一致。
+
+三条的性质不一样：①静态站与 live 同病同因（CSS 修）；②静态站早就有、**缺的是 live 的 liquid**；
+③静态站三张卡文案一样所以看不出，**只有 live 暴露**。
+
+### 1. compare 的头像与图标错位（768–1280 整档）
+
+`.gb-compare__avatars` 与 `.gb-compare__row` 共用一个声明块，块里的 `@include tablet`
+**只插值了 `column-gap`，漏了 `grid-template-columns`**。于是 tablet 档：
+
+- 头像轨道停在桌面基础值 `96px`
+- 而 `.gb-compare__avatar` 自己是 `fluid(66px, 96px)`
+- `.gb-compare__row` 的轨道**有** tablet 插值 `fluid(79.68px, 109px)` / `fluid(62.44px, 92px)`
+
+66px 的图片放进 96px 的轨道，`<picture>` 是 grid item 撑满轨道、`<img>` 在里面靠左，
+先偏 15px；再叠上两侧轨道宽度的差，累积成 57px。实测（图标中心 − 头像中心）：
+
+| 视口 | 改前 d2 / d3 | 改后 d2 / d3 |
+|---|---|---|
+| 390–767（板值） | −3.28 / +1.78 | 不变 |
+| **768** | **+56.72 / +31.78** | −3.28 / +1.78 |
+| **900** | **+41.49 / +24.12** | −3.07 / +1.84 |
+| **1024** | **+27.18 / +16.91** | −2.88 / +1.88 |
+| **1200** | **+6.86 / +6.70** | −2.64 / +1.95 |
+| 1281–1440（板值） | −2.50 / +2.00 | 不变 |
+
+改法是补上漏掉的那一行：
+
+```scss
+@include tablet {
+  grid-template-columns: 1fr fluid(66px, 96px) fluid(66px, 96px);
+  column-gap: fluid(16px, 8px);
+}
+```
+
+⚠ **两个板值档剩下的 2–3px 不是 bug，没有动** —— 稿 324:56865 / 324:58044 就是这么摆的
+（原注释「the ~3px offset is the design's own hand placement」）。改后 tablet 档在这两个
+端点之间线性过渡，与上下两档连续。
+
+### 2. `.gb-expert-card` 在轨道档不等高
+
+live 三张卡的 quote 是 193 / 82 / 82 字，`≤991` 实测高度 `[524, 428, 428]`，**spread 96px**；
+`≥992` 的三列网格档本来就齐。静态站三张文案完全相同，所以本地看不出 —— 判据里用
+JS 注入 live 的长短组合才复现得出来。
+
+**真因不是 `align-items`**：`.gb-expert-card` 同时是 `.swiper-slide`，而 Swiper 核心 CSS
+（我们内联在 scss 里那份）给了它 `height: 100%`。这是一个**非 auto 的交叉轴尺寸**，
+`align-self: stretch` 因此不适用，每张卡退回自己的内容高。grid 档不受影响是因为百分比
+在那里能对行高解析出确定值。
+
+改法一行，只在轨道档：
+
+```scss
+.gb-expert-card {
+  @include mid { width: 305px; flex: 0 0 auto; height: auto; }
+}
+```
+
+**没有抬高整体**：轨道高度改前改后逐档相同（390/768 = 524、900 = 527.6、991 = 530.1），
+拉平取的是原本的最大值 —— 与第六十三轮 `grid-auto-rows: 1fr` 同一性质。
+
+### 3. hero media 的淡入（只改 live）
+
+静态站 `science.html` / `reviews.html` 的 `.gb-page-hero__media` **一直带着**
+`wowo fadeIn delay-in-1`；线上 `sections/gb-page-hero.liquid` 从来没有，实测 class 只有
+`gb-page-hero__media`、`opacity: 1`、`animation-name: none`。补上同样三个 class。
+
+⚠ **静态站这个 div 是空的**（稿里就是 `#d9d9d9` 占位，没有摄影素材），所以淡入在静态站
+看不出效果；线上那个 div 里有真图，补上才看得见。
+
+⚠ **代价要知道**：线上这张图是 `loading="eager"` 的首屏图，很可能是该页 LCP 元素。
+挂上 wowo 后它在 JS 就绪前 `opacity: 0`，LCP 会推迟约 0.8s（`delay-in-1` 0.1s + 动画 0.7s）。
+门是全站共用的 `html.js`（`snippets/gb-head.liquid` 里的 inline script + 10000ms 兜底），
+没有新增风险类别，但这一条**是可以只在 live 撤回的**（改回 liquid 即可），不影响另两条。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss              2 处（compare tablet 轨道 / expert height）+ $build → 20260907-r93
+改  assets/customstyle.css               编译产物（双写，--style=expanded）
+改  *.html 13 个                          ?v= 20260907-r90 → r93（HTML 的版本串上两轮漏升，本轮一并补齐）
+改  liquid/sections/gb-page-hero.liquid  新增：hero media 挂 wowo fadeIn delay-in-1
+新  liquid/r93.patch                      同上的 diff，给对方合入
+新  tools/r93check.py                     81 条断言
+```
+
+### 判据
+
+`tools/r93check.py`：静态站 **81 ok / 0 red**。三组断言：
+compare 的 d2/d3 落在两块板的手工偏移区间内 + 轨道宽必须等于它装的图片宽；
+expert 的三卡高度极差 ≤0.5px + 轨道高等于最高卡（证明没抬高）+ **三条 quote 长度必须不全等**
+（否则这一档根本没考到不等高的情况，是个恒真断言）；hero media 三个 class 各一条。
+
+**活性自检 `--strip`：22 红**，全部精确落在两个修复各自的档内 —— compare 是 768/900/1024/1200/1280
+五档，expert 是 ≤991 五档，板值档一条没红。
+⚠ **第一版 `--strip` 是恒真的**：它走 CSSOM 遍历 `sheet.cssRules` 去删规则，而 `file://` 下
+每张表的 `cssRules` 一访问就抛，脚本 `continue` 跳过 → 什么都没删 → 照样全绿。改成写 inline
+style 反向还原，并让每次 strip 返回触及元素数、**为 0 本身就是一条 RED**。
+
+**回归**：`rwd.py` ✅ 全绿、`r52check` 385 / `r53check` 249 / `crevcheck` 全绿。
+⚠ **`r50check` 38 条红是既有的，不是本轮引起** —— 判据方法：把 `assets/customstyle.css`
+临时换成 `baseline-r92` 的产物重跑，**同样 38 条**。红的是 `.gb-stat` 95% 卡的字号/行高/字距
+（第 8 节在 r59 按档重写过，断言口径没跟上）与 how-gumi-works 的 media top 4px —— 与本轮
+两处改动无交集。**下一轮别当成新回归查。**
+
+### 推送（2026-09-07，需求方明确授权含 liquid）
+
+推了**三个文件**到 live 主题 `Dev (#180348977399)`，`--only` 逐个列出 + `--nodelete`：
+
+```
+assets/customstyle.css
+assets/customstyle.scss
+sections/gb-page-hero.liquid
+```
+
+**分两步推**，先 CSS 后 liquid —— 任何时刻线上都是自洽的（liquid 挂的 `wowo` 类要靠
+CSS 里的 `html.js .wowo` 门才有意义，反过来 CSS 先到不会让任何东西消失）。
+
+- 推前三方对比：`prepush-20260907-1623`（616 文件）与 `baseline-r92` **零差异**，
+  对方这段时间没动过主题。
+- 产物新鲜度：重编译 scss 与仓库 css 逐字节相同。
+- **回读 616 → 616**，与 `work-r93` **逐字节相同**；相对 prepush 正好 3 个文件变动，
+  **613 个清单外文件零改动**。
+- 新基线 **`baseline-r93/`（616 文件）**，prepush / pull / work 快照已删。
+- 线上判据 `python3 tools/r93check.py --as-served --password 1234`：**76 ok / 0 red**
+  （比静态少的 5 条是 `--as-served` 跳过的源码双写断言）。
+  ⚠ 线上这一跑才是真正考到「三条 quote 长度不全等」那条锚点的 —— 静态站要靠 JS 注入。
+
 ## 第九十三轮（2026-09-07）— vs 品牌行美术件不再压文字 + 404 换成主题字体 + product-list 底距（`$build` = `20260907-r92`）
 
 需求方三条：① `gb-vs__logo` / `__bear` / `__pile` 响应式盖住下方文字；② `/404` 优化样式，

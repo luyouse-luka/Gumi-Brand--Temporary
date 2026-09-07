@@ -1,0 +1,11 @@
+--- live-20260907-1602/sections/gb-page-hero.liquid	2026-09-07 16:03:02.275274895 +0000
++++ work-r93/sections/gb-page-hero.liquid	2026-09-07 16:03:53.026569614 +0000
+@@ -19,7 +19,7 @@
+       {%- endif -%}
+     </div>
+     {%- if s.image != blank -%}
+-      <div class="gb-page-hero__media">
++      <div class="gb-page-hero__media wowo fadeIn delay-in-1">
+         <img
+           src="{{ s.image | image_url: width: 1440 }}"
+           srcset="{{ s.image | image_url: width: 720 }} 720w, {{ s.image | image_url: width: 1080 }} 1080w, {{ s.image | image_url: width: 1440 }} 1440w"

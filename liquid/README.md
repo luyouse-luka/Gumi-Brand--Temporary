@@ -32,6 +32,7 @@
 | `blocks/gb-title.liquid` | r90 | PDP 产品标题 `<h2>` → `<h1>`（整页原本 0 个 h1） | ✅ 已推 |
 | `sections/main-404.liquid` | r92 | schema `class` 补 `gb-404` 钩子（`section-wrapper` 是 main-page / main-blog-post / section 共用的，不能当选择器） | ✅ **已推**（r92，2026-09-07）。线上渲染出的类名实测 `shopify-section section-wrapper gb-404`；theme check 前后报告 diff 为 0 |
 | `sections/gb-promo.liquid` | r91 | 补 `gb-arc-text--mob`（手机端那条弧线上一直没有）；arc 只对 `variant == 'white'` 渲染 | ✅ **已推**（r91，2026-09-07，需求方明确授权）。theme check 推前后报告逐行相同；线上手机端实测已出弧 |
+| `sections/gb-page-hero.liquid` | r93 | hero media 挂 `wowo fadeIn delay-in-1`（静态站一直有，线上从来没有） | ✅ **已推**（r93，2026-09-07，需求方明确授权）。回读逐字节相同；线上实测 class 已带三个。⚠ 线上那张是 `loading="eager"` 的首屏图，挂 wowo 后 LCP 约推迟 0.8s —— 要撤回只需把这一行 class 改回去 |
 | `sections/gb-nutrition.liquid` | r71 | 卡片 text 走 gb-rich-inline | ✅ 已推 |
 | `sections/gb-form-section.liquid` | r71 | note 走 gb-rich-inline | ✅ 已推 |
 | `sections/gb-product.liquid` | r71 | guarantee_note 走 gb-rich-inline | ✅ 已推 |

@@ -33,7 +33,7 @@
 // font url()s read it. Previewing over file:// caches css/js/woff2 until a hard
 // refresh, so without it a real change reads as "nothing happened".
 // font-check.html prints the value the browser actually got.
-$build: "20260907-r92";
+$build: "20260907-r93";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -9530,6 +9530,11 @@ html.is-menu-open {
   @include mid {
     width: 305px;
     flex: 0 0 auto;
+    // .swiper-slide sets height: 100%, a non-auto cross size, so align-self:
+    // stretch never applies and every card takes its own content height (the
+    // live quotes run 193/82/82 chars, i.e. 96px apart). The grid tier above is
+    // already even -- there the percentage resolves against the row.
+    height: auto;
   }
   // Centring below 767 (so the card before and after both peek, 26.5px each at
   // 390) is `centeredSlides` in main.js, switched off from 768 up where 2.3
@@ -10807,7 +10812,14 @@ html.is-menu-open {
   align-items: center;
 
   @include narrow { grid-template-columns: 1fr 66px 66px; column-gap: 16px; }
-  @include tablet { column-gap: fluid(16px, 8px); }
+  // The avatar tracks must ramp with .gb-compare__avatar's own fluid size: a
+  // 66px image in a 96px track sits at the grid item's left edge (the <picture>
+  // fills the track, the <img> does not), which threw the icons 57px off the
+  // avatars across the whole 768-1280 tier.
+  @include tablet {
+    grid-template-columns: 1fr fluid(66px, 96px) fluid(66px, 96px);
+    column-gap: fluid(16px, 8px);
+  }
 }
 
 // Mobile 324:58044 does the same thing at 350/16: icon centres 231.72 / 318.78

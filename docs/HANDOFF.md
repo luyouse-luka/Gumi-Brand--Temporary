@@ -4,6 +4,38 @@
 > 项目定位与已确立的规范在 [PROJECT-STATUS.md](PROJECT-STATUS.md)；
 > 改动史在 [CHANGELOG.md](CHANGELOG.md)（近 10 轮）+ [CHANGELOG-ARCHIVE.md](CHANGELOG-ARCHIVE.md)（第一～三十轮），**两份一起 grep**。
 >
+> 状态：`$build` = **`20260907-r93`**（第九十四轮，2026-09-07）—— compare 头像/图标对齐、
+> expert 卡等高、hero media 淡入（只改 live）。
+> **已推 live**（2026-09-07，三个文件：`assets/customstyle.css` / `.scss` /
+> `sections/gb-page-hero.liquid`；liquid 经需求方明确授权，分两步推、先 CSS 后 liquid）。
+> 推前 `prepush-20260907-1623` 与 `baseline-r92` **零差异**；回读 **616 → 616**、
+> 三个文件逐字节相同、**613 个清单外文件零改动**。新基线 **`baseline-r93`（616 文件）**。
+> 判据 **`tools/r93check.py`**：静态 **81 ok / 0 red**，`--as-served` 线上 **76 ok / 0 red**；
+> `--strip` 反向 **22 红**且精确落在两个修复各自的档内。
+> 回归 `rwd.py` 全绿 / `r52`(385) / `r53`(249) / `crevcheck` 全绿。
+>
+> ⚠ **不要报成 bug 的四条**：
+> 1. **compare 在 390 与 1440 两个板值档，图标仍比头像偏 2–3px** —— 稿 324:56865 / 324:58044
+>    就是这么摆的（原注释：the design's own hand placement）。本轮只治 768–1280 那一档的
+>    **57px**，两个端点一字未动，中间线性过渡。**别把这 2–3px 也「修」平。**
+> 2. **`.gb-expert-card` 的 `height: auto` 只写在 `@include mid` 里，不是漏了别的档** ——
+>    它要压的是 `.swiper-slide { height: 100% }`，而那条只在轨道档（≤991）造成不等高；
+>    `≥992` 的 grid 档百分比能对行高解析，本来就齐，写进去反而多一条无效声明。
+> 3. **等高之后矮卡底部留白** —— 卡是 `column` 且内容顶对齐，拉平出来的空间必然落在底部
+>    （与第六十三轮 `grid-auto-rows: 1fr` 同款）。要让内容跟着分布是版式决策，没动。
+> 4. **静态站 hero media 加了 wowo 也看不出淡入** —— 那个 div 是空的（稿里就是 `#d9d9d9`
+>    占位，没有摄影素材）。有图的是 live。
+>
+> ⚠ **`r50check` 的 38 条红是既有的，不是本轮引起** —— 已用 `baseline-r92` 的产物对照重跑，
+> 同样 38 条。红的是 `.gb-stat` 95% 卡的字号/行高/字距（第 8 节在 r59 按档重写过，断言口径
+> 没跟上）+ how-gumi-works 的 media top 差 4px。**下一轮别当成新回归查。**
+>
+> ⚠ **判据坑（这一轮踩到了）**：`--strip` 那种「拆掉修复应转红」的反向自检，**不能靠遍历
+> `document.styleSheets` 删规则** —— `file://` 下每张表的 `cssRules` 一访问就抛
+> （[[file-url-stylesheet-cssrules-blocked]]），脚本 `continue` 跳过后什么都没删，
+> 于是 `--strip` 与正向跑出**一模一样的全绿**。改成写 inline style 反向还原，
+> 并让 strip 返回触及元素数、**为 0 本身算一条 RED**。
+
 > 状态：`$build` = **`20260907-r92`**（第九十三轮，2026-09-07）—— vs 品牌行美术件不再压文字、
 > `/404` 换主题字体、`product-list` 底距。
 > **已推 live**（2026-09-07，三个文件：`assets/customstyle.css` / `.scss` / `sections/main-404.liquid`）。
