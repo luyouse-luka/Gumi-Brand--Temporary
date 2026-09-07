@@ -7,7 +7,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC = ROOT / "assets" / "customstyle.scss"
 DST = ROOT / "assets" / "account.scss"
 # only the tokens account actually mirrors; $build is deliberately per-file
-WATCH = re.compile(r'^\$(c-[\w-]+|bp-[\w-]+)\s*:\s*([^;/]+?)\s*(?://.*)?;', re.M)
+WATCH = re.compile(
+    r'^\$(c-[\w-]+|bp-[\w-]+|font-[\w-]+|sans-fallback)\s*:\s*([^;/]+?)\s*(?://.*)?;', re.M)
 
 def grab(p):
     if not p.exists():

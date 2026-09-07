@@ -73,6 +73,11 @@ $c-navy:        #101828;
 
 $c-ink-05:      rgba(1, 19, 7, 0.05);
 
+// account-only. The board lightens the header and drops the menu panel in
+// #f6feec (2284:34854 / 34804) -- not one of the site's lime steps, so it is
+// declared here and shows up in acctvars.py as an account-only token.
+$c-acct-menu-bg: #f6feec;
+
 // Semantic aliases — components use these
 $color-text:        $c-ink;
 $color-text-muted:  $c-gray-700;
@@ -137,6 +142,32 @@ $z-sticky:   50;
 $z-header:   100;
 $z-overlay:  900;
 $z-modal:    1000;
+
+// ==========================================================================
+// Fonts — family variables only. The @font-face rules stay in customstyle.scss;
+// account.css must not re-declare them or the browser refetches every woff2.
+// ==========================================================================
+
+
+// Family variables — the single switch point
+$font-brand:      "PP Palma";
+$font-brand-alt:  "Figtree";                  // current stand-in
+$font-brand-fallback: "Plus Jakarta Sans";    // second candidate, files already downloaded
+$font-ui:         "Inter";
+$font-display:    "Lexend";
+$font-hand:       "Playpen Sans";
+
+$sans-fallback: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+
+// Metric-matched fallback, see the @font-face group below. It sits after Figtree
+// and before the system stack: with PP Palma present it only shows during the
+// swap window.
+$font-brand-metric: "PP Palma Fallback";
+
+$font-brand-stack: $font-brand, $font-brand-alt, $font-brand-metric, $sans-fallback;
+$font-ui-stack:    $font-ui, $sans-fallback;
+$font-display-stack: $font-display, $sans-fallback;
+$font-hand-stack:  $font-hand, cursive;
 
 // ==========================================================================
 // Mixins
@@ -350,6 +381,159 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 // OUTPUT
 // ==========================================================================
 
+// ==========================================================================
+// Shell
+// ==========================================================================
+
 .gb-acct {
   min-height: 40vh;
+}
+
+.gb-acct-vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ==========================================================================
+// Account header — 2284:34627 / 34854 desktop, 2284:34534 / 34804 mobile
+// ==========================================================================
+
+// This replaces the site header rather than restyling it: the board's header is
+// a different component (logo + two icons, no Menu / Shop now / cart) and its
+// burger opens the account menu, not the site menu (Figma note 2284:34518).
+// customstyle.scss is untouched.
+
+.gb-acct-header {
+  position: sticky;
+  top: 0;
+  z-index: $z-header;
+  background: $c-lime-150;
+
+  transition: trans(background-color, box-shadow);
+  transition-duration: $t-panel;
+
+  // The rule is strokeAlign INSIDE on the board, so it has to be painted inside
+  // the 80/64 box -- border-bottom would make the header a pixel taller.
+  // Desktop closed carries none at all (34627); the phone shows a half-pixel
+  // (34534) and both boards show a full one once the menu is down.
+  @include narrow { box-shadow: inset 0 -0.5px 0 $c-sand; }
+
+  // The board lightens the whole bar while the menu is down (34854 / 34804).
+  &.is-open {
+    background: $c-acct-menu-bg;
+    box-shadow: inset 0 -1px 0 $c-sand;
+  }
+}
+
+.gb-acct-header__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: $h-header;
+  padding-inline: $pad-x-desktop;
+
+  @include narrow { height: $h-header-mobile; padding-inline: $pad-x-mobile; }
+  @include tablet {
+    height: fluid($h-header-mobile, $h-header);
+    padding-inline: fluid($pad-x-mobile, $pad-x-desktop);
+  }
+}
+
+.gb-acct-header__logo {
+  display: block;
+  height: 32px;
+  color: $c-green;
+
+  svg { display: block; width: auto; height: 100%; }
+
+  @include hover { opacity: 0.7; }
+
+  @include narrow { height: 24px; }
+  @include tablet { height: fluid(24px, 32px); }
+}
+
+.gb-acct-header__icons {
+  display: flex;
+  align-items: center;
+  column-gap: 16px;
+}
+
+.gb-acct-header__link {
+  display: block;
+  width: 24px;
+  height: 24px;
+  color: $c-green;
+
+  transition: trans(color, opacity);
+
+  svg { display: block; width: 100%; height: 100%; }
+
+  @include hover { opacity: 0.6; }
+}
+
+// Line 115: the lime rule under the account icon marks the section you are in.
+.gb-acct-header__link--account {
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 5px);
+    height: 2px;
+    background: $c-lime;
+  }
+}
+
+.gb-acct-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 221px;
+  padding-block: 4px;
+  background: $c-acct-menu-bg;
+  // 8px on the bottom-left only: the panel hangs off the header and sits flush
+  // with the right edge of the viewport (rectangleCornerRadii [0,0,0,8]).
+  border-radius: 0 0 0 $r-sm;
+  box-shadow: 0 10.29px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+
+  @include narrow { width: 164px; }
+  @include tablet { width: fluid(164px, 221px); }
+}
+
+.gb-acct-menu__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gb-acct-menu__link {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  padding-inline: 14px;
+  // The label is one inline run inside a single flex item: a bare text node
+  // next to the span would be blockified into its own item and break the line.
+  gap: 0;
+  @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+  color: $c-navy;
+
+  transition: trans(background-color, color);
+
+  @include hover { background: $c-lime-100; }
+}
+
+// The board says "Account Overview" on desktop and just "Account" on mobile
+// (34854 vs 34804). One item, the tail drops out below the phone breakpoint.
+.gb-acct-menu__more {
+  @include narrow { display: none; }
 }
