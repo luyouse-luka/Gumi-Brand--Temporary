@@ -4,6 +4,28 @@
 > 项目定位与已确立的规范在 [PROJECT-STATUS.md](PROJECT-STATUS.md)；
 > 改动史在 [CHANGELOG.md](CHANGELOG.md)（近 10 轮）+ [CHANGELOG-ARCHIVE.md](CHANGELOG-ARCHIVE.md)（第一～三十轮），**两份一起 grep**。
 >
+> 状态：`$build` = **`20260907-r92`**（第九十三轮，2026-09-07）—— vs 品牌行美术件不再压文字、
+> `/404` 换主题字体、`product-list` 底距。**未推 live**（需求方本轮没说推）。
+> 判据 **`tools/r92check.py`**：静态 14 档全绿、线上（换 css + 注入钩子）全绿、`--as-served` 17 红。
+>
+> ⚠ **不要报成 bug 的四条**：
+> 1. **`.gb-vs__logo` / `__bear` / `__pile` 的 `max-width` 不是多余的** —— 它们的尺寸是列宽
+>    百分比，而 `.gb-vs__brand` 的行高与它们的 `top` 是视口 px 斜坡，768–1024 两者反向，
+>    熊会伸进第一行文字 23px（575 处 45px、还带上 pile）。cap 的值就是各自的板尺寸按视口
+>    插值，删掉就复发。
+> 2. **`.gb-vs__bear` 用 `right` 不用 `left`** —— cap 一生效，左锚会把熊拽离卡片右上角。
+>    两块板都把它停在浅绿卡右缘外约 3px，所以 `calc(-5.426% - 3px)`。
+> 3. **`.gb-404 .text-block.text-block :is(h1,...)` 里 `.text-block` 写两遍是故意的** ——
+>    标题的字体来自主题编辑器放在**包裹层**上的 type preset 类
+>    （`.text-block.h3 :is(h1,...)`，0-2-1）。`.gb-404 h1` 只有 0-1-1，会静默失效
+>    （第一版就是按钮和正文都变了、只有标题没动）。别「简化」回一个类。
+> 4. **列表标题那条限定在 `.section-resource-list__header` 里也是故意的** —— 商品卡也是
+>    text-block，不限定会把 32/800 套到每个商品名和价格上。
+>
+> ⚠ **判据坑**：`.gb-vs__bear` 带 `rotate(-14deg)`，`getBoundingClientRect()` 给的是旋转后
+> 的外接盒，比 CSS 定位的盒子右出 0.079×w。断言它的右缘必须从 computed `right` 反推，
+> 直接用 rect 会恒红。
+
 > 状态：`$build` = **`20260907-r91`**（第九十二轮，2026-09-07）—— promo 还原静态站 + vs 表格对齐。
 > **已推 live**（2026-09-07，三个文件：`assets/customstyle.css` / `.scss` / `sections/gb-promo.liquid`）。
 > 回读 **616 → 616**、三个文件逐字节相同、613 个清单外文件零改动。新基线 **`baseline-r91`**。

@@ -33,7 +33,7 @@
 // font url()s read it. Previewing over file:// caches css/js/woff2 until a hard
 // refresh, so without it a real change reads as "nothing happened".
 // font-check.html prints the value the browser actually got.
-$build: "20260907-r91";
+$build: "20260907-r92";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -8657,6 +8657,18 @@ html.is-menu-open {
   @include narrow { height: 88.5px; }
 }
 
+// ⚠ max-width on all three of these is what keeps them out of the first row.
+// Their size is a percentage of the COLUMN, but .gb-vs__brand's height and their
+// own `top` both ramp with the VIEWPORT -- and between 768 and 1024 the column is
+// already at its 516 board width while the row has ramped down to ~118. The bear
+// ended up 23px into "One pouch, once a day"; at 575 (the table uncaps to the full
+// 535) the bear reached two rows and the pile reached one.
+// The cap is each one's own board size, viewport-ramped, and it is not a guessed
+// number: solving "artwork bottom + the board's own clearance = row height" for the
+// bear gives 105.993 at 768 and 174.168 at 1281 -- the two board values exactly.
+// Below the cap the percentage still rules, so 1281-1440 and the phone tier are
+// untouched and bear : pile : logo stays one ratio throughout.
+
 // Offset from the CARD's left edge, not the column's: the card now starts where
 // the label column ends, and a flat 33.023% would have left the logo hanging off
 // its left side wherever the label floor pushed the card right (1025-1280).
@@ -8667,6 +8679,7 @@ html.is-menu-open {
   left: calc(var(--vs-card-x) + 6.860%);   // 35.4 / 516
   top: 45px;
   width: 33.527%;              // 173 / 516
+  max-width: 173px;
   color: $c-green;
 
   svg { display: block; width: 100%; height: auto; }
@@ -8676,8 +8689,9 @@ html.is-menu-open {
     left: calc(var(--vs-card-x) + 4.843%); // 17 / 351
     top: 51px;
     width: 29.345%;            // 103 / 351
+    max-width: 103px;
   }
-  @include tablet { top: fluid(51px, 45px); }
+  @include tablet { top: fluid(51px, 45px); max-width: fluid(103px, 173px); }
 }
 
 // Figma frames the bear at 110x146 but drops a 174.17x134.50 image into it, so
@@ -8692,18 +8706,24 @@ html.is-menu-open {
 // centre keeps the centre fixed).
 .gb-vs__bear {
   position: absolute;
-  left: 72.220%;               // 372.656 / 516
+  // Anchored right, not left: once max-width bites, a left anchor would drag the
+  // bear inward off the card's corner. Both boards park its right edge ~3px past
+  // the lime card's own right edge (546.824 vs 544 desktop, 354.023 vs 351 phone),
+  // and the card's right edge is the -5.426% below -- so this holds at every width.
+  right: calc(-5.426% - 3px);
   top: -27.63px;
   width: 33.753%;              // 174.168 / 516
+  max-width: 174.168px;
   height: auto;
   transform: rotate(-14.006deg);
 
   @include narrow {
-    left: 70.664%;             // 248.030 / 351
+    right: -3px;
     top: 3.51px;
     width: 30.198%;            // 105.993 / 351
+    max-width: 105.993px;
   }
-  @include tablet { top: fluid(3.51px, -27.63px); }
+  @include tablet { top: fluid(3.51px, -27.63px); max-width: fluid(105.993px, 174.168px); }
 }
 
 .gb-vs__others {
@@ -8733,6 +8753,7 @@ html.is-menu-open {
   right: -39px;                // 1398 - 1359: the board hangs it past the column
   top: 6px;
   width: 32.276%;              // 112 / 347
+  max-width: 112px;
   height: auto;
 
   // ⚠ width is a percentage of the column in BOTH tiers, which is what keeps the
@@ -8742,11 +8763,12 @@ html.is-menu-open {
   // up to 1024 and the pile came out 40% under the bear across the whole tablet
   // tier. Percentages cannot be ramped (fluid() is px-only), so the overhang is
   // the px value that ramps and the size follows the column.
-  @include tablet { right: #{fluid(0, -39px)}; top: fluid(0, 6px); }
+  @include tablet { right: #{fluid(0, -39px)}; top: fluid(0, 6px); max-width: fluid(68.5px, 112px); }
   @include narrow {
     right: 0;                  // 282.5 + 68.5 = 351, flush with the column
     top: 0;
     width: 19.516%;            // 68.5 / 351
+    max-width: 68.5px;
   }
 }
 
@@ -11042,6 +11064,105 @@ html.is-menu-open {
 // variable, so --padding-block-end would need !important. .product-grid-container
 // carries the only rule that reads it and is 0-1-0, so 0-2-0 here is enough.
 .gb-page-wrapper .product-grid-container {
+  padding-block-end: 120px;
+
+  @include narrow { padding-block-end: 64px; }
+  @include tablet { padding-block-end: fluid(64px, 120px); }
+}
+
+// ==========================================================================
+// 404
+// ==========================================================================
+
+// Live only. templates/404.json is the one template still running Horizon's own
+// sections -- main-404 (heading / copy / button) and product-list ("Discover
+// something new"). Both ship Horizon defaults: Inter, black, 14px radius. Next
+// to every gb-* section they read as a different site.
+// `.gb-404` is added in sections/main-404.liquid's schema class because
+// `section-wrapper` is shared with main-page / main-blog-post / section;
+// product-list already carries its own `.ui-test-product-list`, and both
+// sections are mounted on this template only.
+.gb-404 {
+  // Same type as every other page-level H1 on the site.
+  // ⚠ .text-block repeated on purpose. The heading's type comes from the type
+  // preset class the theme editor puts on the WRAPPER, via
+  // `.text-block.h3 :is(h1,...)` -- 0-2-1, which a plain `.gb-404 h1` (0-1-1)
+  // loses to. Doubling the class makes this 0-3-1 and settles it on specificity
+  // rather than on customstyle.css happening to load after base.css.
+  .text-block.text-block :is(h1, h2, h3, h4, h5, h6) {
+    font-family: $font-brand-stack;
+    font-size: 56px;
+    font-weight: 800;
+    line-height: 64px;
+    letter-spacing: -0.56px;
+    color: $c-green;
+
+    @include narrow { font-size: 30px; line-height: 36px; letter-spacing: -0.3px; }
+    @include tablet {
+      font-size: fluid(30px, 56px);
+      line-height: fluid(36px, 64px);
+      letter-spacing: fluid(-0.3px, -0.56px);
+    }
+  }
+
+  // Horizon leaves body copy at pure black; the site's is gray-700.
+  p { color: $c-gray-700; }
+
+  // .gb-btn + .gb-btn--lg, restated: the block's markup is Horizon's and its
+  // class list is `size-style button button--<block id hash>`, so there is no
+  // way to hand it the real classes from here. 0-2-0 beats Horizon's `.button`
+  // (0-1-0) on every property below, and customstyle.css loads after base.css.
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 52px;
+    padding: 0 64px;
+    background: $c-green;
+    border: 1px solid $c-green;
+    border-radius: $r-pill;
+    color: $c-white;
+    font-family: $font-brand-stack;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 28px;
+    letter-spacing: 0.48px;
+    text-transform: capitalize;
+    transition: trans(background-color, color, border-color);
+
+    @include hover { background: $c-lime; border-color: $c-lime; color: $c-green-900; }
+  }
+}
+
+// The product list under it. Its header is a rich-text block, so the type lands
+// on the inner element, not on the section.
+.ui-test-product-list {
+  // Same doubled-class trick as .gb-404 above, same reason -- this header block
+  // runs the `h4` preset, so its type also arrives from the wrapper.
+  // ⚠ Scoped to __header. The product CARDS are text blocks too, so an unscoped
+  // selector puts the section heading's 32/800 on every product name and price.
+  .section-resource-list__header {
+    .text-block.text-block > *,
+    .text-block.text-block :is(h1, h2, h3, h4, h5, h6) {
+      font-family: $font-brand-stack;
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 40px;
+      letter-spacing: -0.32px;
+      color: $c-ink;
+
+      @include narrow { font-size: 24px; line-height: 32px; letter-spacing: -0.24px; }
+      @include tablet { font-size: fluid(24px, 32px); line-height: fluid(32px, 40px); letter-spacing: fluid(-0.24px, -0.32px); }
+    }
+  }
+}
+
+// Same story as .product-grid-container above, same numbers, same reason: the
+// theme editor's 48 leaves the footer CTA's deco bear (196 up on desktop, 108 on
+// mobile) sitting on the product names. Overriding the longhand, not the inline
+// custom property; .spacing-style is 0-1-0 so 0-2-0 is enough.
+.gb-page-wrapper [data-testid="product-list"] {
   padding-block-end: 120px;
 
   @include narrow { padding-block-end: 64px; }

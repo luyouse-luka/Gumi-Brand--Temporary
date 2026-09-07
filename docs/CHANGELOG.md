@@ -4681,6 +4681,112 @@ PDP / reviews / home 三页渲染后 `[class*=gb-crev]` 元素数均为 **0** �
 - 手机端的 `lip--h`（卡片底部水平波浪）线上仍缺，两张卡都是。
 - collection 页（r88）仍是无稿的自定值，待设计方裁决。
 
+## 第九十三轮（2026-09-07）— vs 品牌行美术件不再压文字 + 404 换成主题字体 + product-list 底距（`$build` = `20260907-r92`）
+
+需求方三条：① `gb-vs__logo` / `__bear` / `__pile` 响应式盖住下方文字；② `/404` 优化样式，
+按钮与标题都调成主题里同类的；③ `product-list` 底部加间距。
+
+### 1. 品牌行的三个美术件溢出到表格行里
+
+**根因是两套基准打架**：三个件的尺寸是**列宽百分比**，而 `.gb-vs__brand` 的行高和它们
+自己的 `top` 都是**视口 px 斜坡**。768–1024 这段里列宽已经是 516（板值），行高却已经
+降到 ~118 —— 件没缩、盒子先缩了。实测溢出：
+
+| 视口 | brand 行高 | bear 越出行底 | 压住的文字 |
+|---|---|---|---|
+| 1024 | 118.3 | **+23.2** | One pouch, once a day |
+| 900 | 109.8 | **+23.6** | 同上 |
+| 768 | 100.7 | **+23.7** | 同上 |
+| 575 | 100.7 | **+45.3** | 压两行；pile 另压一行 **+15.9** |
+
+改法：三个件各加一条 `max-width`，值是**它自己的板尺寸按视口插值**。
+这不是拍的数 —— 把「件底 + 板上留白 = 行高」解出来，bear 在 768 得 105.7、
+在 1281 得 174.2，**正好就是两块板的 105.993 / 174.168**。
+
+- `logo` `max-width: 173px` / tablet `fluid(103, 173)` / narrow `103px`
+- `bear` `max-width: 174.168px` / tablet `fluid(105.993, 174.168)` / narrow `105.993px`
+- `pile` `max-width: 112px` / tablet `fluid(68.5, 112)` / narrow `68.5px`
+
+⚠ **bear 的锚点从 `left` 换成 `right`**：`max-width` 一旦生效，左锚会把熊往列里拽、
+离开卡片右上角。两块板都把它的右缘停在浅绿卡右缘外 **约 3px**（桌面 546.824 vs 544，
+手机 354.023 vs 351），而卡片右缘就是上一轮那条 `-5.426%`，所以
+`right: calc(-5.426% - 3px)`（narrow `-3px`）在每个宽度都成立。
+
+结果：**14 档全部零重叠**，三个件全部落在自己的 brand 行内。
+1440 / 1281 / 1280 / 1200 / 1100 / 1025 / 390 / 360 **逐值与改前相同**（cap 在这些
+宽度不咬），只有 768–1024 与 480–767 变化 —— 正是坏掉的那两段。
+bear : pile 与 logo : bear 两个比例仍然全档恒定（1.79–1.80 / 0.84–0.86）。
+
+### 2. `/404`：整页还是 Horizon 的默认外观
+
+`templates/404.json` 是**唯一还在跑 Horizon 自带 section 的模板** —— `main-404`
+（标题 / 正文 / 按钮）与 `product-list`（Discover something new）。三处都是 Inter、
+纯黑、14px 圆角，挨着 gb-* 区块看像另一个站。
+
+| | 改前 | 改后（取自站内同类） |
+|---|---|---|
+| 标题 | Inter 32/700 黑 | PP Palma **56/64/-0.56 800 `$c-green`**（= `.gb-page-hero__title`），手机 30/36 |
+| 正文 | 纯黑 | `$c-gray-700` |
+| 按钮 | 黑底、14px 圆角、Inter 14 | 绿底、pill、PP Palma 16/28/0.48、高 52、padding 0 64、capitalize（= `.gb-btn--lg`） |
+| 列表标题 | Inter 24/700 黑 | PP Palma 32/40/-0.32 800 `$c-ink`，手机 24/32 |
+
+⚠ **钩子类加在 `sections/main-404.liquid` 的 schema 上**（`section-wrapper` → `section-wrapper gb-404`）：
+`section-wrapper` 是 `main-page` / `main-blog-post` / `section` 共用的，拿它当选择器会误伤内页。
+`product-list` 自带 `.ui-test-product-list`，两个 section 都只挂在这一个模板上。
+
+⚠ **`.text-block` 要写两遍**。标题的字体不是来自 `<h1>` 自己，而是主题编辑器把
+type preset 类（`h3`）放在**包裹层**上，由 `.text-block.h3 :is(h1,...)`（0-2-1）供给。
+`.gb-404 h1` 只有 0-1-1，**第一版就是这么静默失效的**（按钮和正文都变了、只有标题没动）。
+重复一次类名做到 0-3-1，靠特异性定胜负，不靠「customstyle.css 恰好在 base.css 之后」。
+
+⚠ **列表标题那条必须限定在 `.section-resource-list__header` 里**：商品卡也是 text-block，
+不限定会把 32/800 套到每个商品名和价格上（第一版实测就是如此，商品名变成了大标题）。
+
+### 3. `product-list` 底距 48 → 120 / 64
+
+与第八十八轮的 collection 页同一回事、同一组值、同一个理由：`gb-footer-cta` 的
+`.gb-deco-bear--a` 相对波浪固定上溢 196（桌面）/ 108（手机），48 的留白下它**直接骑在
+商品名上**。实测小熊顶缘与商品名底缘的净距：桌面 **−37.6 → +34.4**，手机 **−12 → +36**。
+
+同样是覆盖 longhand 而不是 inline 的 custom property；`.spacing-style` 是 0-1-0，
+所以 `.gb-page-wrapper [data-testid="product-list"]` 的 0-2-0 够用。
+
+### 判据
+
+`tools/r92check.py`（静态 14 档 / 线上 vs 4 档 + 404 两档）：
+
+- 三个美术件与任何 label / value / mark 的矩形**零相交**，且各自底缘 ≤ 自己 brand 行的底缘
+- `bear : pile` = 1.795 ±0.02、`logo : bear` = 0.849 ±0.015（全档）
+- bear 的**未旋转**右缘 = 浅绿卡右缘 + 3 ±1.5
+  （⚠ `getBoundingClientRect` 给的是旋转后的外接盒，比 CSS 定位的盒子还要右出 0.079×w，
+  直接拿它断言会恒红 —— 判据要从 computed `right` 反推）
+- 404：标题/按钮/正文/列表标题的字族·字号·字重·颜色·圆角·高度·大小写
+- **商品卡的字号字重不被列表标题波及**（16 / 400）
+- `product-list` 的 `padding-block-end` = 120 / 64，且小熊与商品名净距 > 0
+- `document.scrollWidth == innerWidth`
+
+**结果**：静态 14 档全绿；线上（换 css + 注入钩子类）**全绿**；
+`--as-served` **17 红**。回归 `r87` / `r88` / `r89` / `r90` / `r91` 全绿，`rwd.py` 全绿。
+
+### 文件清单
+
+| 文件 | 改动 |
+|---|---|
+| `assets/customstyle.scss` | `.gb-vs__logo` / `__bear` / `__pile` 各加 `max-width` 三档，bear 改右锚；新增 `// 404` 分区（`.gb-404` 标题/正文/按钮、`.ui-test-product-list` 列表标题、`[data-testid=product-list]` 底距）；`$build` → `20260907-r92` |
+| `assets/customstyle.css` | 重编译（双写，`--style=expanded`） |
+| `liquid/sections/main-404.liquid` | schema `class` 补 `gb-404` 钩子 |
+| `liquid/r92.patch` | 上面那一行的 diff |
+| `tools/r92check.py` | 本轮判据（新增） |
+
+### 顺带发现 / 未修
+
+- `/404` 商品卡的**价格**仍是 Inter 12/500（Horizon 默认）。商品名已经是 PP Palma
+  （继承正文字体），只有价格没跟上。需求只点了「标题」和「按钮」，**没动**。
+- `/404` 的商品图是 `image_ratio: adapt` + 一张很高的透明 PNG，卡片因此非常高。
+  那是后台设置不是样式，**没动**。
+- `main-404` 的 section 上下 padding 各 100（后台设置），标题上方还有 Horizon
+  `:is(h1..h6)` 给的 40px margin，整块偏空。**没动**，属版式决策。
+
 ## 第九十二轮（2026-09-07）— promo 还原静态站（含响应式）+ vs 表格对齐与比例（`$build` = `20260907-r91`）
 
 需求方两条：① `gb-promo` 样式仍未还原静态站、包括响应式，`__media` 的图要 `object-fit: contain`；

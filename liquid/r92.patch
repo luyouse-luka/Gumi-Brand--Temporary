@@ -1,0 +1,11 @@
+--- /home/ly/project/Gumi-Brand-shopify/baseline-r91/sections/main-404.liquid	2026-09-07 15:04:21.182419990 +0000
++++ liquid/sections/main-404.liquid	2026-09-07 15:29:03.128336155 +0000
+@@ -37,7 +37,7 @@
+ {% schema %}
+ {
+   "name": "t:names.404",
+-  "class": "section-wrapper",
++  "class": "section-wrapper gb-404",
+   "blocks": [
+     {
+       "type": "@theme"

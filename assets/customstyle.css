@@ -1,27 +1,27 @@
 @font-face {
   font-family: "PP Palma";
-  src: url("pppalma-fizzy-light.woff2?v=20260907-r91") format("woff2");
+  src: url("pppalma-fizzy-light.woff2?v=20260907-r92") format("woff2");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("PPPalma-Regular.woff2?v=20260907-r91") format("woff2");
+  src: url("PPPalma-Regular.woff2?v=20260907-r92") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("PPPalma-FizzyMedium.woff2?v=20260907-r91") format("woff2");
+  src: url("PPPalma-FizzyMedium.woff2?v=20260907-r92") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("PPPalma-FizzyHeavy.woff2?v=20260907-r91") format("woff2");
+  src: url("PPPalma-FizzyHeavy.woff2?v=20260907-r92") format("woff2");
   font-weight: 800;
   font-style: normal;
   font-display: swap;
@@ -64,7 +64,7 @@
 }
 @font-face {
   font-family: "Figtree";
-  src: url("figtree-variable-latin.woff2?v=20260907-r91") format("woff2");
+  src: url("figtree-variable-latin.woff2?v=20260907-r92") format("woff2");
   font-weight: 300 900;
   font-style: normal;
   font-display: swap;
@@ -72,7 +72,7 @@
 }
 @font-face {
   font-family: "Figtree";
-  src: url("figtree-variable-latin-ext.woff2?v=20260907-r91") format("woff2");
+  src: url("figtree-variable-latin-ext.woff2?v=20260907-r92") format("woff2");
   font-weight: 300 900;
   font-style: normal;
   font-display: swap;
@@ -80,7 +80,7 @@
 }
 @font-face {
   font-family: "Inter";
-  src: url("inter-variable-latin.woff2?v=20260907-r91") format("woff2");
+  src: url("inter-variable-latin.woff2?v=20260907-r92") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -88,7 +88,7 @@
 }
 @font-face {
   font-family: "Inter";
-  src: url("inter-variable-latin-ext.woff2?v=20260907-r91") format("woff2");
+  src: url("inter-variable-latin-ext.woff2?v=20260907-r92") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -96,7 +96,7 @@
 }
 @font-face {
   font-family: "Lexend";
-  src: url("lexend-variable-latin.woff2?v=20260907-r91") format("woff2");
+  src: url("lexend-variable-latin.woff2?v=20260907-r92") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -104,7 +104,7 @@
 }
 @font-face {
   font-family: "Lexend";
-  src: url("lexend-variable-latin-ext.woff2?v=20260907-r91") format("woff2");
+  src: url("lexend-variable-latin-ext.woff2?v=20260907-r92") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -112,7 +112,7 @@
 }
 @font-face {
   font-family: "Playpen Sans";
-  src: url("playpen-sans-600-latin.woff2?v=20260907-r91") format("woff2");
+  src: url("playpen-sans-600-latin.woff2?v=20260907-r92") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -120,14 +120,14 @@
 }
 @font-face {
   font-family: "Playpen Sans";
-  src: url("playpen-sans-600-latin-ext.woff2?v=20260907-r91") format("woff2");
+  src: url("playpen-sans-600-latin-ext.woff2?v=20260907-r92") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 :root {
-  --build: "20260907-r91";
+  --build: "20260907-r92";
 }
 
 *, *::before, *::after {
@@ -5718,8 +5718,8 @@ a.gb-header__link {
   width: 100%;
   height: auto;
   aspect-ratio: 13.5/22;
-  background: url("bear-icon.png?v=20260907-r91") center/contain no-repeat;
-  background: image-set(url("bear-icon.webp?v=20260907-r91") type("image/webp"), url("bear-icon.png?v=20260907-r91") type("image/png")) center/contain no-repeat;
+  background: url("bear-icon.png?v=20260907-r92") center/contain no-repeat;
+  background: image-set(url("bear-icon.webp?v=20260907-r92") type("image/webp"), url("bear-icon.png?v=20260907-r92") type("image/png")) center/contain no-repeat;
 }
 
 .gb-bear-meter__bear.is-off {
@@ -8215,6 +8215,7 @@ a.gb-header__link {
   left: calc(var(--vs-card-x) + 6.86%);
   top: 45px;
   width: 33.527%;
+  max-width: 173px;
   color: #005635;
 }
 .gb-vs__logo svg {
@@ -8230,32 +8231,37 @@ a.gb-header__link {
     left: calc(var(--vs-card-x) + 4.843%);
     top: 51px;
     width: 29.345%;
+    max-width: 103px;
   }
 }
 @media (min-width: 768px) and (max-width: 1280px) {
   .gb-vs__logo {
     top: clamp(45px, 51px + -6 * (100vw - 768px) / 513, 51px);
+    max-width: clamp(103px, 103px + 70 * (100vw - 768px) / 513, 173px);
   }
 }
 
 .gb-vs__bear {
   position: absolute;
-  left: 72.22%;
+  right: calc(-5.426% - 3px);
   top: -27.63px;
   width: 33.753%;
+  max-width: 174.168px;
   height: auto;
   transform: rotate(-14.006deg);
 }
 @media (max-width: 767px) {
   .gb-vs__bear {
-    left: 70.664%;
+    right: -3px;
     top: 3.51px;
     width: 30.198%;
+    max-width: 105.993px;
   }
 }
 @media (min-width: 768px) and (max-width: 1280px) {
   .gb-vs__bear {
     top: clamp(-27.63px, 3.51px + -31.14 * (100vw - 768px) / 513, 3.51px);
+    max-width: clamp(105.993px, 105.993px + 68.175 * (100vw - 768px) / 513, 174.168px);
   }
 }
 
@@ -8294,12 +8300,14 @@ a.gb-header__link {
   right: -39px;
   top: 6px;
   width: 32.276%;
+  max-width: 112px;
   height: auto;
 }
 @media (min-width: 768px) and (max-width: 1280px) {
   .gb-vs__pile {
     right: clamp(-39px, 0px + -39 * (100vw - 768px) / 513, 0px);
     top: clamp(0px, 0px + 6 * (100vw - 768px) / 513, 6px);
+    max-width: clamp(68.5px, 68.5px + 43.5 * (100vw - 768px) / 513, 112px);
   }
 }
 @media (max-width: 767px) {
@@ -8307,6 +8315,7 @@ a.gb-header__link {
     right: 0;
     top: 0;
     width: 19.516%;
+    max-width: 68.5px;
   }
 }
 
@@ -11017,6 +11026,98 @@ a.gb-header__link {
 }
 @media (min-width: 768px) and (max-width: 1280px) {
   .gb-page-wrapper .product-grid-container {
+    padding-block-end: clamp(64px, 64px + 56 * (100vw - 768px) / 513, 120px);
+  }
+}
+
+.gb-404 .text-block.text-block :is(h1, h2, h3, h4, h5, h6) {
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 64px;
+  letter-spacing: -0.56px;
+  color: #005635;
+}
+@media (max-width: 767px) {
+  .gb-404 .text-block.text-block :is(h1, h2, h3, h4, h5, h6) {
+    font-size: 30px;
+    line-height: 36px;
+    letter-spacing: -0.3px;
+  }
+}
+@media (min-width: 768px) and (max-width: 1280px) {
+  .gb-404 .text-block.text-block :is(h1, h2, h3, h4, h5, h6) {
+    font-size: clamp(30px, 30px + 26 * (100vw - 768px) / 513, 56px);
+    line-height: clamp(36px, 36px + 28 * (100vw - 768px) / 513, 64px);
+    letter-spacing: clamp(-0.56px, -0.3px + -0.26 * (100vw - 768px) / 513, -0.3px);
+  }
+}
+.gb-404 p {
+  color: #4d4d4d;
+}
+.gb-404 .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 52px;
+  padding: 0 64px;
+  background: #005635;
+  border: 1px solid #005635;
+  border-radius: 999px;
+  color: #ffffff;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 28px;
+  letter-spacing: 0.48px;
+  text-transform: capitalize;
+  transition: background-color 0.2s cubic-bezier(0.33, 1, 0.68, 1), color 0.2s cubic-bezier(0.33, 1, 0.68, 1), border-color 0.2s cubic-bezier(0.33, 1, 0.68, 1);
+}
+@media (hover: hover) {
+  .gb-404 .button:hover {
+    background: #b5ed61;
+    border-color: #b5ed61;
+    color: #004128;
+  }
+}
+
+.ui-test-product-list .section-resource-list__header .text-block.text-block > *,
+.ui-test-product-list .section-resource-list__header .text-block.text-block :is(h1, h2, h3, h4, h5, h6) {
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 40px;
+  letter-spacing: -0.32px;
+  color: #011307;
+}
+@media (max-width: 767px) {
+  .ui-test-product-list .section-resource-list__header .text-block.text-block > *,
+  .ui-test-product-list .section-resource-list__header .text-block.text-block :is(h1, h2, h3, h4, h5, h6) {
+    font-size: 24px;
+    line-height: 32px;
+    letter-spacing: -0.24px;
+  }
+}
+@media (min-width: 768px) and (max-width: 1280px) {
+  .ui-test-product-list .section-resource-list__header .text-block.text-block > *,
+  .ui-test-product-list .section-resource-list__header .text-block.text-block :is(h1, h2, h3, h4, h5, h6) {
+    font-size: clamp(24px, 24px + 8 * (100vw - 768px) / 513, 32px);
+    line-height: clamp(32px, 32px + 8 * (100vw - 768px) / 513, 40px);
+    letter-spacing: clamp(-0.32px, -0.24px + -0.08 * (100vw - 768px) / 513, -0.24px);
+  }
+}
+
+.gb-page-wrapper [data-testid=product-list] {
+  padding-block-end: 120px;
+}
+@media (max-width: 767px) {
+  .gb-page-wrapper [data-testid=product-list] {
+    padding-block-end: 64px;
+  }
+}
+@media (min-width: 768px) and (max-width: 1280px) {
+  .gb-page-wrapper [data-testid=product-list] {
     padding-block-end: clamp(64px, 64px + 56 * (100vw - 768px) / 513, 120px);
   }
 }
