@@ -4681,6 +4681,100 @@ PDP / reviews / home 三页渲染后 `[class*=gb-crev]` 元素数均为 **0** �
 - 手机端的 `lip--h`（卡片底部水平波浪）线上仍缺，两张卡都是。
 - collection 页（r88）仍是无稿的自定值，待设计方裁决。
 
+## 第九十九轮（2026-09-08）— 专家轨改成到头即停 + 建立 `docs/SCALLOP.md`（`$build` = `20260908-r98`）
+
+需求（对话，2 条）：
+1. `gb-expert__cards` 去掉无限循环，到最后一张时 next/prev 按钮**变灰表示禁点**
+2. 列出 `gb-scallop` 该怎么处理 —— 有的朝上有的朝下、颜色不同、模块的上下 padding 也不一样
+
+**未推 live**，本轮只改与验。⚠ 第 1 条要上线**必须推 `sections/gb-expert.liquid`**（去掉一个属性）。
+
+### 1. 到头即停
+
+改动只有**去掉一个属性**：`data-slider-rewind`。`slider.sync()` 早就写好了
+
+```js
+if (!sw || rewind || loop) { return; }   // neither one ever dead-ends
+if (prev) { prev.disabled = sw.isBeginning; }
+if (next) { next.disabled = sw.isEnd; }
+```
+
+而 `.gb-reels__btn[disabled] { opacity: 0.35; cursor: not-allowed; }` 从 r70 起就在 SCSS 里，
+**一次都没触发过** —— 站上每条轨要么 `loop` 要么 `rewind`，`sync()` 每次都在第一行返回。
+所以这一条不需要新样式，去掉属性就够。
+
+⚠ **不写 `pointer-events: none`**：那会连光标一起吞掉，用户看不出为什么点不动
+（[[cursor-not-allowed-vs-pointer-events]]）。`[disabled]` 的按钮本来就不响应点击。
+
+⚠ **767 档第一版是坏的，`slideChange` 不够。** 768 宽的轨里三张 305 卡只比容器宽 180，
+轨道**会动**但 `activeIndex` 始终是 1 —— `slideChange` 不触发，`sync()` 不跑，两端箭头都还亮着。
+`sync` 因此**同时挂到 `transitionEnd`** 上，每次滑动落定都跑一次。
+
+实测（390 / 575 / 767）：开在中间两键都亮 → 点到尾 next 变 0.35 + `not-allowed` → 点回头 prev 同理。
+**991 档两个键都是灰的**，因为三张卡在那个宽度已经全部可见（右边还余 37px），确实没得滑。
+
+⚠ `centeredSlidesBounds`（第九十七轮加的）继续管用：到头时首尾贴轨道边，左右空白仍是 0。
+
+### 2. `docs/SCALLOP.md` + `tools/scallopmap.py`
+
+新文档回答四件事：**机制** / **变体清单** / **静态站真值表** / **线上现状与偏差**。要点：
+
+- **四个正交轴**：尺寸（默认 96.9 / `--lg` 129）、方向（默认朝上 / `--down` 朝下，**只在 hero 下**）、
+  配色（15 对，命名一律 `上-to-下`）、定位（`--edge` / `--edge-top` / `--bleed` / 流内）。
+  ⚠ 尺寸和方向在稿里就是两个独立的轴，**组件 id 才是判据，名字不是**。
+- **⚠ 每个模块必须自己把波浪高度加进 `padding-bottom`**（`var(--sc-h)` / `var(--sc-lg-h)`），
+  波浪是绝对定位的、不占布局高度。全站 21 处预留列了表。**换波浪尺寸必须同时改这里。**
+- **波浪属于它上面那个 section**（是该 section 的最后一个子元素），这样一个 Shopify section
+  模板就能把模块和它的下边缘一起吐出来。
+
+新判据 `tools/scallopmap.py [--password 1234]`：逐页列出每个波浪的宿主、类名、实测高度与两个颜色，
+带密码时静态站与线上**并排比对**。
+
+### ⚠ 顺带查出来的：线上与静态站有 14 处波浪不一致（未修，等裁决）
+
+`scallopmap.py --password 1234` 实测，四类：
+
+| 类 | 数量 | 例 |
+|---|---|---|
+| **A 尺寸不对** | 6 | `gb-page-hero` 在 how-gumi-works / our-story / reviews / science 少了 `--lg`（129 → 96.9）；pdp 的 `gb-app-section` 与 reviews 的 `gb-ingredients` 反过来多了 `--lg` |
+| **B 颜色不对** | 2 | science 的 hero 波浪应是 `--mint-to-cream`（薄荷→奶油），线上是 `--to-white`（薄荷→**白**） |
+| **C 线上根本没有** | 5 | index 的 `gb-logo-scroll`、how-gumi-works / our-story 的 `gb-reviews`、our-story 的 `gb-cta-band`、reviews 的 `gb-app-section` |
+| **D 机制不同** | 1 | index 的 nutrition→product：静态站是 product **顶部**的 `--edge-top --lg --lime-to-white --bleed`（让产品图从圆弧缝隙透出），线上是 product **底部**的 `--edge --lg --white-to-mint`。**两条不同的波浪** |
+
+⚠ A 类那六处**同时也是 padding 问题** —— 模块预留的是另一号波浪的高度。
+
+⚠ **根因是线上每个 section 各行其是**：尺寸和方向从来不可配，全部写死；只有颜色有 select，
+而每个 section 的选项集都不一样（2 到 14 个不等），还有五个 section 连颜色都写死
+（`gb-page-hero` / `gb-expert` / `gb-logo-scroll` / `gb-dosed` / `gb-footer`）。
+**`mint-to-cream` 在除 `gb-science` 外的每个 select 里都缺** —— 任何一个 select 都配不出
+science 现在该有的样子。对照表在 `docs/SCALLOP.md` 第 5 节。
+
+### 文件清单
+
+```
+改  reviews.html                     去掉 data-slider-rewind
+改  liquid/sections/gb-expert.liquid 同上 ⚠ 未推，需逐次授权
+改  assets/main.js                   sync 补挂 transitionEnd（767 档的真因）
+改  assets/customstyle.scss / .css   仅 $build → 20260908-r98
+改  全部 13 个 html                  ?v= r97 → r98
+新  docs/SCALLOP.md                  波浪使用说明（259 行）
+新  tools/scallopmap.py              波浪全站对照判据（静态 / 线上）
+新  tools/_apply_r98.py / tools/r98check.py
+```
+
+### 判据
+
+`tools/r98check.py` **52 ok / 0 red**；`--strip`（把 `rewind` 加回去并重建轨道）**20 red**。
+覆盖 390 / 575 / 767 三档的「中间→尾→头」全程、991 档两键皆灰、
+以及**四条 loop reels 的箭头必须仍然是亮的**（`sync()` 对它们照旧早退）。
+回归 `r96check` / `crevcheck` / `rwd` / `r94check` 全绿。
+
+### 遗留
+
+- **第 1 条未上线** —— 要推 `sections/gb-expert.liquid`。
+- **波浪的 14 处线上偏差未修**，见上与 `docs/SCALLOP.md` 第 6 节。
+- 其余遗留同第九十八轮。
+
 ## 第九十八轮（2026-09-08）— 评论分页交给线上：删掉 `crevPager` 与我们那份入场动画（`$build` = `20260908-r97`）
 
 需求（对话）：`gb-crev-card` 与 live 冲突处**以 live 为准，本地去掉相关的 JS 代码，然后推送**。

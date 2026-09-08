@@ -4,6 +4,31 @@
 > 项目定位与已确立的规范在 [PROJECT-STATUS.md](PROJECT-STATUS.md)；
 > 改动史在 [CHANGELOG.md](CHANGELOG.md)（近 10 轮）+ [CHANGELOG-ARCHIVE.md](CHANGELOG-ARCHIVE.md)（第一～三十轮），**两份一起 grep**。
 >
+> 状态：`$build` = **`20260908-r98`**（第九十九轮，2026-09-08）—— 专家轨到头即停 + `docs/SCALLOP.md`。
+> **未推 live**：线上仍是 `20260908-r97`。
+> ⚠ **第 1 条要上线必须推 `sections/gb-expert.liquid`**（去掉一个 `data-slider-rewind` 属性），
+> **推 liquid 需逐次授权**。
+> 判据 `tools/r98check.py` **52 ok / 0 red**，`--strip` 20 红。回归 `r96check` / `crevcheck` /
+> `rwd` / `r94check` 全绿。
+>
+> 📄 **新文档 [`SCALLOP.md`](SCALLOP.md)** —— 波浪怎么用：四个正交轴（尺寸 / 方向 / 配色 / 定位）、
+> 15 对配色清单、**每个模块必须自己在 `padding-bottom` 里预留波浪高度**（21 处列表）、
+> 静态站 58 处真值表、线上 14 个 section 的暴露方式对照。
+> 判据 `python3 tools/scallopmap.py [--password 1234]`。
+>
+> ⚠ **线上有 14 处波浪与静态站不一致，已列清单、未修、等裁决** —— 见 `SCALLOP.md` 第 6 节。
+> 六处尺寸不对（`--lg` 多了或少了，**同时也是 padding 问题**）、两处颜色不对、
+> 五处线上根本没有波浪、一处机制完全不同（index 的 nutrition→product）。
+> 根因是**线上每个 section 各行其是**：尺寸与方向从不可配，颜色 select 每个 section 选项集都不同
+> （2 到 14 个），五个 section 连颜色都写死。**`mint-to-cream` 在除 `gb-science` 外每个 select 里都缺。**
+>
+> ⚠ **不要报成 bug**：
+> 1. **991 档专家轨两个箭头都是灰的，是对的** —— 三张卡在那个宽度已经全部可见（右边还余 37px），
+>    确实没得滑。992 以上 Swiper 被 destroy、`.gb-expert__nav` 本来就 `display: none`。
+> 2. **`.gb-reels__btn[disabled]` 的样式从 r70 就在，本轮才第一次生效** —— 之前站上每条轨
+>    要么 `loop` 要么 `rewind`，`sync()` 每次都在第一行早退，不是新加的。
+> 3. **四条 reels 轨的箭头永远不变灰，是对的** —— 它们是 `loop`，`sync()` 对它们照旧早退。
+
 > 状态：`$build` = **`20260908-r97`**（第九十八轮，2026-09-08）—— 评论分页交给线上。
 > **已推 live**（三个文件：`assets/customstyle.css` / `.scss` / **`main.js`**）。**没推任何 liquid。**
 > 回读 **617 → 617**、三个逐字节相同、**614 个清单外文件零改动**。新基线 **`baseline-r97`**。

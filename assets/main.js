@@ -1160,6 +1160,11 @@
         if (sw) { return; }
         sw = new Swiper(track, options());
         sw.on("slideChange", sync);
+        // ⚠ slideChange is not enough. Where the track holds only a little more
+        // than fits -- the expert rail at 767, three 305px cards in 768 -- the
+        // rail still moves but activeIndex never leaves 1, so the arrows stayed
+        // live at both ends. transitionEnd fires on every settle, edge or not.
+        sw.on("transitionEnd", sync);
         sync();
       };
 

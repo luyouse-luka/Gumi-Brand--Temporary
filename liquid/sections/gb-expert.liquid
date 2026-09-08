@@ -5,7 +5,7 @@
   assign title_html = title_html | replace: '<br>', '<br class="gb-br-narrow">'
 -%}
 <section class="gb-expert">
-  <div class="gb-expert__inner" data-slider data-slider-rewind data-slider-step data-slider-until="991" data-slider-centre-narrow>
+  <div class="gb-expert__inner" data-slider data-slider-step data-slider-until="991" data-slider-centre-narrow>
     {%- if s.title != blank -%}
       <h2 class="gb-expert__title wowo fadeInUp" data-line-reveal>{{ title_html }}</h2>
     {%- endif -%}
