@@ -4,6 +4,45 @@
 > 项目定位与已确立的规范在 [PROJECT-STATUS.md](PROJECT-STATUS.md)；
 > 改动史在 [CHANGELOG.md](CHANGELOG.md)（近 10 轮）+ [CHANGELOG-ARCHIVE.md](CHANGELOG-ARCHIVE.md)（第一～三十轮），**两份一起 grep**。
 >
+> 状态：`$build` = **`20260908-r94`**（第九十五轮，2026-09-08）—— product 顶距反转、
+> vs 卡片底距下限、header 两菜单上线。
+> **已推 live**（2026-09-08，三个文件：`assets/customstyle.css` / `.scss` /
+> `sections/gb-header.liquid`；liquid 经需求方明确授权，分两步推、先 CSS 后 liquid）。
+> 回读 **617 → 617**、三个文件逐字节相同、**614 个清单外文件零改动**。新基线 **`baseline-r94`（617 文件）**。
+> 判据 **`tools/r94check.py`**：静态 **42 ok / 0 red**，`--as-served` 线上 **20 ok / 0 red**；
+> `--strip` 反向 **21 红**且精确落在两处修复各自的档内。
+> 回归 `rwd.py` / `r91` / `r92` / `r93`(81) / `crevcheck` / `r52`(385) / `r53`(249) 全绿。
+>
+> ⚠ **对方在本轮推送前一小时把 `gb-app-section` 改成了完整评论卡** —— 不再是 app 插槽。
+> 数据走 `product.metafields.custom.reviews`，新增 `assets/star.svg`，**原样用了我们的 27 个
+> `gb-crev*` 类**（26 个已有样式，本轮补了缺的两个）。它**自带一段内联 `<script>`**。
+> **`docs/LIVE-GAP.md` 里「gb-crev 线上没有 liquid」已过时。**
+>
+> ⚠ **不要报成 bug 的五条**：
+> 1. **`main.js` 的 `crevPager` 本地有、线上没有，是决定不是漏推** —— 对方的内联脚本用了
+>    完全相同的四个 hook（`data-crev-list` / `data-crev-more` / `data-crev-start` /
+>    `data-crev-step`），两套并存会双重绑定同一个按钮（点一次展开 8 条、label 写两遍）。
+>    需求方选择线上交给对方那份。静态站没有对方的脚本，所以 `crevPager` 必须留着。
+> 2. **手机端菜单只有 Shop / Learn more / Get in Touch 三项，不是 liquid 坏了** ——
+>    r90 的两菜单结构本轮已推，手机端只渲染后台的 Mobile menu，而它至今是三项。
+>    需求方知情并要求照推。**补齐后台六项即恢复**，清单在 `docs/LIVE-BACKLOG.md` 第〇节。
+> 3. **1440 的 vs 浅绿卡下探量是 46 不是 25，是对的** —— `minmax(25px, 1fr)` 的 1fr 一半
+>    在那里仍有富余，卡片保持板值 448。写死 25px 反而会把它压矮 21px。25 是**下限**不是目标值。
+> 4. **`.gb-product` 基类的 96 在线上零匹配** —— `sections/gb-product.liquid` 只输出
+>    `--lg` 或 `--page`。这一半只作用于静态站三页（r89 就注明过，反转后依然成立）。
+> 5. **`.gb-product--lg` 的 padding-top 与基类同值，不是重复声明** —— 基类已被前后改过两次
+>    （96 → 32 → 96），`--lg` 两次都没跟着动。删掉它下次基类一改就跟着漂。
+>
+> ⚠ **线上评论区目前是 6 张空卡（对方的 liquid，需求方指示先不管，别当我们的 bug）**：
+> 实测整张卡可见文本只有 `"0 0"`，`data-review-id=""` / `data-rating="0.0"` / 姓名正文全空、
+> 头部分数 `0.00`、星星全灰。三个根因都在对方的 `sections/gb-app-section.liquid`：
+> ① `r.rating.value` 是 Rating 对象、`| plus:` 得 0；② `avg_display` 小数多拼一位；
+> ③ `data-review-id` 空导致投票脚本首行早退、**点赞完全不工作**。
+> 我们补的 `.is-voted` 样式因此线上暂时看不到 —— **手动加类验过是好的**（`rgb(0,86,53)` + `stroke-width: 2px`）。
+>
+> ⚠ **`r89check` 的 5 条断言本轮被改了口径**（基类 32→96/52、`--page` 96→32）。
+> 那是 r94 的反转，不是判据坏了。
+
 > 状态：`$build` = **`20260907-r93`**（第九十四轮，2026-09-07）—— compare 头像/图标对齐、
 > expert 卡等高、hero media 淡入（只改 live）。
 > **已推 live**（2026-09-07，三个文件：`assets/customstyle.css` / `.scss` /

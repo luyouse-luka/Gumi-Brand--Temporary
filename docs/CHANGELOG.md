@@ -4681,6 +4681,141 @@ PDP / reviews / home 三页渲染后 `[class*=gb-crev]` 元素数均为 **0** �
 - 手机端的 `lip--h`（卡片底部水平波浪）线上仍缺，两张卡都是。
 - collection 页（r88）仍是无稿的自定值，待设计方裁决。
 
+## 第九十五轮（2026-09-08）— product 顶距反转 + vs 卡片底距下限 + header 两菜单上线（`$build` = `20260908-r94`）
+
+需求方三条：① `.gb-product` 改 `padding-top: 96px`、`.gb-product--page` 改 32px，响应式按设计调整；
+② `.gb-vs__col--gumi::before` 响应式下底部贴住最后一个 `.gb-vs__row`，要和 pc 端一样留距；
+③ 静态站 `gb-app-section` 与 header 结构调整后的样式上传到 live（对话另加：补推 js）。
+
+### 1. product 顶距：撤回 r89 的基类，`--page` 降到 32
+
+**这是 r89 第 2/3 点的反转**，方向相反的两处：
+
+| | r89 | r94 |
+|---|---|---|
+| `.gb-product` 基类 | 32 全档拉平 | **96 / 52 / `fluid(52,96)`**（回到板值） |
+| `.gb-product--lg` | 96 / 52 / fluid | 不变 |
+| `.gb-product--page` | 96（pc） | **32**（pc） |
+
+⚠ **tablet 档必须跟着 `--page` 降到 32，不是可选的**：`fluid(20px, 96px)` 的终点若留在 96，
+1280 处是 95.85、1281 处直接掉到 32，**一步 64px**。改成 `fluid(20px, 32px)` 后实测
+1280 = 31.98 / 1281 = 32，跨档无跳变。
+
+⚠ **`--page` 手机端的 20 没动** —— 那是 PDP 板自己的值，需求只点名了桌面端。
+基类手机端从 32 回到 **52**（= 稿 243:22226 的 paddingTop 32 加内层 frame 的 20），
+理由是 96 本身就是回到板值，整组一起撤回才自洽。**若只要桌面 96、手机留 32，改一个数即可。**
+
+⚠ **基类在线上依然没有匹配**（r89 就注明过）：`sections/gb-product.liquid` 只输出
+`--lg` 或 `--page`，所以这一半只作用于静态站的 how-gumi-works / reviews / our-story。
+
+### 2. `.gb-vs` 浅绿卡：给最后一行下方的留白一个下限
+
+**真因不是 narrow 档**（≤767 一直是 25.3，没问题），是 **768–1281 整段**：
+
+`.gb-vs__table` 的末轨道是裸 `1fr`，它吸收的是「`min-height` − 内容高」，而
+① `@include stack`（≤1024）把 `min-height` 直接清零、② 内容高度随视口变窄而增长。
+两者叠加，板上那 25px 的卡片下探量实测：
+
+| 视口 | 768 | 900 | 1024 | 1200 | 1280 | 1281 | 1440 |
+|---|---|---|---|---|---|---|---|
+| 改前 | 0 | 0 | −0.0 | 20.0 | 0.3 | 0 | 46 |
+| 改后 | 25 | 25 | 25 | 25 | 25 | 25 | 46 |
+
+改法一处：`grid-template-rows: repeat(19, auto) minmax(25px, 1fr)`。
+
+⚠ **`minmax` 而不是定值 25px**：1fr 那一半仍然在 1440 生效（那里 448 的板高还有富余），
+所以 **1440 的卡片高度仍是板值 448、下探量仍是 46，pc 端一个像素没动**。
+写死 25px 会把 1440 的卡片压矮 21px。
+
+### 3. gb-app-section / header 上线
+
+⚠ **推送前的三方对比抓到：对方在同一小时里把 `gb-app-section` 从 app 插槽改成了完整评论卡**
+（`product.metafields.custom.reviews` 驱动，新增 `assets/star.svg`，schema 从 "Gumi App Slot"
+改名 "Customer Reviews"，波浪从 trailing 改成 leading）。**它原样用了我们的 27 个 `gb-crev*` 类**，
+比对下来 26 个有样式，补上缺的两个：
+
+- `.gb-crev-card__vote.is-voted` —— 对方的内联脚本点赞后加的类，我们没有选中态。
+  自定值（`$c-green` + `stroke-width: 2`，走已有 transition），**登记待设计方裁决**。
+- `.gb-crev__empty` —— 无评论时的 "No reviews yet."，静态站没有这个状态。
+
+**`main.js` 的 `crevPager` 按需求方决定不推**：对方的内联脚本用了**完全相同的四个 hook**
+（`data-crev-list` / `data-crev-more` / `data-crev-start` / `data-crev-step`），
+两套同时在线会双重绑定同一个按钮 —— 点一次展开 8 条而不是 4 条，label 也被写两遍。
+功能上两者等价，所以线上交给对方那份。
+
+`sections/gb-header.liquid`（r90 的两个独立 ul）**需求方明确要求现在就推**，
+已知代价：后台 Mobile menu 仍是三项，手机端菜单当场从 6 项降到
+**Shop / Learn more / Get in Touch** 三项，补齐后台即恢复。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss     4 处（product 基类 / --lg 注释 / --page / vs 末轨道）
+                               + 2 处新增（.is-voted / .gb-crev__empty）+ $build → 20260908-r94
+改  assets/customstyle.css      编译产物（双写，--style=expanded）
+改  *.html 13 个                 ?v= 20260907-r93 → 20260908-r94
+改  tools/r89check.py           5 条断言改成 r94 的值（本轮反转了它，不改下一轮会当回归）
+新  tools/r94check.py           42 条断言
+新  tools/_apply_r94.py / _apply_r94b.py
+推  sections/gb-header.liquid   r90 的两菜单结构（文件本身未再改动）
+```
+
+### 判据
+
+`tools/r94check.py`：静态 **42 ok / 0 red**，`--as-served --password 1234` 线上 **20 ok / 0 red**
+（线上少的 22 条是源码双写断言 + 基类那一半，线上没有裸 `.gb-product` 通道）。
+**`--strip` 反向 21 红**，精确落在两处修复各自的档内 —— vs 那 6 条正是 768–1281，
+narrow 的 25.3 不受影响所以没红，与真因一致。strip 触及元素数 > 0 单独断言（r93 的教训）。
+
+**回归**：`rwd.py` 全绿 / `r91check` / `r92check` / `r93check`(81) / `crevcheck` /
+`r52check`(385) / `r53check`(249) 全绿。`r89check` 改口径后全绿。
+
+### 推送（2026-09-08，需求方明确授权含 liquid）
+
+三个文件推到 live 主题 `Dev (#180348977399)`，`--only` 逐个列出 + `--nodelete` + `--allow-live`，
+**分两步：先 CSS 后 liquid**（两菜单的显隐规则早已在线上，CSS 先到不会让任何东西消失）。
+
+```
+assets/customstyle.css
+assets/customstyle.scss
+sections/gb-header.liquid
+```
+
+- 推前三方对比：`prepush-20260908-0138` 相对 `baseline-r93` **多 1 个文件、改 1 个文件**
+  （对方的 `star.svg` + `gb-app-section.liquid`），我们要推的三个文件线上未被动过。
+- `liquid/sections/gb-header.liquid` 与线上现状 diff **只有 r90 那一处菜单结构**，
+  对方期间没改过 header，直接覆盖不会抹掉别人的东西。
+- 产物新鲜度：重编译 scss 与仓库 css 逐字节相同。
+- **回读 617 → 617**，与工作副本逐字节相同；相对 prepush 正好 3 个文件，
+  **614 个清单外文件零改动**。新基线 **`baseline-r94/`（617 文件）**。
+- 线上实测：`--build` = `20260908-r94`；两个 ul 各自 `display` 正确（桌面 3 项 / 手机 3 项）；
+  `.is-voted` 加类后 `rgb(0,86,53)` + `stroke-width: 2px`；`.gb-crev__empty` 16px/center/pad 32。
+
+### 顺带发现 / 未修（需求方指示先不管）
+
+⚠ **线上评论区目前是 6 张空卡**。实测 `/products/superfood-greens-gummies`：
+整张卡的可见文本只有 `"0 0"`（两个投票计数），`data-review-id=""`、`data-rating="0.0"`、
+姓名/正文全空，头部分数显示 **`0.00`**、五颗星全灰。
+
+三个可查证的根因（都在对方的 `sections/gb-app-section.liquid` 里，我们没动）：
+
+1. `r.rating.value` 是 Rating 对象不是数字，`| plus:` 它得 0 —— 分数与星级同源于此。
+2. `avg_display` 在 `avg_frac < 10` 时拼成 `0` + `'.0'` + `0`，**小数多一位**（`0.00`）。
+3. `data-review-id` 为空 → 投票脚本第一行 `if (!id || !dir) return;` 直接早退，
+   **点赞完全不工作**（我们补的 `.is-voted` 样式因此在线上暂时看不到，
+   手动加类验过是好的）。
+
+看起来是 metaobject 字段句柄对不上（`r.is_published` 读得出，`customer_name` / `rating` / `id` 读不出）。
+**这是对方维护的 liquid，按分工没有动，也没有报给对方。**
+
+### 遗留
+
+- **PDP 右栏间距全塌**（r87 起，实测未修）仍在，等需求方拍板。
+- **后台 Mobile menu 必须补成六项** —— 现在是线上手机菜单缺三个入口的直接原因，
+  紧急度比之前高，清单在 [LIVE-BACKLOG.md](LIVE-BACKLOG.md) 第〇节。
+- `main.js` 的 `crevPager` 本地有、线上永远没有 —— **这是决定，不是漏推**，见「不要报成 bug」。
+- promo 白卡咬痕、手机端 `lip--h` 仍未做。
+
 ## 第九十四轮（2026-09-07）— compare 头像/图标对齐 + expert 卡等高 + hero media 淡入（`$build` = `20260907-r93`）
 
 需求方三条：① `.gb-compare__avatar--bear` / `__avatar` 响应式下与下方表格的 icon 不对齐；

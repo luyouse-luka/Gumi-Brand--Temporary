@@ -9,7 +9,11 @@
 
 ⚠ The base .gb-product has NO live counterpart: sections/gb-product.liquid only
 ever emits `gb-product gb-product--lg` or `gb-product gb-product--page`, so the
-flat 32 is graded on the static build (how-gumi-works / reviews / our-story).
+base ramp is graded on the static build (how-gumi-works / reviews / our-story).
+
+⚠ r94 REVERSED this round's top paddings on the client's instruction: the base
+went 32 -> 96/52/ramp (back to the board) and --page went 96 -> 32. The five
+assertions below carry r94's values, not r89's. --lg never moved.
 """
 import argparse, io, pathlib, re, sys
 
@@ -34,9 +38,9 @@ print('== compiled css ==')
 css = io.open(ROOT / 'assets/customstyle.css', encoding='utf-8').read()
 scss = io.open(ROOT / 'assets/customstyle.scss', encoding='utf-8').read()
 check('1 $build at or past r89', re.search(r'\$build:\s*"([^"]+)"', scss).group(1) >= BUILD, True)
-# The base class must be a flat 32 -- no tier may reintroduce 52 or 96 on top.
-# Parsed rather than substring-matched: a bare `in css` would pass on any other
-# block that happens to open with 32.
+# r94: the base carries the board's ramp again (96 desktop / 52 mobile / fluid
+# between). Parsed rather than substring-matched: a bare `in css` would pass on
+# any other block that happens to open with the same number.
 def _shorthand_top(block):
     for decl in ' '.join(block.split()).split(';'):
         name, _, value = decl.partition(':')
@@ -48,13 +52,14 @@ def _shorthand_top(block):
 _base_tops = [t for _, b in re.findall(r'(?m)^(\s*)\.gb-product \{([^}]*)\}', css)
               for t in [_shorthand_top(b)] if t]
 check('2 base has exactly three tiers', len(_base_tops), 3)
-check('2b every base tier opens at 32', set(_base_tops), {'32px'})
+check('2b base tiers ramp 52 -> 96 (r94 reversal)',
+      set(_base_tops), {'96px', '52px', 'clamp(52px,'})
 check('3 --lg restates the ramp', re.search(
     r'\.gb-product--lg \{\s*padding-top: 96px;', css) is not None, True)
 check('4 --lg narrow 52', re.search(
     r'\.gb-product--lg \{\s*padding-top: 52px;', css) is not None, True)
-check('5 --page restates 96', re.search(
-    r'\.gb-product--page \{\s*padding-top: 96px;', css) is not None, True)
+check('5 --page restates 32 (r94 reversal)', re.search(
+    r'\.gb-product--page \{\s*padding-top: 32px;', css) is not None, True)
 # The green must have left the card except below 768.
 check('6 card keeps green only under 768', re.search(
     r'@media \(max-width: 767px\) \{\s*\.gb-promo-card--green \{\s*background: #005635;', css) is not None, True)
@@ -89,8 +94,8 @@ PROBE = """() => {
 def grade(tag, d, width):
     if width == 1440:
         if d['lg']: check(tag + ' --lg 96', d['lg'], '96px')
-        if d['page']: check(tag + ' --page 96', d['page'], '96px')
-        if d['base']: check(tag + ' base 32', d['base'], '32px')
+        if d['page']: check(tag + ' --page 32 (r94)', d['page'], '32px')
+        if d['base']: check(tag + ' base 96 (r94)', d['base'], '96px')
         if d['bodyBg']:
             check(tag + ' card transparent', d['cardBg'], CLEAR)
             check(tag + ' body green', d['bodyBg'], GREEN)
@@ -103,7 +108,7 @@ def grade(tag, d, width):
     else:
         if d['lg']: check(tag + ' --lg narrow 52', d['lg'], '52px')
         if d['page']: check(tag + ' --page narrow 20', d['page'], '20px')
-        if d['base']: check(tag + ' base narrow 32', d['base'], '32px')
+        if d['base']: check(tag + ' base narrow 52 (r94)', d['base'], '52px')
         if d['bodyBg']:
             check(tag + ' card keeps green', d['cardBg'], GREEN)
             check(tag + ' scallop hidden', d['befDisp'], 'none')

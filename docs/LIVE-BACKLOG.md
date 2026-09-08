@@ -5,7 +5,7 @@
 > （`templates/*.json`、`sections/footer-group.json`、`config/settings_data.json`）。
 > 推它们会覆盖对方在后台调过的一切。剩下的落在这里。
 
-## 〇、⚠ r90 的菜单改动依赖这一条（推 liquid 之前必须先做）
+## 〇、⚠⚠ 手机菜单现在就缺三项 —— 后台补齐即恢复（r94 已推 liquid，2026-09-08）
 
 `sections/gb-header.liquid` 从「一个菜单 + 用 `.gb-header__links-item--mobile` 隐藏桌面项」
 改成了**两个独立菜单**（桌面一个、手机一个，CSS 各显其一）。原因：
@@ -25,9 +25,10 @@
 
 Desktop menu 保持现在的三项（How Gumi Works / Science / Reviews）不变。
 
-⚠ **不补就会缺项**：当前 Mobile menu 只有 Shop / Learn more / Get in Touch 三项，
-推了 liquid 而不补菜单，手机端会**少掉 How Gumi Works / Science / Reviews**。
-所以两件事要么一起做，要么先补菜单再推。
+⚠ **已经在缺了，不是预警**：r94（2026-09-08）按需求方要求推了这个 liquid，而后台
+Mobile menu 至今仍是 Shop / Learn more / Get in Touch 三项 —— 线上手机端**当前就少了
+How Gumi Works / Science / Reviews**（1440 桌面端不受影响，仍是三项 Desktop menu）。
+补齐上表六项即刻恢复，无需再推任何文件。
 
 ## 〇之二、promo 绿卡的 Arc text 请在后台清空（r91）
 

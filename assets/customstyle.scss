@@ -33,7 +33,7 @@
 // font url()s read it. Previewing over file:// caches css/js/woff2 until a hard
 // refresh, so without it a real change reads as "nothing happened".
 // font-check.html prints the value the browser actually got.
-$build: "20260907-r93";
+$build: "20260908-r94";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -6607,22 +6607,24 @@ html.is-menu-open {
 .gb-product {
   position: relative;
   background: $c-white;
-  padding: 32px 0 calc(96px + var(--sc-h));
+  padding: 96px 0 calc(96px + var(--sc-h));
 
-  // Client-set: a flat 32 at the top, every width. --lg and --page both restate
-  // padding-top below, so this reaches only the plain tiles.
+  // Client-set, second revision: the top is back on the board's ramp (r89 had
+  // flattened it to 32 at every width). 52 on mobile is 243:22226's own
+  // paddingTop 32 plus the 20 its first child adds, the same pair --lg carries.
   // Client-set 46 at the foot. --lg and --page both restate padding-bottom in
   // this tier, so the 46 reaches only the plain tiles (reviews / our-story /
   // how-gumi-works) — which is exactly the :not() the brief named.
-  @include narrow { padding: 32px 0 calc(46px + var(--sc-h)); }
-  @include tablet { padding: 32px fluid(0, 0) calc(fluid(46px, 96px) + var(--sc-h)); }
+  @include narrow { padding: 52px 0 calc(46px + var(--sc-h)); }
+  @include tablet { padding: fluid(52px, 96px) fluid(0, 0) calc(fluid(46px, 96px) + var(--sc-h)); }
 }
 
 .gb-product--lg {
-  // Client-set: --lg keeps the top ramp the base class used to carry. 52 is
-  // 243:22226's own paddingTop 32 plus the 20 its first child (Product image,
-  // 191:2214) adds -- the build has no element for that inner frame, so the two
-  // collapse into one value here.
+  // Restated, not inherited: --lg reads the same ramp as the base class today,
+  // but the base has been retuned twice on its own (96 -> 32 -> 96) and --lg
+  // stayed put both times. 52 is 243:22226's own paddingTop 32 plus the 20 its
+  // first child (Product image, 191:2214) adds -- the build has no element for
+  // that inner frame, so the two collapse into one value here.
   padding-top: 96px;
   padding-bottom: calc(96px + var(--sc-lg-h));
 
@@ -6637,16 +6639,17 @@ html.is-menu-open {
 }
 
 .gb-product--page {
-  // ⚠ Restated, not inherited: the base class dropped to a flat 32 and the PDP
-  // board is unchanged at 96 here.
-  padding-top: 96px;
+  // Client-set: 32 at the top, against the base class's 96 and the PDP board's
+  // own 96. The tier below has to land on 32 too or 1280 -> 1281 steps 64px.
+  padding-top: 32px;
   padding-bottom: calc(96px + var(--sc-lg-h));
 
   // --lg opens with 52 on mobile (the board's 32 + the inner frame's 20
-  // collapsed into one). The PDP's own board starts at 20 instead.
+  // collapsed into one). The PDP's own board starts at 20 instead; the client
+  // named the desktop end only, so this one is unchanged.
   @include narrow { padding-top: 20px; padding-bottom: calc(64px + var(--sc-lg-h)); }
   @include tablet {
-    padding-top: fluid(20px, 96px);
+    padding-top: fluid(20px, 32px);
     padding-bottom: calc(fluid(64px, 96px) + var(--sc-lg-h));
   }
 }
@@ -8553,12 +8556,17 @@ html.is-menu-open {
   // Floor = the board's own label width, 109 desktop / 87 mobile.
   --vs-label-w: max(#{21.124%}, #{109px});
   --vs-card-x: calc(var(--vs-label-w) + 5.039%);   // + 26 / 516 to the card
-  // ⚠ The last track is 1fr, not auto, and it is load-bearing: the columns span
-  // 1/-1, so without something to absorb the leftover height they'd shrink to
-  // their content and .gb-vs__col--gumi::before (height:100%) would come up
-  // short of the 25px of card the board leaves under the last row. Flex used to
-  // hand that stretch over for free.
-  grid-template-rows: repeat(19, auto) 1fr;
+  // ⚠ The last track absorbs the leftover height: the columns span 1/-1, so
+  // without it they'd shrink to their content and .gb-vs__col--gumi::before
+  // (height:100%) would end flush with the last row. Flex used to hand that
+  // stretch over for free.
+  // ⚠ The 25px floor is load-bearing, and 1fr alone was not enough: the leftover
+  // is (min-height - content), and content grows as the viewport narrows, so the
+  // board's 25px of card under the last row thinned to 0 by 1281 and was gone
+  // for the whole 768-1024 tier, where `stack` zeroes min-height outright.
+  // minmax keeps the 448 board height wherever there is room for it (1440 still
+  // measures 46 below the last row) and pins 25 everywhere else.
+  grid-template-rows: repeat(19, auto) minmax(25px, 1fr);
   column-gap: 6.494%;          // 60 / 924
   row-gap: 0;
   flex: 1 1 auto;
@@ -9078,6 +9086,23 @@ html.is-menu-open {
   }
 }
 
+.gb-crev__empty {
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: $c-gray-700;
+  text-align: center;
+  padding: 32px 0;
+
+  @include narrow { font-size: 14px; line-height: 20px; letter-spacing: -0.28px; padding: 24px 0; }
+  @include tablet {
+    font-size: fluid(14px, 16px);
+    line-height: fluid(20px, 24px);
+    letter-spacing: fluid(-0.28px, -0.32px);
+    padding: fluid(24px, 32px) 0;
+  }
+}
+
 .gb-crev__list {
   display: flex;
   flex-direction: column;
@@ -9273,10 +9298,18 @@ html.is-menu-open {
   color: $c-gray-600;
   transition: trans(color, transform);
 
-  svg { flex: none; width: 16px; height: 16px; }
+  svg { flex: none; width: 16px; height: 16px; stroke-width: 1.33333; transition: trans(stroke-width); }
 
   @include hover { color: $c-green; }
   &:active { transform: scale(0.94); }
+
+  // Live only: sections/gb-app-section.liquid's inline script toggles .is-voted
+  // and persists it in localStorage. Same 0-2-0 as the :hover above, so it has
+  // to stay after it. Self-set values -- no board covers a voted state.
+  &.is-voted {
+    color: $c-green;
+    svg { stroke-width: 2; }
+  }
 }
 
 // ==========================================================================
