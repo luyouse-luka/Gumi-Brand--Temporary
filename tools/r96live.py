@@ -4,13 +4,12 @@
   python3 tools/r96live.py --password 1234           # after the push: all green
   python3 tools/r96live.py --password 1234 --strip   # inverted: must go RED
 
-Not graded here, on purpose:
-  0  the reveal animation is scoped OFF live cards (`:not([data-review-id])`) --
-     the live section grew its own `.is-appearing` reveal and strips that class
-     450ms later, which would replay ours. Asserted NEGATIVELY below.
-  6  centeredSlidesBounds lives in main.js, which is not being pushed. Asserted
-     NEGATIVELY below so a later main.js push shows up as a RED here, not as a
-     silent change.
+⚠ r97 updated two assertions at the bottom:
+  0  our reveal animation is GONE (client call: the live section's own
+     `.is-appearing` is the single implementation, and crevPager went with it).
+     Still asserted negatively -- the live card must carry no animation of ours.
+  6  main.js IS pushed now, so centeredSlidesBounds must be `true`. It was
+     `false` before r97; a RED here means main.js came undone.
 """
 import argparse
 
@@ -68,6 +67,29 @@ SCIENCE = """() => {
   return {gap: parseFloat(getComputedStyle(card).rowGap),
           mt: parseFloat(getComputedStyle(cards).marginTop),
           plain: plain ? parseFloat(getComputedStyle(plain).rowGap) : null};
+}"""
+
+RAIL = """() => {
+  const t = document.querySelector('.gb-expert__cards');
+  if (!t) return null;
+  const r = t.getBoundingClientRect();
+  const spans = [...t.querySelectorAll('.swiper-slide')].map(s => s.getBoundingClientRect())
+    .map(b => [Math.max(b.left, r.left), Math.min(b.right, r.right)])
+    .filter(([a, b]) => b > a).sort((a, b) => a[0] - b[0]);
+  if (!spans.length) return null;
+  return {L: +(spans[0][0] - r.left).toFixed(1),
+          R: +(r.right - spans[spans.length - 1][1]).toFixed(1)};
+}"""
+
+PAGER = """() => {
+  const list = document.querySelector('[data-crev-list]');
+  if (!list) return null;
+  const cards = [...list.querySelectorAll('.gb-crev-card')];
+  const before = cards.filter(c => c.hidden).length;
+  document.querySelector('[data-crev-more]').click();
+  return {step: parseInt(list.getAttribute('data-crev-step'), 10) || 4,
+          revealed: before - cards.filter(c => c.hidden).length,
+          ourPager: !!(window.gumi && window.gumi.crevPager)};
 }"""
 
 NEG = """() => {
@@ -219,10 +241,29 @@ def main():
         pg.wait_for_timeout(1200)
         d = pg.evaluate(NEG)
         check('live cards carry data-review-id', d['crevHasId'], True)
-        check('0 our reveal stays off live cards', d['crevAnim'], 'none')
+        check('0 no reveal animation of ours on live cards', d['crevAnim'], 'none')
+        # r97: main.js IS pushed, so grade the geometry the option was for, not
+        # just the flag. Five positions = a full rewind cycle at 390.
         pg.goto(LIVE + '/pages/reviews', wait_until='domcontentloaded')
-        pg.wait_for_timeout(1400)
-        check('6 main.js not pushed: rail has no bounds', pg.evaluate(NEG)['bounds'], False)
+        pg.wait_for_timeout(1600)
+        check('6 main.js pushed: rail has centeredSlidesBounds', pg.evaluate(NEG)['bounds'], True)
+        worst_l = worst_r = 0.0
+        for i in range(5):
+            d = pg.evaluate(RAIL)
+            if d: worst_l, worst_r = max(worst_l, d['L']), max(worst_r, d['R'])
+            pg.evaluate("document.querySelector('.gb-expert__nav [data-slider-next]').click()")
+            pg.wait_for_timeout(650)
+        check('6 no gap at the rail\'s left edge, any position', worst_l, 0, 1.0)
+        check('6 no gap at the rail\'s right edge, any position', worst_r, 0, 1.0)
+
+        # And the live pager must still be the ONLY one: two on the same hooks
+        # reveal 8 rows per click instead of 4.
+        pg.goto(LIVE + PDP, wait_until='domcontentloaded')
+        pg.wait_for_timeout(1600)
+        d = pg.evaluate(PAGER)
+        check('crevPager is gone from the served main.js', d['ourPager'], False)
+        check('one click reveals exactly one step', d['revealed'], d['step'])
+        check('the live pager is still wired', d['revealed'] > 0, True)
 
         br.close()
     print(f'\n{ok} ok / {red} red')

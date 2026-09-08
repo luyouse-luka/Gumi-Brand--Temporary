@@ -4681,6 +4681,70 @@ PDP / reviews / home 三页渲染后 `[class*=gb-crev]` 元素数均为 **0** �
 - 手机端的 `lip--h`（卡片底部水平波浪）线上仍缺，两张卡都是。
 - collection 页（r88）仍是无稿的自定值，待设计方裁决。
 
+## 第九十八轮（2026-09-08）— 评论分页交给线上：删掉 `crevPager` 与我们那份入场动画（`$build` = `20260908-r97`）
+
+需求（对话）：`gb-crev-card` 与 live 冲突处**以 live 为准，本地去掉相关的 JS 代码，然后推送**。
+
+### 删了什么
+
+```
+assets/main.js          整个 crevPager 模块（2741 字符）+ init 注册 + window.gumi 导出
+assets/customstyle.scss .gb-crev-card 的 animation 一行 + @keyframes gm-crev-in
+                        + 那条 prefers-reduced-motion 降级
+reviews.html / pdp.html 各 5 个 <article class="gb-crev-card" hidden> 的 hidden 属性
+```
+
+⚠ **`.gb-crev-card[hidden] { display: none }` 必须留着，没有删** —— 线上那份分页就是用
+`hidden` 属性藏行的，而 UA 的 `[hidden]` 规则是 0-0-0，输给我们给卡片写的 `display: flex`。
+删掉它，线上被藏起来的十行会全部渲染出来。这条现在的注释写明了它是 load-bearing 的。
+
+⚠ **HTML 里那 10 个 `hidden` 必须跟着删** —— 它们原本靠 `crevPager` 在 `paint()` 里摘掉。
+pager 一走，静态站每页会有**五张卡永远看不到**。删掉之后静态站十张全渲染。
+**副作用：静态站的 See More Reviews 按钮现在是死的**（没有任何 JS 接管它），
+线上则由对方的内联脚本驱动，正常。要让静态站也能分页，就得把 `crevPager` 连同守卫一起加回来。
+
+### 为什么不是保留守卫版
+
+第九十七轮给 `crevPager.wire()` 加过 `data-review-id` 早退守卫，并且用 `page.route`
+在线上实测过它确实挡住了双重绑定。需求方仍选择删干净 —— 一份实现胜过两份加一道守卫。
+连带把我们那条入场动画也撤了：它的触发前提（我们自己摘 `hidden`）已经不存在，
+而线上有对方的 `.gb-crev-card.is-appearing`（0-2-0，60ms 错峰，450ms 后摘类）。
+
+### 推送（2026-09-08）
+
+**三个文件**：`assets/customstyle.css` / `.scss` / **`main.js`**，
+`--only` 逐个列出 + `--nodelete` + `--allow-live`。**没有推任何 liquid。**
+
+- 推前 `prepush-r97`（617）与 `baseline-r96` 差 **6 个文件，全是对方改的**：
+  `sections/gb-hero.liquid`（波浪从 checkbox 改成 15 项 select，**用的是我们的
+  `gb-scallop--*` 变体类**）+ 五个 `templates/*.json`。**与推送清单零重叠。**
+- 回读 `verify-r97`（617）：三个文件**逐字节相同**，线上 `--build` = `20260908-r97`，
+  线上 `main.js` 里 `crevPager` 出现 **0 次**。**614 个清单外文件零改动**（这次对方没在窗口内动手）。
+- 新基线 **`baseline-r97/`**；清掉 `prepush-r97` / `work-r97` / `baseline-r95`。
+
+### 判据
+
+`tools/r96live.py --password 1234`（本轮扩到 **107 条**）：推前 **101 ok / 1 red**（就是第 6 条）
+→ 推后 **107 ok / 0 red**，`--strip` 反向 41 红。本轮新加的五条是这次推送的核心：
+
+| 断言 | 为什么 |
+|---|---|
+| 6 `centeredSlidesBounds` 是 `true` | 推前是 `false`，这条断言在上一轮是**反向**写的 |
+| 6 专家轨五个位置左右空白都是 0 | 光看 flag 不够，要量它本来要修的那个几何 |
+| `crevPager` 不在线上的 `main.js` 里 | 删干净的直接判据 |
+| 点一次 More **正好展开一步**（4 条） | **两份 pager 会展开 8 条** —— 这是双重绑定唯一可见的症状 |
+| 线上 pager 仍然接着（展开数 > 0） | 负向断言要有活性锚点，否则按钮坏掉也会“通过” |
+
+`tools/r96check.py` **136 ok**（第 0 段整段改写成「两样东西都已移除」的源码级断言 +
+`[hidden]` 那条**仍在**）；`tools/crevcheck.py` 的 `grade_pager` 反转成
+「十张全渲染、点三次不动、label 不翻」，全绿。
+回归 `crevlive`(30) / `rwd` / `r86check` / `r87check` / `r89check` / `r94check`(42) 全绿。
+
+### 遗留
+
+- **静态站的 See More Reviews 是死按钮**（见上），需求方知情。
+- 其余遗留同第九十七轮。
+
 ## 第九十七轮（2026-09-08）— 对话 7 条：评论展开过渡 / faq 行距 / 面板边框 / hero 文字 / 卡片 gap / 专家轨空白（`$build` = `20260908-r96`）
 
 需求（对话给出，7 条，第 0 条在编号之外）：

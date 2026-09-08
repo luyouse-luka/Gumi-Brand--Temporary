@@ -33,7 +33,7 @@
 // font url()s read it. Previewing over file:// caches css/js/woff2 until a hard
 // refresh, so without it a real change reads as "nothing happened".
 // font-check.html prints the value the browser actually got.
-$build: "20260908-r96";
+$build: "20260908-r97";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -9155,32 +9155,10 @@ html.is-menu-open {
   padding-bottom: 32px;
   border-bottom: 1px solid $c-ink-05;
 
-  // Client r96: the pager only strips [hidden], and display:none -> flex cannot
-  // transition. An animation can: display:none cancels it, so restoring display
-  // replays it from the top -- which is exactly the reveal. `backwards` and not
-  // `both`, so nothing is left pinned on the element afterwards
-  // ([[finished-animation-fill-blocks-transition]]).
-  //
-  // ⚠ Scoped OFF the live cards. The live section grew its own reveal
-  // (`.gb-crev-card.is-appearing`, 0-2-0, in an inline <style>) with a 60ms
-  // stagger, and its script REMOVES that class 450ms later. Without this guard
-  // the removal hands `animation` back to the rule below and the card fades in
-  // a second time. `data-review-id` is written from the metaobject and our own
-  // markup never carries it -- the same marker crevPager's guard uses.
-  &:not([data-review-id]) { animation: gm-crev-in $t-slow $ease-out backwards; }
-
-  // Paged out by main.js. The UA's [hidden] rule is display:none at 0-0-0 and
-  // loses to the flex above, so it has to be restated here.
+  // ⚠ Load-bearing: the live section pages with the [hidden] attribute, whose UA
+  // rule is display:none at 0-0-0 and loses to the flex above. Drop this and the
+  // ten cards the pager is holding back all render.
   &[hidden] { display: none; }
-
-  @media (prefers-reduced-motion: reduce) {
-    &:not([data-review-id]) { animation: gm-fade-in 0.4s ease-out backwards; }
-  }
-}
-
-@keyframes gm-crev-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: none; }
 }
 
 .gb-crev-card__head {

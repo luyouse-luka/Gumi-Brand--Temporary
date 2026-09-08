@@ -79,11 +79,6 @@ STRIP_ACC = """() => {
   n.forEach(e => e.style.setProperty('--acc-gap', '16px'));
   return n.length;
 }"""
-STRIP_ANIM = """() => {
-  const n = document.querySelectorAll('.gb-crev-card');
-  n.forEach(e => e.style.setProperty('animation', 'none', 'important'));
-  return n.length;
-}"""
 STRIP_RAIL = """() => {
   const t = document.querySelector('.gb-expert__cards');
   if (!t || !t.swiper) return 0;
@@ -142,71 +137,27 @@ def run(strip):
     with sync_playwright() as pw:
         br = pw.chromium.launch(executable_path=CHROME)
 
-        # -- 0. review cards animate in when the pager un-hides them ------------
-        print('0  crev card reveal')
+        # -- 0. r97 reversal: our pager and our reveal are both gone -----------
+        # The client chose the live section's inline pager as the single
+        # implementation. Two pagers on the same hooks double every click, and
+        # our animation replayed when their script stripped .is-appearing.
+        # Behaviour is graded by crevcheck.py; this is the source-level half.
+        print('0  r97 reversal: crevPager and gm-crev-in removed')
+        import io as _io, pathlib as _pl
+        _root = _pl.Path(__file__).resolve().parent.parent
+        _js = _io.open(_root / 'assets/main.js', encoding='utf-8').read()
+        _css = _io.open(_root / 'assets/customstyle.css', encoding='utf-8').read()
+        rep.eq('0a crevPager gone from main.js', 'crevPager' in _js, False)
+        rep.eq('0b gm-crev-in gone from the css', 'gm-crev-in' in _css, False)
+        # ⚠ Load-bearing and must NOT go with them: the live pager hides rows
+        # with [hidden], whose UA rule is 0-0-0 and loses to our flex.
+        rep.eq('0c .gb-crev-card[hidden] still restated',
+               '.gb-crev-card[hidden]' in _css, True)
         pg = br.new_page(viewport={'width': 1440, 'height': 900})
         pg.goto(f'{ROOT}/reviews.html'); pg.wait_for_timeout(900)
-        if strip: do_strip(pg, STRIP_ANIM, '0 strip touched cards')
-        # The pager hides everything past the 5th; un-hiding must restart the
-        # animation, so getAnimations() is non-empty right after the click.
-        got = pg.evaluate("""() => {
-          const cards = [...document.querySelectorAll('.gb-crev-card')];
-          const hid = cards.filter(c => c.hidden).length;
-          document.querySelector('[data-crev-more]').click();
-          const fresh = cards.filter(c => !c.hidden).slice(-1)[0];
-          const an = fresh.getAnimations();
-          return {hidBefore: hid, name: an.length ? an[0].animationName : null,
-                  playing: an.length ? an[0].playState : null,
-                  op: getComputedStyle(fresh).opacity};
-        }""")
-        rep.true('0a pager had cards to reveal', got['hidBefore'] > 0, str(got))
-        rep.eq('0b revealed card runs gm-crev-in', got['name'], 'gm-crev-in')
-        rep.eq('0c and it is running, not finished', got['playing'], 'running')
-        rep.true('0d opacity has not landed yet', float(got['op']) < 1, str(got['op']))
-        # ⚠ and it must actually land -- an entrance that leaves opacity pinned
-        # is worse than none ([[reveal-gate-must-track-module-liveness]]).
-        pg.wait_for_timeout(600)
-        # The live cards must NOT pick our animation up: the live section runs its
-        # own `.is-appearing` reveal and strips that class 450ms later, which
-        # would hand `animation` back to us and fade the card in a second time.
-        rep.eq('0e2 live-shaped card takes no animation of ours', pg.evaluate(
-            "() => { const c = document.querySelector('.gb-crev-card');"
-            " c.setAttribute('data-review-id','1');"
-            " return getComputedStyle(c).animationName; }"), 'none')
-        rep.eq('0e opacity lands on 1', pg.evaluate(
-            "() => getComputedStyle([...document.querySelectorAll('.gb-crev-card')]"
-            ".filter(c=>!c.hidden).slice(-1)[0]).opacity"), '1')
-        pg.close()
-
-        # -- 0b. crevPager stands down where the live section's own pager runs --
-        print('0b crevPager yields to the live inline pager')
-        pg = br.new_page(viewport={'width': 1440, 'height': 900})
-        pg.goto(f'{ROOT}/reviews.html'); pg.wait_for_timeout(900)
-        # A CLONE, so the handler main.js already bound on the real button cannot
-        # answer the click and make a dead guard look alive.
-        d = pg.evaluate("""() => {
-          const real = document.querySelector('[data-crev-list]');
-          const before = [...real.querySelectorAll('.gb-crev-card')].filter(c => c.hidden).length;
-          const sec = real.closest('.gb-app-section').cloneNode(true);
-          document.body.appendChild(sec);
-          const list = sec.querySelector('[data-crev-list]');
-          const cards = [...list.querySelectorAll('.gb-crev-card')];
-          cards.forEach(c => { c.hidden = false; });
-
-          // (a) without the live marker the pager must still page the clone
-          window.gumi.crevPager.wire(list);
-          const paged = cards.filter(c => c.hidden).length;
-
-          // (b) with it, wire() must do nothing at all
-          cards.forEach(c => { c.hidden = false; c.setAttribute('data-review-id', '1'); });
-          window.gumi.crevPager.wire(list);
-          const guarded = cards.filter(c => c.hidden).length;
-          sec.remove();
-          return {before: before, paged: paged, guarded: guarded, n: cards.length};
-        }""")
-        rep.true('0f pager was actually paging before', d['before'] > 0, str(d))
-        rep.true('0g wire() still pages OUR markup', d['paged'] > 0, str(d))
-        rep.eq('0h guard makes wire() a no-op on live markup', d['guarded'], 0)
+        rep.eq('0d no animation left on the card', pg.evaluate(
+            "() => getComputedStyle(document.querySelector('.gb-crev-card')).animationName"),
+            'none')
         pg.close()
 
         # -- 1. faq rows back to 24 --------------------------------------------

@@ -105,7 +105,9 @@ PROBE = r"""() => {
   return out;
 }"""
 
-# One click cycle: 5 -> 9 -> 10 (label flips) -> back to 5.
+# r97: crevPager was removed -- the live section owns paging now, and the static
+# build no longer has any. Every card renders and the button is inert; this
+# samples that, so re-adding a second pager here would show up as a RED.
 PAGER = r"""() => {
   const btn = document.querySelector('[data-crev-more]');
   const cards = [...document.querySelectorAll('.gb-crev-card')];
@@ -218,14 +220,21 @@ def grade(tag, res, desktop):
 
 
 def grade_pager(res):
-    print('\n== pager (1440) ==')
+    """r97 reversal: there is no pager on the static build any more.
+
+    The client chose the live section's own inline pager as the single
+    implementation, so crevPager is gone from main.js. What is graded here is
+    that NOTHING moves: every card is visible and stays visible through three
+    clicks. A RED means a second pager crept back in.
+    """
+    print('\n== no pager on the static build (1440) ==')
     for page, steps in res.items():
-        # [visible, label, aria-expanded, hidden] after 0..3 clicks.
-        check('%s 5 -> 9 -> 10 -> 5' % page, [s[0] for s in steps], [5, 9, 10, 5])
-        check('%s label flips at the end' % page, [s[1] for s in steps],
-              ['See More Reviews', 'See More Reviews', 'See Less Reviews', 'See More Reviews'])
-        check('%s aria-expanded tracks it' % page, [s[2] for s in steps],
-              ['false', 'false', 'true', 'false'])
+        # All ten, not the old resting five: with no pager the [hidden] attrs
+        # the markup used to ship would have made half the list unreachable, so
+        # r97 stripped them from reviews.html / pdp.html too.
+        check('%s all ten cards render (r97 reversal)' % page, [s[0] for s in steps], [10] * 4)
+        check('%s label never flips (r97 reversal)' % page, [s[1] for s in steps],
+              ['See More Reviews'] * 4)
         check('%s button stays visible' % page, [s[3] for s in steps], [False] * 4)
 
 
@@ -247,8 +256,10 @@ check('button [hidden] restated', '.gb-crev__more[hidden]' in css, True)
 check('more button is the shared gb-btn', all(
     'gb-btn gb-btn--lg gb-crev__more' in io.open(ROOT / p, encoding='utf-8').read()
     for p in PAGES), True)
-check('pager module is registered', 'crevPager: crevPager' in js and
-      '["crevPager", crevPager]' in js, True)
+# r97 reversal: the live section's inline script is the only pager now. Two of
+# them on the same hooks double every click (8 rows revealed, label written twice).
+check('pager module is gone (r97 reversal)', 'crevPager' in js, False)
+check('our reveal animation went with it', 'gm-crev-in' in css, False)
 
 grade('desktop 1440', run(1440, STRIP), True)
 grade('mobile 390', run(390, STRIP), False)

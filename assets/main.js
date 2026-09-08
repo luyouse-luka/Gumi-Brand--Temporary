@@ -726,68 +726,6 @@
   };
 
   /* ---------------------------------------------------------------------
-   * crevPager — More / Less on the customer review list (client r90).
-   * The board has no state for this, so the resting count and the step ride on
-   * data-* rather than being baked in: data-crev-start (5) / data-crev-step (4).
-   * Reveals in steps, flips to the Less label once everything is out, and the
-   * next click collapses back to the resting count.
-   *
-   * The button hides itself when the list is already short enough to show whole
-   * -- a control that visibly does nothing is worse than no control.
-   * ------------------------------------------------------------------- */
-  var crevPager = {
-    init: function () {
-      var lists = document.querySelectorAll("[data-crev-list]");
-      for (var i = 0; i < lists.length; i++) { crevPager.wire(lists[i]); }
-    },
-
-    wire: function (list) {
-      // ⚠ The live section ships its own inline pager on these very hooks, so a
-      // second binding makes one click reveal two steps and write the label
-      // twice. Its cards carry data-review-id (they come from a metafield);
-      // ours never do, so this is the one marker that tells the two apart --
-      // and it is what lets main.js be pushed at all (r96).
-      if (list.querySelector(".gb-crev-card[data-review-id]")) { return; }
-
-      var section = list.closest(".gb-app-section");
-      var btn = section && section.querySelector("[data-crev-more]");
-      if (!btn) { return; }
-
-      var cards = list.querySelectorAll(".gb-crev-card");
-      var total = cards.length;
-      var start = parseInt(list.getAttribute("data-crev-start"), 10) || 5;
-      var step = parseInt(list.getAttribute("data-crev-step"), 10) || 4;
-
-      if (total <= start) { btn.hidden = true; return; }
-
-      var shown = start;
-
-      function paint() {
-        for (var i = 0; i < total; i++) { cards[i].hidden = i >= shown; }
-        var done = shown >= total;
-        btn.textContent = btn.getAttribute(done ? "data-label-less" : "data-label-more");
-        btn.setAttribute("aria-expanded", done ? "true" : "false");
-      }
-
-      btn.addEventListener("click", function () {
-        var collapsing = shown >= total;
-        shown = collapsing ? start : Math.min(shown + step, total);
-        paint();
-        // Collapsing removes rows ABOVE the button, so the page can jump the
-        // list off the top of the screen. Only pull it back when it actually went.
-        if (collapsing && list.getBoundingClientRect().top < 0) {
-          list.scrollIntoView({
-            block: "start",
-            behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
-          });
-        }
-      });
-
-      paint();
-    }
-  };
-
-  /* ---------------------------------------------------------------------
    * modal — the nutritional label panel (note 401:31227). Opened by any
    * [data-modal="<id>"], closed by [data-modal-close], the overlay or Escape.
    * The element stays in the DOM so the closing fade plays out (round 28
@@ -1760,7 +1698,6 @@
                    ["packBand", packBand],
                    ["popText", popText], ["countUp", countUp], ["lineReveal", lineReveal], ["modal", modal], ["promoModal", promoModal],
                    ["slider", slider], ["gallery", gallery], ["accordion", accordion],
-                   ["crevPager", crevPager],
                    ["smoothScroll", smoothScroll], ["enquiryPrefill", enquiryPrefill],
                    ["selectBox", selectBox]];
     for (var i = 0; i < modules.length; i++) {
@@ -1775,7 +1712,7 @@
   window.gumi = { wowo: wowo, header: header, bearMeter: bearMeter, packBand: packBand,
                   popText: popText, countUp: countUp,
                   lineReveal: lineReveal, modal: modal, promoModal: promoModal, slider: slider,
-                  gallery: gallery, accordion: accordion, crevPager: crevPager,
+                  gallery: gallery, accordion: accordion,
                   smoothScroll: smoothScroll, enquiryPrefill: enquiryPrefill,
                   selectBox: selectBox, scrollbarProbe: scrollbarProbe };
 })();

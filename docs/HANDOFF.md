@@ -4,6 +4,45 @@
 > 项目定位与已确立的规范在 [PROJECT-STATUS.md](PROJECT-STATUS.md)；
 > 改动史在 [CHANGELOG.md](CHANGELOG.md)（近 10 轮）+ [CHANGELOG-ARCHIVE.md](CHANGELOG-ARCHIVE.md)（第一～三十轮），**两份一起 grep**。
 >
+> 状态：`$build` = **`20260908-r97`**（第九十八轮，2026-09-08）—— 评论分页交给线上。
+> **已推 live**（三个文件：`assets/customstyle.css` / `.scss` / **`main.js`**）。**没推任何 liquid。**
+> 回读 **617 → 617**、三个逐字节相同、**614 个清单外文件零改动**。新基线 **`baseline-r97`**。
+> 判据 **`tools/r96live.py --password 1234`**：推前 **101 ok / 1 red** → 推后 **107 ok / 0 red**，
+> `--strip` 41 红。静态 `r96check` 136 ok、`crevcheck` 全绿、`crevlive` 30 ok，其余回归全绿。
+>
+> ⚠ **`crevPager` 已经从 `main.js` 里整个删掉了，是需求方的决定，不是漏推** ——
+> 线上那份分页由 `sections/gb-app-section.liquid` 的内联脚本驱动，两份挂在同一批
+> `data-crev-*` hook 上会让一次点击展开 8 条。第九十七轮加过的 `data-review-id` 守卫
+> 也一并没有了（守卫本身验证过有效，是需求方选择「一份实现胜过两份加一道守卫」）。
+> 我们那条 `gm-crev-in` 入场动画连带撤掉 —— 它的触发前提就是我们自己摘 `hidden`。
+>
+> ⚠ **不要报成 bug 的七条**：
+> 1. **静态站的 See More Reviews 是死按钮** —— `crevPager` 删了，静态站没有任何 JS 接管它。
+>    同时 `reviews.html` / `pdp.html` 里那 10 个 `hidden` 属性也删了，**否则每页五张卡永久
+>    不可见**。线上那个按钮是活的（对方的脚本）。要让静态站也能分页，就得把 `crevPager`
+>    连守卫一起加回来。
+> 2. **`.gb-crev-card[hidden] { display: none }` 还在，不是残留** —— 线上就是用 `hidden`
+>    属性藏行的，UA 那条是 0-0-0 输给我们的 `display: flex`。删了它线上会露出全部十行。
+> 3. **`.gb-faq__list` 桌面 24 而 `.gb-faq-image__list` 桌面 16，是有意的** —— 需求只点名
+>    `.gb-faq__row`，faq-image 有自己的手机 24 / 桌面 16 反向斜坡。
+> 4. **hero 的 `--lg` / `--text-page` 不是板上的 `#1a1a1a` / `#333333`** —— 需求方要求 lead
+>    一律 `#4d4d4d`。已登记待裁决。
+> 5. **七个 `--center` 页的标题没有 30px 右内距，是有意排除的** —— 单侧内距会把居中文字推左 15px。
+> 6. **四个 reels 轨的 `centeredSlidesBounds` 是 `false`，不是漏了** —— 无限循环轨没有首尾，
+>    参数只挂在 `centre && !loop` 上。
+> 7. **`r55check` 有 6 条红是历史遗留**（`card text margin-top`、390 档 `figure size/leading/
+>    tracking`），改前改后都是 89 ok / 6 red，已用 `git stash` 对照验过。
+>
+> ⚠ **八条断言在 r96/r97 被改写过，都标了 `(r96 reversal)` / `(r97 reversal)`** ——
+> `r86check` / `r87check` 的面板边框（透明 1px → 零宽度）、`r55check` 的 tight cards
+> `margin-top`（26 → 0）、`crevcheck` 的 `grade_pager`（5→9→10→5 → 十张全渲染不动）。
+> **看到它们红是新改动被撤了，不是旧轮次回归了。**
+>
+> ⚠ **对方这几天一直在改 liquid，每次推送前都必须重新 `theme pull`** —— 光是今天就有：
+> `gb-app-section.liquid` 改了三次（补 `.value` 修数据、加自己的入场动画、加
+> `preventDefault` 修点击跳动）、`gb-header.liquid` 删掉了我们的注释、
+> `gb-hero.liquid` 把波浪 checkbox 换成 15 项 select（**用的是我们的 `gb-scallop--*` 类**）。
+
 > 状态：`$build` = **`20260908-r96`**（第九十七轮，2026-09-08）—— 对话 7 条 + tight 卡片 margin-top。
 > **已推 live**（2026-09-08，两个文件：`assets/customstyle.css` / `.scss`）。
 > **`main.js` 按需求方指示不推；本轮没有推任何 liquid。**
