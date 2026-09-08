@@ -6082,10 +6082,6 @@ html.is-menu-open {
   @include narrow { .gb-science__inner { gap: 48px; } }   // client-set
   @include tablet { .gb-science__inner { gap: fluid(32px, 22px); } }
 
-  // Client-set, and it stacks on the gap above rather than replacing it: 22 + 26
-  // at desktop, 48 + 26 on phones.
-  .gb-science__cards { margin-top: 26px; }
-
   // Client r96. The base card is 16 at every width; only the tight board opens up.
   .gb-science-card { gap: 22px; }
 }
@@ -9163,15 +9159,23 @@ html.is-menu-open {
   // transition. An animation can: display:none cancels it, so restoring display
   // replays it from the top -- which is exactly the reveal. `backwards` and not
   // `both`, so nothing is left pinned on the element afterwards
-  // ([[finished-animation-fill-blocks-transition]]). Works under the live
-  // section's own inline script too; it strips the same attribute.
-  animation: gm-crev-in $t-slow $ease-out backwards;
+  // ([[finished-animation-fill-blocks-transition]]).
+  //
+  // ⚠ Scoped OFF the live cards. The live section grew its own reveal
+  // (`.gb-crev-card.is-appearing`, 0-2-0, in an inline <style>) with a 60ms
+  // stagger, and its script REMOVES that class 450ms later. Without this guard
+  // the removal hands `animation` back to the rule below and the card fades in
+  // a second time. `data-review-id` is written from the metaobject and our own
+  // markup never carries it -- the same marker crevPager's guard uses.
+  &:not([data-review-id]) { animation: gm-crev-in $t-slow $ease-out backwards; }
 
   // Paged out by main.js. The UA's [hidden] rule is display:none at 0-0-0 and
   // loses to the flex above, so it has to be restated here.
   &[hidden] { display: none; }
 
-  @media (prefers-reduced-motion: reduce) { animation: gm-fade-in 0.4s ease-out backwards; }
+  @media (prefers-reduced-motion: reduce) {
+    &:not([data-review-id]) { animation: gm-fade-in 0.4s ease-out backwards; }
+  }
 }
 
 @keyframes gm-crev-in {

@@ -4711,6 +4711,14 @@ animation: gm-crev-in $t-slow $ease-out backwards;   // opacity 0→1 + translat
 （[[finished-animation-fill-blocks-transition]]）。判据因此加了「动画播完 opacity 必须回到 1」一条。
 `prefers-reduced-motion` 下换成无位移的 `gm-fade-in`，与本文件既有的四处降级写法一致。
 
+⚠ **推送前的三方对比发现对方也做了同一件事，规则因此改成 `&:not([data-review-id])`。**
+线上那份是 `.gb-crev-card.is-appearing`（0-2-0，写在 section 的内联 `<style>` 里），
+`gb-crev-fade-in 0.4s ease both`，脚本按 60ms 错峰加类、**450ms 后再把类移除**。
+移除那一刻 `animation` 属性回落到我们这条 0-1-0 的规则上，浏览器视为一个新动画**从头再播一次** ——
+卡片会「淡入完了又淡入」。`data-review-id` 是对方从 metaobject 写的、我们的标记从来没有，
+所以拿它把我们这条从线上卡片上摘掉：**静态站照播，线上只播对方那份**。
+（同一个信号也用在 `crevPager` 的守卫上，见下。）
+
 ### 1. `.gb-faq__row` 回到 24 —— 这是**反转第六十四轮第 3 条**
 
 改的是 `.gb-faq__list` 的 `--acc-gap`（16 → 24），不是 `padding-bottom` 属性：
@@ -4755,6 +4763,10 @@ transition: grid-template-rows …, border-top-width …, border-bottom-width �
 ### 4. tight 板的卡片 gap 22
 
 `.gb-science--tight .gb-science-card { gap: 22px }`（基类 16，全档不变）。
+**追加（同一轮，需求方补充）：`.gb-science--tight .gb-science__cards` 的 `margin-top: 26px` 去掉。**
+那个 26 是叠在 `.gb-science__inner` 自己的 gap 上的（桌面 22+26=48、手机 48+26=74），
+去掉之后标题到卡片行的距离**就等于 inner 的 gap** —— 判据直接量这两个数是否相等，
+而不是量 margin 是不是 0。⚠ `tools/r55check.py` 有一条断言写死了 `26px`，已改到 `0px` 并标 `(r96 reversal)`。
 ⚠ 别和同区块里已有的两个 22 搞混：`.gb-science--tight .gb-science__inner` 的 22 是**标题与卡片行**的距离，
 `.gb-science-card__body` 的 22 是**眉标与数字**的距离。本轮动的是第三个 —— 卡片内 body 与正文之间。
 `gb-science--tight` 全站只有 science.html 的第二个 section。
@@ -4810,19 +4822,21 @@ if (list.querySelector(".gb-crev-card[data-review-id]")) { return; }
 ### 文件清单
 
 ```
-改  assets/customstyle.scss    7 组改动 + $build → 20260908-r96
+改  assets/customstyle.scss    8 组改动 + $build → 20260908-r96
 改  assets/customstyle.css     重新编译（与 r95 产物 diff = 这 7 组，无多余）
 改  assets/main.js             centeredSlidesBounds（+ !loop 门）+ crevPager 早退守卫
 改  全部 13 个 html            ?v= r95 → r96（245 处）
 改  tools/r86check.py          第 5 条的三处断言改到 r96 机制并标 (r96 reversal)
 改  tools/r87check.py          第 2 条的四处断言同上
+改  tools/r55check.py          tight cards margin-top 26px → 0px，标 (r96 reversal)
 新  tools/_apply_r96.py        11 处精确锚点替换（每处命中数必须为 1）
-新  tools/r96check.py          本轮判据
+新  tools/r96check.py          本轮静态判据（141 条）
+新  tools/r96live.py           本轮线上判据（102 条）
 ```
 
 ### 判据
 
-`tools/r96check.py` **134 ok / 0 red**；`--strip` **64 red**，七条需求**逐条**转红：
+`tools/r96check.py` **141 ok / 0 red**；`--strip` **64 red**，七条需求**逐条**转红：
 
 | 条 | strip 手法 | 转红 |
 |---|---|---|
@@ -4844,12 +4858,59 @@ if (list.querySelector(".gb-crev-card[data-review-id]")) { return; }
 `r86check`（5 红）与 `r87check`（13 红）全部落在面板边框的旧机制断言上，**是本轮有意反转**，
 已按新机制重写并标注，改后两份都全绿。
 
+### 推送（2026-09-08）
+
+**两个文件**：`assets/customstyle.css` / `.scss`，`--only` 逐个列出 + `--nodelete` + `--allow-live`。
+**`main.js` 按需求方指示不推**；本轮没有推任何 liquid。
+
+- 推前 `theme pull` → `prepush-r96`（617），与 `baseline-r95` 差 **4 个文件，全是对方改的**：
+  `sections/gb-app-section.liquid` + 三个 `templates/*.json`（后台托管，我们永远不推）。
+  **推送清单与这 4 个零重叠。**
+- 回读 `verify-r96`（617）：我推的两个文件**逐字节相同**，线上 `--build` 已是 `20260908-r96`。
+- ⚠ **回读比推前又多了两个 liquid 的差异，都不是我推的** —— 对方在推送的这几分钟内还改了
+  `gb-app-section.liquid`（给 See More 加 `e.preventDefault()` + 恢复 `scrollY`，修点击后跳动）
+  和 `gb-header.liquid`（**删掉了我们写在里面的那段 11 行 `{%- comment -%}`**，两个 `<ul>`
+  的结构本身没动）。⚠ 那段注释正是记「Mobile menu 必须填全六项」的地方，**已经没了**。
+- 新基线 **`baseline-r96/`（617 文件）**；清掉 `prepush-r96` / `work-r96` / `baseline-r94`。
+
+**线上判据 `tools/r96live.py --password 1234`**：推前 **63 ok / 39 red** → 推后 **102 ok / 0 red**，
+`--strip` 反向 **41 红**。回归 `crevlive.py` **30 ok / 0 red**（星星修复没被对方改坏）。
+
+它验五条（1/2/3/4/5），另有**两条负向断言**：第 0 条的动画**必须不落在线上卡片上**、
+第 6 条的 `centeredSlidesBounds` **必须仍是 `false`**（`main.js` 没推）。
+后者是给将来的：真推了 `main.js`，这条会红，提醒改判据而不是让它悄悄变。
+
+### 对方同期把评论区的数据读法修好了
+
+同一次 `theme pull` 里看到的：`r.is_published` → `r.is_published.value`，`customer_name` /
+`rating` / `title` / `body` / `review_date` / `upvotes` 全部补上 `.value`。
+**这就是「六张空卡」的真因**（第九十五、九十六轮记的那个），现在线上是 **15 条真实评论**。
+另外新增按 upvotes 排序、投票改 POST 到 Worker（`data-vote-api` setting）。
+我们这边不用动，星星尺寸与 `.is-voted` 描边判据复跑仍全绿。
+
+### 第 6 条要上线必须推 `main.js` —— 已验证「推了会怎样」
+
+用 `page.route` 把线上的 `main.js` 换成本地那份（**不写主题**），390 档实测：
+
+| | 线上现在 | 换成本地 |
+|---|---|---|
+| expert 轨点五个位置的左右空白 | `0/0`、`0/42.5`、`42.5/0`、`0/0`、`0/42.5` | **五个位置全是 `0/0`** |
+| `centeredSlidesBounds` | `false` | `true` |
+| See More 点一次展开几条（共 15 条） | 4 条 | **仍是 4 条** |
+| `window.gumi.crevPager` | 不存在 | 存在但 `wire()` 早退 |
+
+即：**推 `main.js` 只会修好第 6 条，不会引入双重分页** —— `data-review-id` 守卫按预期挡住了。
+推不推等需求方指令。
+
 ### 遗留 / 待裁决
 
 - **第 3 条偏离了设计稿**（见上）：`--lg` 的 `#1a1a1a`、`--text-page` 的 `#333333` 是板值。
 - **第 1 条之后 `.gb-faq__list` 与 `.gb-faq-image__list` 桌面端差 8px**（24 vs 16），方向相反。
 - **第 5 条只作用于 science / reviews 两页**，居中的七页被显式排除。
-- **第 6 条改在 `main.js`，不推就只有静态站生效**；线上要生效需推 `main.js`（守卫已就位）。
+- **第 6 条改在 `main.js`，不推就只有静态站生效**；线上要生效需推 `main.js`（守卫已验证，见上表）。
+- ⚠ **`gb-header.liquid` 里那段说明 Mobile menu 必须填全六项的注释被对方删了**，
+  约束本身还在（后台仍是三项，线上手机菜单仍少三条），只是 liquid 里不再自解释。
+  记在 `docs/LIVE-BACKLOG.md` 第〇节与本条。
 - 上一轮的遗留照旧：PDP 右列间距塌缩（第八十七轮起，已量未修）；后台 Mobile menu 仍是三项；
   对方 liquid 的三处数据缺陷（需求方指示先不管）；promo 白卡唇边与手机 `lip--h` 未做。
 

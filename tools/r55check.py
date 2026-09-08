@@ -218,7 +218,9 @@ with sync_playwright() as p:
           return {tightCls:s.className, cardsMt:cs.marginTop, textMt:ts.marginTop,
                   fs:vs.fontSize, lh:vs.lineHeight, ls:vs.letterSpacing};}""")
         chk("%d second group is the tight one" % w, "gb-science--tight" in d["tightCls"], True)
-        chk("%d tight cards margin-top" % w, d["cardsMt"], "26px")
+        # r96 reversal: the client dropped the 26 that used to stack on
+        # .gb-science__inner's own gap.
+        chk("%d tight cards margin-top (r96 reversal)" % w, d["cardsMt"], "0px")
         chk("%d card text margin-top" % w, d["textMt"], "6px")
         if w == 390:
             chk("390 figure size", d["fs"], "36px")

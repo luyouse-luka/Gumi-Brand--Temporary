@@ -5482,9 +5482,6 @@ a.gb-header__link {
     gap: clamp(22px, 32px + -10 * (100vw - 768px) / 513, 32px);
   }
 }
-.gb-science--tight .gb-science__cards {
-  margin-top: 26px;
-}
 .gb-science--tight .gb-science-card {
   gap: 22px;
 }
@@ -8785,13 +8782,15 @@ a.gb-header__link {
   gap: 20px;
   padding-bottom: 32px;
   border-bottom: 1px solid rgba(1, 19, 7, 0.05);
+}
+.gb-crev-card:not([data-review-id]) {
   animation: gm-crev-in 0.3s cubic-bezier(0.33, 1, 0.68, 1) backwards;
 }
 .gb-crev-card[hidden] {
   display: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  .gb-crev-card {
+  .gb-crev-card:not([data-review-id]) {
     animation: gm-fade-in 0.4s ease-out backwards;
   }
 }

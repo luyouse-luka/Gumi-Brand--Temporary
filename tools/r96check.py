@@ -166,6 +166,13 @@ def run(strip):
         # ⚠ and it must actually land -- an entrance that leaves opacity pinned
         # is worse than none ([[reveal-gate-must-track-module-liveness]]).
         pg.wait_for_timeout(600)
+        # The live cards must NOT pick our animation up: the live section runs its
+        # own `.is-appearing` reveal and strips that class 450ms later, which
+        # would hand `animation` back to us and fade the card in a second time.
+        rep.eq('0e2 live-shaped card takes no animation of ours', pg.evaluate(
+            "() => { const c = document.querySelector('.gb-crev-card');"
+            " c.setAttribute('data-review-id','1');"
+            " return getComputedStyle(c).animationName; }"), 'none')
         rep.eq('0e opacity lands on 1', pg.evaluate(
             "() => getComputedStyle([...document.querySelectorAll('.gb-crev-card')]"
             ".filter(c=>!c.hidden).slice(-1)[0]).opacity"), '1')
@@ -300,6 +307,18 @@ def run(strip):
             }""")
             rep.near(f'4 {w:>4} tight card gap 22', d['tight'], 22)
             rep.near(f'4 {w:>4} plain card untouched at 16', d['base'], 16)
+            # 4b: the 26 that used to stack on .gb-science__inner's gap is gone,
+            # so the heading-to-cards distance IS the inner gap now.
+            g = pg.evaluate("""() => {
+              const c = document.querySelector('.gb-science--tight .gb-science__cards');
+              const i = document.querySelector('.gb-science--tight .gb-science__inner');
+              return {mt: parseFloat(getComputedStyle(c).marginTop),
+                      gap: parseFloat(getComputedStyle(i).rowGap),
+                      head: +(c.getBoundingClientRect().top - document.querySelector(
+                        '.gb-science--tight .gb-science__head').getBoundingClientRect().bottom).toFixed(1)};
+            }""")
+            rep.near(f'4b {w:>4} tight cards margin-top removed', g['mt'], 0)
+            rep.near(f'4b {w:>4} heading-to-cards is now just the gap', g['head'], g['gap'])
             pg.close()
 
         # -- 6. expert rail edges ---------------------------------------------

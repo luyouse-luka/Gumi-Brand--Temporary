@@ -4,29 +4,49 @@
 > 项目定位与已确立的规范在 [PROJECT-STATUS.md](PROJECT-STATUS.md)；
 > 改动史在 [CHANGELOG.md](CHANGELOG.md)（近 10 轮）+ [CHANGELOG-ARCHIVE.md](CHANGELOG-ARCHIVE.md)（第一～三十轮），**两份一起 grep**。
 >
-> 状态：`$build` = **`20260908-r96`**（第九十七轮，2026-09-08）—— 对话 7 条。
-> **未推 live**：线上仍是 `20260908-r95`。改完只验，等需求方指令。
-> 判据 **`tools/r96check.py`**：静态 **134 ok / 0 red**，`--strip` **64 red**（七条逐条转红）。
-> 回归 `rwd.py` / `r86check` / `r87check` / `r89check` / `crevcheck` 全绿，`r94check` 42 ok。
+> 状态：`$build` = **`20260908-r96`**（第九十七轮，2026-09-08）—— 对话 7 条 + tight 卡片 margin-top。
+> **已推 live**（2026-09-08，两个文件：`assets/customstyle.css` / `.scss`）。
+> **`main.js` 按需求方指示不推；本轮没有推任何 liquid。**
+> 回读 **617 → 617**、我推的两个逐字节相同、线上 `--build` 已是 `20260908-r96`。
+> 新基线 **`baseline-r96`（617 文件）**。
+> 判据 **`tools/r96live.py --password 1234`**：推前 **63 ok / 39 red** → 推后 **102 ok / 0 red**，
+> `--strip` 反向 41 红。静态 `tools/r96check.py` **141 ok / 0 red**、`--strip` 64 红。
+> 回归 `crevlive`(30) / `rwd` / `r86check` / `r87check` / `r89check` / `crevcheck` / `r94check`(42) 全绿。
 >
-> ⚠ **`r86check` / `r87check` 里关于面板边框的七条断言被本轮改写了** —— 第八十六/八十七轮的
-> 「透明 1px」机制换成了「零宽度」，改前它们红 5 + 13 条。断言已标 `(r96 reversal)`，
-> **看到它们红是 r96 被撤了，不是 r86/r87 回归了。**
+> ⚠ **对方这一天一直在改 `gb-app-section.liquid`，且把评论数据修好了** —— 全部字段补上
+> `.value`（`r.rating.value` 等），**「六张空卡」的真因就是这个**，线上现在是 **15 条真实评论**。
+> 还新增了按 upvotes 排序、投票 POST 到 Worker（`data-vote-api`）、以及**它自己的展开入场动画**。
 >
-> ⚠ **不要报成 bug 的四条**：
-> 1. **`.gb-faq__list` 桌面 24 而 `.gb-faq-image__list` 桌面 16，是有意的** —— 需求只点名
+> ⚠ **`gb-header.liquid` 里我们写的那段 11 行注释被对方删了**（两个 `<ul>` 的结构没动）。
+> 那段正是记「**Mobile menu 必须填全六项**」的地方 —— 约束还在（后台仍是三项，线上手机菜单
+> 仍少 How Gumi Works / Science / Reviews），只是 liquid 里不再自解释。
+>
+> ⚠ **不要报成 bug 的六条**：
+> 1. **`.gb-crev-card` 的入场动画在线上「不生效」是有意的** —— 规则写成
+>    `&:not([data-review-id])`。线上那份是对方的 `.gb-crev-card.is-appearing`（0-2-0，内联
+>    `<style>`），它**450ms 后会移除那个类**，届时 `animation` 会落回我们这条 0-1-0 的规则，
+>    浏览器当成新动画**再播一次**。静态站的卡片没有 `data-review-id`，照播。
+> 2. **`window.gumi.crevPager` 在线上不存在，是因为 `main.js` 没推** —— 推了也不会双重分页，
+>    `wire()` 有 `data-review-id` 早退守卫，已用 `page.route` 换本地 js 在线上实测过
+>    （点一次仍只展开 4 条）。
+> 3. **`.gb-faq__list` 桌面 24 而 `.gb-faq-image__list` 桌面 16，是有意的** —— 需求只点名
 >    `.gb-faq__row`，faq-image 有自己的手机 24 / 桌面 16 反向斜坡，本轮没动它。
-> 2. **hero 的 `--lg` / `--text-page` 现在不是板上的 `#1a1a1a` / `#333333`** —— 需求方
+> 4. **hero 的 `--lg` / `--text-page` 现在不是板上的 `#1a1a1a` / `#333333`** —— 需求方
 >    要求 lead 一律 `#4d4d4d`，基类本来就是这个色，是这两个变体挡住了它。已登记待裁决。
-> 3. **七个 `--center` 页的标题没有 30px 右内距，是有意排除的** —— 标题居中，单侧内距只会
+> 5. **七个 `--center` 页的标题没有 30px 右内距，是有意排除的** —— 标题居中，单侧内距只会
 >    把文字推左 15px。受益的只有左对齐的 science / reviews 两页。
-> 4. **四个 reels 轨的 `centeredSlidesBounds` 是 `false`，不是漏了** —— 无限循环轨没有
+> 6. **四个 reels 轨的 `centeredSlidesBounds` 是 `false`，不是漏了** —— 无限循环轨没有
 >    首尾可言，参数只挂在 `centre && !loop` 上。判据里有专门一条守着它。
 >
-> ⚠ **`main.js` 现在可以推了，但推不推是需求方的决定** —— `crevPager.wire()` 加了
-> `data-review-id` 早退守卫，与对方 section 内联分页脚本的双重绑定问题因此解除。
-> **第 6 条（专家轨空白）改在 `main.js` 里，不推 `main.js` 线上就不生效**；
-> 第 0 条（评论展开过渡）是纯 CSS，推 `customstyle.css` 就生效。
+> ⚠ **`r86check` / `r87check` / `r55check` 里共八条断言被本轮改写** —— 面板边框的「透明
+> 1px」换成了「零宽度」（r86/r87），tight cards 的 `margin-top: 26px` 归零（r55）。
+> 断言都标了 `(r96 reversal)`，**看到它们红是 r96 被撤了，不是旧轮次回归了**。
+>
+> ⚠ **`r55check` 另有 6 条红是历史遗留，与本轮无关** —— `card text margin-top` 与
+> 390 档 `figure size/leading/tracking`，改前改后都是 89 ok / 6 red（已用 `git stash` 对照验过）。
+>
+> ⚠ **第 6 条（专家轨空白）线上仍在** —— 它改在 `main.js` 里，不推就不生效。
+> 390 档实测线上五个位置里有两个各空 42.5px。换本地 js 后五个位置全 0。
 
 > 状态：`$build` = **`20260908-r95`**（第九十六轮，2026-09-08）—— 线上星星被撑成 1500px。
 > **已推 live**（2026-09-08，两个文件：`assets/customstyle.css` / `.scss`）。
