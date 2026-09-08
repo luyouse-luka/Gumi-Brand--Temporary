@@ -4681,6 +4681,178 @@ PDP / reviews / home 三页渲染后 `[class*=gb-crev]` 元素数均为 **0** �
 - 手机端的 `lip--h`（卡片底部水平波浪）线上仍缺，两张卡都是。
 - collection 页（r88）仍是无稿的自定值，待设计方裁决。
 
+## 第九十七轮（2026-09-08）— 对话 7 条：评论展开过渡 / faq 行距 / 面板边框 / hero 文字 / 卡片 gap / 专家轨空白（`$build` = `20260908-r96`）
+
+需求（对话给出，7 条，第 0 条在编号之外）：
+
+0. See More Reviews 点击 `gb-crev__list` 展开 `gb-crev-card` 缺少过渡效果
+1. `.gb-faq__row` `padding-bottom: 24px`
+2. `.gb-header__panel` 菜单收起是 border 改为 none，出现时再加上 border
+3. `gb-page-hero__lead` 的颜色改为 `#4D4D4D`
+4. `gb-science--tight` 的 `.gb-science-card` gap 改为 22px
+5. `gb-page-hero__title` 手机端 padding-r 30px
+6. `gb-expert__cards` 手机端点击循环的时候左右出现了空白
+
+**未推 live**，本轮只改与验。
+
+### 0. 展开过渡：animation 而不是 transition，因为 `display` 不可插值
+
+`.gb-crev-card[hidden]` 是 `display: none`，摘掉属性那一刻没有可过渡的中间态。改用动画：
+
+```scss
+animation: gm-crev-in $t-slow $ease-out backwards;   // opacity 0→1 + translateY 12px→0
+```
+
+`display: none` 会**取消**动画，恢复 display 时它从头重播 —— 这正好等于「被展开的那几张各自播一次入场」，
+不需要 JS 加类，也**不依赖是谁摘的 `hidden`**：线上那份是对方 section 里的内联脚本，
+它也走 `removeAttribute('hidden')`，所以这条纯 CSS 改动推上去就生效。
+
+⚠ 用 `backwards` 不用 `both` —— `both` 会把终态钉在元素上，之后任何 transition 都静默失效
+（[[finished-animation-fill-blocks-transition]]）。判据因此加了「动画播完 opacity 必须回到 1」一条。
+`prefers-reduced-motion` 下换成无位移的 `gm-fade-in`，与本文件既有的四处降级写法一致。
+
+### 1. `.gb-faq__row` 回到 24 —— 这是**反转第六十四轮第 3 条**
+
+改的是 `.gb-faq__list` 的 `--acc-gap`（16 → 24），不是 `padding-bottom` 属性：
+行的下边距和展开面板的尾部读同一个变量，写死属性会让两者脱钩（当时的原话，依然成立）。
+
+⚠ **`.gb-faq-image__list` 没动，两者现在方向相反**：它是**手机 24 / 桌面 16**（`fluid(24,16)` 插值），
+`.gb-faq__list` 是**全档 24**。science 页的 faq-image 与 faq 页的列表因此在桌面端差 8px。
+需求只点名 `.gb-faq__row`，而 faq-image 那套是自己的斜坡，没有一并改。**要统一说一声。**
+
+### 2. 面板收起时的那条线：不是边框颜色的问题，是**边框宽度撑出来的 2px 奶油条**
+
+第八十六 / 八十七轮把上下边框做成 `1px solid transparent`，开菜单时补颜色。
+但 `.gb-header__panel` 收起时是 `grid-template-rows: 0fr` 的空盒，**两条透明边框仍然把它撑到 2px 高**，
+而它自己的 `background: $c-cream` 会一直画到 border-box —— 于是 bar 下面常驻一条 2px 的奶油色横条。
+实测 1440 与 900 档 `height` 都是 **2**，`top` 正好等于 bar 的 `bottom`。
+
+改成宽度归零、颜色常驻，过渡从 `border-*-color` 换到 `border-*-width`：
+
+```scss
+border-top: 0 solid $c-sand;      // was: 1px solid transparent
+border-bottom: 0 solid $c-sand;
+transition: grid-template-rows …, border-top-width …, border-bottom-width …;
+.gb-header.is-open & { border-top-width: 1px; border-bottom-width: 1px; }
+```
+
+⚠ **手机抽屉必须在自己的 `is-open` 里把宽度再归零一次**：`narrow` 块里的 `border-top: 0` 是
+0-1-0，而 `.gb-header.is-open &` 是 0-2-0，媒体查询不提升特异性 —— 原来只给颜色所以无害
+（宽度 0 画不出东西），改成给宽度就会在满屏抽屉的上下缘各画一条 sand 线。判据在 390 档验了这两条。
+
+### 3. lead 的 `#4d4d4d`：基类本来就是，挡住它的是两个变体
+
+`.gb-page-hero__lead` 的 `color` 一直是 `$c-gray-700`（= `#4d4d4d`）。实测九个 hero 页只有
+**science** 和 **privacy-policy 手机档**显出这个色，其余六个是 `#1a1a1a` —— 被叠在上面的
+`--lg`（`$c-gray-900`）和 `--text-page`（桌面 `$c-gray-800` / 手机 `$c-gray-900`）覆盖了。
+
+按「要看到 #4d4d4d」把这两个变体的三处 color 一并改成 `$c-gray-700`，全站九个 lead 统一。
+
+⚠ **这偏离设计稿**：`--lg` 的 `#1a1a1a` 与 `--text-page` 的 `#333333` 都是板上的值
+（四个纯文字页 324:75766 / 326:79979 / 326:81218 / 326:82363）。**登记进待裁决**：
+若只想改某一页或某一个变体，回滚对应那一行即可，判据会指出是哪几页。
+
+### 4. tight 板的卡片 gap 22
+
+`.gb-science--tight .gb-science-card { gap: 22px }`（基类 16，全档不变）。
+⚠ 别和同区块里已有的两个 22 搞混：`.gb-science--tight .gb-science__inner` 的 22 是**标题与卡片行**的距离，
+`.gb-science-card__body` 的 22 是**眉标与数字**的距离。本轮动的是第三个 —— 卡片内 body 与正文之间。
+`gb-science--tight` 全站只有 science.html 的第二个 section。
+
+### 5. 标题右内距 30，`--center` 七页归零
+
+```scss
+@include narrow { … padding-right: 30px; }
+@include tablet { … padding-right: fluid(30px, 0); }
+```
+
+`fluid` 斜坡是必须的：只给 narrow 会在 768 从 30 直接跳到 0。1280 实测 0.06px，1281 是 0，无台阶。
+
+⚠ **`.gb-page-hero--center` 里把它归零了**：那七页标题是居中的（`text-align: center` +
+`align-items: center` 让标题盒 shrink-to-fit），单侧内距只会把文字整体推左 15px。
+那一行**故意写在 media 之外** —— `@media` 不带特异性，一条 0-2-0 就同时取消手机档和平板档
+（[[media-query-no-specificity-scoping]]）。**受益的是 science 和 reviews 两页**，
+也就是仅有的两个左对齐长标题。要让居中页也带上，删这一行即可。
+
+### 6. 专家轨的空白：`centeredSlidesBounds`，一个参数
+
+`.gb-expert__cards` 是 3 张卡 + `centeredSlides` + `rewind`。居中意味着**首尾那张也要居中**，
+于是 390 档实测：点到最后一张时右边空 **42.5px**，`rewind` 绕回第一张时左边空 **42.5px**
+（575 档 135、767 档 231 —— 卡宽固定 305，视口越宽空得越多）。
+
+`loop` 不是解：Swiper 11 靠**重排**而不是克隆，767 档一屏 2.44 张需要 5 张以上卡才转得起来，
+实测开 loop 后 767 仍空 231。补卡片又会把 ≥992 的三列网格变成多行，而且没有第 4、5 位专家的真内容。
+
+`centeredSlidesBounds: true` 让**首尾贴轨道边、中间照常居中**。实测 390 / 575 / 767 三档
+各点满一圈，左右空白恒为 0，且 390 档中间位的坐标 `-279..27 / 43..348 / 364..669`
+与改前**逐像素相同** —— 板式没变，只有首尾两个位置动了。
+
+⚠ 只挂在 `centre && !loop` 上：四个 reels 轨是无限循环的，本来就没有「首尾」，
+带上这个参数只会有副作用。判据里有一条专门验它们的 `centeredSlidesBounds` 仍是 `false`、几何未变。
+
+### 顺带：`crevPager` 加了一行守卫，`main.js` 从此可以推
+
+第 6 条改在 `main.js` 里，**而 `main.js` 上一轮被决定不推**（推上去会和对方 section 的内联
+分页脚本双重绑定同一个按钮：点一次展开 8 条、label 写两遍）。为了让这条修复有路上线，
+`crevPager.wire()` 加了早退：
+
+```js
+if (list.querySelector(".gb-crev-card[data-review-id]")) { return; }
+```
+
+`data-review-id` 是对方 liquid 从 metafield 写上去的，我们的静态站卡片从来没有 —— 这是
+唯一能分辨两套标记的信号。判据用 clone 出来的 section 双向验：**没有这个属性时照常分页，
+有的时候 `wire()` 完全不动任何一张卡**。（必须用 clone，否则 `main.js` 早已绑好的 handler
+会替假守卫应答那次点击。）
+
+⚠ 这一行只是**解除阻塞**，不代表本轮该推 `main.js` —— 推不推由需求方定。不推的话它无害。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss    7 组改动 + $build → 20260908-r96
+改  assets/customstyle.css     重新编译（与 r95 产物 diff = 这 7 组，无多余）
+改  assets/main.js             centeredSlidesBounds（+ !loop 门）+ crevPager 早退守卫
+改  全部 13 个 html            ?v= r95 → r96（245 处）
+改  tools/r86check.py          第 5 条的三处断言改到 r96 机制并标 (r96 reversal)
+改  tools/r87check.py          第 2 条的四处断言同上
+新  tools/_apply_r96.py        11 处精确锚点替换（每处命中数必须为 1）
+新  tools/r96check.py          本轮判据
+```
+
+### 判据
+
+`tools/r96check.py` **134 ok / 0 red**；`--strip` **64 red**，七条需求**逐条**转红：
+
+| 条 | strip 手法 | 转红 |
+|---|---|---|
+| 0 | `animation: none` inline | 3（动画名 / 播放态 / opacity 未落地）|
+| 1 | `--acc-gap: 16px` 写回 list | 8 |
+| 2 | 边框宽度写回 1px + 颜色 transparent | 8 |
+| 3 | 六个 lead 写回 `#1a1a1a` | 30 |
+| 4 | tight 卡片写回 16 | 3 |
+| 5 | 标题 `padding-right: 0` | 12 |
+| 6 | 不带 bounds 重建 Swiper | 6 |
+
+⚠ **strip 之后必须等 450ms 再读** —— `padding-bottom` 和 `border-width` 都带过渡，
+写完立刻读拿到的是**起始值**，第 1、2 条的 strip 因此一开始「全绿」，看着像判据没写错。
+本轮第三次踩 [[headless-transition-reads-start-value]]，已把等待包进 `do_strip()`。
+⚠ 第 6 条的 strip 还要**把 next 按钮重新接到重建后的实例上**：`main.js` 的 handler
+闭包指向已 destroy 的旧实例，不重接的话按钮是死的，轨道停在 initialSlide 上永远没有空白。
+
+**回归**：`rwd.py` / `r89check` / `crevcheck` 全绿，`r94check` 42 ok。
+`r86check`（5 红）与 `r87check`（13 红）全部落在面板边框的旧机制断言上，**是本轮有意反转**，
+已按新机制重写并标注，改后两份都全绿。
+
+### 遗留 / 待裁决
+
+- **第 3 条偏离了设计稿**（见上）：`--lg` 的 `#1a1a1a`、`--text-page` 的 `#333333` 是板值。
+- **第 1 条之后 `.gb-faq__list` 与 `.gb-faq-image__list` 桌面端差 8px**（24 vs 16），方向相反。
+- **第 5 条只作用于 science / reviews 两页**，居中的七页被显式排除。
+- **第 6 条改在 `main.js`，不推就只有静态站生效**；线上要生效需推 `main.js`（守卫已就位）。
+- 上一轮的遗留照旧：PDP 右列间距塌缩（第八十七轮起，已量未修）；后台 Mobile menu 仍是三项；
+  对方 liquid 的三处数据缺陷（需求方指示先不管）；promo 白卡唇边与手机 `lip--h` 未做。
+
 ## 第九十六轮（2026-09-08）— 线上星星被撑成 1500px：主题的 `img { width: 100% }`（`$build` = `20260908-r95`）
 
 需求方反馈「gb-app-section 的样式推送到 live 了吗，线上为什么没反应」。**样式确实推上去了**

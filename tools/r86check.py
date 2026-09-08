@@ -10,6 +10,10 @@ add_style_tag.
 
 ⚠ `(hover: hover)` is false in a bare headless chromium; the hover half of item
 4 is skipped rather than silently passing if the context does not report it.
+
+⚠ Item 5 was REVERSED in r96 -- the shut panel now carries a zero-width border
+rather than a transparent 1px one. Three assertions here were rewritten to the
+new mechanism; a RED on them means r96 came undone, not that r86 regressed.
 """
 import argparse, io, pathlib, re, sys
 
@@ -18,7 +22,6 @@ CHROME = '/home/ly/.cache/ms-playwright/chromium-1217/chrome-linux64/chrome'
 SITE = 'https://gumi.com.au'
 BUILD = '20260907-r86'
 SAND = 'rgb(245, 241, 233)'
-CLEAR = 'rgba(0, 0, 0, 0)'
 
 fails, skips = [], []
 
@@ -66,8 +69,10 @@ check('2c cart drawer body is clip',
       'overflow-x: clip; overflow-y: visible;')
 check('4 underline mixin gone', '@mixin link-underline' in scss, False)
 check('4 no sliding underline compiled', 'transform-origin: right center' in css, False)
-check('5 panel top starts transparent',
-      'border-top: 1px solid transparent;' in css, True)
+# r96 reversal: the edge is zero-WIDTH while shut, not a transparent 1px. A
+# transparent border still boxed the 0fr row 2px tall and painted $c-cream there.
+check('5 panel top has no border while shut (r96 reversal)',
+      'border-top: 0 solid #f5f1e9;' in css, True)
 
 PROBE = """() => {
   const q = s => document.querySelector(s);
@@ -263,8 +268,10 @@ def grade(tag, res, width):
                 check(p('5 phone drawer keeps both edges off'), d['panelShut'][0], '0px')
                 check(p('5 phone drawer stays off when open'), d['panelOpen'][0], '0px')
             else:
-                check(p('5 panel top invisible while shut'), d['panelShut'][1], CLEAR)
-                check(p('5 panel top 1px reserved'), d['panelShut'][0], '1px')
+                # r96 reversal, see the source assertion above: colour is now
+                # always sand and the WIDTH is what the open state switches.
+                check(p('5 panel top zero width while shut (r96 reversal)'), d['panelShut'][0], '0px')
+                check(p('5 panel top colour always sand (r96 reversal)'), d['panelShut'][1], SAND)
                 check(p('5 panel top paints when open'), d['panelOpen'][1], SAND)
         for sel, content in d['pseudo'].items():
             if content is not None:

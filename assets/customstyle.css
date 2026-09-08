@@ -1,27 +1,27 @@
 @font-face {
   font-family: "PP Palma";
-  src: url("pppalma-fizzy-light.woff2?v=20260908-r95") format("woff2");
+  src: url("pppalma-fizzy-light.woff2?v=20260908-r96") format("woff2");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("PPPalma-Regular.woff2?v=20260908-r95") format("woff2");
+  src: url("PPPalma-Regular.woff2?v=20260908-r96") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("PPPalma-FizzyMedium.woff2?v=20260908-r95") format("woff2");
+  src: url("PPPalma-FizzyMedium.woff2?v=20260908-r96") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "PP Palma";
-  src: url("PPPalma-FizzyHeavy.woff2?v=20260908-r95") format("woff2");
+  src: url("PPPalma-FizzyHeavy.woff2?v=20260908-r96") format("woff2");
   font-weight: 800;
   font-style: normal;
   font-display: swap;
@@ -64,7 +64,7 @@
 }
 @font-face {
   font-family: "Figtree";
-  src: url("figtree-variable-latin.woff2?v=20260908-r95") format("woff2");
+  src: url("figtree-variable-latin.woff2?v=20260908-r96") format("woff2");
   font-weight: 300 900;
   font-style: normal;
   font-display: swap;
@@ -72,7 +72,7 @@
 }
 @font-face {
   font-family: "Figtree";
-  src: url("figtree-variable-latin-ext.woff2?v=20260908-r95") format("woff2");
+  src: url("figtree-variable-latin-ext.woff2?v=20260908-r96") format("woff2");
   font-weight: 300 900;
   font-style: normal;
   font-display: swap;
@@ -80,7 +80,7 @@
 }
 @font-face {
   font-family: "Inter";
-  src: url("inter-variable-latin.woff2?v=20260908-r95") format("woff2");
+  src: url("inter-variable-latin.woff2?v=20260908-r96") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -88,7 +88,7 @@
 }
 @font-face {
   font-family: "Inter";
-  src: url("inter-variable-latin-ext.woff2?v=20260908-r95") format("woff2");
+  src: url("inter-variable-latin-ext.woff2?v=20260908-r96") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -96,7 +96,7 @@
 }
 @font-face {
   font-family: "Lexend";
-  src: url("lexend-variable-latin.woff2?v=20260908-r95") format("woff2");
+  src: url("lexend-variable-latin.woff2?v=20260908-r96") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -104,7 +104,7 @@
 }
 @font-face {
   font-family: "Lexend";
-  src: url("lexend-variable-latin-ext.woff2?v=20260908-r95") format("woff2");
+  src: url("lexend-variable-latin-ext.woff2?v=20260908-r96") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -112,7 +112,7 @@
 }
 @font-face {
   font-family: "Playpen Sans";
-  src: url("playpen-sans-600-latin.woff2?v=20260908-r95") format("woff2");
+  src: url("playpen-sans-600-latin.woff2?v=20260908-r96") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -120,14 +120,14 @@
 }
 @font-face {
   font-family: "Playpen Sans";
-  src: url("playpen-sans-600-latin-ext.woff2?v=20260908-r95") format("woff2");
+  src: url("playpen-sans-600-latin-ext.woff2?v=20260908-r96") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 :root {
-  --build: "20260908-r95";
+  --build: "20260908-r96";
 }
 
 *, *::before, *::after {
@@ -3275,21 +3275,21 @@ html.js [data-line-reveal]:not(.is-split) > .gb-ink-halo {
   left: 0;
   width: 100%;
   background: #faf9f8;
-  border-top: 1px solid transparent;
-  border-bottom: 1px solid transparent;
+  border-top: 0 solid #f5f1e9;
+  border-bottom: 0 solid #f5f1e9;
   border-radius: 0 0 32px 32px;
   overflow: hidden;
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.35s cubic-bezier(0.65, 0, 0.35, 1), border-top-color 0.35s cubic-bezier(0.65, 0, 0.35, 1), border-bottom-color 0.35s cubic-bezier(0.65, 0, 0.35, 1);
+  transition: grid-template-rows 0.35s cubic-bezier(0.65, 0, 0.35, 1), border-top-width 0.35s cubic-bezier(0.65, 0, 0.35, 1), border-bottom-width 0.35s cubic-bezier(0.65, 0, 0.35, 1);
 }
 .gb-header__panel > * {
   min-height: 0;
 }
 .gb-header.is-open .gb-header__panel {
   grid-template-rows: 1fr;
-  border-top-color: #f5f1e9;
-  border-bottom-color: #f5f1e9;
+  border-top-width: 1px;
+  border-bottom-width: 1px;
 }
 @media (max-width: 767px) {
   .gb-header__panel {
@@ -3310,6 +3310,7 @@ html.js [data-line-reveal]:not(.is-split) > .gb-ink-halo {
   }
   .gb-header.is-open .gb-header__panel {
     transform: translateX(0);
+    border-width: 0;
   }
 }
 
@@ -4345,6 +4346,7 @@ a.gb-header__link {
     font-size: 30px;
     line-height: 36px;
     letter-spacing: -0.3px;
+    padding-right: 30px;
   }
 }
 @media (min-width: 768px) and (max-width: 1280px) {
@@ -4352,6 +4354,7 @@ a.gb-header__link {
     font-size: clamp(30px, 30px + 26 * (100vw - 768px) / 513, 56px);
     line-height: clamp(36px, 36px + 28 * (100vw - 768px) / 513, 64px);
     letter-spacing: clamp(-0.56px, -0.3px + -0.26 * (100vw - 768px) / 513, -0.3px);
+    padding-right: clamp(0px, 30px + -30 * (100vw - 768px) / 513, 30px);
   }
 }
 
@@ -4446,7 +4449,7 @@ a.gb-header__link {
   font-size: 20px;
   line-height: 30px;
   letter-spacing: -0.4px;
-  color: #1a1a1a;
+  color: #4d4d4d;
 }
 @media (max-width: 767px) {
   .gb-page-hero__lead--lg {
@@ -4468,12 +4471,11 @@ a.gb-header__link {
   line-height: 26px;
   font-weight: 500;
   letter-spacing: -0.36px;
-  color: #333333;
+  color: #4d4d4d;
 }
 @media (max-width: 767px) {
   .gb-page-hero__lead--text-page {
     font-weight: 400;
-    color: #1a1a1a;
   }
 }
 
@@ -4543,6 +4545,9 @@ a.gb-header__link {
   .gb-page-hero--center .gb-page-hero__text {
     gap: 16px;
   }
+}
+.gb-page-hero--center .gb-page-hero__title {
+  padding-right: 0;
 }
 @media (max-width: 767px) {
   .gb-page-hero--center .gb-page-hero__title {
@@ -5480,6 +5485,9 @@ a.gb-header__link {
 .gb-science--tight .gb-science__cards {
   margin-top: 26px;
 }
+.gb-science--tight .gb-science-card {
+  gap: 22px;
+}
 
 .gb-science__inner {
   display: flex;
@@ -5718,8 +5726,8 @@ a.gb-header__link {
   width: 100%;
   height: auto;
   aspect-ratio: 13.5/22;
-  background: url("bear-icon.png?v=20260908-r95") center/contain no-repeat;
-  background: image-set(url("bear-icon.webp?v=20260908-r95") type("image/webp"), url("bear-icon.png?v=20260908-r95") type("image/png")) center/contain no-repeat;
+  background: url("bear-icon.png?v=20260908-r96") center/contain no-repeat;
+  background: image-set(url("bear-icon.webp?v=20260908-r96") type("image/webp"), url("bear-icon.png?v=20260908-r96") type("image/png")) center/contain no-repeat;
 }
 
 .gb-bear-meter__bear.is-off {
@@ -8527,7 +8535,7 @@ a.gb-header__link {
 }
 
 .gb-faq__list {
-  --acc-gap: 16px;
+  --acc-gap: 24px;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -8777,11 +8785,27 @@ a.gb-header__link {
   gap: 20px;
   padding-bottom: 32px;
   border-bottom: 1px solid rgba(1, 19, 7, 0.05);
+  animation: gm-crev-in 0.3s cubic-bezier(0.33, 1, 0.68, 1) backwards;
 }
 .gb-crev-card[hidden] {
   display: none;
 }
+@media (prefers-reduced-motion: reduce) {
+  .gb-crev-card {
+    animation: gm-fade-in 0.4s ease-out backwards;
+  }
+}
 
+@keyframes gm-crev-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 .gb-crev-card__head {
   display: flex;
   align-items: center;

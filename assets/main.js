@@ -742,6 +742,13 @@
     },
 
     wire: function (list) {
+      // ⚠ The live section ships its own inline pager on these very hooks, so a
+      // second binding makes one click reveal two steps and write the label
+      // twice. Its cards carry data-review-id (they come from a metafield);
+      // ours never do, so this is the one marker that tells the two apart --
+      // and it is what lets main.js be pushed at all (r96).
+      if (list.querySelector(".gb-crev-card[data-review-id]")) { return; }
+
       var section = list.closest(".gb-app-section");
       var btn = section && section.querySelector("[data-crev-more]");
       if (!btn) { return; }
@@ -1172,6 +1179,15 @@
           grabCursor: true,
           speed: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 400,
           centeredSlides: centre,
+          // Client r96: with three cards a centred rail parks the first (and
+          // the last) in the middle, leaving a card's worth of empty track at
+          // one edge -- most visible right after `rewind` wraps round. This
+          // pins the end slides to the track edges and leaves every interior
+          // position centred, so the board's peek-each-side is unchanged.
+          // Ignored above 767 where the breakpoint turns centring off.
+          // ⚠ `&& !loop` keeps the four reels rails untouched: an endless rail
+          // has no first or last slide, so the option only has side effects there.
+          centeredSlidesBounds: centre && !loop,
           // A centred rail opens on its MIDDLE card, which is what puts the set
           // symmetrically across the viewport -- the board's own framing. Opening
           // on the first card would centre that one and leave the whole left half

@@ -4,6 +4,30 @@
 > 项目定位与已确立的规范在 [PROJECT-STATUS.md](PROJECT-STATUS.md)；
 > 改动史在 [CHANGELOG.md](CHANGELOG.md)（近 10 轮）+ [CHANGELOG-ARCHIVE.md](CHANGELOG-ARCHIVE.md)（第一～三十轮），**两份一起 grep**。
 >
+> 状态：`$build` = **`20260908-r96`**（第九十七轮，2026-09-08）—— 对话 7 条。
+> **未推 live**：线上仍是 `20260908-r95`。改完只验，等需求方指令。
+> 判据 **`tools/r96check.py`**：静态 **134 ok / 0 red**，`--strip` **64 red**（七条逐条转红）。
+> 回归 `rwd.py` / `r86check` / `r87check` / `r89check` / `crevcheck` 全绿，`r94check` 42 ok。
+>
+> ⚠ **`r86check` / `r87check` 里关于面板边框的七条断言被本轮改写了** —— 第八十六/八十七轮的
+> 「透明 1px」机制换成了「零宽度」，改前它们红 5 + 13 条。断言已标 `(r96 reversal)`，
+> **看到它们红是 r96 被撤了，不是 r86/r87 回归了。**
+>
+> ⚠ **不要报成 bug 的四条**：
+> 1. **`.gb-faq__list` 桌面 24 而 `.gb-faq-image__list` 桌面 16，是有意的** —— 需求只点名
+>    `.gb-faq__row`，faq-image 有自己的手机 24 / 桌面 16 反向斜坡，本轮没动它。
+> 2. **hero 的 `--lg` / `--text-page` 现在不是板上的 `#1a1a1a` / `#333333`** —— 需求方
+>    要求 lead 一律 `#4d4d4d`，基类本来就是这个色，是这两个变体挡住了它。已登记待裁决。
+> 3. **七个 `--center` 页的标题没有 30px 右内距，是有意排除的** —— 标题居中，单侧内距只会
+>    把文字推左 15px。受益的只有左对齐的 science / reviews 两页。
+> 4. **四个 reels 轨的 `centeredSlidesBounds` 是 `false`，不是漏了** —— 无限循环轨没有
+>    首尾可言，参数只挂在 `centre && !loop` 上。判据里有专门一条守着它。
+>
+> ⚠ **`main.js` 现在可以推了，但推不推是需求方的决定** —— `crevPager.wire()` 加了
+> `data-review-id` 早退守卫，与对方 section 内联分页脚本的双重绑定问题因此解除。
+> **第 6 条（专家轨空白）改在 `main.js` 里，不推 `main.js` 线上就不生效**；
+> 第 0 条（评论展开过渡）是纯 CSS，推 `customstyle.css` 就生效。
+
 > 状态：`$build` = **`20260908-r95`**（第九十六轮，2026-09-08）—— 线上星星被撑成 1500px。
 > **已推 live**（2026-09-08，两个文件：`assets/customstyle.css` / `.scss`）。
 > 回读 **617 → 617**、逐字节相同、**615 个清单外文件零改动**。新基线 **`baseline-r95`（617 文件）**。

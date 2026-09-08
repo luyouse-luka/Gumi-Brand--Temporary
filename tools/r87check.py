@@ -16,7 +16,6 @@ CHROME = '/home/ly/.cache/ms-playwright/chromium-1217/chrome-linux64/chrome'
 SITE = 'https://gumi.com.au'
 BUILD = '20260907-r87'
 SAND = 'rgb(245, 241, 233)'
-CLEAR = 'rgba(0, 0, 0, 0)'
 
 fails, skips = [], []
 
@@ -44,8 +43,9 @@ print('== compiled css ==')
 css = io.open(ROOT / 'assets/customstyle.css', encoding='utf-8').read()
 scss = io.open(ROOT / 'assets/customstyle.scss', encoding='utf-8').read()
 check('$build at or past r87', re.search(r'\$build:\s*"([^"]+)"', scss).group(1) >= BUILD, True)
-check('2 panel bottom starts transparent',
-      'border-bottom: 1px solid transparent;' in (block(css, '.gb-header__panel') or ''), True)
+# r96 reversal: zero WIDTH while shut, not a transparent 1px -- see r86check.
+check('2 panel bottom has no border while shut (r96 reversal)',
+      'border-bottom: 0 solid #f5f1e9;' in (block(css, '.gb-header__panel') or ''), True)
 check('3 guarantees stack under 370',
       re.search(r'@media \(max-width: 369\.98px\) \{\s*\.gb-product__guarantees \{\s*'
                 r'flex-direction: column;', css) is not None, True)
@@ -145,8 +145,10 @@ def grade(tag, res, width, live):
             if width <= 767:
                 check(p('2 phone drawer keeps both edges off'), d['panelShut'][0], '0px')
             else:
-                check(p('2 panel top invisible while shut'), d['panelShut'][1], CLEAR)
-                check(p('2 panel bottom invisible while shut'), d['panelShut'][2], CLEAR)
+                # r96 reversal: colour is permanent, width is what toggles.
+                check(p('2 panel zero width while shut (r96 reversal)'), d['panelShut'][0], '0px')
+                check(p('2 panel top colour always sand (r96 reversal)'), d['panelShut'][1], SAND)
+                check(p('2 panel bottom colour always sand (r96 reversal)'), d['panelShut'][2], SAND)
                 check(p('2 both edges paint when open'), d['panelOpen'], [SAND, SAND])
         if d['guarantees']:
             if width < 370:
