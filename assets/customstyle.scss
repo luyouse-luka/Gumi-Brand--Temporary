@@ -33,7 +33,7 @@
 // font url()s read it. Previewing over file:// caches css/js/woff2 until a hard
 // refresh, so without it a real change reads as "nothing happened".
 // font-check.html prints the value the browser actually got.
-$build: "20260908-r94";
+$build: "20260908-r95";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -9068,7 +9068,13 @@ html.is-menu-open {
   display: flex;
   flex: none;
 
-  img { flex: none; }
+  // ⚠ Sized here, not left to the file: the live star.svg ships a viewBox and
+  // nothing else, so its intrinsic size falls back to 150 and Horizon's
+  // `img { width: 100%; height: auto }` -- which we never override -- resolves
+  // the 100% against this flex box and feeds it back in. Measured 1500x1500 per
+  // star on the storefront, 10533px of section. The static build hid it because
+  // its own star file carries real dimensions.
+  img { flex: none; width: 32px; height: 32px; }
 }
 
 .gb-crev__count {
@@ -9219,7 +9225,8 @@ html.is-menu-open {
   display: flex;
   flex: none;
 
-  img { flex: none; }
+  // Same as .gb-crev__stars -- see the note there.
+  img { flex: none; width: 20px; height: 20px; }
 }
 
 // 4.5 dims the whole fifth point to 30%; the board never half-fills one

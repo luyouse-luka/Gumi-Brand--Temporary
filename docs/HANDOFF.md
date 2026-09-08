@@ -4,6 +4,30 @@
 > 项目定位与已确立的规范在 [PROJECT-STATUS.md](PROJECT-STATUS.md)；
 > 改动史在 [CHANGELOG.md](CHANGELOG.md)（近 10 轮）+ [CHANGELOG-ARCHIVE.md](CHANGELOG-ARCHIVE.md)（第一～三十轮），**两份一起 grep**。
 >
+> 状态：`$build` = **`20260908-r95`**（第九十六轮，2026-09-08）—— 线上星星被撑成 1500px。
+> **已推 live**（2026-09-08，两个文件：`assets/customstyle.css` / `.scss`）。
+> 回读 **617 → 617**、逐字节相同、**615 个清单外文件零改动**。新基线 **`baseline-r95`（617 文件）**。
+> 判据 **`tools/crevlive.py --password 1234`**：推前 **9 ok / 21 red**、推后 **30 ok / 0 red**、
+> `--strip` 反向 21 红。回归 `crevcheck` / `r94check`(42) / `rwd.py` 全绿。
+>
+> ⚠ **这一轮的机制值得记住：我们没写死尺寸的 `img`，线上一律由主题说了算。**
+> Horizon 有一条 `img { width: 100%; height: auto }`，我们的 `.gb-crev__stars img` 只写了
+> `flex: none`，于是主题那条直接生效；对方的 `star.svg` 又只有 `viewBox`、没有宽高，
+> 无内在尺寸回落 150×150，`100%` 在 flex 盒里对着容器解析再反馈回去，放大到 **1500×1500**，
+> section 高 10533px。**静态站永远测不出**（它那份星图自带尺寸）。
+> 新写任何进主题的 `img`，尺寸都要显式写下来。
+>
+> ⚠ **不要报成 bug 的两条**：
+> 1. **`.gb-acc-body__media img` 在线上是 401×218、`width` 属性却写 34 —— 不是被撑坏的。**
+>    那是稿里的灰色矩形占位，`@include cover-img` 就是要它填满；实测 5 张的
+>    `naturalWidth = 0`、`currentSrc` 为空，**后台没填图**。全站 img 扫描会把它报成命中，
+>    是假信号。
+> 2. **星星尺寸对了、但仍是 5 颗灰的** —— `data-rating="0.0"`，对方 liquid 的数据问题
+>    （第九十五轮已记，需求方指示先不管），不是 `.gb-crev-card__star--dim` 的样式坏了。
+>
+> ⚠ **验 `.is-voted` 必须等过渡落定**（≥450ms）：`getComputedStyle` 在过渡途中返回起始值，
+> 本轮第一次探测就因此误判成「样式没推上去」。
+
 > 状态：`$build` = **`20260908-r94`**（第九十五轮，2026-09-08）—— product 顶距反转、
 > vs 卡片底距下限、header 两菜单上线。
 > **已推 live**（2026-09-08，三个文件：`assets/customstyle.css` / `.scss` /

@@ -4681,6 +4681,93 @@ PDP / reviews / home 三页渲染后 `[class*=gb-crev]` 元素数均为 **0** �
 - 手机端的 `lip--h`（卡片底部水平波浪）线上仍缺，两张卡都是。
 - collection 页（r88）仍是无稿的自定值，待设计方裁决。
 
+## 第九十六轮（2026-09-08）— 线上星星被撑成 1500px：主题的 `img { width: 100% }`（`$build` = `20260908-r95`）
+
+需求方反馈「gb-app-section 的样式推送到 live 了吗，线上为什么没反应」。**样式确实推上去了**
+（r94 已验 `--build` = `20260908-r94`），但线上评论区看起来仍然是坏的 —— 真因是另一件事。
+
+### 症状与真因
+
+线上 PDP 逐属性对比静态站，`.gb-crev__stars` 实测 **1500×1500**（静态站 160×32），
+`.gb-crev-card__rating` 同样 1500×1500（应 100×20），**整个 section 高 10533px**（静态站 2165）。
+
+CDP 读真实层叠，命中顺序：
+
+```
+img, picture, video, canvas, svg   max-width: 100%
+img                                width: 100%; height: auto     <- Horizon
+img, svg, video, canvas            max-width: 100%
+img                                height: auto
+.gb-crev__stars img                flex: none                    <- 我们，只有 flex
+```
+
+**我们从来没给星星写过尺寸**，所以主题那条直接生效，不构成冲突也就没人发现。而对方新加的
+`assets/star.svg` **只有 `viewBox`、没有 `width`/`height`** —— 无内在尺寸的替换元素回落到
+150×150（实测 `naturalWidth = 150`），`width: 100%` 在 flex 盒里对着容器解析、再反馈回容器，
+一路放大到 1500。`height: auto` + 1:1 的 viewBox 让高度跟着走。
+
+⚠ **静态站永远看不出来**：它自己那份星图带真实尺寸，`flex: none` 拿得到内在尺寸就够了。
+**这是一类结构性盲区** —— 凡是我们没写死尺寸的 `img`，线上都由主题的规则说了算。
+
+### 改法
+
+```scss
+.gb-crev__stars      { img { flex: none; width: 32px; height: 32px; } }
+.gb-crev-card__rating{ img { flex: none; width: 20px; height: 20px; } }
+```
+
+32 / 20 是板值，且**全档恒定**（静态站 390→1440 十档实测都是 32×32 / 20×20，不随断点变）。
+
+### 顺带扫的（未改）
+
+写了一个全站 `img` 扫描（computed 宽 > `width` 属性 1.5 倍，或无内在尺寸且渲染 > 200px），
+7 个线上页面共 35 处命中：**30 处是星星**（本轮修掉），另 5 处是
+`.gb-acc-body__media img`（401×218，`width` 属性 34）。
+
+⚠ **那 5 处是假信号，不要修**：`.gb-acc-body__media` 是稿里的灰色矩形占位，我们的
+`@include cover-img` 就是要图填满它；实测那 5 张 `naturalWidth = 0`、`currentSrc` 为空 ——
+**后台根本没填图**，撑满的是空 img。渲染结果正是设计要的灰矩形。
+
+### 文件清单
+
+```
+改  assets/customstyle.scss   2 处（星星尺寸）+ $build → 20260908-r95
+改  assets/customstyle.css    编译产物（双写，--style=expanded）
+改  *.html 13 个               ?v= 20260908-r94 → r95
+改  tools/crevcheck.py        docstring：「线上没有 liquid 没得探」已过时，改指向 crevlive
+新  tools/crevlive.py         gb-crev 的线上判据（按模块命名，不带轮次号）
+新  tools/_apply_r95.py
+```
+
+### 判据
+
+新增 **`tools/crevlive.py`**（`--password 1234`），30 条：三档视口各验两种星星的
+宽/高/五连宽 + 版心 cap + **section 高度 < 4000px**（这条直接断言商家看到的症状，
+不用代理指标）；外加 `.is-voted` 的三条。
+
+- **推前 9 ok / 21 red**，红的全是星星 —— 判据先证明自己抓得到，再推。
+- **推后 30 ok / 0 red**。
+- `--strip`（把 `width: 100%; height: auto` 用 inline style 写回去）**反向 21 红**，
+  且 `strip touched images` 单独断言触及元素数 > 0。
+
+⚠ **`.is-voted` 那三条必须等过渡落定再读**（450ms）—— `getComputedStyle` 在过渡途中
+返回起始值，第一次跑就因此误判成「样式没生效」。
+
+**回归**：`crevcheck` 全绿 / `r94check` 42 ok / `rwd.py` 全绿。
+
+### 推送（2026-09-08）
+
+两个文件（`assets/customstyle.css` / `.scss`），`--only` + `--nodelete` + `--allow-live`。
+推前 `prepush` 与 `baseline-r94` **零差异**；产物新鲜度验过。
+**回读 617 → 617**、与工作副本逐字节相同、**615 个清单外文件零改动**。
+新基线 **`baseline-r95/`（617 文件）**。
+
+### 遗留
+
+- 线上评论区**内容仍然是空的**（姓名/正文/星级/分数），那是对方 liquid 的数据问题，
+  第九十五轮已记录，需求方指示先不管。**星星现在尺寸对了，但仍然是 5 颗灰的**（`data-rating="0.0"`）。
+- 其余遗留同第九十五轮。
+
 ## 第九十五轮（2026-09-08）— product 顶距反转 + vs 卡片底距下限 + header 两菜单上线（`$build` = `20260908-r94`）
 
 需求方三条：① `.gb-product` 改 `padding-top: 96px`、`.gb-product--page` 改 32px，响应式按设计调整；

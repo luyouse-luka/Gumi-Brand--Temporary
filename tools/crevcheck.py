@@ -7,9 +7,15 @@
 Named after the module rather than a round: two parallel sessions collided on
 r89check.py twice in one day. Re-run this whenever gb-crev is touched.
 
-Static site only -- gb-app-section has no liquid on live, so there is nothing to
-probe there yet. Every expected number is the Figma board: 324:64032 at 1440,
-324:64978 at 390.
+Static site only. ⚠ Not because live has nothing to probe -- it did not until
+2026-09-08, when the other team rebuilt sections/gb-app-section.liquid as a real
+review list on our whole gb-crev class set. Live geometry is graded by
+tools/crevlive.py, and it has to be: the first live-only defect (stars blown up
+to 1500px by Horizon's `img { width: 100% }`) is invisible from here, because the
+static build's star file carries its own dimensions and the live one does not.
+Run BOTH whenever gb-crev is touched.
+
+Every expected number is the Figma board: 324:64032 at 1440, 324:64978 at 390.
 
 r90 additions: the points are five <img>, the attachment holds a bear
 placeholder, the score is stroked, and More/Less pages the list.
