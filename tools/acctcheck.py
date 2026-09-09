@@ -24,6 +24,12 @@ OPEN_MENU = "open-menu"
 GOTO_SUBS = "goto-subscriptions"
 STATE_PREPARING = "state-preparing"
 STATE_RENEWAL = "state-renewal"
+GOTO_DETAIL = "goto-detail"
+
+# All three views stay in the DOM; only one is shown. Detail checks are scoped
+# so querySelector cannot reach the hidden copies in the other two.
+D = "[data-acct-view='detail'] "
+S = "[data-acct-view='subscriptions'] "
 
 # group key -> list of checks
 #   ("css",  selector, prop, expected)
@@ -299,10 +305,10 @@ GROUPS = {
         ("vis", "[data-acct-sub-state='cancelled'] [data-acct-sub-renewal]", False),
         ("vis", "[data-acct-sub-state='cancelled'] [data-acct-sub-shipping]", True),
 
-        ("text", ".gb-acct-intro__title", ["My Subscriptions"]),
-        ("text", ".gb-acct-sub__title", ["My Subscription"] * 3),
-        ("text", ".gb-acct-pill", ["ACTIVE", "PAUSED", "CANCELLED"]),
-        ("text", ".gb-acct-sub__more", ["+4 More Products"] * 3),
+        ("text", S + ".gb-acct-intro__title", ["My Subscriptions"]),
+        ("text", S + ".gb-acct-sub__title", ["My Subscription"] * 3),
+        ("text", S + ".gb-acct-pill", ["ACTIVE", "PAUSED", "CANCELLED"]),
+        ("text", S + ".gb-acct-sub__more", ["+4 More Products"] * 3),
         # note 28321: paused shows the date it is paused until. Only the phone
         # boards (28315 / 34056) carry it; the desktop board left the sample
         # date alone (SPEC 8).
@@ -310,7 +316,7 @@ GROUPS = {
          ["17 Aug 2026", "123 Express Ln, VIC 3121"]),
         ("text", "[data-acct-sub-state='active'] .gb-acct-sub__meta-value",
          ["19 Jul 2026", "123 Express Ln, VIC 3121"]),
-        ("text", ".gb-acct-sub__cta",
+        ("text", S + ".gb-acct-sub__cta",
          ["Manage Subscription", "Manage Subscription", "Re-Activate Subscription"]),
     ],
     # -- Task 2: desktop header, expanded (2284:34854) --
@@ -444,6 +450,182 @@ GROUPS = {
         ("css", "[data-acct-sub-state='cancelled'] .gb-acct-sub__meta", "opacity", "0.4"),
         ("vis", "[data-acct-sub-state='cancelled'] [data-acct-sub-renewal]", False),
     ],
+    # -- Task 6: Subscription Detail, ACTIVE (2284:27792) --
+    # Every selector is scoped to the view: the other two views stay in the DOM
+    # behind [hidden], and querySelector would reach their copies first.
+    ("account.html", 1440, GOTO_DETAIL): [
+        ("shown", "[data-acct-view='detail']", True),
+        ("shown", "[data-acct-view='subscriptions']", False),
+        ("css", ".gb-acct-detail", "row-gap", "16px"),
+
+        # 27860: same lime card as the list page, but the back button shows on
+        # desktop too and the subtitle is replaced by a pencil
+        ("vis", D + ".gb-acct-intro__back", True),
+        ("css", D + ".gb-acct-intro", "min-height", "136px"),
+        ("css", D + ".gb-acct-intro", "row-gap", "16px"),
+        ("css", D + ".gb-acct-intro__text", "flex-direction", "row"),
+        ("css", D + ".gb-acct-intro__text", "column-gap", "8px"),
+        ("css", D + ".gb-acct-intro__title", "font-size", "24px"),
+        ("css", D + ".gb-acct-intro__edit", "width", "20px"),
+        ("css", D + ".gb-acct-intro__edit", "height", "20px"),
+        ("css", D + ".gb-acct-intro__edit", "color", "rgb(51, 51, 51)"),
+        ("absent", D + ".gb-acct-intro__sub"),
+
+        # 27866: the detail head pads 24 at the sides, the list head pads 20
+        ("css", D + ".gb-acct-sub__head", "padding-left", "24px"),
+        ("css", D + ".gb-acct-sub__body", "padding-top", "24px"),
+        ("css", D + ".gb-acct-sub__body", "row-gap", "24px"),
+
+        # 27871 / 27882 / 27966 / 27973: icon + label/value + optional Edit
+        ("css", D + ".gb-acct-row", "justify-content", "space-between"),
+        ("css", D + ".gb-acct-row", "column-gap", "4px"),
+        ("css", D + ".gb-acct-row__main", "column-gap", "8px"),
+        ("css", D + ".gb-acct-row__icon", "width", "20px"),
+        ("css", D + ".gb-acct-row__icon", "height", "20px"),
+        ("css", D + ".gb-acct-row__icon", "color", "rgb(102, 102, 102)"),
+        ("css", D + ".gb-acct-row__text", "row-gap", "4px"),
+        ("css", D + ".gb-acct-row__label", "font-size", "14px"),
+        ("css", D + ".gb-acct-row__label", "line-height", "20px"),
+        ("css", D + ".gb-acct-row__label", "color", "rgb(102, 102, 102)"),
+        # 27877 is 18/26, bigger than every other value on the card
+        ("css", D + ".gb-acct-row__date", "font-size", "18px"),
+        ("css", D + ".gb-acct-row__date", "line-height", "26px"),
+        ("css", D + ".gb-acct-row__date", "letter-spacing", "-0.36px"),
+        ("css", D + ".gb-acct-row__date", "color", "rgb(26, 26, 26)"),
+        ("css", D + ".gb-acct-row__note", "margin-top", "4px"),
+        ("css", D + ".gb-acct-row__note", "color", "rgb(102, 102, 102)"),
+        # 27887 / 27971 / 27978 are navy, not the gray-900 the list card uses
+        ("css", D + ".gb-acct-row__value", "color", "rgb(16, 24, 40)"),
+
+        # 27888 / 27960 / 27998: blue, underlined
+        ("css", D + ".gb-acct-link", "color", "rgb(3, 116, 165)"),
+        ("css", D + ".gb-acct-link", "text-decoration-line", "underline"),
+        ("css", D + ".gb-acct-link", "font-size", "14px"),
+        ("css", D + ".gb-acct-link", "line-height", "20px"),
+        ("css", D + ".gb-acct-link--sm", "font-size", "12px"),
+        ("css", D + ".gb-acct-link--sm", "line-height", "18px"),
+
+        ("css", D + ".gb-acct-btn", "height", "44px"),
+        ("css", D + ".gb-acct-btn", "border-radius", "72px"),
+        ("css", D + ".gb-acct-btn", "background-color", "rgb(0, 86, 53)"),
+        ("css", D + ".gb-acct-btn", "color", "rgb(255, 255, 255)"),
+        ("css", D + ".gb-acct-btn", "column-gap", "8px"),
+        ("css", D + ".gb-acct-btn", "padding-left", "40px"),
+        ("css", D + ".gb-acct-btn", "font-size", "16px"),
+        ("css", D + ".gb-acct-btn", "font-weight", "500"),
+        ("css", D + ".gb-acct-btn__icon", "width", "20px"),
+        # 27996 is the only outline button on the page: 2px stroke, no fill
+        ("css", D + ".gb-acct-btn--ghost", "background-color", "rgba(0, 0, 0, 0)"),
+        ("css", D + ".gb-acct-btn--ghost", "border-top-width", "2px"),
+        ("css", D + ".gb-acct-btn--ghost", "border-top-color", "rgb(0, 86, 53)"),
+        ("css", D + ".gb-acct-btn--ghost", "color", "rgb(0, 86, 53)"),
+        ("css", D + ".gb-acct-detail__actions", "row-gap", "8px"),
+
+        # 27890: the row frame is a fixed 62 while its text column measures 68,
+        # so the last line hangs 6 into the 24 gap. Reproduced, not corrected.
+        ("css", D + ".gb-acct-product", "height", "62px"),
+        ("css", D + ".gb-acct-product", "column-gap", "4px"),
+        ("css", D + ".gb-acct-product__thumb", "width", "62px"),
+        ("css", D + ".gb-acct-product__thumb", "height", "62px"),
+        ("css", D + ".gb-acct-product__thumb", "border-radius", "4.43px"),
+        ("css", D + ".gb-acct-product__thumb", "background-color", "rgb(217, 217, 217)"),
+        ("css", D + ".gb-acct-product__info", "row-gap", "8px"),
+        ("css", D + ".gb-acct-product__info", "align-items", "flex-end"),
+        ("css", D + ".gb-acct-product__top", "justify-content", "space-between"),
+        ("css", D + ".gb-acct-product__name", "column-gap", "3px"),
+        ("css", D + ".gb-acct-product__name", "max-width", "212px"),
+        ("css", D + ".gb-acct-product__name", "color", "rgb(16, 24, 40)"),
+        ("css", D + ".gb-acct-product__qty", "text-align", "center"),
+        ("css", D + ".gb-acct-product__meta", "width", "217px"),
+        ("css", D + ".gb-acct-product__meta", "justify-content", "space-between"),
+        ("css", D + ".gb-acct-product__meta", "column-gap", "6px"),
+        ("css", D + ".gb-acct-product__flavour", "color", "rgb(102, 102, 102)"),
+        ("css", D + ".gb-acct-product__price", "column-gap", "2px"),
+        ("css", D + ".gb-acct-product__was", "text-decoration-line", "line-through"),
+        ("css", D + ".gb-acct-product__was", "color", "rgb(102, 102, 102)"),
+        ("css", D + ".gb-acct-product__was", "font-size", "12px"),
+        ("css", D + ".gb-acct-product__now", "color", "rgb(26, 26, 26)"),
+        ("css", D + ".gb-acct-product__now", "font-weight", "500"),
+        ("css", D + ".gb-acct-product__now", "letter-spacing", "-0.12px"),
+
+        ("css", D + ".gb-acct-detail__add", "row-gap", "16px"),
+        ("css", D + ".gb-acct-detail__deadline", "font-size", "12px"),
+        ("css", D + ".gb-acct-detail__deadline", "line-height", "18px"),
+        ("css", D + ".gb-acct-detail__deadline", "color", "rgb(102, 102, 102)"),
+
+        ("css", D + ".gb-acct-summary", "row-gap", "12px"),
+        ("css", D + ".gb-acct-summary__head", "row-gap", "16px"),
+        ("css", D + ".gb-acct-summary__lines", "row-gap", "8px"),
+        ("css", D + ".gb-acct-summary__row", "justify-content", "space-between"),
+        ("css", D + ".gb-acct-summary__row", "font-size", "14px"),
+        ("css", D + ".gb-acct-summary__row", "color", "rgb(102, 102, 102)"),
+        ("css", D + ".gb-acct-summary__discount", "column-gap", "8px"),
+        ("vis", D + ".gb-acct-summary__kind", True),
+        ("text", D + ".gb-acct-summary__kind", ["Automatic"]),
+        ("css", D + ".gb-acct-tag", "background-color", "rgb(203, 243, 144)"),
+        ("css", D + ".gb-acct-tag", "border-radius", "4px"),
+        ("css", D + ".gb-acct-tag", "padding-left", "8px"),
+        ("css", D + ".gb-acct-tag", "padding-top", "2px"),
+        ("css", D + ".gb-acct-tag", "color", "rgb(0, 65, 40)"),
+        ("css", D + ".gb-acct-summary__total", "font-size", "16px"),
+        ("css", D + ".gb-acct-summary__total", "line-height", "24px"),
+        ("css", D + ".gb-acct-summary__total", "color", "rgb(1, 19, 7)"),
+
+        ("css", D + ".gb-acct-schedule", "row-gap", "24px"),
+        ("css", D + ".gb-acct-schedule__title", "font-size", "14px"),
+        ("css", D + ".gb-acct-schedule__title", "font-weight", "500"),
+        ("css", D + ".gb-acct-schedule__title", "color", "rgb(26, 26, 26)"),
+        ("css", D + ".gb-acct-schedule__days", "column-gap", "16px"),
+        # the desktop strip is the phone block scaled 1.1554 -- every metric
+        # (8 radius, 1 border, 24/12 padding, 16/24 type) carries the factor
+        ("css", D + ".gb-acct-schedule__day", "background-color", "rgb(245, 241, 233)"),
+        ("css", D + ".gb-acct-schedule__day", "border-top-color", "rgb(230, 230, 230)"),
+        ("css", D + ".gb-acct-schedule__day", "border-radius", "9.24px"),
+        ("css", D + ".gb-acct-schedule__day", "font-size", "18.49px"),
+        ("css", D + ".gb-acct-schedule__day", "line-height", "27.73px"),
+        ("css", D + ".gb-acct-schedule__day", "color", "rgb(16, 24, 40)"),
+
+        # 27858 gaps 48 to the link while 27859 gaps 16 inside, so the link
+        # carries the extra 32 itself
+        ("css", ".gb-acct-detail__cancel", "margin-top", "32px"),
+        ("css", ".gb-acct-detail__cancel", "text-align", "center"),
+
+        ("text", D + ".gb-acct-intro__title", ["My Subscription"]),
+        ("text", D + ".gb-acct-row__label",
+         ["Next renewal date", "Frequency", "Shipping", "Payment Method"]),
+        ("text", D + ".gb-acct-row__date", ["19 Jul 2026"]),
+        ("text", D + ".gb-acct-row__note", ["Est Delivery 3-6 business days"]),
+        ("text", D + ".gb-acct-btn", ["Edit Date", "I need it now", "Add Items", "Skip next order"]),
+        ("text", D + ".gb-acct-product__now", ["$121.50"] * 4),
+        ("text", D + ".gb-acct-schedule__day", ["19 Jun", "17 Jul", "14 Aug", "11 Sep"]),
+        ("text", ".gb-acct-detail__cancel", ["Cancel Subscription"]),
+        # every Edit entry point carries its modal hook, Task 8 wires them
+        ("text", D + "[data-acct-modal]",
+         ["", "Edit Date", "I need it now", "Edit", "Edit", "Edit", "Edit", "Edit",
+          "Add Items", "Add a discount code", "Edit", "Edit", "Skip next order",
+          "Cancel Subscription"]),
+    ],
+    # -- Task 6: Subscription Detail, phone (2284:28330) --
+    ("account.html", 390, GOTO_DETAIL): [
+        ("shown", "[data-acct-view='detail']", True),
+        # 28337: no lime card here either, and the title row gaps 16 not 8
+        ("css", D + ".gb-acct-intro", "min-height", "0px"),
+        ("css", D + ".gb-acct-intro", "background-color", "rgba(0, 0, 0, 0)"),
+        ("css", D + ".gb-acct-intro__text", "column-gap", "16px"),
+        ("css", D + ".gb-acct-intro__title", "font-size", "20px"),
+        ("css", D + ".gb-acct-intro__title", "line-height", "24px"),
+        ("vis", D + ".gb-acct-intro__back", True),
+        # 28345 pads 20 all round, unlike the desktop head
+        ("css", D + ".gb-acct-sub__head", "padding-left", "20px"),
+        ("css", D + ".gb-acct-sub__body", "padding-top", "20px"),
+        # 28466 is the unscaled block the desktop one is derived from
+        ("css", D + ".gb-acct-schedule__day", "border-radius", "8px"),
+        ("css", D + ".gb-acct-schedule__day", "font-size", "16px"),
+        ("css", D + ".gb-acct-schedule__day", "line-height", "24px"),
+        ("css", D + ".gb-acct-schedule__days", "column-gap", "8px"),
+        # 28433 drops the "Automatic" label and shows the tag alone
+        ("vis", D + ".gb-acct-summary__kind", False),
+    ],
     ("account.html", 390, OPEN_MENU): [
         ("css", "[data-acct-menu]", "width", "164px"),
         ("css", "[data-acct-menu]", "height", "184px"),
@@ -475,7 +657,21 @@ def main():
             pg.wait_for_timeout(400)
             label = "%s@%d%s" % (page_name, w, " [%s]" % action if action else "")
             if action:
-                if action in (STATE_PREPARING, STATE_RENEWAL):
+                if action == GOTO_DETAIL:
+                    # Reached the way a user reaches it: open the list, then the
+                    # first card's CTA. Driving it through location.hash would
+                    # skip the wiring Task 5 put on that button.
+                    nav = ".gb-acct-nav" if w > 767 else ".gb-acct-list"
+                    try:
+                        pg.click(nav + " [data-acct-goto='subscriptions']", timeout=2000)
+                        pg.wait_for_timeout(450)
+                        pg.click("[data-acct-view='subscriptions'] "
+                                 ".gb-acct-sub__cta[data-acct-goto='detail']", timeout=2000)
+                        pg.wait_for_timeout(450)
+                    except Exception as e:
+                        print("RED  %-52s cannot reach detail: %s" % (label, type(e).__name__))
+                        red += len(checks); pg.close(); continue
+                elif action in (STATE_PREPARING, STATE_RENEWAL):
                     state = action.split("-", 1)[1]
                     n = pg.evaluate(
                         "s=>{const e=document.querySelector('[data-acct-order-state]');"

@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260909-a3";
+$build-acct: "20260909-a4";
 
 // ==========================================================================
 // Variables
@@ -1117,6 +1117,9 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   @include hover { transform: translateX(-2px); }
 }
 
+// 27860 keeps the back button at every width; 28068 has none at all.
+.gb-acct-intro--back .gb-acct-intro__back { display: flex; }
+
 .gb-acct-intro__arrow {
   width: 20px;
   height: 20px;
@@ -1382,10 +1385,14 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   @include narrow { padding: 8px 16px 20px; }
 }
 
-.gb-acct-sub__cta {
+// 2284:28108 list CTA and 27880 / 27881 / 27943 on the detail page are one
+// component; --ghost is 27996, the only outline button in the account section.
+.gb-acct-sub__cta,
+.gb-acct-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  column-gap: 8px;
   width: 100%;
   height: 44px;
   padding-inline: 40px;
@@ -1399,6 +1406,386 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   transition: trans(background-color, opacity);
 
   @include hover { opacity: 0.85; }
+}
+
+// ==========================================================================
+// Subscription Detail — 2284:27792 desktop, 2284:28330 phone
+// ==========================================================================
+
+.gb-acct-detail {
+  display: flex;
+  flex-direction: column;
+  row-gap: 16px;
+
+  @include narrow { row-gap: 24px; }
+  @include tablet { row-gap: fluid(24px, 16px); }
+}
+
+// The two cards and the cancel link travel together: 27859 gaps 16 between
+// them on desktop, the phone container gaps 32.
+.gb-acct-detail__body {
+  display: flex;
+  flex-direction: column;
+  row-gap: 16px;
+
+  @include narrow { row-gap: 32px; }
+  @include tablet { row-gap: fluid(32px, 16px); }
+}
+
+// 27862 puts the pencil beside the title where the list page has a subtitle.
+.gb-acct-intro__text--row {
+  flex-direction: row;
+  align-items: center;
+  column-gap: 8px;
+
+  @include narrow { column-gap: 16px; }
+}
+
+.gb-acct-intro__edit {
+  display: flex;
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: $c-gray-800;
+  cursor: pointer;
+
+  transition: trans(opacity);
+
+  @include hover { opacity: 0.7; }
+}
+
+.gb-acct-intro__pencil {
+  width: 20px;
+  height: 20px;
+}
+
+// 27866 pads 24 at the sides; the list card's head (28073) pads 20.
+.gb-acct-sub--detail .gb-acct-sub__head {
+  padding-inline: 24px;
+
+  @include narrow { padding-inline: 20px; }
+  @include tablet { padding-inline: fluid(20px, 24px); }
+}
+
+// ==========================================================================
+// Detail rows — 2284:27871 renewal / 27882 frequency / 27966 / 27973
+// ==========================================================================
+
+.gb-acct-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  column-gap: 4px;
+}
+
+.gb-acct-row__main {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  column-gap: 8px;
+}
+
+.gb-acct-row__icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  color: $c-gray-600;
+}
+
+.gb-acct-row__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  row-gap: 4px;
+}
+
+.gb-acct-row__label {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-600;
+}
+
+// 27887 / 27971 / 27978 are navy, not the gray-900 the list card uses.
+.gb-acct-row__value {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-navy;
+}
+
+// 27877 only: the renewal date is the one 18/26 value on the card.
+.gb-acct-row__date {
+  margin: 0;
+  @include font($font-brand-stack, 18px, 400, 26px, -0.36px);
+  color: $c-gray-900;
+}
+
+// 27874 gaps 8 above this line while the block above it gaps 4.
+.gb-acct-row__note {
+  margin: 4px 0 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-600;
+}
+
+// ==========================================================================
+// Inline blue link — 2284:27888 Edit / 27960 discount / 27998 cancel
+// ==========================================================================
+
+.gb-acct-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-blue;
+  text-decoration: underline;
+  cursor: pointer;
+
+  transition: trans(color, opacity);
+
+  @include hover { opacity: 0.7; }
+}
+
+.gb-acct-link--sm {
+  @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
+}
+
+.gb-acct-btn--ghost {
+  border-width: 2px;
+  background: none;
+  color: $c-green;
+}
+
+.gb-acct-btn__icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.gb-acct-detail__actions {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+// ==========================================================================
+// Product rows — 2284:27890 / 27903 / 27916 / 27929
+// ==========================================================================
+
+// The board frame is a fixed 62 while the text column beside it measures 68, so
+// the price line hangs 6 into the 24 gap below. Kept, it is what the board shows.
+.gb-acct-product {
+  display: flex;
+  column-gap: 4px;
+  height: 62px;
+}
+
+.gb-acct-product__thumb {
+  flex: none;
+  width: 62px;
+  height: 62px;
+  border-radius: 4.43px;
+  background: $c-gray-200;
+}
+
+.gb-acct-product__info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 0;
+  row-gap: 8px;
+}
+
+.gb-acct-product__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  column-gap: 4px;
+  width: 100%;
+}
+
+// 212 is the board's own width for the quantity + name group; without it the
+// name runs on one line and the row stops matching.
+.gb-acct-product__name {
+  display: flex;
+  column-gap: 3px;
+  max-width: 212px;
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-navy;
+}
+
+.gb-acct-product__qty {
+  flex: none;
+  width: 21.7px;
+  text-align: center;
+}
+
+.gb-acct-product__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 6px;
+  width: 217px;
+  max-width: 100%;
+}
+
+.gb-acct-product__flavour {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-600;
+}
+
+.gb-acct-product__price {
+  display: flex;
+  align-items: center;
+  column-gap: 2px;
+  margin: 0;
+}
+
+.gb-acct-product__was {
+  @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
+  color: $c-gray-600;
+  text-decoration: line-through;
+}
+
+.gb-acct-product__now {
+  @include font($font-brand-stack, 12px, 500, 18px, -0.12px);
+  color: $c-gray-900;
+}
+
+.gb-acct-detail__add {
+  display: flex;
+  flex-direction: column;
+  row-gap: 16px;
+}
+
+// 298.5 is the board's own width: the sentence is meant to break into two lines.
+.gb-acct-detail__deadline {
+  max-width: 298.5px;
+  margin: 0;
+  @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
+  color: $c-gray-600;
+}
+
+// ==========================================================================
+// Order summary — 2284:27946
+// ==========================================================================
+
+.gb-acct-summary {
+  display: flex;
+  flex-direction: column;
+  row-gap: 12px;
+}
+
+.gb-acct-summary__head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  row-gap: 16px;
+}
+
+.gb-acct-summary__lines {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  row-gap: 8px;
+}
+
+.gb-acct-summary__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 8px;
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-600;
+}
+
+.gb-acct-summary__discount {
+  display: flex;
+  align-items: center;
+  column-gap: 8px;
+}
+
+// 27955 only: the phone board (28433) shows the tag on its own. Both boards are
+// followed rather than picking one -- registered as decision N.
+.gb-acct-summary__kind {
+  @include narrow { display: none; }
+}
+
+.gb-acct-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: $r-xs;
+  background: $c-lime-300;
+  color: $c-green-900;
+}
+
+.gb-acct-summary__total {
+  display: flex;
+  justify-content: space-between;
+  column-gap: 8px;
+  margin: 0;
+  @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+  color: $c-ink;
+}
+
+// ==========================================================================
+// Renewal schedule — 2284:27980 desktop / 2284:28458 phone
+// ==========================================================================
+
+.gb-acct-schedule__title {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 500, 20px);
+  color: $c-gray-900;
+}
+
+// The board's own strip is 316 wide inside a 308 column -- an artefact of the
+// scaled instance. Letting the four blocks share the row fixes that.
+.gb-acct-schedule__days {
+  display: flex;
+  column-gap: 16px;
+
+  @include narrow { column-gap: 8px; }
+  @include tablet { column-gap: fluid(8px, 16px); }
+}
+
+// 27988 is 28466 scaled by 1.1554 -- radius, border, padding and type all carry
+// the same factor. The phone block is the base the numbers come from.
+.gb-acct-schedule__day {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  min-height: 85.8px;
+  border: 1.16px solid $c-gray-150;
+  border-radius: 9.24px;
+  background: $c-sand;
+  @include font($font-brand-stack, 18.49px, 400, 27.73px, -0.37px);
+  color: $c-navy;
+
+  @include narrow {
+    min-height: 74px;
+    border-width: 1px;
+    border-radius: $r-sm;
+    @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+  }
+  @include tablet {
+    min-height: fluid(74px, 85.8px);
+    border-radius: fluid(8px, 9.24px);
+    font-size: fluid(16px, 18.49px);
+    line-height: fluid(24px, 27.73px);
+  }
+}
+
+// 27858 gaps 48 to the link while 27859 gaps 16 inside it, so the extra 32 sits
+// on the link. The phone container gaps 32 for both, so it needs none.
+.gb-acct-detail__cancel {
+  margin: 32px 0 0;
+  text-align: center;
+
+  @include narrow { margin-top: 0; }
 }
 
 // Lime band -> page cream. customstyle ships --to-white (lime-150 -> white) but

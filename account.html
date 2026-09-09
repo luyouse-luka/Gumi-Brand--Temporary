@@ -10,7 +10,7 @@
 <link rel="icon" href="images/favicon.svg?v=20260908-r105" type="image/svg+xml">
 <link rel="apple-touch-icon" href="images/favicon-180.png?v=20260908-r105">
 <link rel="stylesheet" href="assets/customstyle.css?v=20260908-r105">
-<link rel="stylesheet" href="assets/account.css?v=20260909-a3">
+<link rel="stylesheet" href="assets/account.css?v=20260909-a4">
 <noscript><style>.wowo{opacity:1 !important}</style></noscript>
 </head>
 <body>
@@ -292,7 +292,190 @@
           </div>
         </div>
         </section>
-        <section class="gb-acct__view" data-acct-view="detail" hidden></section>
+        <section class="gb-acct__view" data-acct-view="detail" hidden>
+        <div class="gb-acct-detail">
+          <!-- 2284:27860 desktop / 2284:28337 phone. Same block as the list
+               page's header, except the back button shows at every width and a
+               pencil replaces the subtitle. -->
+          <div class="gb-acct-intro gb-acct-intro--back">
+            <button class="gb-acct-intro__back" type="button" data-acct-goto="subscriptions" aria-label="Back to my subscriptions"><svg class="gb-acct-intro__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="26 174 20 20" fill="none" aria-hidden="true"> <path id="Icon_3" d="M41.8307 184.001H30.1641M35.9974 178.168L30.1641 184.001L35.9974 189.835" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/> </svg></button>
+            <div class="gb-acct-intro__text gb-acct-intro__text--row">
+              <p class="gb-acct-intro__title">My Subscription</p>
+              <button class="gb-acct-intro__edit" type="button" data-acct-modal="edit-name" aria-label="Edit subscription name"><svg class="gb-acct-intro__pencil" xmlns="http://www.w3.org/2000/svg" viewBox="751.949 309.625 20 20" fill="none" aria-hidden="true"> <path id="Icon_5" d="M769.449 326.964H762.783M754.033 327.38L758.657 325.602C758.953 325.488 759.101 325.431 759.239 325.357C759.362 325.291 759.479 325.215 759.589 325.129C759.713 325.033 759.826 324.921 760.05 324.697L769.449 315.297C770.37 314.377 770.37 312.884 769.449 311.964C768.529 311.043 767.037 311.043 766.116 311.964L756.716 321.364C756.492 321.588 756.38 321.7 756.284 321.824C756.198 321.934 756.122 322.051 756.056 322.174C755.982 322.312 755.925 322.46 755.811 322.756L754.033 327.38ZM754.033 327.38L755.748 322.921C755.871 322.602 755.932 322.443 756.037 322.37C756.129 322.306 756.243 322.282 756.353 322.303C756.479 322.327 756.6 322.447 756.841 322.689L758.724 324.572C758.966 324.813 759.087 324.934 759.111 325.06C759.132 325.17 759.108 325.284 759.044 325.376C758.971 325.481 758.811 325.543 758.492 325.665L754.033 327.38Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/> </svg></button>
+            </div>
+          </div>
+
+          <div class="gb-acct-detail__body">
+          <!-- 2284:27865 desktop / 2284:28344 phone -->
+          <article class="gb-acct-sub gb-acct-sub--detail" data-acct-sub-state="active">
+            <div class="gb-acct-sub__head">
+              <p class="gb-acct-sub__title">My Subscription</p>
+              <span class="gb-acct-pill"><span class="gb-acct-pill__dot" aria-hidden="true"></span>Active</span>
+            </div>
+            <div class="gb-acct-sub__body">
+            <div class="gb-acct-row">
+              <div class="gb-acct-row__main">
+                <svg class="gb-acct-row__icon" xmlns="http://www.w3.org/2000/svg" viewBox="541.949 468.625 20 20" fill="none" aria-hidden="true"> <path id="Icon_4" d="M556.116 476.799L559.449 473.466L556.116 470.133M559.449 473.466H548.449C547.049 473.466 546.349 473.466 545.814 473.739C545.344 473.978 544.961 474.361 544.722 474.831C544.449 475.366 544.449 476.066 544.449 477.466V477.633M544.449 483.466H555.449C556.849 483.466 557.549 483.466 558.084 483.194C558.555 482.954 558.937 482.572 559.177 482.101C559.449 481.566 559.449 480.866 559.449 479.466V479.299M547.783 480.133L544.449 483.466L547.783 486.799" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/> </svg>
+                <div class="gb-acct-row__text">
+                  <p class="gb-acct-row__label">Next renewal date</p>
+                  <p class="gb-acct-row__date">19 Jul 2026</p>
+                  <p class="gb-acct-row__note">Est Delivery 3-6 business days</p>
+                </div>
+              </div>
+            </div>
+
+              <div class="gb-acct-detail__actions">
+                <button class="gb-acct-btn" type="button" data-acct-modal="edit-date"><svg class="gb-acct-btn__icon" xmlns="http://www.w3.org/2000/svg" viewBox="753.949 582.625 20 20" fill="none" aria-hidden="true"> <path id="Icon_7" d="M771.449 590.96H756.449M767.283 584.293V587.626M760.616 584.293V587.626M760.449 600.96H767.449C768.849 600.96 769.549 600.96 770.084 600.687C770.555 600.447 770.937 600.065 771.177 599.595C771.449 599.06 771.449 598.36 771.449 596.96V589.96C771.449 588.56 771.449 587.859 771.177 587.325C770.937 586.854 770.555 586.472 770.084 586.232C769.549 585.96 768.849 585.96 767.449 585.96H760.449C759.049 585.96 758.349 585.96 757.814 586.232C757.344 586.472 756.961 586.854 756.722 587.325C756.449 587.859 756.449 588.56 756.449 589.96V596.96C756.449 598.36 756.449 599.06 756.722 599.595C756.961 600.065 757.344 600.447 757.814 600.687C758.349 600.96 759.049 600.96 760.449 600.96Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/> </svg><span>Edit Date</span></button>
+                <!-- 27881's icon slot is visible=false on the board -->
+                <button class="gb-acct-btn" type="button" data-acct-modal="need-now"><span>I need it now</span></button>
+              </div>
+
+            <div class="gb-acct-row">
+              <div class="gb-acct-row__main">
+                <svg class="gb-acct-row__icon" xmlns="http://www.w3.org/2000/svg" viewBox="541.949 690.625 20 20" fill="none" aria-hidden="true"> <path id="Icon_8" d="M558.557 699.32C558.557 699.32 557.25 697.54 556.189 696.477C555.127 695.415 553.66 694.758 552.04 694.758C548.8 694.758 546.174 697.384 546.174 700.623C546.174 703.863 548.8 706.489 552.04 706.489C554.714 706.489 556.97 704.699 557.676 702.253M554.647 699.32H558.557V695.41" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/> </svg>
+                <div class="gb-acct-row__text">
+                  <p class="gb-acct-row__label">Frequency</p>
+                  <p class="gb-acct-row__value">Ships every 4 weeks</p>
+                </div>
+              </div>
+              <button class="gb-acct-link" type="button" data-acct-modal="edit-frequency">Edit</button>
+            </div>
+
+              <hr class="gb-acct-sub__rule">
+
+            <div class="gb-acct-product">
+              <span class="gb-acct-product__thumb" aria-hidden="true"></span>
+              <div class="gb-acct-product__info">
+                <div class="gb-acct-product__top">
+                  <p class="gb-acct-product__name"><span class="gb-acct-product__qty">1</span>Superfood Greens Gummies</p>
+                  <button class="gb-acct-link" type="button" data-acct-modal="edit-product">Edit</button>
+                </div>
+                <div class="gb-acct-product__meta">
+                  <!-- 27899 is literally the word "Flavour": note 30913 says flavour
+                       is not editable yet, so the board never filled the value in. -->
+                  <p class="gb-acct-product__flavour">Flavour</p>
+                  <p class="gb-acct-product__price"><s class="gb-acct-product__was">$168.90</s><span class="gb-acct-product__now">$121.50</span></p>
+                </div>
+              </div>
+            </div>
+            <div class="gb-acct-product">
+              <span class="gb-acct-product__thumb" aria-hidden="true"></span>
+              <div class="gb-acct-product__info">
+                <div class="gb-acct-product__top">
+                  <p class="gb-acct-product__name"><span class="gb-acct-product__qty">1</span>Superfood Greens Gummies</p>
+                  <button class="gb-acct-link" type="button" data-acct-modal="edit-product">Edit</button>
+                </div>
+                <div class="gb-acct-product__meta">
+                  <!-- 27899 is literally the word "Flavour": note 30913 says flavour
+                       is not editable yet, so the board never filled the value in. -->
+                  <p class="gb-acct-product__flavour">Flavour</p>
+                  <p class="gb-acct-product__price"><s class="gb-acct-product__was">$168.90</s><span class="gb-acct-product__now">$121.50</span></p>
+                </div>
+              </div>
+            </div>
+            <div class="gb-acct-product">
+              <span class="gb-acct-product__thumb" aria-hidden="true"></span>
+              <div class="gb-acct-product__info">
+                <div class="gb-acct-product__top">
+                  <p class="gb-acct-product__name"><span class="gb-acct-product__qty">1</span>Superfood Greens Gummies</p>
+                  <button class="gb-acct-link" type="button" data-acct-modal="edit-product">Edit</button>
+                </div>
+                <div class="gb-acct-product__meta">
+                  <!-- 27899 is literally the word "Flavour": note 30913 says flavour
+                       is not editable yet, so the board never filled the value in. -->
+                  <p class="gb-acct-product__flavour">Flavour</p>
+                  <p class="gb-acct-product__price"><s class="gb-acct-product__was">$168.90</s><span class="gb-acct-product__now">$121.50</span></p>
+                </div>
+              </div>
+            </div>
+            <div class="gb-acct-product">
+              <span class="gb-acct-product__thumb" aria-hidden="true"></span>
+              <div class="gb-acct-product__info">
+                <div class="gb-acct-product__top">
+                  <p class="gb-acct-product__name"><span class="gb-acct-product__qty">1</span>Superfood Greens Gummies</p>
+                  <button class="gb-acct-link" type="button" data-acct-modal="edit-product">Edit</button>
+                </div>
+                <div class="gb-acct-product__meta">
+                  <!-- 27899 is literally the word "Flavour": note 30913 says flavour
+                       is not editable yet, so the board never filled the value in. -->
+                  <p class="gb-acct-product__flavour">Flavour</p>
+                  <p class="gb-acct-product__price"><s class="gb-acct-product__was">$168.90</s><span class="gb-acct-product__now">$121.50</span></p>
+                </div>
+              </div>
+            </div>
+
+              <!-- Note 30905 says Add Items can be turned off until there are
+                   other products. Built as drawn; whether it ships is decision H. -->
+              <div class="gb-acct-detail__add">
+                <button class="gb-acct-btn" type="button" data-acct-modal="add-product"><svg class="gb-acct-btn__icon" xmlns="http://www.w3.org/2000/svg" viewBox="748.449 1138.62 20 20" fill="none" aria-hidden="true"> <path id="Icon_9" d="M758.449 1142.79V1154.46M752.616 1148.63H764.282" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/> </svg><span>Add Items</span></button>
+                <p class="gb-acct-detail__deadline">You can make changes to your next subscription up until 18th Jul, 2026, 6:59 AM</p>
+              </div>
+
+              <hr class="gb-acct-sub__rule">
+
+              <div class="gb-acct-summary">
+                <div class="gb-acct-summary__head">
+                  <div class="gb-acct-summary__lines">
+                    <p class="gb-acct-summary__row"><span>Subtotal</span><span>$00.00</span></p>
+                    <p class="gb-acct-summary__row"><span>Discounts</span><span class="gb-acct-summary__discount"><span class="gb-acct-summary__kind">Automatic</span><span class="gb-acct-tag">-$26.40</span></span></p>
+                    <p class="gb-acct-summary__row"><span>Shipping</span><span>FREE</span></p>
+                  </div>
+                  <!-- Note 30921: once a code is applied this reads Edit. That
+                       variant is Task 7. -->
+                  <button class="gb-acct-link gb-acct-link--sm" type="button" data-acct-modal="discount-add">Add a discount code</button>
+                </div>
+                <p class="gb-acct-summary__total"><span>Total</span><span>$00.00</span></p>
+              </div>
+
+              <hr class="gb-acct-sub__rule">
+
+            <div class="gb-acct-row">
+              <div class="gb-acct-row__main">
+                <svg class="gb-acct-row__icon" xmlns="http://www.w3.org/2000/svg" viewBox="810.449 468.625 20 20" fill="none" aria-hidden="true"> <path id="Icon_5" d="M823.701 481.798V473.632C823.701 472.698 823.701 472.231 823.52 471.875C823.36 471.561 823.105 471.306 822.791 471.146C822.435 470.965 821.968 470.965 821.035 470.965H814.701C813.768 470.965 813.301 470.965 812.945 471.146C812.631 471.306 812.376 471.561 812.216 471.875C812.035 472.231 812.035 472.698 812.035 473.632V479.132C812.035 480.065 812.035 480.532 812.216 480.888C812.376 481.202 812.631 481.457 812.945 481.617C813.301 481.798 813.768 481.798 814.701 481.798H823.701ZM823.701 481.798H827.368C827.835 481.798 828.068 481.798 828.246 481.707C828.403 481.627 828.531 481.5 828.611 481.343C828.701 481.165 828.701 480.932 828.701 480.465V478.184C828.701 477.98 828.701 477.878 828.678 477.782C828.658 477.697 828.624 477.616 828.579 477.541C828.527 477.457 828.455 477.385 828.311 477.241L826.592 475.522C826.448 475.378 826.376 475.306 826.292 475.254C826.217 475.209 826.136 475.175 826.051 475.155C825.955 475.132 825.853 475.132 825.649 475.132H823.701M817.868 483.882C817.868 485.032 816.935 485.965 815.785 485.965C814.634 485.965 813.701 485.032 813.701 483.882C813.701 482.731 814.634 481.798 815.785 481.798C816.935 481.798 817.868 482.731 817.868 483.882ZM827.035 483.882C827.035 485.032 826.102 485.965 824.951 485.965C823.801 485.965 822.868 485.032 822.868 483.882C822.868 482.731 823.801 481.798 824.951 481.798C826.102 481.798 827.035 482.731 827.035 483.882Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/> </svg>
+                <div class="gb-acct-row__text">
+                  <p class="gb-acct-row__label">Shipping</p>
+                  <p class="gb-acct-row__value">123 Express Ln, VIC 3121</p>
+                </div>
+              </div>
+              <button class="gb-acct-link" type="button" data-acct-modal="shipping-current">Edit</button>
+            </div>
+
+            <div class="gb-acct-row">
+              <div class="gb-acct-row__main">
+                <svg class="gb-acct-row__icon" xmlns="http://www.w3.org/2000/svg" viewBox="541.949 1536.62 20 20" fill="none" aria-hidden="true"> <path id="Icon_11" d="M560.282 1544.96H543.616M543.616 1543.46L543.616 1549.79C543.616 1550.73 543.616 1551.19 543.797 1551.55C543.957 1551.86 544.212 1552.12 544.526 1552.28C544.882 1552.46 545.349 1552.46 546.282 1552.46L557.616 1552.46C558.549 1552.46 559.016 1552.46 559.372 1552.28C559.686 1552.12 559.941 1551.86 560.101 1551.55C560.282 1551.19 560.282 1550.73 560.282 1549.79V1543.46C560.282 1542.53 560.282 1542.06 560.101 1541.7C559.941 1541.39 559.686 1541.13 559.372 1540.97C559.016 1540.79 558.549 1540.79 557.616 1540.79L546.282 1540.79C545.349 1540.79 544.882 1540.79 544.526 1540.97C544.212 1541.13 543.957 1541.39 543.797 1541.7C543.616 1542.06 543.616 1542.53 543.616 1543.46Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/> </svg>
+                <div class="gb-acct-row__text">
+                  <p class="gb-acct-row__label">Payment Method</p>
+                  <p class="gb-acct-row__value">PayPal<br>(reallylongemail@email.com)</p>
+                </div>
+              </div>
+              <button class="gb-acct-link" type="button" data-acct-modal="edit-payment">Edit</button>
+            </div>
+            </div>
+          </article>
+
+          <!-- 2284:27980 desktop / 2284:28458 phone -->
+          <div class="gb-acct-sub">
+            <div class="gb-acct-sub__body gb-acct-schedule">
+              <div class="gb-acct-row">
+                <div class="gb-acct-row__main">
+                  <svg class="gb-acct-row__icon" xmlns="http://www.w3.org/2000/svg" viewBox="541.949 468.625 20 20" fill="none" aria-hidden="true"> <path id="Icon_4" d="M556.116 476.799L559.449 473.466L556.116 470.133M559.449 473.466H548.449C547.049 473.466 546.349 473.466 545.814 473.739C545.344 473.978 544.961 474.361 544.722 474.831C544.449 475.366 544.449 476.066 544.449 477.466V477.633M544.449 483.466H555.449C556.849 483.466 557.549 483.466 558.084 483.194C558.555 482.954 558.937 482.572 559.177 482.101C559.449 481.566 559.449 480.866 559.449 479.466V479.299M547.783 480.133L544.449 483.466L547.783 486.799" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/> </svg>
+                  <p class="gb-acct-schedule__title">Renewal Schedule</p>
+                </div>
+              </div>
+              <div class="gb-acct-schedule__days">
+              <span class="gb-acct-schedule__day">19 Jun</span>
+              <span class="gb-acct-schedule__day">17 Jul</span>
+              <span class="gb-acct-schedule__day">14 Aug</span>
+              <span class="gb-acct-schedule__day">11 Sep</span>
+              </div>
+              <button class="gb-acct-btn gb-acct-btn--ghost" type="button" data-acct-modal="skip-next"><span>Skip next order</span></button>
+            </div>
+          </div>
+
+          <p class="gb-acct-detail__cancel"><button class="gb-acct-link" type="button" data-acct-modal="cancel-offer-skip">Cancel Subscription</button></p>
+          </div>
+        </div>
+        </section>
       </div>
     </div>
   </main>
@@ -374,6 +557,6 @@
 
   <script src="assets/lenis.min.js?v=20260908-r105"></script>
   <script src="assets/main.js?v=20260908-r105"></script>
-  <script src="assets/account.js?v=20260909-a3"></script>
+  <script src="assets/account.js?v=20260909-a4"></script>
 </body>
 </html>

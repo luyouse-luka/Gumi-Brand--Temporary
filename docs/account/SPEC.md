@@ -172,6 +172,7 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | J | **Flavour 是否可编辑** | 便签 `30913`·`30915`：「for now I don't think it's an option」 |
 | K | **交互态全缺** | hover / focus / active / disabled 在稿里与便签里都没有，按现站 `.gb-btn` 的既有值走，需集中登记（全局铁律 13） |
 | L | **手机波浪 36 vs 现站组件 48** | account 稿的 `Spacer Bottom`（`2284:27607`）在 390 档是 36 高，现站 `.gb-scallop` 的 390 档算出 48（`--sc-band` 13.3 + amp 34.7），注释写着 48 才是「design's own strip height」。已复用现站组件（全站一致优先），差 12 |
+| N | **Detail 的 Discounts 行两稿不一致** | 桌面 `27954` 是「Automatic + `-$26.40` 标签」，手机 `28433` 只有标签、没有 `Automatic`。无便签说明。**已两套都做按 767 切换**（全局铁律 3 允许的第二种做法），需设计方确认哪边是对的 |
 | M | **桌面 Renewal 态无稿** | `2284:27548` 只有手机版。桌面的 renewal 沿用了桌面的字号阶梯（20/30），只有配色与文案按 renewal 走；`It's upcoming!` 标签块在两端都锁 16/24（它是状态不是断点） |
 
 ## 8. 稿件自身的错误（不是我们做错）
@@ -215,6 +216,10 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | `Preparing, Aug 13` / `It's been shipped` / `Renewal Date, Sep 13` | `account.html` 三个状态槽 | 板上的示例日期与状态 |
 | `Estimated delivery 3-6 business days.` / `You can make changes up until Sep 13, 6:59 AM` | 同上 | 示例文案，实际由订单数据决定 |
 | `Earn rewards and $20 for every referral.` | `account.html` | 金额待客户确认 |
+| **详情页的四条产品行** | `account.html` 的 `.gb-acct-product` ×4 | 板上就是同一件商品重复四次（同名、同数量、同价），是排版占位不是真数据 |
+| `$168.90` / `$121.50` / `$00.00` / `-$26.40` / `FREE` | 同上 | 板上的示例价格；小计与总计都写着 `$00.00`，显然是未填 |
+| `Ships every 4 weeks` / `PayPal (reallylongemail@email.com)` / `18th Jul, 2026, 6:59 AM` / `19 Jun`·`17 Jul`·`14 Aug`·`11 Sep` | 同上 | 板上的示例订阅设置与日期 |
+| `Flavour`（产品行的口味位） | `.gb-acct-product__flavour` | 板上 `27899` 的文字**就是「Flavour」这个词**，值没填。便签 `30913` 说口味暂不可编辑 |
 | **订阅卡的产品缩略图** | `account.html` 的 `.gb-acct-sub__thumb`（源 `196:19033`） | 板上是 64×64 的纯 `#d9d9d9` 矩形，**设计里根本没有产品图**，不是我们漏切 |
 | `Superfood Greens Gummies` / `Quantity: 1` / `+4 More Products` / `$1245.60` | `account.html` 三张订阅卡 | 板上的示例订阅数据 |
 | `19 Jul 2026`（active）/ `17 Aug 2026`（paused）/ `123 Express Ln, VIC 3121` | 同上 | 板上的示例日期与地址 |

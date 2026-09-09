@@ -655,13 +655,13 @@ Shipping + Edit → Payment Method + Edit → Renewal Schedule（四个日期块
   `.gb-acct-product`、`.gb-acct-summary`、`.gb-acct-schedule`
 - 产出：所有 Edit 入口的 hook `data-acct-modal="<name>"`，name 见 Task 8 的清单
 
-- [ ] **步骤 1：追加断言（先红）** —— `.gb-acct-row` 的高度/分隔线颜色/图标尺寸、
+- [x] **步骤 1：追加断言（先红）** —— `.gb-acct-row` 的高度/分隔线颜色/图标尺寸、
       产品行的缩略图尺寸、划线价的 `text-decoration`、总计行的字重，
       值从 `2284-27792_account-overview-desktop.json` 取。
 
-- [ ] **步骤 2：跑判据确认红**
+- [x] **步骤 2：跑判据确认红**
 
-- [ ] **步骤 3：写结构与样式**
+- [x] **步骤 3：写结构与样式**
 
 本任务**只放静态内容与 Edit 入口的 hook，不实现弹窗**（Task 8–13 做）。
 每个 Edit 按钮写成：
@@ -676,9 +676,9 @@ items get added」）—— 本任务**照稿做出来**，是否隐藏留待裁
 ⚠ 折扣行：便签 `30921` 说已有折扣码时文案从 `Add` 变 `Edit`，
 本任务只做 `Add a discount code` 那一版，`Edit` 版在 Task 7。
 
-- [ ] **步骤 4：编译、跑判据确认绿、活性自检**
+- [x] **步骤 4：编译、跑判据确认绿、活性自检**
 
-- [ ] **步骤 5：提交** — `git commit -m "feat(account): 订阅详情 ACTIVE 基准态"`
+- [x] **步骤 5：提交** — `git commit -m "feat(account): 订阅详情 ACTIVE 基准态"`
 
 ---
 

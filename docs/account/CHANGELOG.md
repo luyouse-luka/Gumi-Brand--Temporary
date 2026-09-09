@@ -8,6 +8,100 @@
 
 ---
 
+## Task 6 — Subscription Detail 的 ACTIVE 基准态（`$build-acct` = `20260909-a4`）
+
+**设计源**：桌面 `2284:27792`、手机 `2284:28330`；便签 `30905` Add items / `30913` Flavour /
+`30921` 折扣码 / `27444` Download invoice。
+
+### 做了什么
+
+- **页头复用 `.gb-acct-intro`**，加两个修饰：`--back`（返回键在桌面也显示，`28068` 没有）
+  与 `__text--row`（铅笔按钮取代副标题，桌面 gap 8 / 手机 16）。铅笔挂
+  `data-acct-modal="edit-name"`。
+- **卡片外壳复用 `.gb-acct-sub`**（白底 + `#e6e6e6` + r12 + head/body），因为板上
+  `27865` 与列表卡 `28072` 本来就是同一个组件。唯一差别是 head 的左右内边距
+  桌面 24（列表是 20），用 `.gb-acct-sub--detail` 覆盖。
+- **`.gb-acct-row`** —— 图标 + 标签/值 + 可选 Edit 的通用行，四处用它：续订日期（外加
+  18/26 的大号日期与一行 Est Delivery）、Frequency、Shipping、Payment Method。
+  值的颜色是 `#101828`（navy），**不是列表卡用的 `#1a1a1a`**。
+- **`.gb-acct-product`** ×4 —— 62 缩略图 + 「数量 名称」+ Edit + 「Flavour + 划线原价/现价」。
+- **`.gb-acct-summary`** —— 小计 / 折扣（`Automatic` + `#cbf390` 标签）/ 运费 /
+  `Add a discount code` / 总计。
+- **`.gb-acct-schedule`** —— 四个日期块 + `Skip next order`（全站唯一的描边按钮：无填充、
+  2px 深绿边、深绿字）。
+- **`.gb-acct-link`** —— 蓝色带下划线的 Edit / Add a discount code / Cancel Subscription
+  （`#0374a5`，`characterStyleOverrides` 里写的 `textDecoration: UNDERLINE`）。
+- **11 个 `data-acct-modal` hook 全部就位**（edit-name / edit-date / need-now /
+  edit-frequency / edit-product ×4 / add-product / discount-add / shipping-current /
+  edit-payment / skip-next / cancel-offer-skip），Task 8 才接 JS，现在是惰性的。
+- **`.gb-acct-btn` 与 Task 5 的 `.gb-acct-sub__cta` 合成一条规则**：板上它们是同一个
+  Button 组件，值一模一样。列表卡的 markup 没动。
+
+### 三处稿上才看得出来的东西
+
+1. **桌面的四个日期块是手机块按 1.1554 缩放的**：圆角 8→9.243、描边 1→1.155、
+   内边距 24/12→27.73/13.86、字号 16/24→18.49/27.73，**每一项都乘同一个系数**。
+   手机那版才是组件的原值。板上那条 316 宽的日期条塞在 308 的内容列里（溢出 8），
+   也是缩放的副产品 —— 实现里让四块 `flex: 1` 平分，正好铺满。
+2. **产品行的框是固定 62，里面的文字列却是 68**，所以价格那行会探进下方 24 的间距里 6px。
+   照板做了（`height: 62px`），不是我们算错。
+3. **Payment Method 的值里是 U+2028**（行分隔符）而不是换行，`PayPal` 与邮箱各占一行 ——
+   HTML 里写成 `<br>`。这类字符肉眼与普通空格无异，见 memory `nl2br-blind-to-u2028`。
+
+### 两稿不一致一处，两套都做
+
+桌面 `27954` 的折扣行是「Automatic + 标签」，手机 `28433` 只有标签。无便签说明，
+按全局铁律 3 的第二种做法**两套都做、767 切换**，登记为待裁决 N。
+
+### 文件清单
+
+| 文件 | 改动 |
+|---|---|
+| `account.html` | detail 视图填入页头 / 详情卡 / 四条产品行 / 小计 / 日程卡 / 取消链接；11 个 `data-acct-modal`；`?v=` 升到 `a4` |
+| `assets/account.scss` | 新增 Detail / 详情行 / 蓝链 / 产品行 / 小计 / 日程六段；`.gb-acct-sub__cta` 与新的 `.gb-acct-btn` 合并成一条规则；`.gb-acct-intro--back` 与 `__text--row` 两个修饰 |
+| `assets/account.css` | 编译产物（双写） |
+| `tools/acctcheck.py` | 追加 Task 6 断言 134 条；新增 `GOTO_DETAIL` 动作（**走真实路径**：先点导航进列表，再点卡片 CTA）；Task 5 的文本断言补上视图作用域 |
+| `images/acct-{edit-pencil,date,frequency,plus,payment}.svg` | 新增 5 个 |
+| `figma/account/cut-icons.py` | 追加 5 个 JOBS。⚠ 在 `.gitignore` 的 `figma/` 内，不入库 |
+| `docs/account/SPEC.md` | §7 新增待裁决 N；§8b 新增详情页的四类占位数据 |
+
+### 判据
+
+| 判据 | 结果 |
+|---|---|
+| `tools/acctcheck.py` | **448 ok / 0 red**（Task 5 收尾是 314） |
+| 活性自检 A：去掉 `--back` 的显示规则 | 转红 1 ✅ |
+| 活性自检 B：详情卡头内边距退回 20 | 转红 1 ✅ |
+| 活性自检 C：去掉产品行的固定 62 高 | 转红 1 ✅（读回 68，正好是那 6px） |
+| 活性自检 D：描边按钮改 1px | 转红 1 ✅ |
+| 活性自检 E：**负向断言的锚**——往详情页塞一个 `__sub` | `absent` 转红 ✅（全局铁律 6） |
+| 活性自检 F：拆掉列表卡 CTA 的 `data-acct-goto` | 整组 134 条转红 ✅（证明判据走的是真实点击路径，不是 hash） |
+| `tools/rwd.py account.html` | 全绿 |
+| 详情视图单独扫溢出（13 档，`#detail`） | 0 溢出 |
+| `tools/acctvars.py` | 54 ok / 0 red |
+| 肉眼对稿 | 1440 对 `2284-27792`、390 对 `2284-28330`，逐块一致 |
+
+### 已知偏差（不要报成 bug）
+
+- **产品行的价格会探进下方间距 6px** —— 见上文第 2 条，板上就是这样。
+- **产品名固定 `max-width: 212px`**、**Flavour 行固定 217**、**变更截止提示固定 298.5** ——
+  都是板上的固定宽度，去掉它们文字会拉成一行、与稿不符。
+- **日期块用 `flex: 1` 而不是板上的固定 116.3 / 73**，否则手机档溢出 8px。
+- **`Flavour` 是标签不是值**：板上 `27899` 的文字就是这个词，口味按便签 `30913` 暂不做。
+- **Add Items 照稿做了**：便签 `30905` 说可以先关掉，是否隐藏是待裁决 H，不自己决定。
+- **`Download invoice` 没做**：便签 `27444` 说「Only do if very very very cheap，
+  否则删掉」，且详情稿上本来就没有这一项，待裁决 I。
+- **蓝链与铅笔的 hover 用 `opacity: .7`**，交互态稿里全缺，见待裁决 K。
+
+### 遗留
+
+- 11 个 `data-acct-modal` 现在点了没反应 —— Task 8 建弹窗基础设施后才接上。
+- 折扣行只做了 `Add a discount code` 那一版；便签 `30921` 的「已应用折扣码 → 文案变 Edit」
+  是 Task 7。
+- Detail 的 PAUSED / CANCELLED / 折扣已应用等其余状态是 Task 7。
+
+---
+
 ## Task 5 — My Subscriptions 列表与三种订阅状态（`$build-acct` = `20260909-a3`）
 
 **设计源**：桌面 `2284:28000`（同屏三态）；手机 `2284:28305`（同屏三态）、
