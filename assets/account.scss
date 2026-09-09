@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260909-a2";
+$build-acct: "20260909-a3";
 
 // ==========================================================================
 // Variables
@@ -74,6 +74,10 @@ $c-gray-050:    #f3f3f3;   // 326:83143 table header / zebra fill
 $c-navy:        #101828;
 
 $c-ink-05:      rgba(1, 19, 7, 0.05);
+
+$c-amber-500:   #fd871a;   // account-only: paused badge label + ring
+$c-amber-300:   #fdf560;   // account-only: paused badge ring fill
+$c-amber-100:   #ffefc3;   // account-only: paused badge fill
 
 // account-only. The board lightens the header and drops the menu panel in
 // #f6feec (2284:34854 / 34804) -- not one of the site's lime steps, so it is
@@ -395,17 +399,17 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   background: $c-cream;
 
   // 2284:27606 / 27679: a lime band that carries the header colour down past the
-  // greeting. On the board it starts at the top of the header, so what is left to
-  // draw below it is the board height minus the header (240-64 phone, 203-80 desktop).
+  // first card. The height is measured from where main starts, not from the board
+  // top: 27678 puts main at 40846.6 and the rectangle's bottom at 41043.
   &::before {
     content: "";
     position: absolute;
     inset: 0 0 auto;
-    height: 123px;
+    height: 196px;
     background: $c-lime-150;
 
     @include narrow { height: 176px; }
-    @include tablet { height: fluid(176px, 123px); }
+    @include tablet { height: fluid(176px, 196px); }
   }
 }
 
@@ -580,9 +584,10 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
   @include narrow {
     grid-template-columns: minmax(0, 1fr);
-    // 40 is the gap from the header rule to the greeting on 2284:27604; the
-    // board's own header frame is 124 tall but most of that is a hidden node.
-    padding: 40px $pad-x-mobile 48px;
+    // 8 is the Account Header's own padding-top (27610 / 28312). The rest of the
+    // lead-in belongs to the view: 27604 hides the back button and starts its
+    // greeting 40 down, 28305 shows the button and starts 8 down.
+    padding: 8px $pad-x-mobile 48px;
   }
 }
 
@@ -711,7 +716,7 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   flex-direction: column;
   row-gap: 16px;
 
-  @include narrow { row-gap: 32px; }
+  @include narrow { row-gap: 32px; padding-top: 32px; }
 }
 
 // Greeting 2284:27766 / 2284:27610. The phone drops the card entirely -- the
@@ -1059,19 +1064,356 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   }
 }
 
+// ==========================================================================
+// My Subscriptions list — 2284:28000 desktop, 2284:28305 / 34046 phone
+// ==========================================================================
+
+.gb-acct-subs {
+  display: flex;
+  flex-direction: column;
+  row-gap: 16px;
+
+  @include narrow { row-gap: 24px; }
+  @include tablet { row-gap: fluid(24px, 16px); }
+}
+
+// 2284:28068 is a lime card; the phone (28312) drops the card and puts the same
+// two lines straight on the band, with the back button the overview keeps off.
+.gb-acct-intro {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  row-gap: 16px;
+  min-height: 136px;
+  padding: 24px 32px;
+  background: $c-lime-200;
+  border-radius: 14px;
+
+  @include narrow {
+    min-height: 0;
+    padding: 0;
+    background: none;
+    border-radius: 0;
+  }
+}
+
+.gb-acct-intro__back {
+  display: none;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 40px;
+  background: $c-white;
+  color: $c-green;
+  cursor: pointer;
+
+  transition: trans(background-color, transform);
+
+  @include narrow { display: flex; }
+  @include hover { transform: translateX(-2px); }
+}
+
+.gb-acct-intro__arrow {
+  width: 20px;
+  height: 20px;
+}
+
+.gb-acct-intro__text {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.gb-acct-intro__title {
+  margin: 0;
+  @include font($font-brand-stack, 24px, 800, 30px, -0.24px);
+  color: $c-gray-800;
+
+  @include narrow { @include font($font-brand-stack, 20px, 800, 24px, -0.2px); }
+  @include tablet { font-size: fluid(20px, 24px); line-height: fluid(24px, 30px); }
+}
+
+.gb-acct-intro__sub {
+  max-width: 409px;
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 22px, -0.28px);
+  color: $c-gray-600;
+
+  @include narrow {
+    max-width: none;
+    @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
+  }
+  @include tablet { font-size: fluid(12px, 14px); line-height: fluid(18px, 22px); }
+}
+
+.gb-acct-subs__list {
+  display: flex;
+  flex-direction: column;
+  row-gap: 24px;
+
+  @include narrow { row-gap: 32px; }
+  @include tablet { row-gap: fluid(32px, 24px); }
+}
+
+// The card is never clickable as a whole -- only its button is -- so it carries
+// no hover and no pointer cursor.
+.gb-acct-sub {
+  display: flex;
+  flex-direction: column;
+  background: $c-white;
+  border: 1px solid $c-gray-150;
+  border-radius: $r-md;
+}
+
+.gb-acct-sub__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 8px;
+  padding: 20px;
+  border-bottom: 1px solid $c-gray-150;
+}
+
+.gb-acct-sub__title {
+  min-width: 0;
+  margin: 0;
+  @include font($font-brand-stack, 16px, 500, 24px, -0.32px);
+  color: $c-gray-900;
+}
+
+// ==========================================================================
+// Status badge — 42:955 active / 467:49474 paused / 42:934 cancelled
+// ==========================================================================
+
+// Driven off [data-acct-sub-state] on an ancestor rather than a modifier class,
+// so the detail page can reuse the badge from its own state attribute.
+.gb-acct-pill {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  column-gap: 4px;
+  height: 24px;
+  padding: 4px 6px 4px 4px;
+  border-radius: 52px;
+  @include font($font-ui-stack, 12px, 500, 18px);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+// A white 16 disc with a 11.74 ring inside it; only the ring changes per state.
+.gb-acct-pill__dot {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: $c-white;
+
+  &::before {
+    content: "";
+    width: 11.74px;
+    height: 11.74px;
+    border: 3.07px solid;
+    border-radius: 50%;
+  }
+}
+
+[data-acct-sub-state="active"] {
+  .gb-acct-pill { background: $c-lime-300; color: $c-green; }
+  .gb-acct-pill__dot::before { border-color: $c-green; background: $c-lime; }
+}
+
+[data-acct-sub-state="paused"] {
+  .gb-acct-pill { background: $c-amber-100; color: $c-amber-500; }
+  .gb-acct-pill__dot::before { border-color: $c-amber-500; background: $c-amber-300; }
+
+  // 28127: the order summary greys out, the renewal/shipping row does not
+  .gb-acct-sub__summary { opacity: 0.4; }
+}
+
+[data-acct-sub-state="cancelled"] {
+  .gb-acct-pill { background: $c-gray-300; color: $c-gray-700; }
+  .gb-acct-pill__dot::before { border-color: $c-gray-600; background: $c-white; }
+
+  // 28152 + 28159: both blocks grey out
+  .gb-acct-sub__meta,
+  .gb-acct-sub__summary { opacity: 0.4; }
+
+  // Note 28323 "Renewal date removed", which 28316 follows. The desktop board
+  // drops the shipping line instead -- that is the board's error (SPEC 8).
+  [data-acct-sub-renewal] { display: none; }
+}
+
+// ==========================================================================
+// Subscription card body — 2284:28077 desktop / I2284:28314;426:42894 phone
+// ==========================================================================
+
+.gb-acct-sub__body {
+  display: flex;
+  flex-direction: column;
+  row-gap: 24px;
+  padding: 24px;
+
+  @include narrow { padding: 20px; }
+  @include tablet { padding: fluid(20px, 24px); }
+}
+
+.gb-acct-sub__meta {
+  display: flex;
+  flex-direction: row;
+  column-gap: 16px;
+
+  @include narrow { flex-direction: column; row-gap: 16px; }
+}
+
+.gb-acct-sub__meta-item {
+  display: flex;
+  flex: 1 1 0;
+  column-gap: 8px;
+
+  @include narrow { flex: none; }
+}
+
+.gb-acct-sub__icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  color: $c-gray-600;
+}
+
+.gb-acct-sub__meta-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  row-gap: 4px;
+}
+
+.gb-acct-sub__meta-label {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-600;
+}
+
+.gb-acct-sub__meta-value {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-900;
+}
+
+.gb-acct-sub__rule {
+  height: 1px;
+  margin: 0;
+  border: 0;
+  background: $c-gray-150;
+}
+
+.gb-acct-sub__summary {
+  display: flex;
+  flex-direction: column;
+  row-gap: 16px;
+}
+
+// 308 is the board's fixed width for this row on both boards -- on the phone it
+// is the full content width, on desktop it stops the name from running wide.
+.gb-acct-sub__product {
+  display: flex;
+  align-items: flex-start;
+  column-gap: 16px;
+  width: 100%;
+  max-width: 308px;
+}
+
+.gb-acct-sub__thumb {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 4.57px;
+  background: $c-gray-200;
+}
+
+.gb-acct-sub__product-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  row-gap: 6px;
+}
+
+.gb-acct-sub__product-name {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-900;
+}
+
+.gb-acct-sub__product-qty {
+  margin: 0;
+  @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
+  color: $c-gray-600;
+}
+
+.gb-acct-sub__totals {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 24px;
+}
+
+.gb-acct-sub__more {
+  margin: 0;
+  @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
+  color: $c-gray-600;
+}
+
+.gb-acct-sub__total {
+  display: flex;
+  column-gap: 8px;
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-900;
+}
+
+.gb-acct-sub__foot {
+  padding: 4px 24px 24px;
+
+  @include narrow { padding: 8px 16px 20px; }
+}
+
+.gb-acct-sub__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 44px;
+  padding-inline: 40px;
+  border: 1px solid $c-green;
+  border-radius: 72px;
+  background: $c-green;
+  @include font($font-brand-stack, 16px, 500, 24px, -0.32px);
+  color: $c-white;
+  cursor: pointer;
+
+  transition: trans(background-color, opacity);
+
+  @include hover { opacity: 0.85; }
+}
+
 // Lime band -> page cream. customstyle ships --to-white (lime-150 -> white) but
 // the account board's page fill is cream, and on the wave that difference shows.
 .gb-scallop--mint-to-cream { --wave-bg: #{$c-lime-150}; --wave-fg: #{$c-cream}; }
 
 // Sits where the band ends. Desktop overlaps it by 9 -- the board puts the wave
-// top at 367 and the rectangle bottom at 376, and the wave's own solid band
-// carries the lime down through the overlap.
+// top at 367 and the rectangle bottom at 376 (main starts at 179.6), and the
+// wave's own solid band carries the lime down through the overlap.
 .gb-acct__wave {
   position: absolute;
-  top: 114px;
+  top: 187px;
   left: 0;
   right: 0;
 
   @include narrow { top: 176px; }
-  @include tablet { top: fluid(176px, 114px); }
+  @include tablet { top: fluid(176px, 187px); }
 }

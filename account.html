@@ -10,7 +10,7 @@
 <link rel="icon" href="images/favicon.svg?v=20260908-r105" type="image/svg+xml">
 <link rel="apple-touch-icon" href="images/favicon-180.png?v=20260908-r105">
 <link rel="stylesheet" href="assets/customstyle.css?v=20260908-r105">
-<link rel="stylesheet" href="assets/account.css?v=20260909-a2">
+<link rel="stylesheet" href="assets/account.css?v=20260909-a3">
 <noscript><style>.wowo{opacity:1 !important}</style></noscript>
 </head>
 <body>
@@ -143,7 +143,155 @@
           <button class="gb-acct-logout" type="button" data-acct-logout><svg class="gb-acct-logout__icon" xmlns="http://www.w3.org/2000/svg" viewBox="150.5 1136 24 24" fill="none" aria-hidden="true"> <path id="Icon_11" d="M166.5 1143L171.5 1148L166.5 1153M171.5 1148H159.5M159.5 1139H158.3C156.62 1139 155.78 1139 155.138 1139.33C154.574 1139.61 154.115 1140.07 153.827 1140.64C153.5 1141.28 153.5 1142.12 153.5 1143.8V1152.2C153.5 1153.88 153.5 1154.72 153.827 1155.36C154.115 1155.93 154.574 1156.39 155.138 1156.67C155.78 1157 156.62 1157 158.3 1157H159.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/> </svg><span>Logout</span></button>
         </div>
         </section>
-        <section class="gb-acct__view" data-acct-view="subscriptions" hidden></section>
+        <section class="gb-acct__view" data-acct-view="subscriptions" hidden>
+        <div class="gb-acct-subs">
+          <!-- 2284:28068 desktop / 2284:28312 phone: the lime card is desktop
+               only, and the back button the overview keeps hidden shows here. -->
+          <div class="gb-acct-intro">
+            <button class="gb-acct-intro__back" type="button" data-acct-goto="overview" aria-label="Back to account overview"><svg class="gb-acct-intro__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="26 174 20 20" fill="none" aria-hidden="true"><path d="M41.8307 184.001H30.1641M35.9974 178.168L30.1641 184.001L35.9974 189.835" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <div class="gb-acct-intro__text">
+              <p class="gb-acct-intro__title">My Subscriptions</p>
+              <p class="gb-acct-intro__sub">Update your products, renewal dates and delivery frequency payment method</p>
+            </div>
+          </div>
+
+          <!-- 2284:28072 / 28109 / 28146 desktop, 2284:28314 / 28315 / 28316
+               phone. The board shows all three states at once, so each card
+               carries its own state rather than one card being switched. -->
+          <div class="gb-acct-subs__list">
+          <article class="gb-acct-sub" data-acct-sub-state="active">
+            <div class="gb-acct-sub__head">
+              <p class="gb-acct-sub__title">My Subscription</p>
+              <span class="gb-acct-pill"><span class="gb-acct-pill__dot" aria-hidden="true"></span>Active</span>
+            </div>
+            <div class="gb-acct-sub__body">
+              <div class="gb-acct-sub__meta">
+                <div class="gb-acct-sub__meta-item" data-acct-sub-renewal>
+                  <svg class="gb-acct-sub__icon" xmlns="http://www.w3.org/2000/svg" viewBox="541.949 468.625 20 20" fill="none" aria-hidden="true"><path d="M556.116 476.799L559.449 473.466L556.116 470.133M559.449 473.466H548.449C547.049 473.466 546.349 473.466 545.814 473.739C545.344 473.978 544.961 474.361 544.722 474.831C544.449 475.366 544.449 476.066 544.449 477.466V477.633M544.449 483.466H555.449C556.849 483.466 557.549 483.466 558.084 483.194C558.555 482.954 558.937 482.572 559.177 482.101C559.449 481.566 559.449 480.866 559.449 479.466V479.299M547.783 480.133L544.449 483.466L547.783 486.799" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <div class="gb-acct-sub__meta-text">
+                    <p class="gb-acct-sub__meta-label">Next renewal date</p>
+                    <p class="gb-acct-sub__meta-value">19 Jul 2026</p>
+                  </div>
+                </div>
+                <div class="gb-acct-sub__meta-item" data-acct-sub-shipping>
+                  <svg class="gb-acct-sub__icon" xmlns="http://www.w3.org/2000/svg" viewBox="810.449 468.625 20 20" fill="none" aria-hidden="true"><path d="M823.701 481.798V473.632C823.701 472.698 823.701 472.231 823.52 471.875C823.36 471.561 823.105 471.306 822.791 471.146C822.435 470.965 821.968 470.965 821.035 470.965H814.701C813.768 470.965 813.301 470.965 812.945 471.146C812.631 471.306 812.376 471.561 812.216 471.875C812.035 472.231 812.035 472.698 812.035 473.632V479.132C812.035 480.065 812.035 480.532 812.216 480.888C812.376 481.202 812.631 481.457 812.945 481.617C813.301 481.798 813.768 481.798 814.701 481.798H823.701ZM823.701 481.798H827.368C827.835 481.798 828.068 481.798 828.246 481.707C828.403 481.627 828.531 481.5 828.611 481.343C828.701 481.165 828.701 480.932 828.701 480.465V478.184C828.701 477.98 828.701 477.878 828.678 477.782C828.658 477.697 828.624 477.616 828.579 477.541C828.527 477.457 828.455 477.385 828.311 477.241L826.592 475.522C826.448 475.378 826.376 475.306 826.292 475.254C826.217 475.209 826.136 475.175 826.051 475.155C825.955 475.132 825.853 475.132 825.649 475.132H823.701M817.868 483.882C817.868 485.032 816.935 485.965 815.785 485.965C814.634 485.965 813.701 485.032 813.701 483.882C813.701 482.731 814.634 481.798 815.785 481.798C816.935 481.798 817.868 482.731 817.868 483.882ZM827.035 483.882C827.035 485.032 826.102 485.965 824.951 485.965C823.801 485.965 822.868 485.032 822.868 483.882C822.868 482.731 823.801 481.798 824.951 481.798C826.102 481.798 827.035 482.731 827.035 483.882Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <div class="gb-acct-sub__meta-text">
+                    <p class="gb-acct-sub__meta-label">Shipping</p>
+                    <p class="gb-acct-sub__meta-value">123 Express Ln, VIC 3121</p>
+                  </div>
+                </div>
+              </div>
+              <hr class="gb-acct-sub__rule">
+              <div class="gb-acct-sub__summary">
+                <div class="gb-acct-sub__product">
+                  <!-- 196:19033 is a flat #d9d9d9 rectangle on every board: the
+                       product shot is not in the design yet (see SPEC 8b). -->
+                  <span class="gb-acct-sub__thumb" aria-hidden="true"></span>
+                  <div class="gb-acct-sub__product-text">
+                    <p class="gb-acct-sub__product-name">Superfood Greens Gummies</p>
+                    <p class="gb-acct-sub__product-qty">Quantity: 1</p>
+                  </div>
+                </div>
+                <div class="gb-acct-sub__totals">
+                  <p class="gb-acct-sub__more">+4 More Products</p>
+                  <p class="gb-acct-sub__total"><span>Total</span><span>$1245.60</span></p>
+                </div>
+              </div>
+            </div>
+            <div class="gb-acct-sub__foot">
+            <button class="gb-acct-sub__cta" type="button" data-acct-goto="detail">Manage Subscription</button>
+            </div>
+          </article>
+          <article class="gb-acct-sub" data-acct-sub-state="paused">
+            <div class="gb-acct-sub__head">
+              <p class="gb-acct-sub__title">My Subscription</p>
+              <span class="gb-acct-pill"><span class="gb-acct-pill__dot" aria-hidden="true"></span>Paused</span>
+            </div>
+            <div class="gb-acct-sub__body">
+              <div class="gb-acct-sub__meta">
+                <div class="gb-acct-sub__meta-item" data-acct-sub-renewal>
+                  <svg class="gb-acct-sub__icon" xmlns="http://www.w3.org/2000/svg" viewBox="541.949 468.625 20 20" fill="none" aria-hidden="true"><path d="M556.116 476.799L559.449 473.466L556.116 470.133M559.449 473.466H548.449C547.049 473.466 546.349 473.466 545.814 473.739C545.344 473.978 544.961 474.361 544.722 474.831C544.449 475.366 544.449 476.066 544.449 477.466V477.633M544.449 483.466H555.449C556.849 483.466 557.549 483.466 558.084 483.194C558.555 482.954 558.937 482.572 559.177 482.101C559.449 481.566 559.449 480.866 559.449 479.466V479.299M547.783 480.133L544.449 483.466L547.783 486.799" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <div class="gb-acct-sub__meta-text">
+                    <p class="gb-acct-sub__meta-label">Next renewal date</p>
+                    <p class="gb-acct-sub__meta-value">17 Aug 2026</p>
+                  </div>
+                </div>
+                <div class="gb-acct-sub__meta-item" data-acct-sub-shipping>
+                  <svg class="gb-acct-sub__icon" xmlns="http://www.w3.org/2000/svg" viewBox="810.449 468.625 20 20" fill="none" aria-hidden="true"><path d="M823.701 481.798V473.632C823.701 472.698 823.701 472.231 823.52 471.875C823.36 471.561 823.105 471.306 822.791 471.146C822.435 470.965 821.968 470.965 821.035 470.965H814.701C813.768 470.965 813.301 470.965 812.945 471.146C812.631 471.306 812.376 471.561 812.216 471.875C812.035 472.231 812.035 472.698 812.035 473.632V479.132C812.035 480.065 812.035 480.532 812.216 480.888C812.376 481.202 812.631 481.457 812.945 481.617C813.301 481.798 813.768 481.798 814.701 481.798H823.701ZM823.701 481.798H827.368C827.835 481.798 828.068 481.798 828.246 481.707C828.403 481.627 828.531 481.5 828.611 481.343C828.701 481.165 828.701 480.932 828.701 480.465V478.184C828.701 477.98 828.701 477.878 828.678 477.782C828.658 477.697 828.624 477.616 828.579 477.541C828.527 477.457 828.455 477.385 828.311 477.241L826.592 475.522C826.448 475.378 826.376 475.306 826.292 475.254C826.217 475.209 826.136 475.175 826.051 475.155C825.955 475.132 825.853 475.132 825.649 475.132H823.701M817.868 483.882C817.868 485.032 816.935 485.965 815.785 485.965C814.634 485.965 813.701 485.032 813.701 483.882C813.701 482.731 814.634 481.798 815.785 481.798C816.935 481.798 817.868 482.731 817.868 483.882ZM827.035 483.882C827.035 485.032 826.102 485.965 824.951 485.965C823.801 485.965 822.868 485.032 822.868 483.882C822.868 482.731 823.801 481.798 824.951 481.798C826.102 481.798 827.035 482.731 827.035 483.882Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <div class="gb-acct-sub__meta-text">
+                    <p class="gb-acct-sub__meta-label">Shipping</p>
+                    <p class="gb-acct-sub__meta-value">123 Express Ln, VIC 3121</p>
+                  </div>
+                </div>
+              </div>
+              <hr class="gb-acct-sub__rule">
+              <div class="gb-acct-sub__summary">
+                <div class="gb-acct-sub__product">
+                  <!-- 196:19033 is a flat #d9d9d9 rectangle on every board: the
+                       product shot is not in the design yet (see SPEC 8b). -->
+                  <span class="gb-acct-sub__thumb" aria-hidden="true"></span>
+                  <div class="gb-acct-sub__product-text">
+                    <p class="gb-acct-sub__product-name">Superfood Greens Gummies</p>
+                    <p class="gb-acct-sub__product-qty">Quantity: 1</p>
+                  </div>
+                </div>
+                <div class="gb-acct-sub__totals">
+                  <p class="gb-acct-sub__more">+4 More Products</p>
+                  <p class="gb-acct-sub__total"><span>Total</span><span>$1245.60</span></p>
+                </div>
+              </div>
+            </div>
+            <div class="gb-acct-sub__foot">
+            <button class="gb-acct-sub__cta" type="button" data-acct-goto="detail">Manage Subscription</button>
+            </div>
+          </article>
+          <article class="gb-acct-sub" data-acct-sub-state="cancelled">
+            <div class="gb-acct-sub__head">
+              <p class="gb-acct-sub__title">My Subscription</p>
+              <span class="gb-acct-pill"><span class="gb-acct-pill__dot" aria-hidden="true"></span>Cancelled</span>
+            </div>
+            <div class="gb-acct-sub__body">
+              <div class="gb-acct-sub__meta">
+                <div class="gb-acct-sub__meta-item" data-acct-sub-renewal>
+                  <svg class="gb-acct-sub__icon" xmlns="http://www.w3.org/2000/svg" viewBox="541.949 468.625 20 20" fill="none" aria-hidden="true"><path d="M556.116 476.799L559.449 473.466L556.116 470.133M559.449 473.466H548.449C547.049 473.466 546.349 473.466 545.814 473.739C545.344 473.978 544.961 474.361 544.722 474.831C544.449 475.366 544.449 476.066 544.449 477.466V477.633M544.449 483.466H555.449C556.849 483.466 557.549 483.466 558.084 483.194C558.555 482.954 558.937 482.572 559.177 482.101C559.449 481.566 559.449 480.866 559.449 479.466V479.299M547.783 480.133L544.449 483.466L547.783 486.799" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <div class="gb-acct-sub__meta-text">
+                    <p class="gb-acct-sub__meta-label">Next renewal date</p>
+                    <p class="gb-acct-sub__meta-value">19 Jul 2026</p>
+                  </div>
+                </div>
+                <div class="gb-acct-sub__meta-item" data-acct-sub-shipping>
+                  <svg class="gb-acct-sub__icon" xmlns="http://www.w3.org/2000/svg" viewBox="810.449 468.625 20 20" fill="none" aria-hidden="true"><path d="M823.701 481.798V473.632C823.701 472.698 823.701 472.231 823.52 471.875C823.36 471.561 823.105 471.306 822.791 471.146C822.435 470.965 821.968 470.965 821.035 470.965H814.701C813.768 470.965 813.301 470.965 812.945 471.146C812.631 471.306 812.376 471.561 812.216 471.875C812.035 472.231 812.035 472.698 812.035 473.632V479.132C812.035 480.065 812.035 480.532 812.216 480.888C812.376 481.202 812.631 481.457 812.945 481.617C813.301 481.798 813.768 481.798 814.701 481.798H823.701ZM823.701 481.798H827.368C827.835 481.798 828.068 481.798 828.246 481.707C828.403 481.627 828.531 481.5 828.611 481.343C828.701 481.165 828.701 480.932 828.701 480.465V478.184C828.701 477.98 828.701 477.878 828.678 477.782C828.658 477.697 828.624 477.616 828.579 477.541C828.527 477.457 828.455 477.385 828.311 477.241L826.592 475.522C826.448 475.378 826.376 475.306 826.292 475.254C826.217 475.209 826.136 475.175 826.051 475.155C825.955 475.132 825.853 475.132 825.649 475.132H823.701M817.868 483.882C817.868 485.032 816.935 485.965 815.785 485.965C814.634 485.965 813.701 485.032 813.701 483.882C813.701 482.731 814.634 481.798 815.785 481.798C816.935 481.798 817.868 482.731 817.868 483.882ZM827.035 483.882C827.035 485.032 826.102 485.965 824.951 485.965C823.801 485.965 822.868 485.032 822.868 483.882C822.868 482.731 823.801 481.798 824.951 481.798C826.102 481.798 827.035 482.731 827.035 483.882Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <div class="gb-acct-sub__meta-text">
+                    <p class="gb-acct-sub__meta-label">Shipping</p>
+                    <p class="gb-acct-sub__meta-value">123 Express Ln, VIC 3121</p>
+                  </div>
+                </div>
+              </div>
+              <hr class="gb-acct-sub__rule">
+              <div class="gb-acct-sub__summary">
+                <div class="gb-acct-sub__product">
+                  <!-- 196:19033 is a flat #d9d9d9 rectangle on every board: the
+                       product shot is not in the design yet (see SPEC 8b). -->
+                  <span class="gb-acct-sub__thumb" aria-hidden="true"></span>
+                  <div class="gb-acct-sub__product-text">
+                    <p class="gb-acct-sub__product-name">Superfood Greens Gummies</p>
+                    <p class="gb-acct-sub__product-qty">Quantity: 1</p>
+                  </div>
+                </div>
+                <div class="gb-acct-sub__totals">
+                  <p class="gb-acct-sub__more">+4 More Products</p>
+                  <p class="gb-acct-sub__total"><span>Total</span><span>$1245.60</span></p>
+                </div>
+              </div>
+            </div>
+            <div class="gb-acct-sub__foot">
+            <!-- TODO client link: reactivation flow, note 2284:28323 -->
+            <a class="gb-acct-sub__cta" href="#">Re-Activate Subscription</a>
+            </div>
+          </article>
+          </div>
+        </div>
+        </section>
         <section class="gb-acct__view" data-acct-view="detail" hidden></section>
       </div>
     </div>
@@ -226,6 +374,6 @@
 
   <script src="assets/lenis.min.js?v=20260908-r105"></script>
   <script src="assets/main.js?v=20260908-r105"></script>
-  <script src="assets/account.js?v=20260909-a2"></script>
+  <script src="assets/account.js?v=20260909-a3"></script>
 </body>
 </html>

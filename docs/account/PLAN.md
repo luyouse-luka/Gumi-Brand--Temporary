@@ -607,13 +607,13 @@ var view = {
 - 产出：`.gb-acct-sub-card`（状态由 `data-acct-sub-state="active|paused|cancelled"` 切）、
   `.gb-acct-pill`（三色状态徽章）
 
-- [ ] **步骤 1：追加断言（先红）** —— 三个徽章的底色/文字色/圆角/字号，
+- [x] **步骤 1：追加断言（先红）** —— 三个徽章的底色/文字色/圆角/字号，
       卡片在三态下的透明度差异（PAUSED/CANCELLED 的产品行是灰化的），
       值从 `2284-28000_account-overview-desktop.json` 取。
 
-- [ ] **步骤 2：跑判据确认红**
+- [x] **步骤 2：跑判据确认红**
 
-- [ ] **步骤 3：写一份卡片模板，三态用状态类切**
+- [x] **步骤 3：写一份卡片模板，三态用状态类切**
 
 ```html
 <article class="gb-acct-sub-card" data-acct-sub-state="active">
@@ -630,9 +630,9 @@ var view = {
 ⚠ 卡片整块**不可点**（稿上是 CTA 按钮才可点），所以卡片本身不要加
 `cursor:pointer` 或 hover（全局铁律 13 的反面：不可点的别加 hover）。
 
-- [ ] **步骤 4：编译、跑判据确认绿、活性自检**
+- [x] **步骤 4：编译、跑判据确认绿、活性自检**
 
-- [ ] **步骤 5：提交** — `git commit -m "feat(account): My Subscriptions 列表与三种订阅状态"`
+- [x] **步骤 5：提交** — `git commit -m "feat(account): My Subscriptions 列表与三种订阅状态"`
 
 ---
 

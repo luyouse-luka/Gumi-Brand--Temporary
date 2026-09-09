@@ -8,6 +8,99 @@
 
 ---
 
+## Task 5 — My Subscriptions 列表与三种订阅状态（`$build-acct` = `20260909-a3`）
+
+**设计源**：桌面 `2284:28000`（同屏三态）；手机 `2284:28305`（同屏三态）、
+`2284:34046`（Cancelled + Paused）；便签 `28321` paused / `28323` cancelled / `28325` +N。
+
+### 做了什么
+
+- **页头 `.gb-acct-intro`** —— 桌面是 `#daf6b0` 卡片（r14、pad 24/32、min-h 136、
+  标题 800 24/30、副标 400 14/22 且 `max-width: 409`）；手机去掉卡片，改成
+  白色圆形返回键（32、r40）+ 文字（20/24 与 12/18）。**返回键在 Overview 页是关掉的、
+  在这页是开的**，同一个 `Account Header` 组件的两种用法。
+- **订阅卡 `.gb-acct-sub`** —— 白底 + `#e6e6e6` 1px + r12，三段：head（pad 20、
+  底边 1px）/ body（pad 24，手机 20）/ foot（pad 4-24-24，手机 8-16-20）。
+  续订与配送两行桌面并排（gap 16）、手机上下堆叠。产品行固定 `max-width: 308`。
+- **状态徽章 `.gb-acct-pill`** —— 24 高、r52、Inter 500 12/18 大写，左侧是一个
+  16 的白盘套 11.74 的环（`border: 3.07px`）。三态取色全部来自节点：
+  active `#cbf390`/`#005635`、paused `#ffefc3`/`#fd871a`、cancelled `#cccccc`/`#4d4d4d`。
+  新增 `$c-amber-{100,300,500}` 三个 account-only 变量。
+- **三态由 `[data-acct-sub-state]` 驱动**，选择器写在属性上而不是修饰类上，
+  Task 6 的详情页可以直接复用同一个徽章。paused 把 `__summary` 压到 0.4；
+  cancelled 把 `__meta` 与 `__summary` 都压到 0.4，并隐藏续订行。
+- **卡片整块不可点**：稿上只有按钮可点，所以卡片没有 `cursor: pointer` 也没有 hover
+  （全局铁律 13 的反面）。CTA 文案按状态取 `Manage Subscription` / `Re-Activate Subscription`。
+
+### 顺带修正了 Task 4 的一处还原错误
+
+**桌面浅绿带与波浪原来高了 73px**，波浪的扇贝直接横穿侧栏和问候卡。
+原因是 `123` / `114` 这两个数是拿板坐标减错了基准算的：板 `27678` 的 `main` 起点在
+`179.6`，矩形底在 `1043`、波浪顶在 `367`，相对 `main` 应该是 **196.4 / 187.4**。
+已改成 `196` / `187`，手机档（176）本来就是对的、未动。判据补了
+`.gb-acct__wave{top}` 两条，活性自检 C 验过。
+
+同时把手机的起始留白拆开：外壳 `.gb-acct__inner` 只留板上 `Account Header` 自己的
+`padding-top: 8`，剩下的归各视图 —— Overview 因为返回键是关的、文字从 40 起，
+所以 `.gb-acct-ov` 补 `padding-top: 32`；Subscriptions 的返回键是开的，从 8 起。
+两者相加与改动前一致，Overview 的渲染没有位移。
+
+### 稿件两处自相矛盾，按便签 + 手机稿做
+
+1. **CANCELLED 删错了行**：桌面 `28146` 删 Shipping、留 Renewal；便签 `28323` 写的是
+   「Renewal date removed」，手机 `28316`/`34055` 也是删 Renewal。→ 隐藏续订行。
+2. **PAUSED 的续订日期**：便签 `28321` 说显示「暂停到期日」，手机写 `17 Aug 2026`，
+   桌面 `28109` 还留着 active 的 `19 Jul 2026`。→ 取 `17 Aug 2026`。
+
+两条都记进 SPEC §8。
+
+### 文件清单
+
+| 文件 | 改动 |
+|---|---|
+| `account.html` | subscriptions 视图填入 intro + 三张卡；`?v=` 升到 `a3` |
+| `assets/account.scss` | 新增 My Subscriptions / 徽章 / 卡片正文三段；新增 `$c-amber-{100,300,500}`；修正 `.gb-acct::before` 与 `.gb-acct__wave` 的桌面值；`.gb-acct__inner` 手机 padding-top 40→8，`.gb-acct-ov` 补 32 |
+| `assets/account.css` | 编译产物（双写） |
+| `tools/acctcheck.py` | 追加 Task 5 断言 141 条；新增 `("account.html", 390, GOTO_SUBS)` 组；`GOTO_SUBS` 的触发元素改成按宽度选（手机档侧栏是 `display:none`，只能点页内列表卡） |
+| `images/acct-{sub-renewal,sub-shipping,back-arrow}.svg` | 新增 3 个 |
+| `figma/account/cut-icons.py` | JOBS 支持第 4 项「SVG 文件名」——三个同名桌面板导出时按真实页名重命名过，节点文件名与 SVG 文件名对不上。⚠ 仍在 `.gitignore` 的 `figma/` 内，不入库 |
+| `docs/account/SPEC.md` | §8 新增两条稿件错误；§8b 新增缩略图占位与示例订阅数据 |
+
+### 判据
+
+| 判据 | 结果 |
+|---|---|
+| `tools/acctcheck.py` | **314 ok / 0 red**（Task 4 收尾是 173） |
+| 活性自检 A：cancelled 的 `opacity: .4` 改成 1 | 转红 3 条 ✅ |
+| 活性自检 B：删掉 cancelled 的 `[data-acct-sub-renewal]{display:none}` | 转红 2 条 ✅ |
+| 活性自检 C：色带高度退回旧的 123 | 转红 1 条 ✅（证明这条断言真的在管色带） |
+| 活性自检 D：徽章 r52 改 4 | 转红 1 条 ✅ |
+| `tools/rwd.py account.html` | 全绿 |
+| 订阅视图单独扫溢出（13 档，`#subscriptions`） | 0 溢出 |
+| `tools/acctvars.py` | 54 ok / 0 red（新增三个 amber 只 note） |
+| 肉眼对稿 | 1440 对 `2284-28000`、390 对 `2284-28305`，逐块一致 |
+
+### 已知偏差（不要报成 bug）
+
+- **徽章圆环的边框读回来是 `3px` 而不是 `3.07px`**：border-width 的 used value 取整数像素。
+  源码里仍写 `3.07px`（节点值 3.0674），断言按取整后的值写。
+- **圆环直径读回 `11.7344px`**：`11.74px` 落到 1/64 像素网格上的结果，节点值是 11.742387。
+- **桌面 CANCELLED 卡比稿少一行**（隐藏了续订行、保留配送行）——见上文，是照便签做的，
+  与桌面板不同是**有意的**。
+- **PAUSED 卡的日期与桌面板不同**（`17 Aug` vs `19 Jul`）——同上。
+- **产品缩略图是灰块**：`196:19033` 在所有板上都是纯 `#d9d9d9` 矩形，设计里就没有产品图。
+- **CTA 的 hover 用 `opacity: .85`**，与 Task 4 的 `.gb-acct-order__cta` 同一套；
+  返回键沿用 `.gb-acct-refer__action` 的位移写法（反向 `-2px`）。交互态稿里全缺，见待裁决 K。
+
+### 遗留
+
+- `Manage Subscription` 指向 `data-acct-goto="detail"`，详情视图 Task 6 才填内容，
+  现在点过去是空壳。`Re-Activate Subscription` 是 `href="#"`（重启流程无稿）。
+- `account.html` 里 `customstyle.css` / `main.js` 的 `?v=` 还停在 `20260908-r105`，
+  而现站那条线已经滚到 `r124`。**没动**，那是另一条线的批量替换范围。
+
+---
+
 ## Task 4 — Account Overview 视图与三种订单状态（`$build-acct` = `20260909-a2`）
 
 **设计源**：桌面 `2284:27765`（在 `27678` 内）、手机 `2284:27604`；

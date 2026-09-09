@@ -193,6 +193,12 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 - ⚠ **手机 Overview 的问候文案与桌面不一致**：桌面 `Hi, Susanna` / `Welcome back!`
   （有逗号、有感叹号），手机 `Hi Susanna` / `Welcome Back`（无逗号、无感叹号、B 大写）。
   两套都按各自的板做了，需设计方统一。
+- ⚠ **桌面 CANCELLED 卡删错了行**：`2284:28146` 删掉的是 Shipping、保留 Next renewal date；
+  但便签 `28323` 明写「Renewal date removed」，手机 `28316` / `34055` 也都是删 Renewal、
+  保留 Shipping。**按便签 + 手机稿实现**（隐藏续订行），桌面这块是复制时改漏的。
+- ⚠ **桌面 PAUSED 卡的续订日期没跟着改**：便签 `28321` 说暂停态显示的是「暂停到期日」，
+  手机 `28315` / `34056` 写 `17 Aug 2026`，桌面 `28109` 还留着 active 的 `19 Jul 2026`。
+  **按手机稿实现**。
 - `34192` 标题拼成「Restart **subscoption**」
 - `33847` 文案「You need to **another** product in order to delete this one」语法错
 - `30107` 的取消原因列表里「I have too much product」**重复两次**（`29928`/`30286` 是正常的 5 项）
@@ -209,7 +215,10 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | `Preparing, Aug 13` / `It's been shipped` / `Renewal Date, Sep 13` | `account.html` 三个状态槽 | 板上的示例日期与状态 |
 | `Estimated delivery 3-6 business days.` / `You can make changes up until Sep 13, 6:59 AM` | 同上 | 示例文案，实际由订单数据决定 |
 | `Earn rewards and $20 for every referral.` | `account.html` | 金额待客户确认 |
-| 两处 `href="#"`（View Order / Refer a Friend） | `account.html`，已标 `TODO client link` | 目标页未定 |
+| **订阅卡的产品缩略图** | `account.html` 的 `.gb-acct-sub__thumb`（源 `196:19033`） | 板上是 64×64 的纯 `#d9d9d9` 矩形，**设计里根本没有产品图**，不是我们漏切 |
+| `Superfood Greens Gummies` / `Quantity: 1` / `+4 More Products` / `$1245.60` | `account.html` 三张订阅卡 | 板上的示例订阅数据 |
+| `19 Jul 2026`（active）/ `17 Aug 2026`（paused）/ `123 Express Ln, VIC 3121` | 同上 | 板上的示例日期与地址 |
+| 三处 `href="#"`（View Order / Refer a Friend / Re-Activate Subscription） | `account.html`，已标 `TODO client link` | 目标页未定 |
 
 ## 9. 验证判据
 

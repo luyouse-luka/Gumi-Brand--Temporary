@@ -96,7 +96,8 @@ GROUPS = {
         # -- Task 4: Overview, desktop (2284:27765) --
         ("css", ".gb-acct-ov", "row-gap", "16px"),
         # lime band 2284:27679, 203 tall from the top of the 80 header
-        ("css", ".gb-acct::before", "height", "123px"),
+        ("css", ".gb-acct::before", "height", "196px"),
+        ("css", ".gb-acct__wave", "top", "187px"),
         ("css", ".gb-acct::before", "background-color", "rgb(231, 248, 208)"),
         # board fill 2284:27678 -- body is plain white, white cards need contrast
         ("css", ".gb-acct", "background-color", "rgb(250, 249, 248)"),
@@ -177,6 +178,140 @@ GROUPS = {
         ("shown", "[data-acct-view='subscriptions']", True),
         ("css", ".gb-acct-nav__link.is-current", "background-color", "rgb(243, 243, 243)"),
         ("text", ".gb-acct-nav__link.is-current", ["My Subscriptions"]),
+
+        # -- Task 5: My Subscriptions list (2284:28000) --
+        ("css", ".gb-acct-subs", "row-gap", "16px"),
+        ("css", ".gb-acct-intro", "background-color", "rgb(218, 246, 176)"),
+        ("css", ".gb-acct-intro", "border-radius", "14px"),
+        ("css", ".gb-acct-intro", "padding-top", "24px"),
+        ("css", ".gb-acct-intro", "padding-left", "32px"),
+        ("css", ".gb-acct-intro", "min-height", "136px"),
+        ("css", ".gb-acct-intro__title", "font-size", "24px"),
+        ("css", ".gb-acct-intro__title", "line-height", "30px"),
+        ("css", ".gb-acct-intro__title", "font-weight", "800"),
+        ("css", ".gb-acct-intro__title", "letter-spacing", "-0.24px"),
+        ("css", ".gb-acct-intro__title", "color", "rgb(51, 51, 51)"),
+        ("css", ".gb-acct-intro__sub", "font-size", "14px"),
+        ("css", ".gb-acct-intro__sub", "line-height", "22px"),
+        ("css", ".gb-acct-intro__sub", "color", "rgb(102, 102, 102)"),
+        ("css", ".gb-acct-intro__sub", "max-width", "409px"),
+        # 28000 has no back button: the side rail is the way out on desktop
+        ("vis", ".gb-acct-intro__back", False),
+        ("css", ".gb-acct-subs__list", "row-gap", "24px"),
+
+        ("css", ".gb-acct-sub", "background-color", "rgb(255, 255, 255)"),
+        ("css", ".gb-acct-sub", "border-top-width", "1px"),
+        ("css", ".gb-acct-sub", "border-top-color", "rgb(230, 230, 230)"),
+        ("css", ".gb-acct-sub", "border-radius", "12px"),
+        ("css", ".gb-acct-sub__head", "padding-top", "20px"),
+        ("css", ".gb-acct-sub__head", "padding-left", "20px"),
+        ("css", ".gb-acct-sub__head", "justify-content", "space-between"),
+        ("css", ".gb-acct-sub__head", "border-bottom-width", "1px"),
+        ("css", ".gb-acct-sub__head", "border-bottom-color", "rgb(230, 230, 230)"),
+        ("css", ".gb-acct-sub__title", "font-size", "16px"),
+        ("css", ".gb-acct-sub__title", "line-height", "24px"),
+        ("css", ".gb-acct-sub__title", "font-weight", "500"),
+        ("css", ".gb-acct-sub__title", "letter-spacing", "-0.32px"),
+        ("css", ".gb-acct-sub__title", "color", "rgb(26, 26, 26)"),
+
+        # badge: 24 tall, radius 52, Inter 12/18 upper, 4/6/4/4 + gap 4
+        ("css", ".gb-acct-pill", "height", "24px"),
+        ("css", ".gb-acct-pill", "border-radius", "52px"),
+        ("css", ".gb-acct-pill", "padding-left", "4px"),
+        ("css", ".gb-acct-pill", "padding-right", "6px"),
+        ("css", ".gb-acct-pill", "column-gap", "4px"),
+        ("css", ".gb-acct-pill", "font-size", "12px"),
+        ("css", ".gb-acct-pill", "line-height", "18px"),
+        ("css", ".gb-acct-pill", "font-weight", "500"),
+        ("css", ".gb-acct-pill", "text-transform", "uppercase"),
+        ("css", ".gb-acct-pill__dot", "width", "16px"),
+        ("css", ".gb-acct-pill__dot", "background-color", "rgb(255, 255, 255)"),
+        # 11.742387 authored as 11.74 lands on the 1/64 grid as 11.7344, and a
+        # border width is used at whole pixels, so 3.07 reads back as 3
+        ("css", ".gb-acct-pill__dot::before", "width", "11.7344px"),
+        ("css", ".gb-acct-pill__dot::before", "border-top-width", "3px"),
+        ("css", "[data-acct-sub-state='active'] .gb-acct-pill", "background-color", "rgb(203, 243, 144)"),
+        ("css", "[data-acct-sub-state='active'] .gb-acct-pill", "color", "rgb(0, 86, 53)"),
+        ("css", "[data-acct-sub-state='active'] .gb-acct-pill__dot::before", "background-color", "rgb(181, 237, 97)"),
+        ("css", "[data-acct-sub-state='active'] .gb-acct-pill__dot::before", "border-top-color", "rgb(0, 86, 53)"),
+        ("css", "[data-acct-sub-state='paused'] .gb-acct-pill", "background-color", "rgb(255, 239, 195)"),
+        ("css", "[data-acct-sub-state='paused'] .gb-acct-pill", "color", "rgb(253, 135, 26)"),
+        ("css", "[data-acct-sub-state='paused'] .gb-acct-pill__dot::before", "background-color", "rgb(253, 245, 96)"),
+        ("css", "[data-acct-sub-state='paused'] .gb-acct-pill__dot::before", "border-top-color", "rgb(253, 135, 26)"),
+        ("css", "[data-acct-sub-state='cancelled'] .gb-acct-pill", "background-color", "rgb(204, 204, 204)"),
+        ("css", "[data-acct-sub-state='cancelled'] .gb-acct-pill", "color", "rgb(77, 77, 77)"),
+        ("css", "[data-acct-sub-state='cancelled'] .gb-acct-pill__dot::before", "background-color", "rgb(255, 255, 255)"),
+        ("css", "[data-acct-sub-state='cancelled'] .gb-acct-pill__dot::before", "border-top-color", "rgb(102, 102, 102)"),
+
+        ("css", ".gb-acct-sub__body", "padding-top", "24px"),
+        ("css", ".gb-acct-sub__body", "row-gap", "24px"),
+        ("css", ".gb-acct-sub__meta", "flex-direction", "row"),
+        ("css", ".gb-acct-sub__meta", "column-gap", "16px"),
+        ("css", ".gb-acct-sub__meta-item", "column-gap", "8px"),
+        ("css", ".gb-acct-sub__icon", "width", "20px"),
+        ("css", ".gb-acct-sub__icon", "height", "20px"),
+        ("css", ".gb-acct-sub__meta-text", "row-gap", "4px"),
+        ("css", ".gb-acct-sub__meta-label", "font-size", "14px"),
+        ("css", ".gb-acct-sub__meta-label", "line-height", "20px"),
+        ("css", ".gb-acct-sub__meta-label", "color", "rgb(102, 102, 102)"),
+        ("css", ".gb-acct-sub__meta-value", "color", "rgb(26, 26, 26)"),
+        ("css", ".gb-acct-sub__rule", "height", "1px"),
+        ("css", ".gb-acct-sub__rule", "background-color", "rgb(230, 230, 230)"),
+        ("css", ".gb-acct-sub__summary", "row-gap", "16px"),
+        ("css", ".gb-acct-sub__product", "column-gap", "16px"),
+        ("css", ".gb-acct-sub__product", "max-width", "308px"),
+        ("css", ".gb-acct-sub__thumb", "width", "64px"),
+        ("css", ".gb-acct-sub__thumb", "height", "64px"),
+        ("css", ".gb-acct-sub__thumb", "border-radius", "4.57px"),
+        ("css", ".gb-acct-sub__thumb", "background-color", "rgb(217, 217, 217)"),
+        ("css", ".gb-acct-sub__product-text", "row-gap", "6px"),
+        ("css", ".gb-acct-sub__product-name", "font-size", "14px"),
+        ("css", ".gb-acct-sub__product-name", "color", "rgb(26, 26, 26)"),
+        ("css", ".gb-acct-sub__product-qty", "font-size", "12px"),
+        ("css", ".gb-acct-sub__product-qty", "line-height", "18px"),
+        ("css", ".gb-acct-sub__product-qty", "color", "rgb(102, 102, 102)"),
+        ("css", ".gb-acct-sub__totals", "justify-content", "space-between"),
+        ("css", ".gb-acct-sub__more", "font-size", "12px"),
+        ("css", ".gb-acct-sub__more", "color", "rgb(102, 102, 102)"),
+        ("css", ".gb-acct-sub__total", "column-gap", "8px"),
+        ("css", ".gb-acct-sub__total", "font-size", "14px"),
+        ("css", ".gb-acct-sub__total", "color", "rgb(26, 26, 26)"),
+        ("css", ".gb-acct-sub__foot", "padding-top", "4px"),
+        ("css", ".gb-acct-sub__foot", "padding-left", "24px"),
+        ("css", ".gb-acct-sub__foot", "padding-bottom", "24px"),
+        ("css", ".gb-acct-sub__cta", "height", "44px"),
+        ("css", ".gb-acct-sub__cta", "border-radius", "72px"),
+        ("css", ".gb-acct-sub__cta", "background-color", "rgb(0, 86, 53)"),
+        ("css", ".gb-acct-sub__cta", "color", "rgb(255, 255, 255)"),
+        ("css", ".gb-acct-sub__cta", "font-size", "16px"),
+        ("css", ".gb-acct-sub__cta", "font-weight", "500"),
+
+        # 28127 / 28152 / 28159: paused dims the order summary, cancelled dims
+        # the meta row as well. Nothing else on the card changes opacity.
+        ("css", "[data-acct-sub-state='active'] .gb-acct-sub__summary", "opacity", "1"),
+        ("css", "[data-acct-sub-state='paused'] .gb-acct-sub__meta", "opacity", "1"),
+        ("css", "[data-acct-sub-state='paused'] .gb-acct-sub__summary", "opacity", "0.4"),
+        ("css", "[data-acct-sub-state='cancelled'] .gb-acct-sub__meta", "opacity", "0.4"),
+        ("css", "[data-acct-sub-state='cancelled'] .gb-acct-sub__summary", "opacity", "0.4"),
+        # note 28323 and the phone board both drop the renewal line when
+        # cancelled; the desktop board drops shipping instead (see SPEC 8)
+        ("vis", "[data-acct-sub-state='active'] [data-acct-sub-renewal]", True),
+        ("vis", "[data-acct-sub-state='cancelled'] [data-acct-sub-renewal]", False),
+        ("vis", "[data-acct-sub-state='cancelled'] [data-acct-sub-shipping]", True),
+
+        ("text", ".gb-acct-intro__title", ["My Subscriptions"]),
+        ("text", ".gb-acct-sub__title", ["My Subscription"] * 3),
+        ("text", ".gb-acct-pill", ["ACTIVE", "PAUSED", "CANCELLED"]),
+        ("text", ".gb-acct-sub__more", ["+4 More Products"] * 3),
+        # note 28321: paused shows the date it is paused until. Only the phone
+        # boards (28315 / 34056) carry it; the desktop board left the sample
+        # date alone (SPEC 8).
+        ("text", "[data-acct-sub-state='paused'] .gb-acct-sub__meta-value",
+         ["17 Aug 2026", "123 Express Ln, VIC 3121"]),
+        ("text", "[data-acct-sub-state='active'] .gb-acct-sub__meta-value",
+         ["19 Jul 2026", "123 Express Ln, VIC 3121"]),
+        ("text", ".gb-acct-sub__cta",
+         ["Manage Subscription", "Manage Subscription", "Re-Activate Subscription"]),
     ],
     # -- Task 2: desktop header, expanded (2284:34854) --
     ("account.html", 1440, OPEN_MENU): [
@@ -239,7 +374,8 @@ GROUPS = {
         # The greeting is bare here (2284:27610), not the desktop's lime card
         ("css", ".gb-acct-hello", "background-color", "rgba(0, 0, 0, 0)"),
         ("css", ".gb-acct-hello", "padding-left", "0px"),
-        ("css", ".gb-acct__inner", "padding-top", "40px"),
+        ("css", ".gb-acct__inner", "padding-top", "8px"),
+        ("css", ".gb-acct-ov", "padding-top", "32px"),
         ("css", ".gb-acct-hello__title", "font-size", "20px"),
         ("css", ".gb-acct-hello__title", "line-height", "24px"),
         ("css", ".gb-acct-hello__title", "letter-spacing", "-0.2px"),
@@ -249,6 +385,7 @@ GROUPS = {
         ("absent", ".gb-acct-hello__back"),
         # lime band 2284:27606, 240 tall from the top of the 64 header
         ("css", ".gb-acct::before", "height", "176px"),
+        ("css", ".gb-acct__wave", "top", "176px"),
         # 2284:27653: the photo is wider than its clip, so the global
         # img{max-width:100%} must not apply or the rotation spins a squashed box
         ("css", ".gb-acct-hello__bear", "max-width", "none"),
@@ -275,6 +412,37 @@ GROUPS = {
         ("css", ".gb-acct-logout", "font-size", "16px"),
         ("css", ".gb-acct-logout", "line-height", "28px"),
         ("css", ".gb-acct-logout", "letter-spacing", "0.48px"),
+    ],
+    # -- Task 5: My Subscriptions list, phone (2284:28305 / 34046) --
+    ("account.html", 390, GOTO_SUBS): [
+        ("shown", "[data-acct-view='subscriptions']", True),
+        # the card drops on the phone -- plain text on the lime band, and the
+        # back button that 27604 keeps hidden is visible here
+        ("css", ".gb-acct-intro", "background-color", "rgba(0, 0, 0, 0)"),
+        ("css", ".gb-acct-intro", "padding-top", "0px"),
+        ("css", ".gb-acct-intro", "min-height", "0px"),
+        ("css", ".gb-acct-intro", "row-gap", "16px"),
+        ("vis", ".gb-acct-intro__back", True),
+        ("css", ".gb-acct-intro__back", "width", "32px"),
+        ("css", ".gb-acct-intro__back", "height", "32px"),
+        ("css", ".gb-acct-intro__back", "border-radius", "40px"),
+        ("css", ".gb-acct-intro__back", "background-color", "rgb(255, 255, 255)"),
+        ("css", ".gb-acct-intro__text", "row-gap", "8px"),
+        ("css", ".gb-acct-intro__title", "font-size", "20px"),
+        ("css", ".gb-acct-intro__title", "line-height", "24px"),
+        ("css", ".gb-acct-intro__title", "letter-spacing", "-0.2px"),
+        ("css", ".gb-acct-intro__sub", "font-size", "12px"),
+        ("css", ".gb-acct-intro__sub", "line-height", "18px"),
+        ("css", ".gb-acct-subs__list", "row-gap", "32px"),
+        ("css", ".gb-acct-sub__body", "padding-top", "20px"),
+        ("css", ".gb-acct-sub__meta", "flex-direction", "column"),
+        ("css", ".gb-acct-sub__meta", "row-gap", "16px"),
+        ("css", ".gb-acct-sub__foot", "padding-top", "8px"),
+        ("css", ".gb-acct-sub__foot", "padding-left", "16px"),
+        ("css", ".gb-acct-sub__foot", "padding-bottom", "20px"),
+        # 28316: same three states as desktop, same dimming
+        ("css", "[data-acct-sub-state='cancelled'] .gb-acct-sub__meta", "opacity", "0.4"),
+        ("vis", "[data-acct-sub-state='cancelled'] [data-acct-sub-renewal]", False),
     ],
     ("account.html", 390, OPEN_MENU): [
         ("css", "[data-acct-menu]", "width", "164px"),
@@ -322,7 +490,8 @@ def main():
                 else:
                     trigger = {
                         OPEN_MENU: "[data-acct-menu-toggle]",
-                        GOTO_SUBS: ".gb-acct-nav [data-acct-goto='subscriptions']",
+                        GOTO_SUBS: ("%s [data-acct-goto='subscriptions']"
+                                    % (".gb-acct-nav" if w > 767 else ".gb-acct-list")),
                     }[action]
                     try:
                         pg.click(trigger, timeout=2000)
