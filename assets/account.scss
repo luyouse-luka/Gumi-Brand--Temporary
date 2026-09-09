@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260907-a1";
+$build-acct: "20260909-a2";
 
 // ==========================================================================
 // Variables
@@ -536,4 +536,145 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 // (34854 vs 34804). One item, the tail drops out below the phone breakpoint.
 .gb-acct-menu__more {
   @include narrow { display: none; }
+}
+
+// ==========================================================================
+// Account shell — two columns, 2284:27842
+// ==========================================================================
+
+// The 244/352 gutters are asymmetric but identical on all three desktop boards
+// (27678 / 27792 / 28000), so they are intended, not a stray frame. The content
+// column is 1fr rather than the board's fixed 571 so that 1281-1439 pinches the
+// content instead of overflowing the viewport.
+.gb-acct__inner {
+  display: grid;
+  grid-template-columns: 241px minmax(0, 1fr);
+  column-gap: 32px;
+  padding: 48px 352px 144px 244px;
+
+  @include tablet {
+    padding: fluid(0px, 48px) fluid($pad-x-mobile, 352px)
+             fluid(48px, 144px) fluid($pad-x-mobile, 244px);
+  }
+
+  @include narrow {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0 $pad-x-mobile 48px;
+  }
+}
+
+// ==========================================================================
+// Desktop side nav — 2284:27843
+// ==========================================================================
+
+// Not the same set as the phone card: this rail carries nine rows including
+// Account Overview and Contact Preferences, the card carries six. Keeping them
+// as two elements is what the boards show; do not try to reflow one into the other.
+.gb-acct-nav {
+  display: flex;
+  flex-direction: column;
+  row-gap: 16px;
+  width: 241px;
+
+  @include narrow { display: none; }
+}
+
+.gb-acct-nav__group {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  background: $c-white;
+  border-radius: $r-sm;
+}
+
+// Board records padding 24/16 on a fixed-40 row, so the block padding it really
+// renders is (40 - 20) / 2. Height is the value to hold, not the padding.
+.gb-acct-nav__link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 40px;
+  padding-inline: 16px;
+  border: 0;
+  border-radius: $r-sm;
+  background: transparent;
+  text-align: left;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-900;
+
+  transition: trans(background-color, color);
+
+  &.is-current { background: $c-gray-050; }
+
+  // Disabled rows must not light up, and the current row is already filled --
+  // hovering it back to cream would read as leaving the section.
+  &:not([aria-disabled="true"]):not(.is-current) {
+    cursor: pointer;
+    @include hover { background: $c-cream; }
+  }
+
+  &[aria-disabled="true"] {
+    color: $c-gray-400;
+    cursor: default;
+  }
+}
+
+// ==========================================================================
+// Mobile in-page list card — 2284:27617
+// ==========================================================================
+
+.gb-acct-list {
+  display: none;
+  flex-direction: column;
+  row-gap: 16px;
+
+  @include narrow { display: flex; }
+}
+
+.gb-acct-list__group {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: $c-white;
+  border-radius: $r-sm;
+}
+
+.gb-acct-list__item {
+  position: relative;
+
+  // Line 79 is 326 wide inside the 350 group, i.e. inset 12 each side. Drawn on
+  // the second row up, so it never lands under the group's rounded corners.
+  & + &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 12px;
+    right: 12px;
+    height: 1px;
+    background: $c-cream;
+  }
+}
+
+.gb-acct-list__link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 24px 16px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-900;
+
+  transition: trans(background-color, color);
+
+  &:not([aria-disabled="true"]) {
+    cursor: pointer;
+    @include hover { background: $c-cream; }
+  }
+
+  &[aria-disabled="true"] {
+    color: $c-gray-400;
+    cursor: default;
+  }
 }

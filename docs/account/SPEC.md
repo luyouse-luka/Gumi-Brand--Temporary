@@ -159,7 +159,8 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 
 | # | 项 | 冲突 |
 |---|---|---|
-| A | **导航条目四个版本互不一致** | 桌面 `27678` 无 Contact Preferences；桌面 `27792`/`28000` 有；手机页内列表 `27604` 无 Account Overview 也无 Contact Preferences；手机汉堡 `34757` 只有 4 条（Account / My Subscriptions / My Details / Log Out） |
+| A | **导航条目四个版本互不一致** | 桌面 `27678` 无 Contact Preferences；桌面 `27792`/`28000` 有；手机页内列表 `27604` 无 Account Overview 也无 Contact Preferences；手机汉堡 `34757` 只有 4 条（Account / My Subscriptions / My Details / Log Out）。**r-a3 查清了规律**：差异跟着页面走 —— Overview 页 8 项，Subscriptions / Detail 页 9 项。是有意还是漏画，需设计方回答。**已暂按 9 项实现**（PLAN Task 3 定的，一处可改） |
+| A2 | **桌面两栏在 1440 以下如何收敛无稿** | 三个桌面稿一致地画 nav 241 + gap 32 + 内容 **固定 571**，左右 gutter **244 / 352**（不对称，但三稿完全相同，故判定为有意）。合计 1440 恰好铺满，**照抄则 768 档横向溢出 864 > 768**（`rwd.py` 实测）。已暂用「nav 241 固定 + 内容 `minmax(0,1fr)`，gutter 从 244/352 用 `fluid()` 收到 20」，1440 与稿逐值一致 |
 | B | **评论与稿矛盾** | 评论 `2284:27077`：「原来的 contact preference 以及 refer a friend 去除了」，但两处稿上仍画着 |
 | C | **六项只有导航条目、没有页面稿** | Order History / My Details / Change Password / Refer a Friend / Help / Contact Preferences。构想来自 Huel 竞品板，**不可自造** |
 | D | **左侧导航图标未设计** | 便签 `27602`：灰圆是占位 |
@@ -172,6 +173,15 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | K | **交互态全缺** | hover / focus / active / disabled 在稿里与便签里都没有，按现站 `.gb-btn` 的既有值走，需集中登记（全局铁律 13） |
 
 ## 8. 稿件自身的错误（不是我们做错）
+
+- ⚠ **三个桌面稿全叫「Account Overview Desktop」，实际是三个不同页面**（复制未改名，
+  与 MVP 那 5 个同名「Our Story Desktop」是同一个坑）。**别信稿名，按 24px 标题认**：
+
+  | 节点 | 真实身份 | 24px 标题 | 导航 |
+  |---|---|---|---|
+  | `2284:27678` | Account Overview | `Hi, Susanna` | 8 项 |
+  | `2284:28000` | My Subscriptions（列表） | `My Subscriptions` 复数 | 9 项 |
+  | `2284:27792` | Subscription Detail | `My Subscription` 单数 + `Cancel Subscription` | 9 项 |
 
 - `34192` 标题拼成「Restart **subscoption**」
 - `33847` 文案「You need to **another** product in order to delete this one」语法错

@@ -455,7 +455,7 @@ git commit -m "feat(account): account 专用 header 与手机汉堡面板"
   hook `data-acct-goto="<view>"`；`account.js` 的 `view` 模块，暴露
   `view.show(name)`，`name ∈ {overview, subscriptions, detail}`
 
-- [ ] **步骤 1：往 acctcheck.py 追加断言（先红）**
+- [x] **步骤 1：往 acctcheck.py 追加断言（先红）**
 
 ```python
 CHECKS += [
@@ -467,9 +467,9 @@ CHECKS += [
 ```
 桌面竖导航与手机列表卡是**两套并存**，不是同一套折叠 —— 上面四条正是在锁这一点。
 
-- [ ] **步骤 2：跑判据确认红** → `python3 tools/acctcheck.py`
+- [x] **步骤 2：跑判据确认红** → `python3 tools/acctcheck.py`
 
-- [ ] **步骤 3：写结构**
+- [x] **步骤 3：写结构**
 
 ```html
 <nav class="gb-acct-nav" aria-label="Account">
@@ -486,7 +486,7 @@ CHECKS += [
 Help / Contact Preferences）**只出现在导航里，不建页面**，标 `aria-disabled="true"`
 且不可点。待裁决 C 解决前**不许自造页面内容**（全局铁律 3）。
 
-- [ ] **步骤 4：写 view 模块**
+- [x] **步骤 4：写 view 模块**
 
 ```js
 var view = {
@@ -525,10 +525,10 @@ var view = {
 把 `['view', view]` 加进 `modules` 数组与 `window.gumiAcct`。
 ⚠ `view` 必须排在 `acctNav` **之后** —— 它在 `init` 里调 `acctNav.closeMenu()`。
 
-- [ ] **步骤 5：编译、跑判据确认绿、活性自检**（临时把 `.gb-acct-list` 的
+- [x] **步骤 5：编译、跑判据确认绿、活性自检**（临时把 `.gb-acct-list` 的
       `@include narrow` 去掉 → 必须转红）
 
-- [ ] **步骤 6：提交** — `git commit -m "feat(account): 桌面竖导航、手机列表卡与视图切换"`
+- [x] **步骤 6：提交** — `git commit -m "feat(account): 桌面竖导航、手机列表卡与视图切换"`
 
 ---
 

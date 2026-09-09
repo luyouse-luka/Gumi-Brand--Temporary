@@ -168,3 +168,136 @@
     display: none;
   }
 }
+
+.gb-acct__inner {
+  display: grid;
+  grid-template-columns: 241px minmax(0, 1fr);
+  column-gap: 32px;
+  padding: 48px 352px 144px 244px;
+}
+@media (min-width: 768px) and (max-width: 1280px) {
+  .gb-acct__inner {
+    padding: clamp(0px, 0px + 48 * (100vw - 768px) / 513, 48px) clamp(20px, 20px + 332 * (100vw - 768px) / 513, 352px) clamp(48px, 48px + 96 * (100vw - 768px) / 513, 144px) clamp(20px, 20px + 224 * (100vw - 768px) / 513, 244px);
+  }
+}
+@media (max-width: 767px) {
+  .gb-acct__inner {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0 20px 48px;
+  }
+}
+
+.gb-acct-nav {
+  display: flex;
+  flex-direction: column;
+  row-gap: 16px;
+  width: 241px;
+}
+@media (max-width: 767px) {
+  .gb-acct-nav {
+    display: none;
+  }
+}
+
+.gb-acct-nav__group {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  background: #ffffff;
+  border-radius: 8px;
+}
+
+.gb-acct-nav__link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 40px;
+  padding-inline: 16px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: #1a1a1a;
+  transition: background-color 0.2s cubic-bezier(0.33, 1, 0.68, 1), color 0.2s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.gb-acct-nav__link.is-current {
+  background: #f3f3f3;
+}
+.gb-acct-nav__link:not([aria-disabled=true]):not(.is-current) {
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .gb-acct-nav__link:not([aria-disabled=true]):not(.is-current):hover {
+    background: #faf9f8;
+  }
+}
+.gb-acct-nav__link[aria-disabled=true] {
+  color: #808080;
+  cursor: default;
+}
+
+.gb-acct-list {
+  display: none;
+  flex-direction: column;
+  row-gap: 16px;
+}
+@media (max-width: 767px) {
+  .gb-acct-list {
+    display: flex;
+  }
+}
+
+.gb-acct-list__group {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: #ffffff;
+  border-radius: 8px;
+}
+
+.gb-acct-list__item {
+  position: relative;
+}
+.gb-acct-list__item + .gb-acct-list__item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: #faf9f8;
+}
+
+.gb-acct-list__link {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 24px 16px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: #1a1a1a;
+  transition: background-color 0.2s cubic-bezier(0.33, 1, 0.68, 1), color 0.2s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.gb-acct-list__link:not([aria-disabled=true]) {
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .gb-acct-list__link:not([aria-disabled=true]):hover {
+    background: #faf9f8;
+  }
+}
+.gb-acct-list__link[aria-disabled=true] {
+  color: #808080;
+  cursor: default;
+}
