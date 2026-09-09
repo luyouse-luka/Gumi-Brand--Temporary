@@ -8,6 +8,93 @@
 
 ---
 
+## Task 4 — Account Overview 视图与三种订单状态（`$build-acct` = `20260909-a2`）
+
+**设计源**：桌面 `2284:27765`（在 `27678` 内）、手机 `2284:27604`；
+三态 `2284:27450` preparing / `27499` shipped / `27548` renewal。
+
+### 做了什么
+
+- **问候块 `.gb-acct-hello`** —— 桌面是 `#daf6b0` 卡片（r14、pad 24/32、gap 8、
+  `Hi, Susanna` 800 24/30、`Welcome back!` 400 14/22）；手机去掉卡片只剩文字（20/24 与 12/18）。
+- **订单卡 `.gb-acct-order`** 三态，`data-acct-order-state` authored 在元素上，无 JS。
+  preparing / shipped 深绿白字，**renewal 整个反过来**：卡底 `#cbf390`、标题变
+  `#a7e746` 的标签块（r4、pad-inline 8）、正文与状态转深绿、CTA 变绿底白字且文案是
+  `Manage Subscription`。
+- **Refer a Friend 卡 `.gb-acct-refer`** —— `#f5f1e9` 底、圆形头像（桌面 80 / 手机 66）、
+  `#cbf390` 标签、白色圆形箭头按钮（40 / 32）。
+- **Logout 按钮 `.gb-acct-logout`** —— 手机专有（桌面的 Logout 在侧栏），52 高、r72、深绿底。
+- **浅绿带 + 波浪** —— `.gb-acct::before` 把 header 的 `#e7f8d0` 往下延伸，底边接一个
+  `.gb-scallop`（新变体 `--mint-to-cream`）。页面底色设成 `$c-cream`（`2284:27604` 的 fill），
+  否则白色的列表卡组在 body 的纯白上完全看不出来。
+- **问候区装饰小熊** —— lime 描边 + 旋转 18.47° 的小熊照片，裁在 113.9x145（桌面）框内，
+  桌面允许它探出卡片右边 41.9。
+
+### 三个把人绊住的地方
+
+1. **三个 icon 槽在板上是 `visible=false`**：两个 CTA 按钮的图标与手机问候区的返回箭头。
+   组件自带槽、节点 JSON 里结构完整，只有 `visible` 字段能分辨。
+   **交叉验证**：Figma 导出不含隐藏节点，所以整块 board SVG 在那个位置没有 path ——
+   `cut-icons.py` 报「no path inside」是**确认**不是失败。三个都没做。
+2. **旋转节点的 bbox 不是画面**：小熊 `2284:27653` 记的 186.5x164 是旋转后的包围盒，
+   真正的框是 188.9x145.7（桌面）。另外**不能把图居中于裁切框** —— 熊在自己的 PNG 里偏左，
+   居中会露出空白的右半边；按节点坐标算出 `left: -33.5px` 才对。
+3. **`img { max-width: 100% }` 会压垮它**：装饰图故意比裁切框宽，全局规则把它压回框宽，
+   旋转后就转出一个扁盒子。判据里锁了 `max-width: none`。同族坑见
+   memory `theme-img-rule-blows-up-unsized-img`。
+
+### 文件清单
+
+| 文件 | 改动 |
+|---|---|
+| `account.html` | overview 视图填入 hello / order（三态槽）/ refer / logout + 顶部 `.gb-acct__wave` |
+| `assets/account.scss` | 新增 Overview / 订单卡 / Refer / Logout / 装饰 / 波浪变体六段；新增 `$c-lime-300` `$c-lime-500` 两个 account-only 变量 |
+| `assets/account.css` | 编译产物（双写） |
+| `tools/acctcheck.py` | 追加 Task 4 断言 88 条；新增 `STATE_PREPARING` / `STATE_RENEWAL` 两个动作 |
+| `images/refer-friends.{jpg,webp}` | 新增，Refer 卡头像 |
+| `images/acct-bear-side.{png,webp}` | 新增，问候区装饰小熊 |
+| `images/acct-{order-preparing,order-shipped,order-renewal,logout,action-arrow,bear-halo}.svg` | 新增 6 个 |
+| `figma/account/make-images.py` | **新建**（位图派生）⚠ 在 `.gitignore` 的 `figma/` 内，不入库，与 `optimize-images.py` 同惯例 |
+| `figma/account/cut-icons.py` | **新建**（从整块 board SVG 按节点 bbox 裁图标）同上不入库 |
+| `docs/account/SPEC.md` | 待裁决新增 L / M；稿件错误新增两条；新增 §8b「上线前必须替换的占位内容」 |
+
+### 判据
+
+| 判据 | 结果 |
+|---|---|
+| `tools/acctcheck.py` | **173 ok / 0 red** |
+| 活性自检 A：删掉 renewal 的整块状态覆盖 | 转红 7 条 ✅ |
+| 活性自检 B：删掉 `[data-state]{display:none}` | 转红 7 条 ✅（三个文案槽同时显示） |
+| `tools/rwd.py account.html` | 全绿 |
+| `tools/acctvars.py` | 54 ok / 0 red（两个 account-only 变量只 note） |
+| 三态肉眼对稿 | 390/1440 各三态截图逐个比对 `2284-27450/27499/27548`，一致 |
+| 卡片尺寸实测 | 桌面 hello 571x136 / order 571x168 / refer 571x128，手机 refer 350x98 —— 与稿一致 |
+
+⚠ **判据里读状态切换后的颜色必须等够过渡时间**：首跑 2 red 是 `rgb(19,99,68)`，
+那是 `$t-base` 0.2s 走到一半的插值，不是样式错。等待已从 120ms 提到 450ms。
+
+### 已知偏差（不要报成 bug）
+
+- **手机订单卡 192 高，稿 188**。差 4 来自 label：稿的 TEXT bbox 记 20，但 style 的
+  line-height 是 24，CSS 行盒取 24。属 Figma 与 CSS 的固有半行距差异
+  （memory `figma-rounds-half-leading-css-does-not`），未强压。
+- **手机波浪 48 高，稿的 `Spacer Bottom` 是 36**。复用了现站 `.gb-scallop`（全站一致优先），
+  已登记待裁决 L。
+- **桌面 hello 卡 `min-height: 136px`**：稿的 frame 固定 136 而内容只有 108，
+  多出的 28 是文字下方的空白，不是 padding。
+- **手机 hello 到 order 的间距是 32，稿 34**：32 是 container `2284:27615` 自己的 gap，
+  34 是跨容器量出来的。取了前者。
+- **桌面 renewal 态是外推的**（`27548` 只有手机稿），见待裁决 M。
+
+### 遗留
+
+- **`images/refer-friends.jpg` 画面里有第三方品牌 logo**（帽子上的 Prada 标）——
+  已列进 SPEC §8b「上线前必须替换」。
+- Subscriptions / Detail 两个视图仍是空壳（Task 5–7）。
+- 导航项左侧的灰色圆点没做（便签 `27602` 说是待设计图标的占位，PLAN 明确不做）。
+
+---
+
 ## Task 3 — 桌面竖导航、手机列表卡与视图切换（`$build-acct` = `20260909-a2`）
 
 **设计源**：桌面 `2284:27843`（在 `27792` 内，与 `27678`/`28000` 逐值相同）、

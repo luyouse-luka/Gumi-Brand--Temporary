@@ -36,6 +36,8 @@ $build-acct: "20260909-a2";
 // Brand
 $c-lime:        #b5ed61;
 $c-lime-600:    #85c947;
+$c-lime-500:    #a7e746;   // account-only: renewal label chip 2284:27548
+$c-lime-300:    #cbf390;   // account-only: refer tag + renewal card 2284:27548
 $c-lime-200:    #daf6b0;
 $c-lime-150:    #e7f8d0;
 $c-lime-100:    #f4fce7;
@@ -386,7 +388,25 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 // ==========================================================================
 
 .gb-acct {
+  position: relative;
   min-height: 40vh;
+  // 2284:27604 / 27678 board fill. customstyle gives body plain white, and the
+  // white list-card groups vanish against it.
+  background: $c-cream;
+
+  // 2284:27606 / 27679: a lime band that carries the header colour down past the
+  // greeting. On the board it starts at the top of the header, so what is left to
+  // draw below it is the board height minus the header (240-64 phone, 203-80 desktop).
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 123px;
+    background: $c-lime-150;
+
+    @include narrow { height: 176px; }
+    @include tablet { height: fluid(176px, 123px); }
+  }
 }
 
 .gb-acct-vh {
@@ -547,6 +567,7 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 // column is 1fr rather than the board's fixed 571 so that 1281-1439 pinches the
 // content instead of overflowing the viewport.
 .gb-acct__inner {
+  position: relative;   // keeps the content above .gb-acct::before
   display: grid;
   grid-template-columns: 241px minmax(0, 1fr);
   column-gap: 32px;
@@ -559,7 +580,9 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
   @include narrow {
     grid-template-columns: minmax(0, 1fr);
-    padding: 0 $pad-x-mobile 48px;
+    // 40 is the gap from the header rule to the greeting on 2284:27604; the
+    // board's own header frame is 124 tall but most of that is a hidden node.
+    padding: 40px $pad-x-mobile 48px;
   }
 }
 
@@ -677,4 +700,378 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
     color: $c-gray-400;
     cursor: default;
   }
+}
+
+// ==========================================================================
+// Account Overview — 2284:27765 desktop, 2284:27604 phone
+// ==========================================================================
+
+.gb-acct-ov {
+  display: flex;
+  flex-direction: column;
+  row-gap: 16px;
+
+  @include narrow { row-gap: 32px; }
+}
+
+// Greeting 2284:27766 / 2284:27610. The phone drops the card entirely -- the
+// lime fill and radius are desktop-only, so they cannot ramp; they switch at 767.
+.gb-acct-hello {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+  position: relative;   // the bear decoration anchors here
+  // The board frame is a fixed 136 while its content measures 108, so the extra
+  // 28 is empty space under the text, not a padding value.
+  min-height: 136px;
+  padding: 24px 32px;
+  background: $c-lime-200;
+  border-radius: 14px;
+
+  @include narrow {
+    min-height: 0;
+    padding: 0;
+    background: none;
+    border-radius: 0;
+  }
+}
+
+.gb-acct-hello__title {
+  margin: 0;
+  @include font($font-brand-stack, 24px, 800, 30px, -0.24px);
+  color: $c-gray-800;
+
+  @include narrow { @include font($font-brand-stack, 20px, 800, 24px, -0.2px); }
+  @include tablet { font-size: fluid(20px, 24px); line-height: fluid(24px, 30px); }
+}
+
+.gb-acct-hello__sub {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 22px, -0.28px);
+  color: $c-gray-600;
+
+  @include narrow { @include font($font-brand-stack, 12px, 400, 18px, -0.24px); }
+  @include tablet { font-size: fluid(12px, 14px); line-height: fluid(18px, 22px); }
+}
+
+// ==========================================================================
+// Current order card — 2284:27770 shipped / 27450 preparing / 27548 renewal
+// ==========================================================================
+
+// The state is authored on the element; nothing switches it at runtime. Each
+// text slot ships all three strings and only the matching one is displayed --
+// the wording differs per state, so a colour-only swap could not do it.
+.gb-acct-order {
+  display: flex;
+  flex-direction: column;
+  row-gap: 20px;
+  padding: 24px 32px;
+  background: $c-green;
+  border-radius: $r-sm;
+
+  @include narrow { row-gap: 24px; padding: 24px; }
+
+  [data-state] { display: none; }
+
+  @each $s in preparing, shipped, renewal {
+    &[data-acct-order-state="#{$s}"] [data-state="#{$s}"] { display: inline; }
+  }
+
+  // Renewal inverts the card: light fill, dark text, solid button.
+  &[data-acct-order-state="renewal"] {
+    background: $c-lime-300;
+
+    .gb-acct-order__label {
+      padding-inline: 8px;
+      background: $c-lime-500;
+      border-radius: $r-xs;
+      color: $c-green;
+      // The chip is sized off the board's 16/24 text in every tier: it is a
+      // state, not a breakpoint, so it must not ride the desktop type ramp.
+      @include font($font-brand-stack, 16px, 500, 24px, -0.32px);
+    }
+
+    .gb-acct-order__status,
+    .gb-acct-order__note { color: $c-green; }
+
+    .gb-acct-order__cta {
+      background: $c-green;
+      color: $c-white;
+    }
+  }
+}
+
+.gb-acct-order__body {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+// Desktop puts the label and the status on one line (gap 12); the phone stacks
+// them (gap 4).
+.gb-acct-order__head {
+  display: flex;
+  align-items: center;
+  column-gap: 12px;
+
+  @include narrow {
+    flex-direction: column;
+    align-items: flex-start;
+    row-gap: 4px;
+  }
+}
+
+.gb-acct-order__label {
+  width: fit-content;   // so the renewal chip hugs its text instead of the row
+  margin: 0;
+  @include font($font-brand-stack, 20px, 400, 30px, -0.4px);
+  color: $c-white;
+
+  @include narrow { @include font($font-brand-stack, 16px, 500, 24px, -0.32px); }
+  @include tablet { font-size: fluid(16px, 20px); line-height: fluid(24px, 30px); }
+}
+
+.gb-acct-order__status {
+  display: flex;
+  align-items: center;
+  column-gap: 8px;
+  margin: 0;
+  @include font($font-brand-stack, 20px, 400, 30px, -0.4px);
+  color: $c-lime;
+
+  @include narrow { @include font($font-brand-stack, 18px, 400, 26px, -0.36px); }
+  @include tablet { font-size: fluid(18px, 20px); line-height: fluid(26px, 30px); }
+}
+
+.gb-acct-order__icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+}
+
+.gb-acct-order__note {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 22px, -0.28px);
+  color: $c-white;
+
+  @include narrow { @include font($font-brand-stack, 12px, 400, 18px, -0.24px); }
+  @include tablet { font-size: fluid(12px, 14px); line-height: fluid(18px, 22px); }
+}
+
+// 40 tall with 32 side padding. Figma records paddingTop 14, but that is measured
+// off the 12px ink box, not the 24 line box -- 14+24+14 would be 52.
+.gb-acct-order__cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding-inline: 32px;
+  border-radius: $r-pill;
+  background: $c-white;
+  @include font($font-brand-stack, 16px, 500, 24px, 0);
+  color: $c-green;
+
+  transition: trans(background-color, color, opacity);
+
+  @include hover { opacity: 0.85; }
+}
+
+// ==========================================================================
+// Refer a Friend card — 2284:27780 desktop / 2284:27639 phone
+// ==========================================================================
+
+.gb-acct-refer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 16px;
+  padding: 24px 32px;
+  background: $c-sand;
+  border-radius: $r-sm;
+
+  @include narrow { padding: 16px; }
+}
+
+.gb-acct-refer__body {
+  display: flex;
+  align-items: center;
+  column-gap: 16px;
+
+  @include narrow { column-gap: 12px; }
+}
+
+.gb-acct-refer__img {
+  flex: none;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+
+  @include narrow { width: 66px; height: 66px; }
+  @include tablet { width: fluid(66px, 80px); height: fluid(66px, 80px); }
+}
+
+.gb-acct-refer__text {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+
+  @include narrow { row-gap: 4px; }
+}
+
+.gb-acct-refer__tag {
+  width: fit-content;
+  margin: 0;
+  padding: 2px 8px;
+  background: $c-lime-300;
+  border-radius: $r-xs;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-green-900;
+
+  @include narrow {
+    padding: 2px 6px;
+    @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
+  }
+}
+
+.gb-acct-refer__note {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 22px, -0.28px);
+  color: $c-navy;
+
+  @include narrow { @include font($font-brand-stack, 12px, 400, 18px, -0.24px); }
+}
+
+.gb-acct-refer__action {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: $c-white;
+  color: $c-green;
+
+  transition: trans(background-color, transform);
+
+  @include narrow { width: 32px; height: 32px; }
+  @include tablet { width: fluid(32px, 40px); height: fluid(32px, 40px); }
+
+  @include hover { transform: translateX(2px); }
+}
+
+.gb-acct-refer__arrow {
+  width: 25px;
+  height: 25px;
+
+  @include narrow { width: 20px; height: 20px; }
+  @include tablet { width: fluid(20px, 25px); height: fluid(20px, 25px); }
+}
+
+// ==========================================================================
+// Logout button — 2284:27648, phone only
+// ==========================================================================
+
+// Desktop has no such button: Logout is the last row of the side rail (Task 3).
+.gb-acct-logout {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  column-gap: 8px;
+  width: 100%;
+  height: 52px;
+  padding-inline: 64px;
+  border: 1px solid $c-green;
+  border-radius: 72px;
+  background: $c-green;
+  @include font($font-brand-stack, 16px, 500, 28px, 0.48px);
+  color: $c-white;
+  cursor: pointer;
+
+  transition: trans(background-color, color, border-color);
+
+  @include narrow { display: flex; }
+
+  @include hover {
+    background: $c-green-900;
+    border-color: $c-green-900;
+  }
+}
+
+.gb-acct-logout__icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+}
+
+// Greeting decoration 2284:27651 "Artwork": a lime outline with the bear photo
+// on top, clipped to a box smaller than the photo. The photo node carries an
+// 18.47deg rotation, so its 186x164 bbox is NOT the artwork -- 188.9x145.7 is
+// the box before rotation, and it sits centred in the clip (board centres differ
+// by 3px). Desktop lets it hang 41.9 past the card's right edge.
+.gb-acct-hello__art {
+  position: absolute;
+  top: 31.4px;
+  right: -41.9px;
+  width: 113.9px;
+  height: 145px;
+  overflow: hidden;
+  pointer-events: none;
+
+  @include narrow { top: 24px; right: 16px; width: 94.2px; height: 120px; }
+  @include tablet {
+    top: fluid(24px, 31.4px);
+    right: fluid(16px, -41.9px);
+    width: fluid(94.2px, 113.9px);
+    height: fluid(120px, 145px);
+  }
+}
+
+.gb-acct-hello__halo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+// Not centred in the clip: the bear sits left of centre inside its own PNG, so
+// centring the file would show the empty right half. These offsets put the
+// unrotated box where the board has it, then it spins about its own centre.
+.gb-acct-hello__bear {
+  position: absolute;
+  top: -1px;
+  left: -33.5px;
+  width: 188.9px;
+  height: 145.7px;
+  // The photo is deliberately wider than its clip, so the global img{max-width:100%}
+  // has to be lifted -- otherwise it collapses to the clip width and the rotation
+  // spins a squashed box.
+  max-width: none;
+  transform: rotate(18.47deg);
+
+  @include narrow { top: -0.85px; left: -27.7px; width: 156.3px; height: 120.7px; }
+  @include tablet {
+    top: fluid(-0.85px, -1px);
+    left: fluid(-27.7px, -33.5px);
+    width: fluid(156.3px, 188.9px);
+    height: fluid(120.7px, 145.7px);
+  }
+}
+
+// Lime band -> page cream. customstyle ships --to-white (lime-150 -> white) but
+// the account board's page fill is cream, and on the wave that difference shows.
+.gb-scallop--mint-to-cream { --wave-bg: #{$c-lime-150}; --wave-fg: #{$c-cream}; }
+
+// Sits where the band ends. Desktop overlaps it by 9 -- the board puts the wave
+// top at 367 and the rectangle bottom at 376, and the wave's own solid band
+// carries the lime down through the overlap.
+.gb-acct__wave {
+  position: absolute;
+  top: 114px;
+  left: 0;
+  right: 0;
+
+  @include narrow { top: 176px; }
+  @include tablet { top: fluid(176px, 114px); }
 }

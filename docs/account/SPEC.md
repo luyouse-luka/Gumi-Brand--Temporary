@@ -171,6 +171,8 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | I | **Download invoice 是否做** | 便签 `27444`：「Only do if very very very cheap. Otherwise, remove.」 |
 | J | **Flavour 是否可编辑** | 便签 `30913`·`30915`：「for now I don't think it's an option」 |
 | K | **交互态全缺** | hover / focus / active / disabled 在稿里与便签里都没有，按现站 `.gb-btn` 的既有值走，需集中登记（全局铁律 13） |
+| L | **手机波浪 36 vs 现站组件 48** | account 稿的 `Spacer Bottom`（`2284:27607`）在 390 档是 36 高，现站 `.gb-scallop` 的 390 档算出 48（`--sc-band` 13.3 + amp 34.7），注释写着 48 才是「design's own strip height」。已复用现站组件（全站一致优先），差 12 |
+| M | **桌面 Renewal 态无稿** | `2284:27548` 只有手机版。桌面的 renewal 沿用了桌面的字号阶梯（20/30），只有配色与文案按 renewal 走；`It's upcoming!` 标签块在两端都锁 16/24（它是状态不是断点） |
 
 ## 8. 稿件自身的错误（不是我们做错）
 
@@ -183,10 +185,31 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
   | `2284:28000` | My Subscriptions（列表） | `My Subscriptions` 复数 | 9 项 |
   | `2284:27792` | Subscription Detail | `My Subscription` 单数 + `Cancel Subscription` | 9 项 |
 
+- ⚠ **三个 icon 槽在板上是 `visible=false`，不是漏画**：两个 CTA 按钮的图标
+  （`191:3907` View Order / `191:3892` Manage Subscription）与手机问候区的返回箭头
+  （`2284:27611`）。组件自带图标槽，板上关掉了。**判据**：Figma 导出不含隐藏节点，
+  所以整块 board SVG 在那个位置没有 path —— 「裁不出来」是确认而非失败。
+  加图标前先查节点 JSON 的 `visible`。
+- ⚠ **手机 Overview 的问候文案与桌面不一致**：桌面 `Hi, Susanna` / `Welcome back!`
+  （有逗号、有感叹号），手机 `Hi Susanna` / `Welcome Back`（无逗号、无感叹号、B 大写）。
+  两套都按各自的板做了，需设计方统一。
 - `34192` 标题拼成「Restart **subscoption**」
 - `33847` 文案「You need to **another** product in order to delete this one」语法错
 - `30107` 的取消原因列表里「I have too much product」**重复两次**（`29928`/`30286` 是正常的 5 项）
 - 5 个手机稿的 `Chrome browser` 显示 `gumi.com.au` + 电量 84% + 8:39 —— 假舞台
+
+## 8b. 上线前必须替换的占位内容
+
+混在正文里看不出来，不单独列就一定会带上线。
+
+| 项 | 在哪 | 为什么必须换 |
+|---|---|---|
+| **Refer a Friend 配图** | `images/refer-friends.jpg` / `.webp`（源 `imageRef 59db3bf5…`） | 板上的图是市售摄影素材，**画面里有第三方品牌 logo（帽子上的 Prada 标）**。客户站点直接用有商标风险，且授权来源未知 |
+| `Hi, Susanna` / `Welcome back!` | `account.html` | 板上的示例姓名，接后端后应取真实用户名 |
+| `Preparing, Aug 13` / `It's been shipped` / `Renewal Date, Sep 13` | `account.html` 三个状态槽 | 板上的示例日期与状态 |
+| `Estimated delivery 3-6 business days.` / `You can make changes up until Sep 13, 6:59 AM` | 同上 | 示例文案，实际由订单数据决定 |
+| `Earn rewards and $20 for every referral.` | `account.html` | 金额待客户确认 |
+| 两处 `href="#"`（View Order / Refer a Friend） | `account.html`，已标 `TODO client link` | 目标页未定 |
 
 ## 9. 验证判据
 

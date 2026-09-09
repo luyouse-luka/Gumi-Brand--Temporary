@@ -22,6 +22,8 @@ CHROME = pathlib.Path.home() / ".cache/ms-playwright/chromium-1217/chrome-linux6
 
 OPEN_MENU = "open-menu"
 GOTO_SUBS = "goto-subscriptions"
+STATE_PREPARING = "state-preparing"
+STATE_RENEWAL = "state-renewal"
 
 # group key -> list of checks
 #   ("css",  selector, prop, expected)
@@ -90,6 +92,84 @@ GROUPS = {
         ("shown", "[data-acct-view='overview']", True),
         ("shown", "[data-acct-view='subscriptions']", False),
         ("shown", "[data-acct-view='detail']", False),
+
+        # -- Task 4: Overview, desktop (2284:27765) --
+        ("css", ".gb-acct-ov", "row-gap", "16px"),
+        # lime band 2284:27679, 203 tall from the top of the 80 header
+        ("css", ".gb-acct::before", "height", "123px"),
+        ("css", ".gb-acct::before", "background-color", "rgb(231, 248, 208)"),
+        # board fill 2284:27678 -- body is plain white, white cards need contrast
+        ("css", ".gb-acct", "background-color", "rgb(250, 249, 248)"),
+        # greeting 2284:27766 -- a card here, bare text on the phone
+        ("css", ".gb-acct-hello", "background-color", "rgb(218, 246, 176)"),
+        ("css", ".gb-acct-hello", "border-radius", "14px"),
+        ("css", ".gb-acct-hello", "padding-top", "24px"),
+        ("css", ".gb-acct-hello", "padding-left", "32px"),
+        ("css", ".gb-acct-hello", "row-gap", "8px"),
+        ("css", ".gb-acct-hello", "height", "136px"),
+        ("css", ".gb-acct-hello__title", "font-size", "24px"),
+        ("css", ".gb-acct-hello__title", "line-height", "30px"),
+        ("css", ".gb-acct-hello__title", "letter-spacing", "-0.24px"),
+        ("css", ".gb-acct-hello__title", "font-weight", "800"),
+        ("css", ".gb-acct-hello__title", "color", "rgb(51, 51, 51)"),
+        ("css", ".gb-acct-hello__sub", "font-size", "14px"),
+        ("css", ".gb-acct-hello__sub", "line-height", "22px"),
+        ("css", ".gb-acct-hello__sub", "color", "rgb(102, 102, 102)"),
+        # order card 2284:27770, board shows the shipped state
+        ("css", ".gb-acct-order", "background-color", "rgb(0, 86, 53)"),
+        ("css", ".gb-acct-order", "border-radius", "8px"),
+        ("css", ".gb-acct-order", "padding-top", "24px"),
+        ("css", ".gb-acct-order", "padding-left", "32px"),
+        ("css", ".gb-acct-order__label", "font-size", "20px"),
+        ("css", ".gb-acct-order__label", "line-height", "30px"),
+        ("css", ".gb-acct-order__label", "letter-spacing", "-0.4px"),
+        ("css", ".gb-acct-order__label", "color", "rgb(255, 255, 255)"),
+        ("css", ".gb-acct-order__status", "font-size", "20px"),
+        ("css", ".gb-acct-order__status", "color", "rgb(181, 237, 97)"),
+        ("css", ".gb-acct-order__note", "font-size", "14px"),
+        ("css", ".gb-acct-order__note", "line-height", "22px"),
+        ("css", ".gb-acct-order__cta", "height", "40px"),
+        ("css", ".gb-acct-order__cta", "background-color", "rgb(255, 255, 255)"),
+        ("css", ".gb-acct-order__cta", "color", "rgb(0, 86, 53)"),
+        ("css", ".gb-acct-order__cta", "font-size", "16px"),
+        ("text", ".gb-acct-order__cta", ["View Order"]),
+        # refer card 2284:27780
+        ("css", ".gb-acct-refer", "background-color", "rgb(245, 241, 233)"),
+        ("css", ".gb-acct-refer", "border-radius", "8px"),
+        ("css", ".gb-acct-refer", "padding-left", "32px"),
+        ("css", ".gb-acct-refer", "column-gap", "16px"),
+        ("css", ".gb-acct-refer__img", "width", "80px"),
+        ("css", ".gb-acct-refer__img", "height", "80px"),
+        ("css", ".gb-acct-refer__tag", "background-color", "rgb(203, 243, 144)"),
+        ("css", ".gb-acct-refer__tag", "border-radius", "4px"),
+        ("css", ".gb-acct-refer__tag", "color", "rgb(0, 65, 40)"),
+        ("css", ".gb-acct-refer__action", "width", "40px"),
+        ("css", ".gb-acct-refer__action", "background-color", "rgb(255, 255, 255)"),
+        # the phone board's standalone Logout button is not on the desktop board --
+        # Logout lives in the side rail there (Task 3)
+        ("vis", ".gb-acct-logout", False),
+    ],
+    # -- Task 4: the two other order states (2284:27450 / 2284:27548) --
+    # No JS switches these; the state is authored on the element. Asserting them
+    # needs the attribute set from the outside, which is what SET_STATE does.
+    ("account.html", 1440, STATE_PREPARING): [
+        ("text", ".gb-acct-order__status", ["Preparing, Aug 13"]),
+        ("text", ".gb-acct-order__note", ["We’re preparing your order."]),
+        ("css", ".gb-acct-order", "background-color", "rgb(0, 86, 53)"),
+        ("text", ".gb-acct-order__cta", ["View Order"]),
+    ],
+    ("account.html", 1440, STATE_RENEWAL): [
+        # light card, dark text -- the inverse of the other two
+        ("css", ".gb-acct-order", "background-color", "rgb(203, 243, 144)"),
+        ("css", ".gb-acct-order__label", "background-color", "rgb(167, 231, 70)"),
+        ("css", ".gb-acct-order__label", "border-radius", "4px"),
+        ("css", ".gb-acct-order__label", "color", "rgb(0, 86, 53)"),
+        ("css", ".gb-acct-order__status", "color", "rgb(0, 86, 53)"),
+        ("css", ".gb-acct-order__cta", "background-color", "rgb(0, 86, 53)"),
+        ("css", ".gb-acct-order__cta", "color", "rgb(255, 255, 255)"),
+        ("text", ".gb-acct-order__label", ["It’s upcoming!"]),
+        ("text", ".gb-acct-order__status", ["Renewal Date, Sep 13"]),
+        ("text", ".gb-acct-order__cta", ["Manage Subscription"]),
     ],
     # -- Task 3: clicking a nav item swaps the view --
     ("account.html", 1440, GOTO_SUBS): [
@@ -154,6 +234,47 @@ GROUPS = {
           "My Details", "Change Password",
           "Refer a Friend",
           "Help"]),
+
+        # -- Task 4: Overview, phone (2284:27604) --
+        # The greeting is bare here (2284:27610), not the desktop's lime card
+        ("css", ".gb-acct-hello", "background-color", "rgba(0, 0, 0, 0)"),
+        ("css", ".gb-acct-hello", "padding-left", "0px"),
+        ("css", ".gb-acct__inner", "padding-top", "40px"),
+        ("css", ".gb-acct-hello__title", "font-size", "20px"),
+        ("css", ".gb-acct-hello__title", "line-height", "24px"),
+        ("css", ".gb-acct-hello__title", "letter-spacing", "-0.2px"),
+        ("css", ".gb-acct-hello__sub", "font-size", "12px"),
+        ("css", ".gb-acct-hello__sub", "line-height", "18px"),
+        # no back arrow: 2284:27611 is visible=false on the board
+        ("absent", ".gb-acct-hello__back"),
+        # lime band 2284:27606, 240 tall from the top of the 64 header
+        ("css", ".gb-acct::before", "height", "176px"),
+        # 2284:27653: the photo is wider than its clip, so the global
+        # img{max-width:100%} must not apply or the rotation spins a squashed box
+        ("css", ".gb-acct-hello__bear", "max-width", "none"),
+        # 156.3 comes back as 156.297: computed lengths are quantised to 1/64px
+        ("css", ".gb-acct-hello__bear", "width", "156.297px"),
+        # order card shrinks its type and pads 24 all round instead of 24/32
+        ("css", ".gb-acct-order", "padding-left", "24px"),
+        ("css", ".gb-acct-order__label", "font-size", "16px"),
+        ("css", ".gb-acct-order__label", "line-height", "24px"),
+        ("css", ".gb-acct-order__status", "font-size", "18px"),
+        ("css", ".gb-acct-order__status", "line-height", "26px"),
+        ("css", ".gb-acct-order__note", "font-size", "12px"),
+        ("css", ".gb-acct-order__note", "line-height", "18px"),
+        # refer card 2284:27639
+        ("css", ".gb-acct-refer", "padding-left", "16px"),
+        ("css", ".gb-acct-refer__img", "width", "66px"),
+        ("css", ".gb-acct-refer__action", "width", "32px"),
+        # standalone Logout button 2284:27648, phone only
+        ("vis", ".gb-acct-logout", True),
+        ("css", ".gb-acct-logout", "height", "52px"),
+        ("css", ".gb-acct-logout", "border-radius", "72px"),
+        ("css", ".gb-acct-logout", "background-color", "rgb(0, 86, 53)"),
+        ("css", ".gb-acct-logout", "color", "rgb(255, 255, 255)"),
+        ("css", ".gb-acct-logout", "font-size", "16px"),
+        ("css", ".gb-acct-logout", "line-height", "28px"),
+        ("css", ".gb-acct-logout", "letter-spacing", "0.48px"),
     ],
     ("account.html", 390, OPEN_MENU): [
         ("css", "[data-acct-menu]", "width", "164px"),
@@ -186,16 +307,29 @@ def main():
             pg.wait_for_timeout(400)
             label = "%s@%d%s" % (page_name, w, " [%s]" % action if action else "")
             if action:
-                trigger = {
-                    OPEN_MENU: "[data-acct-menu-toggle]",
-                    GOTO_SUBS: ".gb-acct-nav [data-acct-goto='subscriptions']",
-                }[action]
-                try:
-                    pg.click(trigger, timeout=2000)
+                if action in (STATE_PREPARING, STATE_RENEWAL):
+                    state = action.split("-", 1)[1]
+                    n = pg.evaluate(
+                        "s=>{const e=document.querySelector('[data-acct-order-state]');"
+                        "if(!e)return 0;e.setAttribute('data-acct-order-state',s);return 1}",
+                        state)
+                    if not n:
+                        print("RED  %-52s no [data-acct-order-state] to set" % label)
+                        red += len(checks); pg.close(); continue
+                    # long enough for $t-base/$t-slow to land: reading mid-transition
+                    # returns an interpolated colour that matches nothing
                     pg.wait_for_timeout(450)
-                except Exception as e:
-                    print("RED  %-52s cannot click %s: %s" % (label, trigger, type(e).__name__))
-                    red += len(checks); pg.close(); continue
+                else:
+                    trigger = {
+                        OPEN_MENU: "[data-acct-menu-toggle]",
+                        GOTO_SUBS: ".gb-acct-nav [data-acct-goto='subscriptions']",
+                    }[action]
+                    try:
+                        pg.click(trigger, timeout=2000)
+                        pg.wait_for_timeout(450)
+                    except Exception as e:
+                        print("RED  %-52s cannot click %s: %s" % (label, trigger, type(e).__name__))
+                        red += len(checks); pg.close(); continue
             for chk in checks:
                 kind, sel = chk[0], chk[1]
                 if kind == "css":

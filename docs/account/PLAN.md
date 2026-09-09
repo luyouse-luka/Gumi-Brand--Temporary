@@ -548,13 +548,13 @@ var view = {
 - 产出：`.gb-acct-hello`、`.gb-acct-order`（三态由 `data-acct-order-state` 切）、
   `.gb-acct-refer`、`.gb-acct-logout`
 
-- [ ] **步骤 1：追加断言（先红）** —— 问候卡底色/圆角/内边距、订单卡底色、
+- [x] **步骤 1：追加断言（先红）** —— 问候卡底色/圆角/内边距、订单卡底色、
       CTA 按钮高度与圆角，值全部从 `2284-27678_account-overview-desktop.json` 与
       `2284-27604_account-overview.json` 取。
 
-- [ ] **步骤 2：跑判据确认红**
+- [x] **步骤 2：跑判据确认红**
 
-- [ ] **步骤 3：写结构与样式**
+- [x] **步骤 3：写结构与样式**
 
 三种订单状态用**根节点状态类**切，不建三份 DOM：
 
@@ -579,15 +579,15 @@ var view = {
 有就复用现有文件名，没有再从 `image-fills/` 取并 `python3 figma/optimize-images.py` 压。
 **一卡一图，不复用同一张冒充多张**（全局铁律 3）。
 
-- [ ] **步骤 4：编译、跑判据确认绿、活性自检**
+- [x] **步骤 4：编译、跑判据确认绿、活性自检**
 
-- [ ] **步骤 5：三态肉眼验**
+- [x] **步骤 5：三态肉眼验**
 
 在 devtools 里把 `data-acct-order-state` 依次改成三个值，对照
 `screenshots/2284-27450_*.png` / `27499` / `27548`。**没有 JS 会自己切**，
 这一条写进 `docs/account/HANDOFF.md` 的「不要报成 bug」清单。
 
-- [ ] **步骤 6：提交** — `git commit -m "feat(account): Account Overview 视图与三种订单状态"`
+- [x] **步骤 6：提交** — `git commit -m "feat(account): Account Overview 视图与三种订单状态"`
 
 ---
 
