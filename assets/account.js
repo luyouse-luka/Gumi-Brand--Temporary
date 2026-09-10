@@ -471,12 +471,50 @@
     }
   };
 
+  /* acctFaq — 2284:27170. One row open at a time, which is the only shape the
+   * board draws; clicking the open row closes it.
+   */
+  var acctFaq = {
+    init: function () {
+      var roots = document.querySelectorAll('[data-acct-accordion]');
+      if (!roots.length) return;                 // not on this page
+      for (var i = 0; i < roots.length; i++) this.bind(roots[i]);
+    },
+
+    bind: function (root) {
+      if (root.getAttribute('data-acct-bound')) return;
+      root.setAttribute('data-acct-bound', '1');
+      var self = this;
+      root.addEventListener('click', function (e) {
+        var q = e.target.closest && e.target.closest('[data-acct-q]');
+        if (!q || !root.contains(q)) return;
+        var item = q.parentNode;
+        var wasOpen = item.classList.contains('is-open');
+        self._closeAll(root);
+        if (!wasOpen) self._set(item, true);
+      });
+    },
+
+    _closeAll: function (root) {
+      var items = root.querySelectorAll('.gb-acct-faq__item');
+      for (var i = 0; i < items.length; i++) this._set(items[i], false);
+    },
+
+    _set: function (item, open) {
+      item.classList.toggle('is-open', open);
+      var q = item.querySelector('[data-acct-q]');
+      var a = item.querySelector('.gb-acct-faq__a');
+      if (q) q.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (a) a.hidden = !open;
+    }
+  };
+
   document.addEventListener('DOMContentLoaded', function () {
     // view runs after acctNav: its init calls acctNav.closeMenu().
     // cancelFlow and acctCal run after modal: modal arms the panels, and both of
     // these read controls inside them.
     var modules = [['acctNav', acctNav], ['view', view], ['modal', modal],
-                   ['acctForm', acctForm],
+                   ['acctForm', acctForm], ['acctFaq', acctFaq],
                    ['cancelFlow', cancelFlow], ['acctCal', acctCal]];
     for (var i = 0; i < modules.length; i++) {
       try { modules[i][1].init(); }
@@ -485,6 +523,7 @@
   });
 
   window.gumiAcct = { acctNav: acctNav, view: view, modal: modal, form: acctForm,
+                      faq: acctFaq,
                       qty: acctQty, discount: acctDiscount, cancelFlow: cancelFlow,
                       cal: acctCal };
 })();

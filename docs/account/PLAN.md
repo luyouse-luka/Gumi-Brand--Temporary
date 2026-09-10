@@ -1490,15 +1490,22 @@ Order Detail **不进导航** —— 它的入口是 Order History 卡上的 `Vi
 
 **文件**：修改 `account.html`、`assets/account.scss`、`assets/account.js`、`tools/acctcheck.py`
 
-- [ ] **步骤 1：取数值** —— 行高、分隔线、chevron 尺寸与旋转、展开态的 padding
-- [ ] **步骤 2：追加断言（先红）**，含「点第 2 行 → 它展开且第 1 行收起」的交互断言
+- [x] **步骤 1：取数值**。⚠ **不是 chevron 旋转，是 +/− 切换**：板上展开行的图标是
+      `14×0` 的 VECTOR（一条横线），收起行是 `14×14`（加号），描边都是 `#005635` / 2px。
+      行距 16；**除第一行外每行顶部一条 1px `#011307` 实心分隔线 + 20 的净空**（45 = 1+20+24）。
+      `Need help` 卡是 **r8**（白卡是 r12）、底 `#f5f1e9`、字号整卡 14/20。
+- [x] **步骤 2：追加断言（先红）**，含「点第 2 行 → 它展开且第 1 行收起」的交互断言
       （放 `tools/acctmodal.py`，那里已有 Playwright 会话）
-- [ ] **步骤 3：跑判据确认红**
-- [ ] **步骤 4：实现**。手风琴写进 `account.js` 新模块，
+- [x] **步骤 3：跑判据确认红**
+- [x] **步骤 4：实现**。手风琴写进 `account.js` 新模块，
       **IIFE + `data-acct-accordion` hook + 早退守卫**（全局铁律 17），
       不复用样式类做 hook，不调 `window.gumi`（主站 faq 的那套不引进来）
-- [ ] **步骤 5：编译、跑判据确认绿、`accthover.py` 确认手风琴行的 hover 有过渡**
-- [ ] **步骤 6：提交** — `git commit -m "feat(account): Help 视图与手风琴"`
+- [x] **步骤 5：编译、跑判据确认绿** —— `743 → 771 ok / 0 red`（+28）。
+      `accthover.py` 30 → **32** hover / 0 red、`acctbp.py` 1984 decl、`acctmotion.py` 12 ok；
+      `rwd.py` 五档全绿。版本号 `20260910-a15`。
+      ⚠ 单开活性单独验了一条（`HELP_OPEN2`）：点第 2 行 → 它展开且第 1 行**收起**。
+      只验初始态的话，一个「只会展开、从不收起前一行」的实现照样全绿。
+- [x] **步骤 6：提交** — `git commit -m "feat(account): Help 视图与手风琴"`
 
 ---
 ## Task 20：Order History 视图

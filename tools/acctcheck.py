@@ -44,6 +44,7 @@ GOTO_DETAILS = "goto-details"
 GOTO_PASSWORD = "goto-password"
 GOTO_HELP = "goto-help"
 DETAILS_DIRTY = "details-dirty"
+HELP_OPEN2 = "help-open-2"
 # 2284:28878, the board's own worst case (note 34044)
 LONG_CODE = "THISISADISAVERYVERYVERYVERYVERYLONGDISCOUNTCODE1265"
 
@@ -920,14 +921,56 @@ GROUPS = {
         ("css", CP + ".gb-acct-page", "row-gap", "24px"),
         ("nofit", CP + ".gb-acct-card"),
     ],
+    # -- Task 19: Help (2284:27170) --
+    # Seven accordion rows, the first one open. Every heading on the board reads
+    # literally "Accordion Open" / "Accordion Closed" and the body reads "Text
+    # here" -- placeholder, SPEC 8b, not copy to invent.
     ("account.html", 1440, GOTO_HELP): [
         ("shown", "[data-acct-view='help']", True),
         ("text", HP + ".gb-acct-intro__title", ["Help"]),
         ("css", HP + ".gb-acct-intro__title", "font-size", "24px"),
         ("vis", ".gb-acct-nav__link[data-acct-goto='help'].is-current", True),
+        ("text", HP + ".gb-acct-card__title", ["Popular Questions"]),
+        ("text", HP + ".gb-acct-faq__q",
+         ["Accordion Open", "Accordion Closed", "Accordion Closed", "Accordion Closed",
+          "Accordion Closed", "Accordion Closed", "Accordion Closed"]),
+        # only the open row's answer renders, so this doubles as "exactly one open"
+        ("text", HP + ".gb-acct-faq__a", ["Text here"]),
+        ("css", HP + ".gb-acct-faq", "row-gap", "16px"),
+        # 45 = 1px rule + 20 + 24; the first row has no rule above it
+        ("css", HP + ".gb-acct-faq__item + .gb-acct-faq__item", "border-top-width", "1px"),
+        ("css", HP + ".gb-acct-faq__item + .gb-acct-faq__item", "border-top-color", "rgb(1, 19, 7)"),
+        ("css", HP + ".gb-acct-faq__item + .gb-acct-faq__item", "padding-top", "20px"),
+        ("css", HP + ".gb-acct-faq__item + .gb-acct-faq__item", "height", "45px"),
+        ("css", HP + ".gb-acct-faq__q", "font-size", "16px"),
+        ("css", HP + ".gb-acct-faq__q", "color", "rgb(1, 19, 7)"),
+        ("css", HP + ".gb-acct-faq__a", "color", "rgb(77, 77, 77)"),
+        # the sand card closes this page and Order Detail alike -- r8, not the
+        # white cards' 12
+        ("css", HP + ".gb-acct-help", "border-radius", "8px"),
+        ("css", HP + ".gb-acct-help", "background-color", "rgb(245, 241, 233)"),
+        ("css", HP + ".gb-acct-help", "padding-top", "20px"),
+        ("css", HP + ".gb-acct-help", "row-gap", "24px"),
+        ("text", HP + ".gb-acct-help__title", ["Need help with your order?"]),
+        ("css", HP + ".gb-acct-help__title", "font-size", "14px"),
+        ("css", HP + ".gb-acct-help__title", "color", "rgb(26, 26, 26)"),
+        ("css", HP + ".gb-acct-help__lines", "row-gap", "8px"),
+        ("text", HP + ".gb-acct-help__link", ["visit FAQ page"]),
+        ("css", HP + ".gb-acct-help__link", "color", "rgb(3, 116, 165)"),
+        ("css", HP + ".gb-acct-stack", "row-gap", "32px"),
+        ("nofit", HP + ".gb-acct-card"),
     ],
     ("account.html", 390, GOTO_HELP): [
         ("css", HP + ".gb-acct-intro__title", "font-size", "20px"),
+        ("css", HP + ".gb-acct-card", "width", "350px"),
+        ("nofit", HP + ".gb-acct-help"),
+    ],
+    # A single-open accordion that never closes the previous row would still
+    # pass every check above, so the swap is driven once.
+    ("account.html", 1440, HELP_OPEN2): [
+        ("text", HP + ".gb-acct-faq__a", ["Text here"]),
+        ("vis", HP + ".gb-acct-faq__item:nth-child(2).is-open", True),
+        ("absent", HP + ".gb-acct-faq__item:nth-child(1).is-open"),
     ],
     # Order Detail has no nav row of its own -- Task 20 gives it one on the
     # order card's View Order button. Until then the hash is the only way in.
@@ -1175,6 +1218,17 @@ def main():
                             print("RED  %-52s no .gb-acct-summary__code to fill" % label)
                             red += len(checks); pg.close(); continue
                         pg.wait_for_timeout(120)
+                elif action == HELP_OPEN2:
+                    nav = ".gb-acct-nav" if w > 767 else ".gb-acct-list"
+                    try:
+                        pg.click(nav + " [data-acct-goto='help']", timeout=2000)
+                        pg.wait_for_timeout(450)
+                        pg.click(HP + ".gb-acct-faq__item:nth-child(2) "
+                                 ".gb-acct-faq__q", timeout=2000)
+                        pg.wait_for_timeout(400)
+                    except Exception as e:
+                        print("RED  %-52s cannot open row 2: %s" % (label, type(e).__name__))
+                        red += len(checks); pg.close(); continue
                 elif action == DETAILS_DIRTY:
                     nav = ".gb-acct-nav" if w > 767 else ".gb-acct-list"
                     try:

@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260910-a14";
+$build-acct: "20260910-a15";
 
 // ==========================================================================
 // Variables
@@ -2015,6 +2015,119 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
   color: $c-gray-600;
   text-align: center;
+}
+
+// 27170 / 27304 both close with the sand card, 32 below the white one above it.
+.gb-acct-stack {
+  display: flex;
+  flex-direction: column;
+  row-gap: 32px;
+}
+
+// 2284:27170. Rows are 16 apart and every row but the first carries a 1px rule
+// on top plus 20 of clearance -- 45 = 1 + 20 + 24.
+.gb-acct-faq {
+  display: flex;
+  flex-direction: column;
+  row-gap: 16px;
+}
+
+.gb-acct-faq__item {
+  & + & {
+    padding-top: 20px;
+    border-top: 1px solid $c-ink;
+  }
+}
+
+.gb-acct-faq__q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+  color: $c-ink;
+  cursor: pointer;
+
+  transition: trans(color);
+
+  @include hover { color: $c-green; }
+}
+
+// The board's open row is a 14x0 vector and the closed one 14x14: a minus and a
+// plus, not a rotating chevron.
+.gb-acct-faq__icon {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  color: $c-green;
+}
+
+.gb-acct-faq__bar {
+  transform-origin: 12px 12px;
+  transition: trans(transform);
+
+  .gb-acct-faq__item.is-open & { transform: scaleY(0); }
+}
+
+.gb-acct-faq__a {
+  margin: 8px 0 0;
+  @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+  color: $c-gray-700;
+}
+
+// 2284:27170 Frame 1984078368 / 27304's closing card -- radius 8, not the 12
+// the white cards carry.
+.gb-acct-help {
+  display: flex;
+  flex-direction: column;
+  row-gap: 24px;
+  padding: 20px;
+  border-radius: $r-sm;
+  background: $c-sand;
+}
+
+.gb-acct-help__title {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-900;
+}
+
+.gb-acct-help__body {
+  display: flex;
+  flex-direction: column;
+  row-gap: 16px;
+}
+
+.gb-acct-help__lines {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.gb-acct-help__text {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-600;
+}
+
+.gb-acct-help__more {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 4px;
+}
+
+.gb-acct-help__link {
+  color: $c-blue;
+  text-decoration: none;
+
+  transition: trans(color);
+
+  @include hover { color: $c-green; }
 }
 
 // ==========================================================================
