@@ -162,7 +162,7 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | A | **导航条目四个版本互不一致** | 桌面 `27678` 无 Contact Preferences；桌面 `27792`/`28000` 有；手机页内列表 `27604` 无 Account Overview 也无 Contact Preferences；手机汉堡 `34757` 只有 4 条（Account / My Subscriptions / My Details / Log Out）。**r-a3 查清了规律**：差异跟着页面走 —— Overview 页 8 项，Subscriptions / Detail 页 9 项。是有意还是漏画，需设计方回答。**已暂按 9 项实现**（PLAN Task 3 定的，一处可改） |
 | A2 | **桌面两栏在 1440 以下如何收敛无稿** | 三个桌面稿一致地画 nav 241 + gap 32 + 内容 **固定 571**，左右 gutter **244 / 352**（不对称，但三稿完全相同，故判定为有意）。合计 1440 恰好铺满，**照抄则 768 档横向溢出 864 > 768**（`rwd.py` 实测）。已暂用「nav 241 固定 + 内容 `minmax(0,1fr)`，gutter 从 244/352 用 `fluid()` 收到 20」，1440 与稿逐值一致 |
 | B | **评论与稿矛盾** | 评论 `2284:27077`：「原来的 contact preference 以及 refer a friend 去除了」，但两处稿上仍画着 |
-| C | **六项只有导航条目、没有页面稿** | Order History / My Details / Change Password / Refer a Friend / Help / Contact Preferences。构想来自 Huel 竞品板，**不可自造** |
+| C | **~~六项~~两项只有导航条目、没有页面稿** | 原列 Order History / My Details / Change Password / Refer a Friend / Help / Contact Preferences。**r-a5 逐节点比对推翻了一半**：Order History（`2284:27202`）/ My Details（`27081`·`27116`）/ Change Password（`27151`）/ Help（`27170`）**其实都有 390 手机稿**，另外还多出一个导航里没有的 **Order Detail**（`27304`）。真正无稿的只剩 **Refer a Friend** 与 **Contact Preferences**。⚠ 这五个页面**不在 PLAN 的 15 个 Task 里**，做不做、要不要补桌面稿，需拍板。比对见 `DETAIL-STATES.md` |
 | D | **左侧导航图标未设计** | 便签 `27602`：灰圆是占位 |
 | E | **21 类弹窗的桌面稿全缺** | 已定按决策 3 做居中卡片，具体宽度/内边距需给值 |
 | F | **footer 内容差异** | 稿：两栏平铺 13 条链接 + Snapchat + `Subscribe now`；现站：三栏 + FB/IG/TikTok + `Subscribe`。且 Influencers / Press Inquiries / Careers 的目标页可能不存在 |
@@ -174,6 +174,10 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | L | **手机波浪 36 vs 现站组件 48** | account 稿的 `Spacer Bottom`（`2284:27607`）在 390 档是 36 高，现站 `.gb-scallop` 的 390 档算出 48（`--sc-band` 13.3 + amp 34.7），注释写着 48 才是「design's own strip height」。已复用现站组件（全站一致优先），差 12 |
 | N | **Detail 的 Discounts 行两稿不一致** | 桌面 `27954` 是「Automatic + `-$26.40` 标签」，手机 `28433` 只有标签、没有 `Automatic`。无便签说明。**已两套都做按 767 切换**（全局铁律 3 允许的第二种做法），需设计方确认哪边是对的 |
 | M | **桌面 Renewal 态无稿** | `2284:27548` 只有手机版。桌面的 renewal 沿用了桌面的字号阶梯（20/30），只有配色与文案按 renewal 走；`It's upcoming!` 标签块在两端都锁 16/24（它是状态不是断点） |
+| O | **`2284:27081` 与 `27116` 完全一样** | 两张 My Details 手机稿**文本逐字相同、高度同为 2206**。是复制未删，还是有肉眼级差异（如某个 input 的 focus 态）？属上面 C 那批页面，一并回答 |
+| P | **PAUSED 的续订日期两处稿不一致** | 详情稿 `28627`/`28774` 写 `19 Jul 2026`（与 active 相同），列表稿 `28315`/`34056` 写 `17 Aug 2026`。便签 `34038` 说暂停态显示的是「暂停到期日」，**站列表那边**。已各按各自的稿实现（详情 19 Jul / 列表 17 Aug），**未擅自统一**，需给出哪个对 |
+| Q | **`28774` 的折扣码链接文案疑似漏改** | 它明明显示着一段码，链接却写 `Add a discount code`；同样有码的 `28478` 写的是 `Edit discount code`，便签 `30921` 也站 Edit 这边。**已按 Edit 实现**，判为 `28774` 漏改，需确认 |
+| R | **Detail 的四个状态全无桌面稿** | PAUSED / PAUSED+超长码 / CANCELLED / 重启后，都只有 390。桌面沿用基准态 `27792` 的字号阶梯，只有结构与文案随状态走。与 M 同类 |
 
 ## 8. 稿件自身的错误（不是我们做错）
 
@@ -201,6 +205,7 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
   手机 `28315` / `34056` 写 `17 Aug 2026`，桌面 `28109` 还留着 active 的 `19 Jul 2026`。
   **按手机稿实现**。
 - `34192` 标题拼成「Restart **subscoption**」
+- `34079` CANCELLED 的说明文案拼成「You will be **bale** to make changes…」（应为 `able`）。**已按稿照抄**，上线前需设计方改
 - `33847` 文案「You need to **another** product in order to delete this one」语法错
 - `30107` 的取消原因列表里「I have too much product」**重复两次**（`29928`/`30286` 是正常的 5 项）
 - 5 个手机稿的 `Chrome browser` 显示 `gumi.com.au` + 电量 84% + 8:39 —— 假舞台

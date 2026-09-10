@@ -25,11 +25,22 @@ GOTO_SUBS = "goto-subscriptions"
 STATE_PREPARING = "state-preparing"
 STATE_RENEWAL = "state-renewal"
 GOTO_DETAIL = "goto-detail"
+DETAIL_PAUSED = "detail-paused"
+DETAIL_CANCELLED = "detail-cancelled"
+DETAIL_DISCOUNT = "detail-discount"
+DETAIL_LONGCODE = "detail-longcode"
+# 2284:28878, the board's own worst case (note 34044)
+LONG_CODE = "THISISADISAVERYVERYVERYVERYVERYLONGDISCOUNTCODE1265"
 
 # All three views stay in the DOM; only one is shown. Detail checks are scoped
 # so querySelector cannot reach the hidden copies in the other two.
 D = "[data-acct-view='detail'] "
 S = "[data-acct-view='subscriptions'] "
+# state-scoped prefixes: the anchor selector is asserted visible in each group
+# before any absence is claimed inside it
+P = ".gb-acct-detail[data-acct-sub-state='paused'] "
+C = ".gb-acct-detail[data-acct-sub-state='cancelled'] "
+A = ".gb-acct-detail[data-acct-discount='applied'] "
 
 # group key -> list of checks
 #   ("css",  selector, prop, expected)
@@ -40,6 +51,8 @@ S = "[data-acct-view='subscriptions'] "
 #                              Task 4 fills them they are empty and measure 0 tall,
 #                              so a size test cannot tell "switched off" from "empty".
 #   ("absent", selector)        element must not render at all
+#   ("nofit", selector)         element's content must not overflow its own box,
+#                               and the page must not scroll sideways
 GROUPS = {
     # -- Task 2: desktop header, closed (2284:34627) --
     ("account.html", 1440, None): [
@@ -600,10 +613,28 @@ GROUPS = {
         ("text", D + ".gb-acct-schedule__day", ["19 Jun", "17 Jul", "14 Aug", "11 Sep"]),
         ("text", ".gb-acct-detail__cancel", ["Cancel Subscription"]),
         # every Edit entry point carries its modal hook, Task 8 wires them
-        ("text", D + "[data-acct-modal]",
-         ["", "Edit Date", "I need it now", "Edit", "Edit", "Edit", "Edit", "Edit",
-          "Add Items", "Add a discount code", "Edit", "Edit", "Skip next order",
-          "Cancel Subscription"]),
+        ("vis", D + "[data-acct-modal='edit-name']", True),
+        ("vis", D + "[data-acct-modal='edit-date']", True),
+        ("vis", D + "[data-acct-modal='need-now']", True),
+        ("vis", D + "[data-acct-modal='edit-frequency']", True),
+        ("vis", D + "[data-acct-modal='edit-product']", True),
+        ("vis", D + "[data-acct-modal='add-product']", True),
+        ("vis", D + "[data-acct-modal='discount-add']", True),
+        ("vis", D + "[data-acct-modal='shipping-current']", True),
+        ("vis", D + "[data-acct-modal='edit-payment']", True),
+        ("vis", D + "[data-acct-modal='skip-next']", True),
+        ("vis", D + "[data-acct-modal='cancel-offer-skip']", True),
+        # -- Task 7: the state-only pieces must stay out of the base state.
+        # Each negative below is paired with the positive above so a wrong
+        # selector cannot make it pass by matching nothing (global rule 6).
+        ("absent", D + "[data-acct-modal='restart']"),
+        ("absent", D + "[data-acct-modal='discount-applied']"),
+        ("absent", D + ".gb-acct-detail__restart-note"),
+        ("absent", D + ".gb-acct-product__stock"),
+        ("vis", D + ".gb-acct-product--oos .gb-acct-product__was", True),
+        ("absent", D + ".gb-acct-summary__code"),
+        ("vis", D + ".gb-acct-row--renewal", True),
+        ("vis", D + ".gb-acct-summary__row--discount", True),
     ],
     # -- Task 6: Subscription Detail, phone (2284:28330) --
     ("account.html", 390, GOTO_DETAIL): [
@@ -625,6 +656,124 @@ GROUPS = {
         ("css", D + ".gb-acct-schedule__days", "column-gap", "8px"),
         # 28433 drops the "Automatic" label and shows the tag alone
         ("vis", D + ".gb-acct-summary__kind", False),
+    ],
+    # -- Task 7: PAUSED (2284:28627 / 28774) --
+    # Every negative here is anchored: the state selector itself is asserted
+    # visible first, so a typo in it cannot turn the absences green.
+    ("account.html", 390, DETAIL_PAUSED): [
+        ("vis", ".gb-acct-detail[data-acct-sub-state='paused']", True),
+        # note 34042: no skipping while the subscription is paused
+        ("absent", "%s[data-acct-modal='skip-next']" % P),
+        # everything else the active state has is still there
+        ("vis", "%s[data-acct-modal='edit-date']" % P, True),
+        ("vis", "%s[data-acct-modal='need-now']" % P, True),
+        ("vis", "%s[data-acct-modal='cancel-offer-skip']" % P, True),
+        ("vis", "%s.gb-acct-row--renewal" % P, True),
+        ("text", D + ".gb-acct-pill", ["PAUSED"]),
+        ("css", D + ".gb-acct-pill", "background-color", "rgb(255, 239, 195)"),
+        # 28647: only the label changes, the date and the delivery line stay
+        ("text", D + ".gb-acct-row__label",
+         ["Subscription restarts", "Frequency", "Shipping", "Payment Method"]),
+        ("text", D + ".gb-acct-row__date", ["19 Jul 2026"]),
+        # 28627 shows no disabled treatment at all: this is the anchor for the
+        # cancelled group's colour assertions
+        ("vis", "%s.gb-acct-intro__edit" % P, True),
+        ("css", P + ".gb-acct-row .gb-acct-link", "color", "rgb(3, 116, 165)"),
+        ("css", P + ".gb-acct-schedule__day", "background-color", "rgb(245, 241, 233)"),
+        ("css", P + "[data-acct-modal='add-product']", "background-color", "rgb(0, 86, 53)"),
+    ],
+    # -- Task 7: PAUSED at desktop -- no board exists, so this only proves the
+    # state mechanism is not breakpoint-bound
+    ("account.html", 1440, DETAIL_PAUSED): [
+        ("vis", ".gb-acct-detail[data-acct-sub-state='paused']", True),
+        ("absent", "%s[data-acct-modal='skip-next']" % P),
+        ("text", D + ".gb-acct-pill", ["PAUSED"]),
+    ],
+    # -- Task 7: CANCELLED (2284:34058) --
+    ("account.html", 390, DETAIL_CANCELLED): [
+        ("vis", ".gb-acct-detail[data-acct-sub-state='cancelled']", True),
+        ("absent", "%s.gb-acct-row--renewal" % C),
+        ("absent", "%s[data-acct-modal='edit-date']" % C),
+        ("absent", "%s[data-acct-modal='need-now']" % C),
+        ("absent", "%s.gb-acct-summary__row--discount" % C),
+        ("absent", "%s.gb-acct-detail__cancel" % C),
+        ("vis", "%s[data-acct-modal='restart']" % C, True),
+        ("vis", "%s.gb-acct-detail__restart-note" % C, True),
+        ("vis", "%s.gb-acct-product__stock" % C, True),
+        # 34058 keeps Skip -- the opposite of PAUSED
+        ("vis", "%s[data-acct-modal='skip-next']" % C, True),
+        ("text", D + ".gb-acct-pill", ["CANCELLED"]),
+        ("text", D + "[data-acct-modal='restart']", ["Restart Subscription"]),
+        ("text", D + ".gb-acct-detail__restart-note",
+         ["You will be bale to make changes to your subscription once restarted."]),
+        ("text", D + ".gb-acct-product__stock", ["Out of stock"]),
+        ("css", D + ".gb-acct-product__stock", "color", "rgb(221, 101, 94)"),
+        ("css", D + ".gb-acct-product__stock", "font-size", "12px"),
+        ("css", D + ".gb-acct-detail__restart-note", "text-align", "center"),
+        ("css", D + ".gb-acct-detail__restart-note", "font-size", "12px"),
+        # only the first row swaps: one price, no strikethrough beside it.
+        # innerText of a rendered <p> skips its display:none children, so this
+        # reads the shown price rather than both.
+        ("absent", "%s.gb-acct-product--oos .gb-acct-product__was" % C),
+        ("text", D + ".gb-acct-product--oos .gb-acct-product__price", ["$00.00"]),
+        # 34058 also draws the whole card disabled -- 7 Edit links, both grey
+        # buttons, the date blocks, and the out-of-stock name struck through
+        ("absent", "%s.gb-acct-intro__edit" % C),
+        ("css", C + ".gb-acct-row .gb-acct-link", "color", "rgba(128, 128, 128, 0.4)"),
+        ("css", C + ".gb-acct-row .gb-acct-link", "text-decoration-line", "none"),
+        ("css", C + ".gb-acct-product .gb-acct-link", "pointer-events", "none"),
+        ("css", C + "[data-acct-modal='add-product']", "background-color", "rgb(230, 230, 230)"),
+        ("css", C + "[data-acct-modal='add-product']", "color", "rgb(128, 128, 128)"),
+        ("css", C + "[data-acct-modal='skip-next']", "background-color", "rgb(230, 230, 230)"),
+        ("css", C + "[data-acct-modal='skip-next']", "border-top-width", "1px"),
+        ("css", C + ".gb-acct-schedule__day", "background-color", "rgb(230, 230, 230)"),
+        ("css", C + ".gb-acct-schedule__day", "color", "rgb(128, 128, 128)"),
+        ("css", C + ".gb-acct-product--oos .gb-acct-product__label", "color", "rgb(221, 101, 94)"),
+        ("css", C + ".gb-acct-product--oos .gb-acct-product__label",
+         "text-decoration-line", "line-through"),
+        # 34094: the quantity is not struck through with it
+        ("css", C + ".gb-acct-product--oos .gb-acct-product__qty", "color", "rgb(16, 24, 40)"),
+        ("css", C + ".gb-acct-product--oos .gb-acct-product__qty",
+         "text-decoration-line", "none"),
+        # the Restart button and the discount link are the two things left live
+        ("css", C + "[data-acct-modal='restart']", "background-color", "rgb(0, 86, 53)"),
+        ("css", C + "[data-acct-modal='discount-add']", "color", "rgb(3, 116, 165)"),
+    ],
+    # -- Task 7: discount code applied (2284:28478), note 30921 --
+    ("account.html", 390, DETAIL_DISCOUNT): [
+        ("vis", ".gb-acct-detail[data-acct-discount='applied']", True),
+        ("vis", "%s.gb-acct-summary__code" % A, True),
+        ("vis", "%s[data-acct-modal='discount-applied']" % A, True),
+        ("absent", "%s[data-acct-modal='discount-add']" % A),
+        ("text", D + ".gb-acct-summary__code", ["DISCOUNTCODE"]),
+        ("text", D + "[data-acct-modal='discount-applied']", ["Edit discount code"]),
+        # 28582: right-aligned in a fixed 118 so a long code wraps in place (28878)
+        ("css", D + ".gb-acct-summary__code", "width", "118px"),
+        ("css", D + ".gb-acct-summary__code", "text-align", "right"),
+        ("css", D + ".gb-acct-summary__code", "font-size", "12px"),
+        ("css", D + ".gb-acct-summary__code", "color", "rgb(102, 102, 102)"),
+        # the invariant the long-code group is measured against: a code that
+        # fits on one line leaves the block at the active state's own height
+        ("css", D + ".gb-acct-summary", "height", "150px"),
+    ],
+    # -- Task 7: a 51-character code must wrap inside its own 118, not push the
+    # tag off the row or widen the page (2284:28774, note 34044) --
+    ("account.html", 390, DETAIL_LONGCODE): [
+        ("vis", ".gb-acct-detail[data-acct-discount='applied']", True),
+        ("nofit", D + ".gb-acct-summary__code"),
+        ("nofit", D + ".gb-acct-summary__row--discount"),
+        ("css", D + ".gb-acct-summary__code", "width", "118px"),
+        # 28878 wraps to 4 lines of 18 inside the 118, which is what takes the
+        # block from 150 to the board's 198 -- height, not just "it fits"
+        ("css", D + ".gb-acct-summary__code", "height", "72px"),
+        ("css", D + ".gb-acct-summary", "height", "198px"),
+        ("vis", D + ".gb-acct-tag", True),
+    ],
+    ("account.html", 1440, DETAIL_LONGCODE): [
+        ("nofit", D + ".gb-acct-summary__code"),
+        ("nofit", D + ".gb-acct-summary__row--discount"),
+        ("css", D + ".gb-acct-summary__code", "height", "72px"),
+        ("css", D + ".gb-acct-summary", "height", "198px"),
     ],
     ("account.html", 390, OPEN_MENU): [
         ("css", "[data-acct-menu]", "width", "164px"),
@@ -657,7 +806,8 @@ def main():
             pg.wait_for_timeout(400)
             label = "%s@%d%s" % (page_name, w, " [%s]" % action if action else "")
             if action:
-                if action == GOTO_DETAIL:
+                if action in (GOTO_DETAIL, DETAIL_PAUSED, DETAIL_CANCELLED,
+                              DETAIL_DISCOUNT, DETAIL_LONGCODE):
                     # Reached the way a user reaches it: open the list, then the
                     # first card's CTA. Driving it through location.hash would
                     # skip the wiring Task 5 put on that button.
@@ -671,6 +821,31 @@ def main():
                     except Exception as e:
                         print("RED  %-52s cannot reach detail: %s" % (label, type(e).__name__))
                         red += len(checks); pg.close(); continue
+                    # No board authors two states at once, so the judge sets the
+                    # attribute the way a template would.
+                    attr = {DETAIL_PAUSED: ("data-acct-sub-state", "paused"),
+                            DETAIL_CANCELLED: ("data-acct-sub-state", "cancelled"),
+                            DETAIL_DISCOUNT: ("data-acct-discount", "applied"),
+                            DETAIL_LONGCODE: ("data-acct-discount", "applied")}.get(action)
+                    if attr:
+                        n = pg.evaluate(
+                            "a=>{const e=document.querySelector('.gb-acct-detail');"
+                            "if(!e)return 0;e.setAttribute(a[0],a[1]);return 1}", list(attr))
+                        if not n:
+                            print("RED  %-52s no .gb-acct-detail to set" % label)
+                            red += len(checks); pg.close(); continue
+                        pg.wait_for_timeout(450)
+                    if action == DETAIL_LONGCODE:
+                        # 2284:28878 verbatim -- 51 characters with no break
+                        # opportunity. Without it this group would measure the
+                        # 12-character placeholder, which fits 118 either way.
+                        n = pg.evaluate(
+                            "t=>{const e=document.querySelector('.gb-acct-summary__code');"
+                            "if(!e)return 0;e.textContent=t;return 1}", LONG_CODE)
+                        if not n:
+                            print("RED  %-52s no .gb-acct-summary__code to fill" % label)
+                            red += len(checks); pg.close(); continue
+                        pg.wait_for_timeout(120)
                 elif action in (STATE_PREPARING, STATE_RENEWAL):
                     state = action.split("-", 1)[1]
                     n = pg.evaluate(
@@ -710,7 +885,13 @@ def main():
                         print("RED  %-52s want %s, got %s" % (tag, want, got)); red += 1
                 elif kind == "text":
                     want = chk[2]
-                    got = pg.eval_on_selector_all(sel, "els=>els.map(e=>e.innerText.trim())")
+                    # Only what is actually rendered. innerText falls back to
+                    # textContent inside a display:none subtree, so from Task 7
+                    # on -- where every state ships all its variants and hides
+                    # the rest -- an unfiltered read returns the hidden ones too.
+                    got = pg.eval_on_selector_all(
+                        sel, "els=>els.filter(e=>e.checkVisibility())"
+                             ".map(e=>e.innerText.trim())")
                     tag = "%s text(%s)" % (label, sel)
                     if got == want:
                         ok += 1
@@ -736,6 +917,18 @@ def main():
                         ok += 1
                     else:
                         print("RED  %-52s want shown=%s, got %s" % (tag, want, got)); red += 1
+                elif kind == "nofit":
+                    got = pg.evaluate(
+                        "s=>{const e=document.querySelector(s);if(!e)return null;"
+                        "const d=document.documentElement;"
+                        "return [e.scrollWidth-e.clientWidth, d.scrollWidth-d.clientWidth]}", sel)
+                    tag = "%s fits(%s)" % (label, sel)
+                    if got is None:
+                        print("RED  %-52s element not found" % tag); red += 1
+                    elif got[0] <= 1 and got[1] <= 1:
+                        ok += 1
+                    else:
+                        print("RED  %-52s overflow self=%s page=%s" % (tag, got[0], got[1])); red += 1
                 elif kind == "absent":
                     got = pg.evaluate(VIS_GET, sel)
                     tag = "%s absent(%s)" % (label, sel)

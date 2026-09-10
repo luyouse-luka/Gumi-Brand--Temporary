@@ -694,7 +694,7 @@ items get added」）—— 本任务**照稿做出来**，是否隐藏留待裁
 - 修改：`account.html`、`assets/account.scss`、`tools/acctcheck.py`
 - 创建：`docs/account/DETAIL-STATES.md`（比对结论）
 
-- [ ] **步骤 1：比对六个未标注的 frame**
+- [x] **步骤 1：比对六个未标注的 frame**
 
 ```bash
 python3 - <<'PY'
@@ -717,7 +717,7 @@ PY
 把结论写进 `docs/account/DETAIL-STATES.md`：每个 frame 是什么状态、与基准态差在哪。
 **比对不出来的就标"归属未定"并列入待裁决**，不要硬塞一个状态。
 
-- [ ] **步骤 2：追加断言（先红）** —— PAUSED 态下 `Skip next order` 按钮**不存在**
+- [x] **步骤 2：追加断言（先红）** —— PAUSED 态下 `Skip next order` 按钮**不存在**
       （便签 `34042` 明确要求移除），CANCELLED 态下续订日期行不存在。
 
 ```python
@@ -729,13 +729,13 @@ CHECKS_ABSENT = [   # negative assertions: anchor must exist first (rule 6)
 ⚠ 负向断言**先验锚点存在**：先断言 `.gb-acct-detail[data-acct-sub-state='paused']`
 **存在**，再断言里面那个按钮不存在。否则选错文件（空/404）会让断言恒真、报全绿。
 
-- [ ] **步骤 3：跑判据确认红**
+- [x] **步骤 3：跑判据确认红**
 
-- [ ] **步骤 4：用状态类实现差异**，不复制整块 DOM
+- [x] **步骤 4：用状态类实现差异**，不复制整块 DOM
 
-- [ ] **步骤 5：编译、跑判据确认绿、活性自检**
+- [x] **步骤 5：编译、跑判据确认绿、活性自检**
 
-- [ ] **步骤 6：提交** — `git commit -m "feat(account): 订阅详情的 PAUSED/CANCELLED/折扣码状态"`
+- [x] **步骤 6：提交** — `git commit -m "feat(account): 订阅详情的 PAUSED/CANCELLED/折扣码状态"`
 
 ---
 ## Task 8：弹窗基础设施

@@ -8,6 +8,123 @@
 
 ---
 
+## Task 7 — Detail 的 PAUSED / CANCELLED / 折扣码状态（`$build-acct` = `20260909-a5`）
+
+**设计源**：`2284:28478`（折扣码已应用）、`28627`·`28774`（PAUSED 两版）、
+`34058`（CANCELLED + Restart）、`34352`（重启后转回 ACTIVE）；
+便签 `34042` 暂停期不许跳过 / `34044` 超长码 / `30921` 折扣码链接文案。
+
+### 先查清了六个「未标注 frame」的归属
+
+PLAN 把 `27202`·`27304`·`27081`·`27116`·`27151`·`27170` 列为「疑似 Detail 的状态」。
+逐节点比对文本后**全部不是** —— 它们是账户区另外五个页面的手机稿：
+Order History / Order Detail / My Details（两份逐字相同）/ Change Password / Help。
+结论写进 `DETAIL-STATES.md`。
+
+**这推翻了待裁决 C 的一半**：原以为六项无稿，实际四项有手机稿，还多出一个导航里
+没有的 Order Detail；真正无稿的只剩 Refer a Friend 与 Contact Preferences。
+**这五个页面不在 15 个 Task 里，属于范围变化，本轮未做，等拍板。**
+
+### 做了什么
+
+- **状态用两个正交属性开关表达，不复制 DOM**：`data-acct-sub-state`
+  （`active` / `paused` / `cancelled`）× `data-acct-discount`（`none` / `applied`）。
+  两维必须正交，因为 `28774` 是「PAUSED 且有码」。元素上挂
+  `data-detail-only="active paused"` 声明自己属于哪些态，CSS 隐藏其余。
+  ⚠ **判据必须写成「当前态不在这个元素的列表里」** ——
+  `:not([data-detail-only~="paused"])` 那样反过来写，`"active paused"` 会在两个态里都消失。
+- **PAUSED**（`28627`）：徽章换色换字；续订行标签 `Next renewal date` → `Subscription restarts`
+  （日期与 Est Delivery 行不动）；**`Skip next order` 整个移除**（便签 `34042`：暂停期不许跳过）。
+- **CANCELLED**（`34058`）：续订行 / 折扣行 / `Cancel Subscription` 三处删除；
+  两个按钮换成单个 `Restart Subscription` + 板上 298.5 宽的居中说明 + 一条分隔线；
+  第一条产品行的口味位换成 coral 的 `Out of stock` 且只留单价（无划线原价）；
+  **`Skip next order` 保留**（与 PAUSED 相反）。其余入口一律画成禁用态。
+- **折扣码已应用**（`28478`）：Discounts 行多一段 118 宽右对齐的码，
+  链接文案 `Add a discount code` → `Edit discount code`。
+
+### 禁用态的每个值都取自 `34058`，不是自己调的灰
+
+| 位置 | 稿上的值 | 节点 |
+|---|---|---|
+| 七个 `Edit` 链接 | `#808080` **fill opacity 0.4** | `34087`/`34096`/`34108`/`34121`/`34165`/`34172` |
+| `Add Items` / `Skip next order` | 底 `#e6e6e6`、字 `#808080` | `34141` / `34189` |
+| 四个日期块 | 字 `#808080` | `34182` / `34184` |
+| 缺货那行的品名 | coral `#dd655e` **且带删除线** | `34095` |
+| `Restart Subscription` | 底 `#005635`、字白 | `34078` |
+| `Add a discount code` | 仍是 `#0374a5` —— 和 Restart 是仅存的两个可用项 | `34153` |
+
+⚠ **删除线在 `characterStyleOverrides` 里，不在顶层 `style`** —— 24 个字符全部指向带
+`STRIKETHROUGH` 的 style 1。只读顶层 `style` 会判成「没有删除线」。同一行的数量 `1`
+（`34094`）没有 override，所以删除线只包品名、不包数量，实现里把数量放在被划的 span 之外
+（`text-decoration` 会传染给行内子元素且子元素关不掉）。
+
+⚠ **CSS 只让它们看起来、摸起来是禁用的**。将来接真数据时，同一个条件必须一并写上
+`disabled` 属性，否则它们仍可聚焦、且被读屏播报成可用。
+
+### 判据里改掉的一个假绿
+
+`DETAIL_LONGCODE` 与 `DETAIL_DISCOUNT` 原本做的事**完全一样**（只设
+`data-acct-discount=applied`），**那段 51 字符的码从没进过 DOM**。于是「超长码在 118 里
+折行、不撑破」的两条 `nofit` 实际量的是 12 字符的 `DISCOUNTCODE`，怎么写都是绿的。
+
+把 `2284:28878` 的原文 `THISISADISAVERYVERYVERYVERYVERYLONGDISCOUNTCODE1265` 注进判据后
+**当场转红**：码撑破自己的 118 达 258px，390 档整页横向溢出 135px。
+真因是它是**一个没有断点的 token**，作为 flex item 的自动最小尺寸取的是整串想要的 376。
+修法是 `.gb-acct-summary__code` 加 `overflow-wrap: anywhere`。
+
+修完实测与稿逐值一致：118 宽 / 折 4 行 / 小计块 `150 → 198`。
+这两个几何值已钉成断言（含 `150` 的对照不变量），不是只判「没溢出」。
+
+### 文件清单
+
+| 文件 | 改动 |
+|---|---|
+| `account.html` | detail 卡加 `data-acct-sub-state` / `data-acct-discount` 两个开关；15 处 `data-detail-only`、3 处 `data-discount-only`；新增 Restart 按钮 + 说明 + 分隔线、`Out of stock`、`Edit discount code`、折扣码 span；品名裹进 `__label` 让数量留在删除线外；`?v=` 升到 `a5`（同一文件里主线的 `r105 → r134` 是别处那轮带过来的） |
+| `assets/account.scss` | 新增两组 `@each` 状态开关、`[data-acct-sub-state="cancelled"]` 禁用段、`.gb-acct-detail__restart-note`、`.gb-acct-product__stock`、`.gb-acct-summary__code`（含 `overflow-wrap: anywhere`）；`$build-acct` → `20260909-a5` |
+| `assets/account.css` | 编译产物（双写） |
+| `tools/acctcheck.py` | 追加 Task 7 断言 93 条；新增 `DETAIL_PAUSED` / `DETAIL_CANCELLED` / `DETAIL_DISCOUNT` / `DETAIL_LONGCODE` 四个动作；`LONGCODE` 现在真的注入 `28878` 的原文 |
+| `docs/account/DETAIL-STATES.md` | 新建 —— 六个 frame 的归属、Detail 五个状态的逐项差异、四条待确认 |
+| `docs/account/SPEC.md` | §7 新增待裁决 O / P / Q / R；C 补上「四项其实有稿」 |
+
+### 判据
+
+| 判据 | 结果 |
+|---|---|
+| `tools/acctcheck.py` | **541 ok / 0 red**（Task 6 收尾是 448） |
+| 活性自检 A：摘掉 `data-acct-sub-state` 那组 `@each` | 转红 **20** ✅ |
+| 活性自检 B：摘掉 `data-acct-discount` 那组 `@each` | 转红 **3** ✅ |
+| 活性自检 C：摘掉 `overflow-wrap: anywhere` | 转红 **8** ✅（含两条几何值） |
+| 铁律 6 配对审计：14 条 `absent` 是否都有同名正向断言 | 14/14 有 ✅ |
+| `tools/rwd.py account.html` | 全绿 |
+| `tools/acctvars.py` | 54 ok / 0 red |
+| `tools/assetpath.py` | GREEN（`account.scss` 无 `url()`） |
+| 双写一致：重编译 scss 与 `account.css` 逐字节 diff | IN SYNC |
+
+### 已知偏差（不要报成 bug）
+
+- **PAUSED 的续订日期实现成 `19 Jul 2026`**（跟 active 相同），因为详情稿 `28627`/`28774`
+  就是这么写的。列表卡那边是 `17 Aug 2026`。便签 `34038` 站列表那边 —— **两处不一致是稿的问题**，
+  已登记待裁决 P，未擅自统一。
+- **`28774` 的链接文案实现成 `Edit discount code`**，但那张稿上写的是 `Add a discount code`。
+  判为漏改（便签 `30921` 与 `28478` 都站 Edit 这边），已登记待裁决 Q。
+- **四个状态一个桌面稿都没有**，桌面沿用基准态的字号阶梯，只有结构与文案随状态走。
+  与待裁决 M 同类，已登记待裁决 R。
+- **CANCELLED 没有任何 opacity 变化** —— 列表卡的 PAUSED/CANCELLED 会压到 0.4，
+  详情页不会，是稿本来就这样，不是漏做。
+- 说明文案里的 `bale`（应为 `able`）是稿上的错字，按稿照抄，已在 §8 登记。
+
+### 遗留
+
+- **Order History / Order Detail / My Details / Change Password / Help 五个页面有手机稿但不在计划里**
+  —— 范围变化，等拍板。做的话还缺桌面稿。
+- **`27081` 与 `27116` 文本逐字相同、高度同为 2206**，是复制未删还是有肉眼级差异（如某个 input 的
+  focus 态）？已登记待裁决 O。
+- **状态目前只能由判据用脚本切**，页面上没有切换入口 —— 真实站点由模板按订阅数据渲染。
+  「怎么进入 PAUSED」设计方自己回的是 *we haven't finalised this yet*（阻塞项「暂停入口」）。
+- 禁用态的 `disabled` 属性未加（见上方 ⚠），接后端时补。
+
+---
+
 ## Task 6 — Subscription Detail 的 ACTIVE 基准态（`$build-acct` = `20260909-a4`）
 
 **设计源**：桌面 `2284:27792`、手机 `2284:28330`；便签 `30905` Add items / `30913` Flavour /

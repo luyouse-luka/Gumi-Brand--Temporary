@@ -1275,6 +1275,56 @@
     row-gap: clamp(16px, 24px + -8 * (100vw - 768px) / 513, 24px);
   }
 }
+.gb-acct-detail[data-acct-sub-state=active] [data-detail-only]:not([data-detail-only~=active]) {
+  display: none;
+}
+.gb-acct-detail[data-acct-sub-state=paused] [data-detail-only]:not([data-detail-only~=paused]) {
+  display: none;
+}
+.gb-acct-detail[data-acct-sub-state=cancelled] [data-detail-only]:not([data-detail-only~=cancelled]) {
+  display: none;
+}
+.gb-acct-detail[data-acct-discount=none] [data-discount-only]:not([data-discount-only~=none]) {
+  display: none;
+}
+.gb-acct-detail[data-acct-discount=applied] [data-discount-only]:not([data-discount-only~=applied]) {
+  display: none;
+}
+
+.gb-acct-detail[data-acct-sub-state=cancelled] .gb-acct-row .gb-acct-link,
+.gb-acct-detail[data-acct-sub-state=cancelled] .gb-acct-product .gb-acct-link {
+  color: rgba(128, 128, 128, 0.4);
+  text-decoration: none;
+  pointer-events: none;
+}
+.gb-acct-detail[data-acct-sub-state=cancelled] [data-acct-modal=add-product],
+.gb-acct-detail[data-acct-sub-state=cancelled] [data-acct-modal=skip-next] {
+  border: 1px solid #e6e6e6;
+  background: #e6e6e6;
+  color: #808080;
+  pointer-events: none;
+}
+.gb-acct-detail[data-acct-sub-state=cancelled] .gb-acct-schedule__day {
+  border-color: #e6e6e6;
+  background: #e6e6e6;
+  color: #808080;
+}
+.gb-acct-detail[data-acct-sub-state=cancelled] .gb-acct-product--oos .gb-acct-product__label {
+  color: #dd655e;
+  text-decoration: line-through;
+}
+
+.gb-acct-detail__restart-note {
+  max-width: 298.5px;
+  margin: 0 auto;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  letter-spacing: -0.24px;
+  color: #666666;
+  text-align: center;
+}
 
 .gb-acct-detail__body {
   display: flex;
@@ -1511,6 +1561,16 @@
   max-width: 100%;
 }
 
+.gb-acct-product__stock {
+  margin: 0;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  letter-spacing: -0.24px;
+  color: #dd655e;
+}
+
 .gb-acct-product__flavour {
   margin: 0;
   font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
@@ -1608,6 +1668,18 @@
   .gb-acct-summary__kind {
     display: none;
   }
+}
+
+.gb-acct-summary__code {
+  width: 118px;
+  overflow-wrap: anywhere;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  letter-spacing: -0.24px;
+  color: #666666;
+  text-align: right;
 }
 
 .gb-acct-tag {

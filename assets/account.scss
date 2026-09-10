@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260909-a4";
+$build-acct: "20260909-a5";
 
 // ==========================================================================
 // Variables
@@ -1419,6 +1419,74 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
   @include narrow { row-gap: 24px; }
   @include tablet { row-gap: fluid(24px, 16px); }
+
+  // State switching, 2284:28478 / 28627 / 28774 / 34058. Each state board is a
+  // copy of the active one with pieces removed, so the markup carries every
+  // piece and the state hides what does not belong.
+  //
+  // ⚠ The test has to be "the current state is NOT in this element's list".
+  // `:not([data-detail-only~="paused"])` written the other way round hides
+  // anything whose list also names another state -- "active paused" would
+  // vanish in both.
+  @each $s in active, paused, cancelled {
+    &[data-acct-sub-state="#{$s}"] [data-detail-only]:not([data-detail-only~="#{$s}"]) {
+      display: none;
+    }
+  }
+
+  // Independent of the state above: 28774 is paused AND has a code applied.
+  @each $d in none, applied {
+    &[data-acct-discount="#{$d}"] [data-discount-only]:not([data-discount-only~="#{$d}"]) {
+      display: none;
+    }
+  }
+}
+
+// 34058: a cancelled subscription cannot be edited, so every entry point except
+// Restart and the discount link is drawn disabled -- greyed links, grey-filled
+// buttons, grey date blocks, and the out-of-stock line struck through.
+// ⚠ CSS only makes them look and feel disabled. When the state is wired to real
+// data the same condition has to set the `disabled` attribute as well, or they
+// stay focusable and are announced as enabled.
+.gb-acct-detail[data-acct-sub-state="cancelled"] {
+  .gb-acct-row .gb-acct-link,
+  .gb-acct-product .gb-acct-link {
+    color: rgba($c-gray-400, 0.4);
+    text-decoration: none;
+    pointer-events: none;
+  }
+
+  [data-acct-modal="add-product"],
+  [data-acct-modal="skip-next"] {
+    border: 1px solid $c-gray-150;
+    background: $c-gray-150;
+    color: $c-gray-400;
+    pointer-events: none;
+  }
+
+  .gb-acct-schedule__day {
+    border-color: $c-gray-150;
+    background: $c-gray-150;
+    color: $c-gray-400;
+  }
+
+  // 34095: the row that is out of stock, not every row -- and the strike lands
+  // on the name only. text-decoration propagates to inline children and cannot
+  // be switched off there, so the quantity has to sit outside the struck span.
+  .gb-acct-product--oos .gb-acct-product__label {
+    color: $c-coral;
+    text-decoration: line-through;
+  }
+}
+
+// 34079, cancelled only: centred under the Restart button, in the board's own
+// 298.5 so it breaks into two lines.
+.gb-acct-detail__restart-note {
+  max-width: 298.5px;
+  margin: 0 auto;
+  @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
+  color: $c-gray-600;
+  text-align: center;
 }
 
 // The two cards and the cancel link travel together: 27859 gaps 16 between
@@ -1630,6 +1698,13 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   max-width: 100%;
 }
 
+// 34098: coral, and it takes the flavour slot rather than adding a line.
+.gb-acct-product__stock {
+  margin: 0;
+  @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
+  color: $c-coral;
+}
+
 .gb-acct-product__flavour {
   margin: 0;
   @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
@@ -1712,6 +1787,19 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 // followed rather than picking one -- registered as decision N.
 .gb-acct-summary__kind {
   @include narrow { display: none; }
+}
+
+// 28582: right-aligned inside a fixed 118 so a 51-character code wraps in place
+// instead of pushing the tag off the row (28878).
+// ⚠ overflow-wrap is what holds the 118: the board's own code (28878) is one
+// unbreakable 51-character token, and as a flex item its automatic minimum
+// would otherwise be the full 376 the string wants.
+.gb-acct-summary__code {
+  width: 118px;
+  overflow-wrap: anywhere;
+  @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
+  color: $c-gray-600;
+  text-align: right;
 }
 
 .gb-acct-tag {

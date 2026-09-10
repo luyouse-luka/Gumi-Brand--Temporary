@@ -6,11 +6,11 @@
 <title>Gumi — My Account</title>
 <meta name="description" content="Manage your Gumi subscription, orders and details.">
 <script>(function(h){h.classList.add("js");function u(){window.gumi||h.classList.remove("js")}addEventListener("load",u);setTimeout(u,10000)})(document.documentElement)</script>
-<link rel="icon" href="images/favicon.ico?v=20260908-r105" sizes="32x32">
-<link rel="icon" href="images/favicon.svg?v=20260908-r105" type="image/svg+xml">
-<link rel="apple-touch-icon" href="images/favicon-180.png?v=20260908-r105">
-<link rel="stylesheet" href="assets/customstyle.css?v=20260908-r105">
-<link rel="stylesheet" href="assets/account.css?v=20260909-a4">
+<link rel="icon" href="images/favicon.ico?v=20260909-r134" sizes="32x32">
+<link rel="icon" href="images/favicon.svg?v=20260909-r134" type="image/svg+xml">
+<link rel="apple-touch-icon" href="images/favicon-180.png?v=20260909-r134">
+<link rel="stylesheet" href="assets/customstyle.css?v=20260909-r134">
+<link rel="stylesheet" href="assets/account.css?v=20260909-a5">
 <noscript><style>.wowo{opacity:1 !important}</style></noscript>
 </head>
 <body>
@@ -293,7 +293,7 @@
         </div>
         </section>
         <section class="gb-acct__view" data-acct-view="detail" hidden>
-        <div class="gb-acct-detail">
+        <div class="gb-acct-detail" data-acct-sub-state="active" data-acct-discount="none">
           <!-- 2284:27860 desktop / 2284:28337 phone. Same block as the list
                page's header, except the back button shows at every width and a
                pencil replaces the subtitle. -->
@@ -301,23 +301,23 @@
             <button class="gb-acct-intro__back" type="button" data-acct-goto="subscriptions" aria-label="Back to my subscriptions"><svg class="gb-acct-intro__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="26 174 20 20" fill="none" aria-hidden="true"> <path id="Icon_3" d="M41.8307 184.001H30.1641M35.9974 178.168L30.1641 184.001L35.9974 189.835" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/> </svg></button>
             <div class="gb-acct-intro__text gb-acct-intro__text--row">
               <p class="gb-acct-intro__title">My Subscription</p>
-              <button class="gb-acct-intro__edit" type="button" data-acct-modal="edit-name" aria-label="Edit subscription name"><svg class="gb-acct-intro__pencil" xmlns="http://www.w3.org/2000/svg" viewBox="751.949 309.625 20 20" fill="none" aria-hidden="true"> <path id="Icon_5" d="M769.449 326.964H762.783M754.033 327.38L758.657 325.602C758.953 325.488 759.101 325.431 759.239 325.357C759.362 325.291 759.479 325.215 759.589 325.129C759.713 325.033 759.826 324.921 760.05 324.697L769.449 315.297C770.37 314.377 770.37 312.884 769.449 311.964C768.529 311.043 767.037 311.043 766.116 311.964L756.716 321.364C756.492 321.588 756.38 321.7 756.284 321.824C756.198 321.934 756.122 322.051 756.056 322.174C755.982 322.312 755.925 322.46 755.811 322.756L754.033 327.38ZM754.033 327.38L755.748 322.921C755.871 322.602 755.932 322.443 756.037 322.37C756.129 322.306 756.243 322.282 756.353 322.303C756.479 322.327 756.6 322.447 756.841 322.689L758.724 324.572C758.966 324.813 759.087 324.934 759.111 325.06C759.132 325.17 759.108 325.284 759.044 325.376C758.971 325.481 758.811 325.543 758.492 325.665L754.033 327.38Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/> </svg></button>
+              <button class="gb-acct-intro__edit" type="button" data-detail-only="active paused" data-acct-modal="edit-name" aria-label="Edit subscription name"><svg class="gb-acct-intro__pencil" xmlns="http://www.w3.org/2000/svg" viewBox="751.949 309.625 20 20" fill="none" aria-hidden="true"> <path id="Icon_5" d="M769.449 326.964H762.783M754.033 327.38L758.657 325.602C758.953 325.488 759.101 325.431 759.239 325.357C759.362 325.291 759.479 325.215 759.589 325.129C759.713 325.033 759.826 324.921 760.05 324.697L769.449 315.297C770.37 314.377 770.37 312.884 769.449 311.964C768.529 311.043 767.037 311.043 766.116 311.964L756.716 321.364C756.492 321.588 756.38 321.7 756.284 321.824C756.198 321.934 756.122 322.051 756.056 322.174C755.982 322.312 755.925 322.46 755.811 322.756L754.033 327.38ZM754.033 327.38L755.748 322.921C755.871 322.602 755.932 322.443 756.037 322.37C756.129 322.306 756.243 322.282 756.353 322.303C756.479 322.327 756.6 322.447 756.841 322.689L758.724 324.572C758.966 324.813 759.087 324.934 759.111 325.06C759.132 325.17 759.108 325.284 759.044 325.376C758.971 325.481 758.811 325.543 758.492 325.665L754.033 327.38Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/> </svg></button>
             </div>
           </div>
 
           <div class="gb-acct-detail__body">
           <!-- 2284:27865 desktop / 2284:28344 phone -->
-          <article class="gb-acct-sub gb-acct-sub--detail" data-acct-sub-state="active">
+          <article class="gb-acct-sub gb-acct-sub--detail">
             <div class="gb-acct-sub__head">
               <p class="gb-acct-sub__title">My Subscription</p>
-              <span class="gb-acct-pill"><span class="gb-acct-pill__dot" aria-hidden="true"></span>Active</span>
+              <span class="gb-acct-pill"><span class="gb-acct-pill__dot" aria-hidden="true"></span><span data-detail-only="active">Active</span><span data-detail-only="paused">Paused</span><span data-detail-only="cancelled">Cancelled</span></span>
             </div>
             <div class="gb-acct-sub__body">
-            <div class="gb-acct-row">
+            <div class="gb-acct-row gb-acct-row--renewal" data-detail-only="active paused">
               <div class="gb-acct-row__main">
                 <svg class="gb-acct-row__icon" xmlns="http://www.w3.org/2000/svg" viewBox="541.949 468.625 20 20" fill="none" aria-hidden="true"> <path id="Icon_4" d="M556.116 476.799L559.449 473.466L556.116 470.133M559.449 473.466H548.449C547.049 473.466 546.349 473.466 545.814 473.739C545.344 473.978 544.961 474.361 544.722 474.831C544.449 475.366 544.449 476.066 544.449 477.466V477.633M544.449 483.466H555.449C556.849 483.466 557.549 483.466 558.084 483.194C558.555 482.954 558.937 482.572 559.177 482.101C559.449 481.566 559.449 480.866 559.449 479.466V479.299M547.783 480.133L544.449 483.466L547.783 486.799" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/> </svg>
                 <div class="gb-acct-row__text">
-                  <p class="gb-acct-row__label">Next renewal date</p>
+                  <p class="gb-acct-row__label"><span data-detail-only="active">Next renewal date</span><span data-detail-only="paused">Subscription restarts</span></p>
                   <p class="gb-acct-row__date">19 Jul 2026</p>
                   <p class="gb-acct-row__note">Est Delivery 3-6 business days</p>
                 </div>
@@ -325,10 +325,13 @@
             </div>
 
               <div class="gb-acct-detail__actions">
-                <button class="gb-acct-btn" type="button" data-acct-modal="edit-date"><svg class="gb-acct-btn__icon" xmlns="http://www.w3.org/2000/svg" viewBox="753.949 582.625 20 20" fill="none" aria-hidden="true"> <path id="Icon_7" d="M771.449 590.96H756.449M767.283 584.293V587.626M760.616 584.293V587.626M760.449 600.96H767.449C768.849 600.96 769.549 600.96 770.084 600.687C770.555 600.447 770.937 600.065 771.177 599.595C771.449 599.06 771.449 598.36 771.449 596.96V589.96C771.449 588.56 771.449 587.859 771.177 587.325C770.937 586.854 770.555 586.472 770.084 586.232C769.549 585.96 768.849 585.96 767.449 585.96H760.449C759.049 585.96 758.349 585.96 757.814 586.232C757.344 586.472 756.961 586.854 756.722 587.325C756.449 587.859 756.449 588.56 756.449 589.96V596.96C756.449 598.36 756.449 599.06 756.722 599.595C756.961 600.065 757.344 600.447 757.814 600.687C758.349 600.96 759.049 600.96 760.449 600.96Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/> </svg><span>Edit Date</span></button>
+                <button class="gb-acct-btn" type="button" data-detail-only="active paused" data-acct-modal="edit-date"><svg class="gb-acct-btn__icon" xmlns="http://www.w3.org/2000/svg" viewBox="753.949 582.625 20 20" fill="none" aria-hidden="true"> <path id="Icon_7" d="M771.449 590.96H756.449M767.283 584.293V587.626M760.616 584.293V587.626M760.449 600.96H767.449C768.849 600.96 769.549 600.96 770.084 600.687C770.555 600.447 770.937 600.065 771.177 599.595C771.449 599.06 771.449 598.36 771.449 596.96V589.96C771.449 588.56 771.449 587.859 771.177 587.325C770.937 586.854 770.555 586.472 770.084 586.232C769.549 585.96 768.849 585.96 767.449 585.96H760.449C759.049 585.96 758.349 585.96 757.814 586.232C757.344 586.472 756.961 586.854 756.722 587.325C756.449 587.859 756.449 588.56 756.449 589.96V596.96C756.449 598.36 756.449 599.06 756.722 599.595C756.961 600.065 757.344 600.447 757.814 600.687C758.349 600.96 759.049 600.96 760.449 600.96Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/> </svg><span>Edit Date</span></button>
                 <!-- 27881's icon slot is visible=false on the board -->
-                <button class="gb-acct-btn" type="button" data-acct-modal="need-now"><span>I need it now</span></button>
+                <button class="gb-acct-btn" type="button" data-detail-only="active paused" data-acct-modal="need-now"><span>I need it now</span></button>
+                <button class="gb-acct-btn" type="button" data-detail-only="cancelled" data-acct-modal="restart"><span>Restart Subscription</span></button>
               </div>
+              <p class="gb-acct-detail__restart-note" data-detail-only="cancelled">You will be bale to make changes to your subscription once restarted.</p>
+              <hr class="gb-acct-sub__rule" data-detail-only="cancelled">
 
             <div class="gb-acct-row">
               <div class="gb-acct-row__main">
@@ -343,11 +346,27 @@
 
               <hr class="gb-acct-sub__rule">
 
+            <div class="gb-acct-product gb-acct-product--oos">
+              <span class="gb-acct-product__thumb" aria-hidden="true"></span>
+              <div class="gb-acct-product__info">
+                <div class="gb-acct-product__top">
+                  <p class="gb-acct-product__name"><span class="gb-acct-product__qty">1</span><span class="gb-acct-product__label">Superfood Greens Gummies</span></p>
+                  <button class="gb-acct-link" type="button" data-acct-modal="edit-product">Edit</button>
+                </div>
+                <div class="gb-acct-product__meta">
+                  <!-- 27899 is literally the word "Flavour": note 30913 says flavour
+                       is not editable yet, so the board never filled the value in. -->
+                  <p class="gb-acct-product__flavour" data-detail-only="active paused">Flavour</p>
+                  <p class="gb-acct-product__stock" data-detail-only="cancelled">Out of stock</p>
+                  <p class="gb-acct-product__price"><s class="gb-acct-product__was" data-detail-only="active paused">$168.90</s><span class="gb-acct-product__now" data-detail-only="active paused">$121.50</span><span class="gb-acct-product__now" data-detail-only="cancelled">$00.00</span></p>
+                </div>
+              </div>
+            </div>
             <div class="gb-acct-product">
               <span class="gb-acct-product__thumb" aria-hidden="true"></span>
               <div class="gb-acct-product__info">
                 <div class="gb-acct-product__top">
-                  <p class="gb-acct-product__name"><span class="gb-acct-product__qty">1</span>Superfood Greens Gummies</p>
+                  <p class="gb-acct-product__name"><span class="gb-acct-product__qty">1</span><span class="gb-acct-product__label">Superfood Greens Gummies</span></p>
                   <button class="gb-acct-link" type="button" data-acct-modal="edit-product">Edit</button>
                 </div>
                 <div class="gb-acct-product__meta">
@@ -362,7 +381,7 @@
               <span class="gb-acct-product__thumb" aria-hidden="true"></span>
               <div class="gb-acct-product__info">
                 <div class="gb-acct-product__top">
-                  <p class="gb-acct-product__name"><span class="gb-acct-product__qty">1</span>Superfood Greens Gummies</p>
+                  <p class="gb-acct-product__name"><span class="gb-acct-product__qty">1</span><span class="gb-acct-product__label">Superfood Greens Gummies</span></p>
                   <button class="gb-acct-link" type="button" data-acct-modal="edit-product">Edit</button>
                 </div>
                 <div class="gb-acct-product__meta">
@@ -377,22 +396,7 @@
               <span class="gb-acct-product__thumb" aria-hidden="true"></span>
               <div class="gb-acct-product__info">
                 <div class="gb-acct-product__top">
-                  <p class="gb-acct-product__name"><span class="gb-acct-product__qty">1</span>Superfood Greens Gummies</p>
-                  <button class="gb-acct-link" type="button" data-acct-modal="edit-product">Edit</button>
-                </div>
-                <div class="gb-acct-product__meta">
-                  <!-- 27899 is literally the word "Flavour": note 30913 says flavour
-                       is not editable yet, so the board never filled the value in. -->
-                  <p class="gb-acct-product__flavour">Flavour</p>
-                  <p class="gb-acct-product__price"><s class="gb-acct-product__was">$168.90</s><span class="gb-acct-product__now">$121.50</span></p>
-                </div>
-              </div>
-            </div>
-            <div class="gb-acct-product">
-              <span class="gb-acct-product__thumb" aria-hidden="true"></span>
-              <div class="gb-acct-product__info">
-                <div class="gb-acct-product__top">
-                  <p class="gb-acct-product__name"><span class="gb-acct-product__qty">1</span>Superfood Greens Gummies</p>
+                  <p class="gb-acct-product__name"><span class="gb-acct-product__qty">1</span><span class="gb-acct-product__label">Superfood Greens Gummies</span></p>
                   <button class="gb-acct-link" type="button" data-acct-modal="edit-product">Edit</button>
                 </div>
                 <div class="gb-acct-product__meta">
@@ -417,12 +421,13 @@
                 <div class="gb-acct-summary__head">
                   <div class="gb-acct-summary__lines">
                     <p class="gb-acct-summary__row"><span>Subtotal</span><span>$00.00</span></p>
-                    <p class="gb-acct-summary__row"><span>Discounts</span><span class="gb-acct-summary__discount"><span class="gb-acct-summary__kind">Automatic</span><span class="gb-acct-tag">-$26.40</span></span></p>
+                    <p class="gb-acct-summary__row gb-acct-summary__row--discount" data-detail-only="active paused"><span>Discounts</span><span class="gb-acct-summary__discount"><span class="gb-acct-summary__kind" data-discount-only="none">Automatic</span><span class="gb-acct-summary__code" data-discount-only="applied">DISCOUNTCODE</span><span class="gb-acct-tag">-$26.40</span></span></p>
                     <p class="gb-acct-summary__row"><span>Shipping</span><span>FREE</span></p>
                   </div>
                   <!-- Note 30921: once a code is applied this reads Edit. That
                        variant is Task 7. -->
-                  <button class="gb-acct-link gb-acct-link--sm" type="button" data-acct-modal="discount-add">Add a discount code</button>
+                  <button class="gb-acct-link gb-acct-link--sm" type="button" data-discount-only="none" data-acct-modal="discount-add">Add a discount code</button>
+                  <button class="gb-acct-link gb-acct-link--sm" type="button" data-discount-only="applied" data-acct-modal="discount-applied">Edit discount code</button>
                 </div>
                 <p class="gb-acct-summary__total"><span>Total</span><span>$00.00</span></p>
               </div>
@@ -468,11 +473,11 @@
               <span class="gb-acct-schedule__day">14 Aug</span>
               <span class="gb-acct-schedule__day">11 Sep</span>
               </div>
-              <button class="gb-acct-btn gb-acct-btn--ghost" type="button" data-acct-modal="skip-next"><span>Skip next order</span></button>
+              <button class="gb-acct-btn gb-acct-btn--ghost" type="button" data-detail-only="active cancelled" data-acct-modal="skip-next"><span>Skip next order</span></button>
             </div>
           </div>
 
-          <p class="gb-acct-detail__cancel"><button class="gb-acct-link" type="button" data-acct-modal="cancel-offer-skip">Cancel Subscription</button></p>
+          <p class="gb-acct-detail__cancel" data-detail-only="active paused"><button class="gb-acct-link" type="button" data-acct-modal="cancel-offer-skip">Cancel Subscription</button></p>
           </div>
         </div>
         </section>
@@ -555,8 +560,8 @@
 
 
 
-  <script src="assets/lenis.min.js?v=20260908-r105"></script>
-  <script src="assets/main.js?v=20260908-r105"></script>
-  <script src="assets/account.js?v=20260909-a4"></script>
+  <script src="assets/lenis.min.js?v=20260909-r134"></script>
+  <script src="assets/main.js?v=20260909-r134"></script>
+  <script src="assets/account.js?v=20260909-a5"></script>
 </body>
 </html>
