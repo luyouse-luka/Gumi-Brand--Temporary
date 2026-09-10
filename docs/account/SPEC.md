@@ -270,6 +270,10 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
   两段都**左对齐、左边缘与 label 齐平**，所以差的 10px 全在右边、没有语义。
   **已按撑满 308 实现**，与 note 卡 472 vs 480（待裁决 AA）同类。
 
+- ⚠ **`2284:27304` 的四条商品行把「较低的价划掉」**：`$134.50` 是正常样式、
+  `$133.50` 带 STRIKETHROUGH。划线价按惯例是**原价**、应当更高，这里反了。
+  **已照稿实现**（划 `$133.50`），两个数都是占位（见 §8b），换真数据时一并纠正。
+
 
 ## 8b. 上线前必须替换的占位内容
 
@@ -298,6 +302,8 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | `email@email.com.au` / `0400 000 000` / `Mon - Fri, 6am - 11pm AEST` | `.gb-acct-help` 卡（Help 与 Order Detail 共用） | 板上的示例联系方式 |
 | Order History 的五张订单卡 | `[data-acct-view="orders"]` | `Order #1234567x` / `Aug 14-16, 2026` / `$89.99`·`$45.00`·`$0.00` 全是示例，且后两张是第二张的复制（见 §8） |
 | `Page 1 of 10` 与两个翻页箭头 | 同上 | 静态站只有一页，箭头做成 disabled；接后端后才有真分页 |
+| Order Detail 的四条商品行缩略图 | `.gb-acct-item__thumb` ×4 | 板上是 40×40 的纯 `#d9d9d9` 矩形、**没有 imageRef** —— 与订阅卡缩略图一样，设计里根本没有产品图，不是我们漏切 |
+| Order Detail 的四条商品行 | `[data-acct-view="order"] .gb-acct-item` ×4 | 同一件商品重复四次（同名、同口味位、同数量、同价），是排版占位不是真数据 |
 | Order Detail 的订单数据 | `[data-acct-view="order"]` | `Order #12345678` / `Aug 13, 2026` / `$121.50` / `$134.50`→`$133.50` ×4 / Order Summary 的四个 `$00.00` / `Susanna Rose, 12 Charnwood Rd…` / `•••• 5467` / `Shipping & Standard: $12.98` 全是板上的示例 |
 | 两个 auth 表单的 `action="#" method="post"` | `account-login.html` / `account-signup.html` | 静态壳，提交后只会跳回 `#`。接 Shopify 时换成 `customers/login` 与 `customers/register` 的真实 form |
 

@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260910-a16";
+$build-acct: "20260910-a17";
 
 // ==========================================================================
 // Variables
@@ -2023,6 +2023,192 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   display: flex;
   flex-direction: column;
   row-gap: 32px;
+}
+
+// 2284:27304 Line 119-122 -- a real 1px row in the card's 24-gap column, not a
+// border on a neighbour.
+.gb-acct-rule {
+  height: 1px;
+  background: $c-gray-150;
+}
+
+// The section headings are w400 on $c-ink; .gb-acct-card__title next to them is
+// w500 on #1a1a1a. Two different steps, both 16/24.
+.gb-acct-sect {
+  margin: 0;
+  @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+  color: $c-ink;
+}
+
+.gb-acct-items {
+  display: flex;
+  flex-direction: column;
+  row-gap: 24px;
+}
+
+.gb-acct-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  column-gap: 2px;
+}
+
+.gb-acct-item__main {
+  display: flex;
+  align-items: flex-start;
+  column-gap: 12px;
+  min-width: 0;
+}
+
+// 40/14 on the board. The fill is a bare #d9d9d9 rectangle with no imageRef --
+// the design has no product photo here (SPEC 8b), same as the subscription card.
+.gb-acct-item__thumb {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 2.86px;
+  background: $c-gray-200;
+}
+
+.gb-acct-item__text {
+  display: flex;
+  flex-direction: column;
+  row-gap: 6px;
+  min-width: 0;
+}
+
+.gb-acct-item__head {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.gb-acct-item__names {
+  display: flex;
+  flex-direction: column;
+  row-gap: 2px;
+}
+
+.gb-acct-item__name {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-navy;
+}
+
+.gb-acct-item__flavour,
+.gb-acct-item__qty,
+.gb-acct-item__tag {
+  margin: 0;
+  color: $c-gray-600;
+}
+
+.gb-acct-item__flavour {
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+}
+
+.gb-acct-item__qty {
+  @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
+}
+
+.gb-acct-item__tag {
+  display: flex;
+  align-items: center;
+  column-gap: 6px;
+  @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
+}
+
+.gb-acct-item__icon {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+
+.gb-acct-item__prices {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  row-gap: 1px;
+}
+
+.gb-acct-item__price {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-navy;
+}
+
+// The board strikes $133.50 and leaves $134.50 plain -- the lower number is the
+// struck one, which reads backwards. Built as drawn, see SPEC 8.
+.gb-acct-item__was {
+  margin: 0;
+  @include font($font-brand-stack, 12px, 400, 20px, -0.24px);
+  color: $c-gray-600;
+  text-decoration: line-through;
+}
+
+.gb-acct-recap {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.gb-acct-recap__rows {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.gb-acct-recap__row,
+.gb-acct-recap__total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 8px;
+  margin: 0;
+}
+
+.gb-acct-recap__label,
+.gb-acct-recap__value {
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-600;
+}
+
+.gb-acct-recap__total {
+  @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+  color: $c-ink;
+}
+
+.gb-acct-info {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.gb-acct-info__label {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-900;
+}
+
+.gb-acct-info__value {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-600;
+}
+
+.gb-acct-info__card {
+  display: flex;
+  align-items: center;
+  column-gap: 4px;
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-900;
+}
+
+.gb-acct-info__logo {
+  flex: none;
+  width: 23px;
+  height: 16px;
 }
 
 // 2284:27202. Label and value share a line 4 apart; the three lines are 8 apart.

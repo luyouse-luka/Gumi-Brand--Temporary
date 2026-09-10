@@ -1558,17 +1558,28 @@ Order Detail **不进导航** —— 它的入口是 Order History 卡上的 `Vi
 cheap. Otherwise, remove.」**照稿做出来**（这是还原不是决策），在 SPEC §7 I 下补一句
 「Order Detail 页已按稿实现，要去掉说一声」。
 
-⚠ 商品行的缩略图从 `figma/account/image-fills/` 取，**一卡一图不复用**（全局铁律 3）；
-稿上四行若确实是同一张图，照稿即可，但在 §8b 记一笔。
+⚠ **商品行根本没有图**：板上是 40×40 的纯 `#d9d9d9` 矩形、**没有 imageRef**，
+与订阅卡缩略图同一情况 —— 设计里就没有产品图，不是漏切。已在 §8b 记一笔。
+⚠ **划线价反了**：`$134.50` 是正常样式、`$133.50` 带 STRIKETHROUGH，
+而划线价按惯例是原价、应当更高。**已照稿实现**并登记 §8。
 
 **文件**：修改 `account.html`、`assets/account.scss`、`tools/acctcheck.py`
 
-- [ ] **步骤 1：取数值**，四个小节的卡片间距与内部行距分别取
-- [ ] **步骤 2：追加断言（先红）**，含 `Total` 行的字重与 4 个商品行计数
-- [ ] **步骤 3：跑判据确认红**
-- [ ] **步骤 4：实现**，商品行结构尽量复用 Detail 视图已有的 `.gb-acct-row`
-- [ ] **步骤 5：编译、跑判据确认绿、`rwd.py`**
-- [ ] **步骤 6：提交** — `git commit -m "feat(account): Order Detail 视图"`
+- [x] **步骤 1：取数值**，四个小节的卡片间距与内部行距分别取
+- [x] **步骤 2：追加断言（先红）**，含 `Total` 行的字重与 4 个商品行计数
+- [x] **步骤 3：跑判据确认红**
+- [x] **步骤 4：实现**。订单头的三行 meta 直接复用 Task 20 的 `.gb-acct-hist`（逐值相同）；
+      收尾的沙色卡复用 Task 19 的 `.gb-acct-help`（板上就是同一个 Frame）。
+      ⚠ **小节标题不能用 `.gb-acct-card__title`**：`Order Items:` 那四个是 **w400 `#011307`**，
+      而 `__title` 是 w500 `#1a1a1a` —— 两个不同的 16/24 档，另起 `.gb-acct-sect`。
+      ⚠ 分隔线 `Line 119-122` 是卡 body 那个 gap 24 列里的**真实一行**，
+      不是邻居身上的 border，写成 `.gb-acct-rule` 元素。
+      Visa 标用现成的 `images/pay-visa.svg` 缩到 23×16；`Subscription` / `One-off purchase`
+      前面的两个 12×12 图标从整块 SVG 里按坐标裁出，用 `viewBox` 偏移代替平移路径。
+- [x] **步骤 5：编译、跑判据确认绿** —— `795 → 835 ok / 0 red`（+40）。
+      `accthover.py` 33 hover、`acctbp.py` 2168 decl、`acctmotion.py` 12 ok、
+      `acctvars.py` 54 ok、`assetpath.py` GREEN；`rwd.py` 五档全绿。版本号 `20260910-a17`。
+- [x] **步骤 6：提交** — `git commit -m "feat(account): Order Detail 视图"`
 
 ---
 ## Task 22：这批的收尾回归

@@ -1926,6 +1926,232 @@
   row-gap: 32px;
 }
 
+.gb-acct-rule {
+  height: 1px;
+  background: #e6e6e6;
+}
+
+.gb-acct-sect {
+  margin: 0;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: #011307;
+}
+
+.gb-acct-items {
+  display: flex;
+  flex-direction: column;
+  row-gap: 24px;
+}
+
+.gb-acct-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  column-gap: 2px;
+}
+
+.gb-acct-item__main {
+  display: flex;
+  align-items: flex-start;
+  column-gap: 12px;
+  min-width: 0;
+}
+
+.gb-acct-item__thumb {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 2.86px;
+  background: #d9d9d9;
+}
+
+.gb-acct-item__text {
+  display: flex;
+  flex-direction: column;
+  row-gap: 6px;
+  min-width: 0;
+}
+
+.gb-acct-item__head {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.gb-acct-item__names {
+  display: flex;
+  flex-direction: column;
+  row-gap: 2px;
+}
+
+.gb-acct-item__name {
+  margin: 0;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: #101828;
+}
+
+.gb-acct-item__flavour,
+.gb-acct-item__qty,
+.gb-acct-item__tag {
+  margin: 0;
+  color: #666666;
+}
+
+.gb-acct-item__flavour {
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+}
+
+.gb-acct-item__qty {
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  letter-spacing: -0.24px;
+}
+
+.gb-acct-item__tag {
+  display: flex;
+  align-items: center;
+  column-gap: 6px;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  letter-spacing: -0.24px;
+}
+
+.gb-acct-item__icon {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+
+.gb-acct-item__prices {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  row-gap: 1px;
+}
+
+.gb-acct-item__price {
+  margin: 0;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: #101828;
+}
+
+.gb-acct-item__was {
+  margin: 0;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.24px;
+  color: #666666;
+  text-decoration: line-through;
+}
+
+.gb-acct-recap {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.gb-acct-recap__rows {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.gb-acct-recap__row,
+.gb-acct-recap__total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 8px;
+  margin: 0;
+}
+
+.gb-acct-recap__label,
+.gb-acct-recap__value {
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: #666666;
+}
+
+.gb-acct-recap__total {
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: #011307;
+}
+
+.gb-acct-info {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.gb-acct-info__label {
+  margin: 0;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: #1a1a1a;
+}
+
+.gb-acct-info__value {
+  margin: 0;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: #666666;
+}
+
+.gb-acct-info__card {
+  display: flex;
+  align-items: center;
+  column-gap: 4px;
+  margin: 0;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: #1a1a1a;
+}
+
+.gb-acct-info__logo {
+  flex: none;
+  width: 23px;
+  height: 16px;
+}
+
 .gb-acct-hist {
   display: flex;
   flex-direction: column;

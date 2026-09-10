@@ -1013,13 +1013,66 @@ GROUPS = {
     ],
     # Order Detail has no nav row of its own -- Task 20 gives it one on the
     # order card's View Order button. Until then the hash is the only way in.
+    # -- Task 21: Order Detail (2284:27304) --
+    # One tall white card: header meta, then four rules separating Order Items /
+    # Order Summary / Shipping Information / Payment Information, then Download
+    # Invoice in the foot. The sand help card below it is Task 19's.
     ("account.html", 1440, GOTO_ORDER): [
         ("shown", "[data-acct-view='order']", True),
         ("text", OD + ".gb-acct-intro__title", ["Order #12345678"]),
         ("css", OD + ".gb-acct-intro__title", "font-size", "24px"),
+        ("text", OD + ".gb-acct-hist__label", ["Order Date:", "Status:", "Total:"]),
+        ("text", OD + ".gb-acct-hist__value", ["Aug 13, 2026", "Preparing", "$121.50"]),
+        # section headings are w400 #011307 -- NOT .gb-acct-card__title's w500 #1a1a1a
+        ("text", OD + ".gb-acct-sect",
+         ["Order Items:", "Order Summary", "Shipping Information", "Payment Information"]),
+        ("css", OD + ".gb-acct-sect", "font-size", "16px"),
+        ("css", OD + ".gb-acct-sect", "font-weight", "400"),
+        ("css", OD + ".gb-acct-sect", "color", "rgb(1, 19, 7)"),
+        ("css", OD + ".gb-acct-rule", "height", "1px"),
+        ("css", OD + ".gb-acct-rule", "background-color", "rgb(230, 230, 230)"),
+        ("text", OD + ".gb-acct-item__name", ['Superfood Greens Gummies'] * 4),
+        ("text", OD + ".gb-acct-item__flavour", ["Flavour"] * 4),
+        ("text", OD + ".gb-acct-item__qty", ["Quantity: 1"] * 4),
+        ("text", OD + ".gb-acct-item__tag",
+         ["Subscription", "One-off purchase", "Subscription", "Subscription"]),
+        ("text", OD + ".gb-acct-item__price", ["$134.50"] * 4),
+        # the board strikes the LOWER of the two prices -- SPEC 8
+        ("text", OD + ".gb-acct-item__was", ["$133.50"] * 4),
+        ("css", OD + ".gb-acct-item__was", "text-decoration-line", "line-through"),
+        ("css", OD + ".gb-acct-item__name", "color", "rgb(16, 24, 40)"),
+        ("css", OD + ".gb-acct-item__thumb", "width", "40px"),
+        ("css", OD + ".gb-acct-item__thumb", "border-radius", "2.86px"),
+        ("css", OD + ".gb-acct-items", "row-gap", "24px"),
+        ("css", OD + ".gb-acct-item__main", "column-gap", "12px"),
+        ("text", OD + ".gb-acct-recap__label",
+         ["Subtotal", "Promo code discount", "Shipping"]),
+        ("text", OD + ".gb-acct-recap__value", ["$00.00", "-$00.00", "$00.00"]),
+        ("text", OD + ".gb-acct-recap__total span", ["Total", "$00.00"]),
+        ("css", OD + ".gb-acct-recap__total", "font-size", "16px"),
+        ("css", OD + ".gb-acct-recap__total", "color", "rgb(1, 19, 7)"),
+        ("css", OD + ".gb-acct-recap__rows", "row-gap", "8px"),
+        ("text", OD + ".gb-acct-info__label",
+         ["Shipping Address", "Shipping Method", "Payment Method", "Billing Address"]),
+        ("text", OD + ".gb-acct-info__value",
+         ['Susanna Rose, 12 Charnwood Rd, Unit 10, St Kilda VIC 3182, Australia', "Shipping & Standard: $12.98", 'Susanna Rose, 12 Charnwood Rd, Unit 10, St Kilda VIC 3182, Australia']),
+        ("css", OD + ".gb-acct-info__label", "color", "rgb(26, 26, 26)"),
+        ("css", OD + ".gb-acct-info__value", "color", "rgb(102, 102, 102)"),
+        ("css", OD + ".gb-acct-info", "row-gap", "8px"),
+        ("text", OD + ".gb-acct-info__card span", ["\u2022\u2022\u2022\u2022", "5467"]),
+        ("css", OD + ".gb-acct-info__logo", "width", "23px"),
+        ("css", OD + ".gb-acct-info__logo", "height", "16px"),
+        # decision I: note 27444 says "Only do if very very very cheap" -- built
+        # as drawn, flagged for the design side rather than silently dropped
+        ("text", OD + ".gb-acct-btn", ["Download Invoice"]),
+        ("vis", OD + ".gb-acct-help", True),
+        ("nofit", OD + ".gb-acct-stack"),
     ],
     ("account.html", 390, GOTO_ORDER): [
         ("css", OD + ".gb-acct-intro__title", "font-size", "20px"),
+        ("css", OD + ".gb-acct-card", "width", "350px"),
+        ("nofit", OD + ".gb-acct-stack"),
+        ("nofit", OD + ".gb-acct-items"),
     ],
 
     # -- Task 14: Log in, desktop (2284:35137) --
