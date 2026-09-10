@@ -8,6 +8,95 @@
 
 ---
 
+## Task 13 — 取消流程七屏与重启订阅（`$build-acct` = `20260910-a11`）
+
+**设计源**：`2284:29596` 挽留 / `29767` 已跳过 / `29928`·`30286`·`30107` 原因 /
+`30465` 假期日历 / `30740` 20% 挽留 / `34192` 重启。
+便签 `34512` 分支规则 / `34514` 折扣叠加 / `34516` 取消数据 / `30923` 恢复日必须是完整未来日。
+
+### 三张「原因板」是同一屏的三个选中态
+
+`29928` 选第 1 项、`30286` 选第 2 项、`30107` 选第 3 项 —— 逐节点比对下来，
+差别只有哪一个圆点是实心的，以及**脚上的按钮文案**：
+
+| 板 | 选中项 | CTA |
+|---|---|---|
+| `29928` | Going away or on holiday | `Continue` |
+| `30286` | Too expensive right now | `Continue` |
+| `30107` | I have too much product | **`Cancel`** |
+
+便签 `34512`（「这一项及之后没有第二屏」）就画在按钮上：**有下一屏就写 Continue，
+没有就写 Cancel**。所以 `cancelFlow` 只剩一张 `BRANCH` 表，选中项同时决定按钮文案、
+按钮去向、以及按下去是开下一屏还是收工。
+
+⚠ **原因是 7 项不是 5 项**（PLAN 与 SPEC 都写少了）：末两项 `Taste or texture` /
+`I purchased elsewhere` 在 `MODALS.txt` 的摘要里被截断了。
+
+⚠ `30107` 也不只是「重复一项」：它把第 2 行的标签整个覆盖成了第 3 行的，
+所以那张板既少一项又多一项。七项以 `29928`/`30286` 为准。
+
+### 日历不能照抄
+
+`30465` 画的是 July 2026，但 **2026-07-01 是周三，板上却排在 `Su` 列**，
+而且第一行有一格写着 **`32`**。照抄等于交一个排错了的、点不动的日历。
+所以日历**运行时生成**（Mo 起、真实排布），只有视觉 token 取自板：
+40 的圆格、格间 4、圆角 20、`#4d4d4d` 的日期、`#005635` 白字的选中格、
+`#808080` 的越月格、`#eaecf0` 的底线、20/24 的内边距。
+星期头 `Mo Tu We Th Fr **Sat** Su` 照抄（只有周六是三个字母）。
+选中格在板上还是 Inter（组件默认字体漏改），统一回 PP Palma、字重按板取 w500。
+
+便签 `30923` 落地成：**今天及更早不可选，首个可选日是明天，且默认就选它**。
+判据按 `new Date()` 反算同一个答案，不写死日期。
+
+### 抽屉是定高 672，不是「最多 672」
+
+Task 8 给 `--sheet` 写的是 `max-height: calc(100vh - 168px)`，Task 10 的三个产品屉
+内容够多，一直顶到上限所以看不出来。`29767` 只有两行字，板上**照样是 672**——
+五张挽留板全是 `v:FIXE`。改成 `height:`，四张短屉当场从 272/296/598/636 回到 672。
+
+### 顺带修的两处
+
+- **`data-acct-save-ungated` 原本是死的**：重启面板的日期输入没挂 `data-acct-field`，
+  `acctForm.watch` 早一行就 return 了，豁免属性怎么删都不红。补上 `data-acct-field`
+  之后这条豁免才真的在承重（`34351` 的 Save 是绿的，而 `31976` 的是灰的）。
+- **Task 12 的地址单选 hover 漏了 `@media (hover:hover)`** —— 触屏点完会粘住。
+  一并包进 `@include hover`。
+
+### 文件清单
+
+| 文件 | 改动 |
+|---|---|
+| `account.html` | 填 `cancel-offer-skip` / `restart` 两个空壳，新增 `cancel-skipped`·`cancel-reason`·`cancel-holiday`·`cancel-discount` 四个面板；`?v=` → `a11` |
+| `assets/account.scss` | 新增 `.gb-acct-flow` / `__lead` / `__sub` / `.gb-acct-video` / `.gb-acct-reason` 一族 / `.gb-acct-cal` 一族 / `.gb-acct-sr`；`--sheet` 的 `max-height` 改 `height` |
+| `assets/account.css` | 编译产物（双写） |
+| `assets/account.js` | 新增 `cancelFlow` 与 `acctCal`；`acctForm.watch` 认 `data-acct-save-ungated` |
+| `images/acct-cal-prev.svg`·`acct-cal-next.svg`·`acct-play.svg` | 新增 |
+| `tools/acctmodal.py` | 新增 `check_cancel` 五段（屏 / 原因 / 日历 / 链路 / 重启）；加 `_click` 守卫，控件没建好时转红而不是整轮崩掉 |
+| `docs/account/SPEC.md` | 待裁决 W/X/Y；§8 补日历三错、Inter 泄漏、`30107` 真相、视频占位；§8b 补三条占位 |
+| `figma/account/cut-icons.py` | 追加 3 条 JOBS。⚠ 不入库 |
+
+### 判据
+
+```
+tools/acctmodal.py   1313 ok / 0 red / 2 aborted   （Task 12 收尾 1001）
+tools/acctcheck.py    541 ok / 0 red    rwd 全绿   acctvars 54 ok   assetpath GREEN
+双写一致 IN SYNC      node --check OK
+活性自检 两轮 13 处突变 → 82 红：清空 BRANCH（PLAN 点名的那条）/ 日历不再按时钟门控 /
+  周首改成周日 / 去掉 Save 豁免 / 选中行不再变色 / 抽屉改回 max-height /
+  行描边改成 inset / 视频底色 / lead 颜色 / 挽留屏 Cancel now 改成关闭 /
+  滚动条补偿去掉一次性守卫 / Sat→Sa / 日历内边距
+面板高度对板：672 ×5（390×840 视口）/ 329（重启）
+```
+
+### 遗留
+
+- **挽留屏的视频是占位**（`29751` 是纯 `#d9d9d9`、无 imageRef），上线前必须换或删。
+- `Cancel now` 在第一屏是「去填原因」、后面几屏是「结束」，同词两义，待裁决 X。
+- 原因屏「一个都没选」的态无稿，暂做成 CTA 灰 + 禁用，待裁决 W。
+- 20% off 与暂停都只有前端动作：不真的加折扣、不真的暂停，都要后端（便签 `34514`/`34516`）。
+
+---
+
 ## Task 12 — 配送地址弹窗与表单校验（`$build-acct` = `20260910-a10`）
 
 **设计源**：`2284:32294` 当前地址 / `32940`·`33161` 表单 / `32779` 成功。

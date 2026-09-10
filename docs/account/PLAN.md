@@ -1081,9 +1081,9 @@ var acctQty = {
 ```
 cancel-offer-skip   29596  劝跳过 1/2 单        -> [Cancel now] [Continue to Skip]
 cancel-skipped      29767  跳过成功              -> [Done]
-cancel-reason       29928  原因选择（5 项）
-                    30286  同上，另一变体
-                    30107  稿的 bug：I have too much product 重复两次
+cancel-reason       29928  原因选择（⚠ 是 **7** 项不是 5 项，PLAN 原来数错了）
+                    30286  同一屏，选中第 2 项
+                    30107  同一屏，选中第 3 项 + 稿的 bug（第 2 行标签被覆盖）
 cancel-holiday      30465  选 Going away 后进暂停日历，选恢复日期
 cancel-discount     30740  选 Too expensive 后进 20% off 挽留
 restart             34192  重启订阅（标题稿上拼错成 subscoption）
@@ -1097,22 +1097,38 @@ restart             34192  重启订阅（标题稿上拼错成 subscoption）
 ⚠ **稿的 bug 照实做，不静默修正**：`30107` 的重复项、`34192` 的拼写错误
 都已登记进 SPEC 第 8 节，问过用户再改。
 
+⚠ **但 `30465` 的月历不能照抄** —— 2026-07-01 是周三而板上排在 Su 列，还有一格写着
+`32`。日历是**算出来的**不是画出来的，照抄等于交一个点不动的错日历。改成运行时生成，
+只有视觉 token 取自板；三处错登记进 SPEC §8。
+
+⚠ **三张原因板是同一屏的三个选中态**，不是三屏。选中项决定 CTA：有第二屏的两项写
+`Continue`（`29928`/`30286`），没有第二屏的写 `Cancel`（`30107`）—— 便签 `34512`
+就画在按钮上。
+
 **文件**：`account.html`、`assets/account.scss`、`assets/account.js`、`tools/acctmodal.py`
 
 **接口**
 - 产出：`cancelFlow.start()` / `cancelFlow.goto(step)` / `cancelFlow.pick(reason)`
 - ⚠ 7 屏是**同一个弹窗换内容**，不是 7 个弹窗叠加 —— 滚动锁只加一次、只补偿一次
 
-- [ ] **步骤 1：追加断言（先红）**
+- [x] **步骤 1：追加断言（先红）**
   - 点 `Cancel Subscription` 后第一屏是 `cancel-offer-skip`，不是原因选择
   - 选 `Going away or on holiday` 进 `cancel-holiday`
   - 选 `Too expensive right now` 进 `cancel-discount`
   - 选 `I have too much product` **不进任何第二屏**，流程终止（便签 `34512`）
   - 全程 `document.documentElement.style.paddingRight` 只被设置一次
 
-- [ ] **步骤 2：跑判据确认红**
+- [x] **步骤 2：跑判据确认红** —— 54 红
 
-- [ ] **步骤 3：写七屏内容与分支表**
+- [x] **步骤 3：写七屏内容与分支表**
+
+⚠ **实际实现比这段简单得多**：七屏做成七个 `[data-acct-modal-panel]`，
+用既有的 `modal.open()` 串起来。PLAN 担心的「`open()` 会重新测滚动条」在 Task 8
+就解决了 —— `open()` 只在页面还没上锁时测一次，Task 12 的三屏链路已经验过。
+所以不需要 `goto()`、不需要 `start()`，`cancelFlow` 只剩「选中项 → CTA 文案 + 去向」
+这一条规则。判据直接数了 `--scrollbar-w` 被写了几次（走四屏必须是 1）。
+
+原计划（未采用）：
 
 ```js
 var cancelFlow = {
@@ -1155,15 +1171,15 @@ var cancelFlow = {
 把 `['cancelFlow', cancelFlow]` 加进 `modules` 与 `window.gumiAcct`。
 ⚠ 排在 `acctModal` **之后** —— `start()` 会调 `acctModal.open()`。
 
-- [ ] **步骤 4：暂停日历（`30465`）**
+- [x] **步骤 4：暂停日历（`30465`）**
 
 用原生 `<table>` 画月历，规格从 `2284-30465_cancel-subscription.json` 取。
 **不引第三方日历库**。可选日的规则：便签 `30923` 说必须是完整的未来一天，
 所以今天与更早的日期禁用。
 
-- [ ] **步骤 5：编译、跑判据确认绿、活性自检**（把 `BRANCH` 清空 → 分支断言必须红）
+- [x] **步骤 5：编译、跑判据确认绿、活性自检** —— `1313 ok / 0 red`；两轮 13 处突变，82 红（含 PLAN 点名的「清空 `BRANCH`」）
 
-- [ ] **步骤 6：提交** — `git commit -m "feat(account): 取消流程七屏与重启订阅"`
+- [x] **步骤 6：提交** — `feat(account): 取消流程七屏与重启订阅`
 
 ---
 

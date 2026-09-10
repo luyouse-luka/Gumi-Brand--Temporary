@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260910-a10";
+$build-acct: "20260910-a11";
 
 // ==========================================================================
 // Variables
@@ -1959,7 +1959,10 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
     .gb-acct-modal__panel {
       max-width: none;
-      max-height: calc(100vh - 168px);
+      // fixed, not capped: 29767 holds two lines of text and the board still
+      // draws it 672. Every drawer board is v:FIXE.
+      height: calc(100vh - 168px);
+      max-height: none;
       border-radius: 12px 12px 0 0;
       transform: translateY(16px);
     }
@@ -2612,8 +2615,10 @@ select.gb-acct-field__input {
   &:focus-visible { outline: 2px solid $c-blue; outline-offset: 2px; }
 }
 
-.gb-acct-addr__pick:hover .gb-acct-addr__radio:not(:checked) {
-  box-shadow: inset 0 0 0 1px $c-gray-500;
+.gb-acct-addr__pick {
+  @include hover {
+    .gb-acct-addr__radio:not(:checked) { box-shadow: inset 0 0 0 1px $c-gray-500; }
+  }
 }
 
 // 32451 is two nested groups: 4 inside the address block, 8 out to the delivery
@@ -2697,3 +2702,236 @@ select.gb-acct-field__input {
 
 .gb-acct-note__title { color: $c-ink; }
 .gb-acct-note__text { color: $c-gray-600; }
+
+// ---------------------------------------------------------------------------
+// Cancel funnel — 29596 offer / 29767 skipped / 29928 reasons / 30465 holiday /
+// 30740 discount, plus 34192 restart.
+//
+// The five funnel screens are the 672 drawer; restart is a 329 card. All six
+// bodies are the board's Container: a column whose gap is 24 (restart 15).
+// ---------------------------------------------------------------------------
+.gb-acct-flow {
+  display: flex;
+  flex-direction: column;
+  row-gap: 24px;
+}
+
+// 34344: the restart body is the one Container with a 15 gap.
+.gb-acct-flow--tight { row-gap: 15px; }
+
+// 29921 / 30894 / 30619 / 34345: every cancel screen opens on 16/24, the first
+// line dark and any second line grey, 16 apart.
+.gb-acct-modal__prose {
+  display: flex;
+  flex-direction: column;
+  row-gap: 16px;
+}
+
+.gb-acct-modal__lead,
+.gb-acct-modal__sub {
+  margin: 0;
+  @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+}
+
+.gb-acct-modal__lead { color: $c-navy; }
+.gb-acct-modal__sub { color: $c-gray-600; }
+
+// 29750: the board's Image is a flat #d9d9d9 with no imageRef, so this is a
+// placeholder the same way the subscription thumbnails are -- not a missing cut.
+// The badge is centred on that 196.875 image, which the 190 frame crops.
+.gb-acct-video {
+  position: relative;
+  height: 190px;
+  border-radius: 7.2727px;
+  background: $c-gray-200;
+  overflow: hidden;
+}
+
+.gb-acct-video__play {
+  position: absolute;
+  left: 50%;
+  top: 98.4375px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 61.818px;
+  height: 38.636px;
+  border-radius: 7.7273px;
+  background: $c-white;
+  transform: translate(-50%, -50%);
+
+  svg {
+    width: 13.743px;
+    height: 15.455px;
+    margin-left: 1.2px;   // 29753 sits a hair right of centre, as play marks do
+  }
+}
+
+// 30082 / 29754: the option rows, 12 apart.
+.gb-acct-reasons {
+  display: flex;
+  flex-direction: column;
+  row-gap: 12px;
+}
+
+// 30083 has strokesIncludedInLayout true, so 12 + 20 + 12 + two 1px borders is
+// the board's 46 -- a real border, not the head/foot's inset hairline.
+.gb-acct-reason {
+  display: flex;
+  align-items: center;
+  column-gap: 16px;
+  padding: 12px 16px;
+  border: 1px solid $c-gray-300;
+  border-radius: $r-sm;
+  background: $c-white;
+  cursor: pointer;
+
+  transition: trans(background-color, border-color);
+}
+
+// :has stays at the top level -- nesting it inside the block above silently
+// fails to compile the way we want.
+.gb-acct-reason:has(.gb-acct-reason__radio:checked) {
+  border-color: $c-green;
+  background: #e6f5e1;
+}
+
+// 30084: the same 16 circle as the address radio, but its ring is #011307 here.
+.gb-acct-reason__radio {
+  appearance: none;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 0;
+  border-radius: 8px;
+  background: $c-white;
+  box-shadow: inset 0 0 0 1px $c-gray-300;
+  cursor: pointer;
+
+  transition: trans(background-color, box-shadow);
+
+  &:checked {
+    background: $c-acct-radio
+      radial-gradient(circle at 50% 50%, $c-green 0 4.4px, transparent 4.4px);
+    box-shadow: inset 0 0 0 0.8px $c-ink;
+  }
+
+  &:focus-visible { outline: 2px solid $c-blue; outline-offset: 2px; }
+}
+
+.gb-acct-reason__label {
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-navy;
+}
+
+.gb-acct-reason {
+  @include hover {
+    .gb-acct-reason__radio:not(:checked) { box-shadow: inset 0 0 0 1px $c-gray-500; }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 30621 date picker. Every token here is the board's; the grid is not -- see
+// SPEC §8, the board's July 2026 is misaligned and has a "32".
+// ---------------------------------------------------------------------------
+// The table's caption names the grid for a screen reader without drawing.
+.gb-acct-sr { @include visually-hidden; }
+
+.gb-acct-cal {
+  border-radius: $r-sm;
+  background: $c-white;
+  // 30622's 1px INSIDE stroke is not counted in its 365, unlike the reason row
+  box-shadow: inset 0 0 0 1px $c-gray-300;
+}
+
+// 30623 pads 20/24; the #eaecf0 rule under it is 30736, inside the ring.
+.gb-acct-cal__content {
+  padding: 20px 24px;
+  border-bottom: 1px solid #eaecf0;
+}
+
+// 30625: 32 tall with the 40 buttons overhanging it, label centred.
+.gb-acct-cal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  margin-bottom: 12px;   // 30624's gap between Month and Dates
+}
+
+.gb-acct-cal__title {
+  @include font($font-brand-stack, 16px, 500, 24px, -0.32px);
+  color: $c-gray-700;
+}
+
+.gb-acct-cal__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: $r-sm;
+  background: none;
+  color: $c-gray-400;
+  cursor: pointer;
+
+  transition: trans(background-color, color);
+
+  svg { width: 5px; height: 10px; }
+
+  @include hover { background: $c-gray-050; color: $c-gray-600; }
+}
+
+.gb-acct-cal__grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  th, td {
+    height: 40px;
+    padding: 0;
+    text-align: center;
+  }
+
+  th {
+    @include font($font-brand-stack, 14px, 500, 20px, -0.28px);
+    color: $c-gray-700;
+    font-weight: 500;
+  }
+}
+
+// 30631: a 40 circle inside its column, so the fill is the board's 40x40 even
+// though seven of them plus the gaps do not add up to the board's own 302.
+.gb-acct-cal__day {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  background: none;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-700;
+  cursor: pointer;
+
+  transition: trans(background-color, color);
+
+  @include hover { background: $c-lime-100; }
+
+  &[aria-pressed="true"] {
+    background: $c-green;
+    color: $c-white;
+    font-weight: 500;
+  }
+
+  &:disabled {
+    color: $c-gray-400;
+    background: none;
+    cursor: default;
+  }
+
+  &:focus-visible { outline: 2px solid $c-blue; outline-offset: -2px; }
+}

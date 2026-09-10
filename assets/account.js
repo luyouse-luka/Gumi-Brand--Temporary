@@ -91,6 +91,10 @@
     watch: function (panel) {
       var save = panel.querySelector('[data-acct-save]');
       var fields = panel.querySelectorAll('[data-acct-field]');
+      // 34351 draws restart's Save green while 31976's identical-looking one is
+      // grey, so the exception is spelled out on the panel rather than hidden in
+      // a missing data-acct-field.
+      if (panel.hasAttribute('data-acct-save-ungated')) return;
       if (!save || !fields.length || panel.getAttribute('data-acct-watched')) return;
       panel.setAttribute('data-acct-watched', '1');
       var initial = this._snapshot(fields);
@@ -187,6 +191,141 @@
         if (m === 0 && parseInt(v ? v.textContent : '1', 10) === 0) { zero = true; break; }
       }
       cta.textContent = zero ? zeroLabel : cta.getAttribute('data-acct-label-default');
+    }
+  };
+
+  /* cancelFlow — the reason screen is the only branching one (note 34512).
+   *
+   * Boards 29928 and 30286 pick the two reasons that have a second screen and
+   * draw the CTA "Continue"; 30107 picks a terminal one and draws it "Cancel".
+   * So the button says what pressing it will do, and BRANCH is the whole rule.
+   */
+  var cancelFlow = {
+    BRANCH: {
+      'going-away': 'cancel-holiday',
+      'too-expensive': 'cancel-discount'
+    },
+
+    init: function () {
+      var root = document.querySelector('[data-acct-reasons]');
+      if (!root) return;
+      var cta = root.closest('.gb-acct-modal').querySelector('[data-acct-cta]');
+      if (!cta) return;
+      var self = this;
+      root.addEventListener('change', function () { self.sync(root, cta); });
+      this.sync(root, cta);
+    },
+
+    sync: function (root, cta) {
+      var picked = root.querySelector('[data-acct-reason]:checked');
+      cta.disabled = !picked;
+      var next = picked ? this.BRANCH[picked.value] : null;
+      cta.textContent = next || !picked ? 'Continue' : 'Cancel';
+      if (next) {
+        cta.setAttribute('data-acct-modal', next);
+        cta.removeAttribute('data-acct-modal-close');
+      } else {
+        cta.removeAttribute('data-acct-modal');
+        // note 34516 is the back end's job; here the flow simply ends
+        if (picked) cta.setAttribute('data-acct-modal-close', '');
+        else cta.removeAttribute('data-acct-modal-close');
+      }
+    }
+  };
+
+  /* acctCal — 30465's date picker.
+   *
+   * ⚠ The board's own grid cannot be copied: 1 July 2026 is a Wednesday but the
+   * board puts it under Su, and one cell reads "32". Only the tokens come from
+   * the board; the month is generated.
+   *
+   * note 30923: the resume day has to be a whole future day, so today and
+   * everything before it is out and the first selectable day is tomorrow.
+   */
+  var acctCal = {
+    DAYS: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sat', 'Su'],   // 'Sat' is the board's own
+    MONTHS: ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+             'August', 'September', 'October', 'November', 'December'],
+
+    init: function () {
+      var root = document.querySelector('[data-acct-cal]');
+      if (!root) return;
+      var today = new Date();
+      today.setHours(0, 0, 0, 0);
+      this.min = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      this.picked = new Date(this.min.getTime());
+      this.view = new Date(this.min.getFullYear(), this.min.getMonth(), 1);
+      var self = this;
+      root.addEventListener('click', function (e) {
+        if (!e.target.closest) return;
+        if (e.target.closest('[data-acct-cal-prev]')) { self._step(root, -1); return; }
+        if (e.target.closest('[data-acct-cal-next]')) { self._step(root, 1); return; }
+        var day = e.target.closest('[data-acct-cal-day]');
+        if (day && !day.disabled) {
+          self.picked = self._parse(day.getAttribute('data-acct-cal-day'));
+          self.render(root);
+        }
+      });
+      this.render(root);
+    },
+
+    _step: function (root, by) {
+      this.view = new Date(this.view.getFullYear(), this.view.getMonth() + by, 1);
+      this.render(root);
+    },
+
+    _iso: function (d) {
+      var m = d.getMonth() + 1, day = d.getDate();
+      return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (day < 10 ? '0' : '') + day;
+    },
+
+    _parse: function (iso) {
+      var p = iso.split('-');
+      return new Date(+p[0], +p[1] - 1, +p[2]);
+    },
+
+    render: function (root) {
+      var title = root.querySelector('[data-acct-cal-title]');
+      if (title) title.textContent = this.MONTHS[this.view.getMonth()] + ' ' + this.view.getFullYear();
+      var table = root.querySelector('table');
+      if (!table) return;
+
+      var head = '<thead><tr>';
+      for (var i = 0; i < this.DAYS.length; i++) head += '<th scope="col">' + this.DAYS[i] + '</th>';
+      head += '</tr></thead>';
+
+      // Monday-first, whole weeks only: back up to the Monday on or before the
+      // 1st and run to the Sunday on or after the last day.
+      var first = new Date(this.view.getFullYear(), this.view.getMonth(), 1);
+      var start = new Date(first.getTime());
+      start.setDate(1 - ((first.getDay() + 6) % 7));
+      var last = new Date(this.view.getFullYear(), this.view.getMonth() + 1, 0);
+      var end = new Date(last.getTime());
+      end.setDate(last.getDate() + 6 - ((last.getDay() + 6) % 7));
+
+      var body = '<tbody>';
+      var cur = new Date(start.getTime());
+      var pickedIso = this._iso(this.picked);
+      while (cur <= end) {
+        body += '<tr>';
+        for (var c = 0; c < 7; c++) {
+          var iso = this._iso(cur);
+          var out = cur.getMonth() !== this.view.getMonth();
+          var off = out || cur < this.min;
+          body += '<td><button class="gb-acct-cal__day" type="button"'
+               + ' data-acct-cal-day="' + iso + '"'
+               + (out ? ' data-acct-cal-out' : '')
+               + (off ? ' disabled' : '')
+               + ' aria-pressed="' + (iso === pickedIso ? 'true' : 'false') + '">'
+               + cur.getDate() + '</button></td>';
+          cur.setDate(cur.getDate() + 1);
+        }
+        body += '</tr>';
+      }
+      body += '</tbody>';
+
+      var caption = table.querySelector('caption');
+      table.innerHTML = (caption ? caption.outerHTML : '') + head + body;
     }
   };
 
@@ -326,12 +465,17 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     // view runs after acctNav: its init calls acctNav.closeMenu().
-    var modules = [['acctNav', acctNav], ['view', view], ['modal', modal]];
+    // cancelFlow and acctCal run after modal: modal arms the panels, and both of
+    // these read controls inside them.
+    var modules = [['acctNav', acctNav], ['view', view], ['modal', modal],
+                   ['cancelFlow', cancelFlow], ['acctCal', acctCal]];
     for (var i = 0; i < modules.length; i++) {
       try { modules[i][1].init(); }
       catch (e) { if (window.console && console.error) console.error('gumiAcct:' + modules[i][0], e); }
     }
   });
 
-  window.gumiAcct = { acctNav: acctNav, view: view, modal: modal, form: acctForm, qty: acctQty, discount: acctDiscount };
+  window.gumiAcct = { acctNav: acctNav, view: view, modal: modal, form: acctForm,
+                      qty: acctQty, discount: acctDiscount, cancelFlow: cancelFlow,
+                      cal: acctCal };
 })();

@@ -10,7 +10,7 @@
 <link rel="icon" href="images/favicon.svg?v=20260909-r134" type="image/svg+xml">
 <link rel="apple-touch-icon" href="images/favicon-180.png?v=20260909-r134">
 <link rel="stylesheet" href="assets/customstyle.css?v=20260909-r134">
-<link rel="stylesheet" href="assets/account.css?v=20260910-a10">
+<link rel="stylesheet" href="assets/account.css?v=20260910-a11">
 <noscript><style>.wowo{opacity:1 !important}</style></noscript>
 </head>
 <body>
@@ -994,10 +994,155 @@
         <h2 class="gb-acct-modal__title" id="acct-modal-cancel-offer-skip">We’re sorry to see you go</h2>
         <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <div class="gb-acct-modal__body" data-lenis-prevent><!-- 2284:29596 --></div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <div class="gb-acct-flow">
+          <p class="gb-acct-modal__lead">Keep the best pricing available and skip your next order instead.</p>
+          <div class="gb-acct-video" role="img" aria-label="Video placeholder">
+            <span class="gb-acct-video__play"><svg xmlns="http://www.w3.org/2000/svg" viewBox="188.869 426.914 13.7434 15.4545" fill="none" aria-hidden="true"><path d="M201.935 433.469C202.838 433.99 202.838 435.293 201.935 435.814L190.9 442.185C189.998 442.706 188.869 442.055 188.869 441.012L188.869 428.27C188.869 427.228 189.998 426.576 190.9 427.097L201.935 433.469Z" fill="#011307"/></svg></span>
+          </div>
+          <div class="gb-acct-reasons">
+            <label class="gb-acct-reason" for="acct-skip-1">
+              <input class="gb-acct-reason__radio" id="acct-skip-1" type="radio" name="acct-skip-count" value="skip-1">
+              <span class="gb-acct-reason__label">Skip 1 order</span>
+            </label>
+            <label class="gb-acct-reason" for="acct-skip-2">
+              <input class="gb-acct-reason__radio" id="acct-skip-2" type="radio" name="acct-skip-count" value="skip-2">
+              <span class="gb-acct-reason__label">Skip 2 orders</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-link" type="button" data-acct-modal="cancel-reason">Cancel now</button>
+        <button class="gb-acct-modal__save" type="button" data-acct-cta data-acct-modal="cancel-skipped">Continue to Skip</button>
+      </div>
     </div>
   </div>
-  <div class="gb-acct-modal" data-acct-modal-panel="restart" role="dialog" aria-modal="true"
+  <div class="gb-acct-modal gb-acct-modal--sheet" data-acct-modal-panel="cancel-skipped" role="dialog" aria-modal="true"
+       aria-labelledby="acct-modal-cancel-skipped" aria-hidden="true" hidden>
+    <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+    <div class="gb-acct-modal__panel" tabindex="-1">
+      <div class="gb-acct-modal__head">
+        <h2 class="gb-acct-modal__title" id="acct-modal-cancel-skipped">Your next order has been skipped!</h2>
+        <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <div class="gb-acct-flow">
+          <div class="gb-acct-modal__prose">
+            <p class="gb-acct-modal__lead">You have skipped your next order.</p>
+            <p class="gb-acct-modal__sub">Next order will renew on 17 July, 2026</p>
+          </div>
+        </div>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-modal__save" type="button" data-acct-cta data-acct-modal-close>Done</button>
+      </div>
+    </div>
+  </div>
+  <div class="gb-acct-modal gb-acct-modal--sheet" data-acct-modal-panel="cancel-reason" role="dialog" aria-modal="true"
+       aria-labelledby="acct-modal-cancel-reason" aria-hidden="true" hidden>
+    <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+    <div class="gb-acct-modal__panel" tabindex="-1">
+      <div class="gb-acct-modal__head">
+        <h2 class="gb-acct-modal__title" id="acct-modal-cancel-reason">We’re sorry to see you go</h2>
+        <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <div class="gb-acct-flow">
+          <p class="gb-acct-modal__lead">Please let us know why you want to cancel?</p>
+          <div class="gb-acct-reasons" data-acct-reasons>
+            <label class="gb-acct-reason" for="acct-reason-going-away">
+              <input class="gb-acct-reason__radio" id="acct-reason-going-away" type="radio" name="acct-cancel-reason" value="going-away" data-acct-reason>
+              <span class="gb-acct-reason__label">Going away or on holiday</span>
+            </label>
+            <label class="gb-acct-reason" for="acct-reason-too-expensive">
+              <input class="gb-acct-reason__radio" id="acct-reason-too-expensive" type="radio" name="acct-cancel-reason" value="too-expensive" data-acct-reason>
+              <span class="gb-acct-reason__label">Too expensive right now</span>
+            </label>
+            <label class="gb-acct-reason" for="acct-reason-too-much-product">
+              <input class="gb-acct-reason__radio" id="acct-reason-too-much-product" type="radio" name="acct-cancel-reason" value="too-much-product" data-acct-reason>
+              <span class="gb-acct-reason__label">I have too much product</span>
+            </label>
+            <label class="gb-acct-reason" for="acct-reason-try-once">
+              <input class="gb-acct-reason__radio" id="acct-reason-try-once" type="radio" name="acct-cancel-reason" value="try-once" data-acct-reason>
+              <span class="gb-acct-reason__label">I just want to try once without subscribing</span>
+            </label>
+            <label class="gb-acct-reason" for="acct-reason-no-difference">
+              <input class="gb-acct-reason__radio" id="acct-reason-no-difference" type="radio" name="acct-cancel-reason" value="no-difference" data-acct-reason>
+              <span class="gb-acct-reason__label">I’m not feeling different in my health yet</span>
+            </label>
+            <label class="gb-acct-reason" for="acct-reason-taste-texture">
+              <input class="gb-acct-reason__radio" id="acct-reason-taste-texture" type="radio" name="acct-cancel-reason" value="taste-texture" data-acct-reason>
+              <span class="gb-acct-reason__label">Taste or texture</span>
+            </label>
+            <label class="gb-acct-reason" for="acct-reason-purchased-elsewhere">
+              <input class="gb-acct-reason__radio" id="acct-reason-purchased-elsewhere" type="radio" name="acct-cancel-reason" value="purchased-elsewhere" data-acct-reason>
+              <span class="gb-acct-reason__label">I purchased elsewhere</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel now</button>
+        <button class="gb-acct-modal__save" type="button" data-acct-cta disabled>Continue</button>
+      </div>
+    </div>
+  </div>
+  <div class="gb-acct-modal gb-acct-modal--sheet" data-acct-modal-panel="cancel-holiday" role="dialog" aria-modal="true"
+       aria-labelledby="acct-modal-cancel-holiday" aria-hidden="true" hidden>
+    <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+    <div class="gb-acct-modal__panel" tabindex="-1">
+      <div class="gb-acct-modal__head">
+        <h2 class="gb-acct-modal__title" id="acct-modal-cancel-holiday">Heading away on holiday</h2>
+        <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <div class="gb-acct-flow">
+          <div class="gb-acct-modal__prose">
+            <p class="gb-acct-modal__lead">You can pause your deliveries and we will automatically resume when you are back.</p>
+            <p class="gb-acct-modal__sub">Choose when you’d like to resume.</p>
+          </div>
+          <div class="gb-acct-cal" data-acct-cal>
+            <div class="gb-acct-cal__content">
+              <div class="gb-acct-cal__head">
+                <button class="gb-acct-cal__arrow" type="button" data-acct-cal-prev aria-label="Previous month"><svg xmlns="http://www.w3.org/2000/svg" viewBox="61.5 407 5 10" fill="none" aria-hidden="true"><path d="M66.5 417L61.5 412L66.5 407" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <span class="gb-acct-cal__title" data-acct-cal-title></span>
+                <button class="gb-acct-cal__arrow" type="button" data-acct-cal-next aria-label="Next month"><svg xmlns="http://www.w3.org/2000/svg" viewBox="323.5 407 5 10" fill="none" aria-hidden="true"><path d="M323.5 417L328.5 412L323.5 407" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+              <table class="gb-acct-cal__grid"><caption class="gb-acct-sr">Choose a resume date</caption></table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel now</button>
+        <button class="gb-acct-modal__save" type="button" data-acct-cta data-acct-modal-close>Pause subscription</button>
+      </div>
+    </div>
+  </div>
+  <div class="gb-acct-modal gb-acct-modal--sheet" data-acct-modal-panel="cancel-discount" role="dialog" aria-modal="true"
+       aria-labelledby="acct-modal-cancel-discount" aria-hidden="true" hidden>
+    <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+    <div class="gb-acct-modal__panel" tabindex="-1">
+      <div class="gb-acct-modal__head">
+        <h2 class="gb-acct-modal__title" id="acct-modal-cancel-discount">Too expensive right now</h2>
+        <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <div class="gb-acct-flow">
+          <div class="gb-acct-modal__prose">
+            <p class="gb-acct-modal__lead">Before you go - here’s 20% off</p>
+            <p class="gb-acct-modal__sub">Stay with us and enjoy 20% off your next order.</p>
+          </div>
+        </div>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel now</button>
+        <button class="gb-acct-modal__save" type="button" data-acct-cta data-acct-modal-close>Claim my 20% discount</button>
+      </div>
+    </div>
+  </div>
+  <div class="gb-acct-modal" data-acct-modal-panel="restart" data-acct-save-ungated role="dialog" aria-modal="true"
        aria-labelledby="acct-modal-restart" aria-hidden="true" hidden>
     <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
     <div class="gb-acct-modal__panel" tabindex="-1">
@@ -1005,7 +1150,22 @@
         <h2 class="gb-acct-modal__title" id="acct-modal-restart">Restart subscoption</h2>
         <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <div class="gb-acct-modal__body" data-lenis-prevent><!-- 2284:34192 --></div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <div class="gb-acct-flow gb-acct-flow--tight">
+          <p class="gb-acct-modal__lead">Select a restart date</p>
+          <div class="gb-acct-modal__fields">
+            <div class="gb-acct-field">
+              <label class="gb-acct-field__label" for="acct-f-restart">Restart date</label>
+              <div class="gb-acct-field__control"><input class="gb-acct-field__input gb-acct-field__input--icon" id="acct-f-restart" type="text" value="22/07/2026" data-acct-field><svg class="gb-acct-field__icon" xmlns="http://www.w3.org/2000/svg" viewBox="338.5 398.668 15 16.6667" fill="none" aria-hidden="true"><path d="M353.5 405.335H338.5M349.333 398.668V402.001M342.667 398.668V402.001M342.5 415.335H349.5C350.9 415.335 351.6 415.335 352.135 415.062C352.605 414.822 352.988 414.44 353.228 413.97C353.5 413.435 353.5 412.735 353.5 411.335V404.335C353.5 402.935 353.5 402.234 353.228 401.7C352.988 401.229 352.605 400.847 352.135 400.607C351.6 400.335 350.9 400.335 349.5 400.335H342.5C341.1 400.335 340.4 400.335 339.865 400.607C339.395 400.847 339.012 401.229 338.772 401.7C338.5 402.234 338.5 402.935 338.5 404.335V411.335C338.5 412.735 338.5 413.435 338.772 413.97C339.012 414.44 339.395 414.822 339.865 415.062C340.4 415.335 341.1 415.335 342.5 415.335Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+            <p class="gb-acct-modal__hint">Your next subscription order will be charged and processed on this date. You can make edits up until then.</p>
+          </div>
+        </div>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+        <button class="gb-acct-modal__save" type="button" data-acct-save>Save</button>
+      </div>
     </div>
   </div>
 
@@ -1053,6 +1213,6 @@
 
   <script src="assets/lenis.min.js?v=20260909-r134"></script>
   <script src="assets/main.js?v=20260909-r134"></script>
-  <script src="assets/account.js?v=20260910-a10"></script>
+  <script src="assets/account.js?v=20260910-a11"></script>
 </body>
 </html>

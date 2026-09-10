@@ -18,7 +18,7 @@ parallel one (both are re-asserted below so a rewrite cannot drop them):
 test cannot run here: it aborts loudly rather than reporting green. The CSS
 mechanism itself is still checked by feeding --scrollbar-w a synthetic value.
 """
-import sys, pathlib
+import sys, pathlib, datetime
 from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -360,6 +360,7 @@ def run_width(b, w):
     check_products(pg, w, label)
     check_discount(pg, w, label)
     check_shipping(pg, w, label)
+    check_cancel(pg, w, label)
     pg.close()
 
 
@@ -1522,6 +1523,719 @@ def check_ship_success(pg, w, label):
         good(tag)
     else:
         bad("%s foot link reads %r, board says 'Close'" % (tag, got["close"]))
+
+    pg.keyboard.press("Escape")
+    pg.wait_for_timeout(600)
+
+
+# ---------------------------------------------------------------------------
+# Task 13: the cancel funnel and restart.
+#
+# 29928 / 30286 / 30107 are ONE screen with three different picks, not three
+# screens: 29928 selects reason 1, 30286 reason 2, 30107 reason 3. What the pick
+# changes is the CTA -- the two reasons that have a second screen read
+# "Continue", the terminal one reads "Cancel". That is note 34512 drawn.
+#
+# ⚠ 30107 is also the board bug: its row 2 label was overwritten, so "Too
+# expensive right now" is missing and "I have too much product" appears twice.
+# The seven-item list below is 29928/30286's, which agree with each other.
+#
+# ⚠ The board's July 2026 grid cannot be copied: 1 July 2026 is a Wednesday but
+# the board puts it under Su, and one cell reads "32". The calendar is generated
+# instead and only its *tokens* come from the board -- see SPEC 8.
+# ---------------------------------------------------------------------------
+REASONS = [
+    ("going-away", "Going away or on holiday", "cancel-holiday", "Continue"),
+    ("too-expensive", "Too expensive right now", "cancel-discount", "Continue"),
+    ("too-much-product", "I have too much product", None, "Cancel"),
+    ("try-once", "I just want to try once without subscribing", None, "Cancel"),
+    ("no-difference", "I’m not feeling different in my health yet", None, "Cancel"),
+    ("taste-texture", "Taste or texture", None, "Cancel"),
+    ("purchased-elsewhere", "I purchased elsewhere", None, "Cancel"),
+]
+
+# hook -> (board, phone panel height, head title, foot CTA text)
+CANCEL_SCREENS = {
+    "cancel-offer-skip": ("2284:29596", 672, "We’re sorry to see you go", "Continue to Skip"),
+    "cancel-skipped":    ("2284:29767", 672, "Your next order has been skipped!", "Done"),
+    "cancel-reason":     ("2284:29928", 672, "We’re sorry to see you go", "Continue"),
+    "cancel-holiday":    ("2284:30465", 672, "Heading away on holiday", "Pause subscription"),
+    "cancel-discount":   ("2284:30740", 672, "Too expensive right now", "Claim my 20% discount"),
+}
+
+LEAD = "rgb(16, 24, 40)"    # #101828, the first line of every cancel body
+GREY8 = "rgb(128, 128, 128)"   # #808080, days outside the rendered month
+SEL_ROW = "rgb(230, 245, 225)"  # #e6f5e1, the picked reason
+
+
+def _panel(name):
+    return ".gb-acct-modal[data-acct-modal-panel='%s']" % name
+
+
+def _click(pg, sel, tag, what):
+    """Click, or red -- a missing control must not take the whole run down."""
+    if not pg.evaluate("s=>{const e=document.querySelector(s);"
+                       "return !!(e&&e.getClientRects().length)}", sel):
+        bad("%s %s is not on screen" % (tag, what))
+        return False
+    pg.click(sel, timeout=2000)
+    return True
+
+
+def check_cancel(pg, w, label):
+    check_cancel_screens(pg, w, label)
+    check_cancel_reasons(pg, w, label)
+    check_calendar(pg, w, label)
+    check_cancel_chain(pg, w, label)
+    check_restart(pg, w, label)
+
+
+def check_cancel_screens(pg, w, label):
+    """Shell, prose and CTA of the five funnel sheets."""
+    for name in CANCEL_SCREENS:
+        node, height, title, cta = CANCEL_SCREENS[name]
+        tag = "%s [%s]" % (label, name)
+        sel = _panel(name)
+        _open(pg, name)
+
+        got = pg.evaluate(r"""a=>{const p=document.querySelector(a[0]);
+            if(!p)return null;
+            const q=s=>p.querySelector(s);
+            const cs=e=>e?getComputedStyle(e):null;
+            const r=e=>e?e.getBoundingClientRect():null;
+            const box=q('.gb-acct-modal__panel');
+            const head=q('.gb-acct-modal__head'), foot=q('.gb-acct-modal__foot');
+            const bodyEl=q('.gb-acct-modal__body');
+            const lead=q('.gb-acct-modal__lead');
+            const sub=q('.gb-acct-modal__sub');
+            const act=q('[data-acct-cta]');
+            const now=q('.gb-acct-modal__foot .gb-acct-link');
+            const bb=cs(bodyEl);
+            return {sheet:p.classList.contains('gb-acct-modal--sheet'),
+                    title:q('.gb-acct-modal__title')?
+                          q('.gb-acct-modal__title').textContent.trim():null,
+                    headH:head?Math.round(r(head).height):null,
+                    footH:foot?Math.round(r(foot).height):null,
+                    bodyPadY:bb&&bb.paddingTop, bodyPadX:bb&&bb.paddingLeft,
+                    lenis:!!bodyEl&&bodyEl.hasAttribute('data-lenis-prevent'),
+                    lead:lead?lead.textContent.trim():null,
+                    leadColor:lead?cs(lead).color:null,
+                    leadSize:lead?cs(lead).fontSize:null,
+                    sub:sub?sub.textContent.trim():null,
+                    subColor:sub?cs(sub).color:null,
+                    leadGap:(lead&&sub)?Math.round(r(sub).top-r(lead).bottom):null,
+                    cta:act?act.textContent.trim():null,
+                    ctaH:act?Math.round(r(act).height):null,
+                    ctaBg:act?cs(act).backgroundColor:null,
+                    now:now?now.textContent.trim():null}}""", [sel])
+        if got is None:
+            bad("%s panel missing" % tag)
+            continue
+
+        if got["sheet"]:
+            good(tag)
+        else:
+            bad("%s is not a --sheet; board %s is the 672 drawer" % (tag, node))
+        if got["title"] == title:
+            good(tag)
+        else:
+            bad("%s head reads %r, board %s says %r" % (tag, got["title"], node, title))
+        for key, want in (("headH", 64), ("footH", 80)):
+            if got[key] == want:
+                good(tag)
+            else:
+                bad("%s %s=%s want %s" % (tag, key, got[key], want))
+        if got["bodyPadY"] == "32px":
+            good(tag)
+        else:
+            bad("%s body padding-top %s, the drawer boards are 32" % (tag, got["bodyPadY"]))
+        if got["bodyPadX"] == (PAD_PHONE if w <= 767 else PAD_DESK):
+            good(tag)
+        else:
+            bad("%s body gutter %s at %d" % (tag, got["bodyPadX"], w))
+        if got["lenis"]:
+            good(tag)
+        else:
+            bad("%s body has no data-lenis-prevent" % tag)
+
+        # every one of the five opens with a 16/24 #101828 lead line
+        if got["leadColor"] == LEAD and got["leadSize"] == "16px":
+            good(tag)
+        else:
+            bad("%s lead is %s/%s, the boards are #101828 16/24"
+                % (tag, got["leadColor"], got["leadSize"]))
+        # ...and the ones with a second line draw it #666666, 16 below
+        if got["sub"] is None:
+            good(tag)                                    # 29596 has one line only
+        elif got["subColor"] == GREY6 and got["leadGap"] == 16:
+            good(tag)
+        else:
+            bad("%s second line is %s, %s below -- boards are #666666 at 16"
+                % (tag, got["subColor"], got["leadGap"]))
+
+        if got["cta"] == cta:
+            good(tag)
+        else:
+            bad("%s CTA reads %r, board %s says %r" % (tag, got["cta"], node, cta))
+        want_bg = GREY if name == "cancel-reason" else GREEN
+        if got["ctaH"] == 40 and got["ctaBg"] == want_bg:
+            good(tag)
+        else:
+            bad("%s CTA is %spx %s, want 40 tall and %s -- the funnel boards draw "
+                "it green, but 29928 only does so with a reason picked"
+                % (tag, got["ctaH"], got["ctaBg"], want_bg))
+        # 29767 is the one screen whose foot has no "Cancel now"
+        want_now = None if name == "cancel-skipped" else "Cancel now"
+        if got["now"] == want_now:
+            good(tag)
+        else:
+            bad("%s foot link is %r, board %s has %r" % (tag, got["now"], node, want_now))
+
+        if w <= 767:
+            pg.set_viewport_size({"width": 390, "height": 840})
+            pg.wait_for_timeout(300)
+            h = pg.evaluate("a=>Math.round(document.querySelector(a[0]+"
+                            "' .gb-acct-modal__panel').getBoundingClientRect().height)", [sel])
+            if h == height:
+                good(tag)
+            else:
+                bad("%s sheet %spx in a 840 viewport, board %s is %s"
+                    % (tag, h, node, height))
+            pg.set_viewport_size({"width": w, "height": 900})
+            pg.wait_for_timeout(300)
+
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(600)
+
+    # 29596's video block is a placeholder: the board's Image rectangle is a flat
+    # #d9d9d9 with no imageRef, exactly like the subscription thumbnails.
+    tag = "%s [cancel-offer-skip]" % label
+    sel = _panel("cancel-offer-skip")
+    _open(pg, "cancel-offer-skip")
+    vid = pg.evaluate(r"""a=>{const p=document.querySelector(a[0]);
+        const v=p.querySelector('.gb-acct-video');
+        const play=p.querySelector('.gb-acct-video__play');
+        if(!v)return null;
+        const r=e=>e.getBoundingClientRect();
+        const cs=e=>getComputedStyle(e);
+        return {w:Math.round(r(v).width), h:Math.round(r(v).height),
+                bg:cs(v).backgroundColor, radius:cs(v).borderTopLeftRadius,
+                playW:play?Math.round(r(play).width):null,
+                playH:play?Math.round(r(play).height):null,
+                playBg:play?cs(play).backgroundColor:null,
+                playR:play?cs(play).borderTopLeftRadius:null,
+                glyph:!!(play&&play.querySelector('svg'))}}""", [sel])
+    if vid is None:
+        bad("%s no .gb-acct-video -- board 29750 draws one" % tag)
+    else:
+        for key, want, why in (("h", 190, "board 29750 is 350x190"),
+                               ("bg", "rgb(217, 217, 217)", "board 29751 is a flat #d9d9d9"),
+                               ("playW", 62, "board 29752 is 61.8 wide"),
+                               ("playH", 39, "board 29752 is 38.6 tall"),
+                               ("playBg", "rgb(255, 255, 255)", "board 29752 is white"),
+                               ("glyph", True, "board 29753 is the triangle")):
+            if vid[key] == want:
+                good(tag)
+            else:
+                bad("%s video %s=%s want %s -- %s" % (tag, key, vid[key], want, why))
+    pg.keyboard.press("Escape")
+    pg.wait_for_timeout(600)
+
+
+def check_cancel_reasons(pg, w, label):
+    """The seven rows, and the CTA that follows the pick (note 34512)."""
+    tag = "%s [cancel-reason]" % label
+    sel = _panel("cancel-reason")
+    _open(pg, "cancel-reason")
+
+    got = pg.evaluate(r"""a=>{const p=document.querySelector(a[0]);
+        if(!p)return null;
+        const cs=e=>getComputedStyle(e);
+        const r=e=>e.getBoundingClientRect();
+        const rows=[...p.querySelectorAll('.gb-acct-reason')];
+        const inputs=[...p.querySelectorAll('[data-acct-reason]')];
+        const list=p.querySelector('.gb-acct-reasons');
+        const cta=p.querySelector('[data-acct-cta]');
+        const first=rows[0];
+        return {count:rows.length,
+                labels:rows.map(e=>e.textContent.trim()),
+                values:inputs.map(e=>e.value),
+                names:[...new Set(inputs.map(e=>e.name))],
+                types:[...new Set(inputs.map(e=>e.type))],
+                checked:inputs.filter(e=>e.checked).length,
+                listGap:list?cs(list).rowGap:null,
+                rowH:first?Math.round(r(first).height):null,
+                rowPadY:first?cs(first).paddingTop:null,
+                rowPadX:first?cs(first).paddingLeft:null,
+                rowGap:first?cs(first).columnGap:null,
+                rowR:first?cs(first).borderTopLeftRadius:null,
+                rowBg:first?cs(first).backgroundColor:null,
+                rowBorder:first?cs(first).borderTopColor:null,
+                rowBorderW:first?cs(first).borderTopWidth:null,
+                labelColor:first?cs(first.querySelector('.gb-acct-reason__label')).color:null,
+                ctaDisabled:cta?cta.disabled:null,
+                ctaText:cta?cta.textContent.trim():null}}""", [sel])
+    if got is None:
+        bad("%s panel missing" % tag)
+        return
+
+    want_labels = [r[1] for r in REASONS]
+    if got["labels"] == want_labels:
+        good(tag)
+    else:
+        bad("%s rows read %r, boards 29928/30286 read %r" % (tag, got["labels"], want_labels))
+    if got["values"] == [r[0] for r in REASONS]:
+        good(tag)
+    else:
+        bad("%s reason values %r" % (tag, got["values"]))
+    # one pick, not many: the board fills a single circle
+    if got["types"] == ["radio"] and len(got["names"]) == 1:
+        good(tag)
+    else:
+        bad("%s rows are %s across %d names, want one radio group"
+            % (tag, got["types"], len(got["names"])))
+    # no board shows the screen before a pick, so it ships with none made and the
+    # CTA asleep -- SPEC 待裁决 W
+    if got["checked"] == 0:
+        good(tag)
+    else:
+        bad("%s ships with %d reasons picked" % (tag, got["checked"]))
+    if got["ctaDisabled"] is True:
+        good(tag)
+    else:
+        bad("%s CTA starts disabled=%s: with no reason picked there is nothing "
+            "to continue to" % (tag, got["ctaDisabled"]))
+
+    if got["listGap"] == "12px":
+        good(tag)
+    else:
+        bad("%s rows are %s apart, board 30082 is 12" % (tag, got["listGap"]))
+    # 30083 has strokesIncludedInLayout true: 12 + 20 + 12 + two 1px borders = 46
+    for key, want, why in (("rowH", 46, "board 30083 is 46 with the border counted"),
+                           ("rowPadY", "12px", "board pads 12 top and bottom"),
+                           ("rowPadX", "16px", "board pads 16 each side"),
+                           ("rowGap", "16px", "radio to label is 16"),
+                           ("rowR", "8px", "board radius is 8"),
+                           ("rowBorderW", "1px", "the stroke is counted in the 46"),
+                           ("rowBg", "rgb(255, 255, 255)", "an unpicked row is white"),
+                           ("rowBorder", CCC, "an unpicked row is #cccccc"),
+                           ("labelColor", NAVY, "the label is #101828")):
+        if got[key] == want:
+            good(tag)
+        else:
+            bad("%s row %s=%s want %s -- %s" % (tag, key, got[key], want, why))
+
+    # -- the pick drives the row's fill, the CTA's words and where it goes
+    for value, text, nxt, cta_text in REASONS:
+        rsel = sel + " [data-acct-reason][value='%s']" % value
+        if not pg.evaluate("s=>!!document.querySelector(s)", rsel):
+            bad("%s no radio for %r" % (tag, value))
+            continue
+        if not _click(pg, rsel, tag, "radio %s" % value):
+            continue
+        pg.wait_for_timeout(300)
+        st = pg.evaluate(r"""a=>{const p=document.querySelector(a[0]);
+            const inp=p.querySelector(a[1]);
+            const row=inp.closest('.gb-acct-reason');
+            const cta=p.querySelector('[data-acct-cta]');
+            const cs=getComputedStyle(row);
+            return {bg:cs.backgroundColor, border:cs.borderTopColor,
+                    ctaBg:getComputedStyle(cta).backgroundColor,
+                    text:cta.textContent.trim(), disabled:cta.disabled,
+                    to:cta.getAttribute('data-acct-modal'),
+                    closes:cta.hasAttribute('data-acct-modal-close')}}""",
+            [sel, "[data-acct-reason][value='%s']" % value])
+        if st["bg"] == SEL_ROW and st["border"] == GREEN:
+            good(tag)
+        else:
+            bad("%s picked %s stays %s/%s, board 30083 fills it #e6f5e1 with a "
+                "#005635 edge" % (tag, value, st["bg"], st["border"]))
+        if st["text"] == cta_text and st["disabled"] is False and st["ctaBg"] == GREEN:
+            good(tag)
+        else:
+            bad("%s picking %s gives CTA %r disabled=%s %s, boards say %r, live, green"
+                % (tag, value, st["text"], st["disabled"], st["ctaBg"], cta_text))
+        # note 34512: only the first two have anywhere to go
+        if st["to"] == nxt:
+            good(tag)
+        else:
+            bad("%s picking %s points the CTA at %r, want %r (note 34512)"
+                % (tag, value, st["to"], nxt))
+        if st["closes"] is (nxt is None):
+            good(tag)
+        else:
+            bad("%s picking %s: CTA closes=%s, want %s -- a terminal reason ends "
+                "the flow, a branching one must not" % (tag, value, st["closes"], nxt is None))
+
+    pg.keyboard.press("Escape")
+    pg.wait_for_timeout(600)
+
+
+def check_calendar(pg, w, label):
+    """30465's date picker. Tokens from the board, the grid from the clock."""
+    tag = "%s [cancel-holiday]" % label
+    sel = _panel("cancel-holiday")
+    _open(pg, "cancel-holiday")
+
+    got = pg.evaluate(r"""a=>{const p=document.querySelector(a[0]);
+        const cal=p&&p.querySelector('.gb-acct-cal');
+        if(!cal)return null;
+        const cs=e=>getComputedStyle(e);
+        const r=e=>e.getBoundingClientRect();
+        const head=cal.querySelector('.gb-acct-cal__head');
+        const title=cal.querySelector('[data-acct-cal-title]');
+        const grid=cal.querySelector('table');
+        const ths=[...cal.querySelectorAll('thead th')];
+        const cells=[...cal.querySelectorAll('tbody button')];
+        const sel1=cells.filter(c=>c.getAttribute('aria-pressed')==='true');
+        const out=cells.filter(c=>c.dataset.acctCalOut!==undefined);
+        const dis=cells.filter(c=>c.disabled);
+        const one=cells[0];
+        const today=new Date(); today.setHours(0,0,0,0);
+        const enabled=cells.filter(c=>!c.disabled);
+        return {calW:Math.round(r(cal).width), calH:Math.round(r(cal).height),
+                calBg:cs(cal).backgroundColor, calR:cs(cal).borderTopLeftRadius,
+                contentPadY:cs(cal.querySelector('.gb-acct-cal__content')).paddingTop,
+                contentPadX:cs(cal.querySelector('.gb-acct-cal__content')).paddingLeft,
+                headH:head?Math.round(r(head).height):null,
+                titleSize:title?cs(title).fontSize:null,
+                titleWeight:title?cs(title).fontWeight:null,
+                titleColor:title?cs(title).color:null,
+                title:title?title.textContent.trim():null,
+                dayNames:ths.map(e=>e.textContent.trim()),
+                dayWeight:ths.length?cs(ths[0]).fontWeight:null,
+                dayColor:ths.length?cs(ths[0]).color:null,
+                cellCount:cells.length,
+                gridStart:cells.length?cells[0].dataset.acctCalDay:null,
+                gridEnd:cells.length?cells[cells.length-1].dataset.acctCalDay:null,
+                captionH:cal.querySelector('caption')?
+                         Math.round(r(cal.querySelector('caption')).height):null,
+                cellH:one?Math.round(r(one).height):null,
+                cellR:one?cs(one).borderTopLeftRadius:null,
+                colGap:grid?cs(grid).borderSpacing:null,
+                selCount:sel1.length,
+                selBg:sel1.length?cs(sel1[0]).backgroundColor:null,
+                selColor:sel1.length?cs(sel1[0]).color:null,
+                selIso:sel1.length?sel1[0].dataset.acctCalDay:null,
+                outColor:out.length?cs(out[0]).color:null,
+                outDisabled:out.every(c=>c.disabled),
+                firstEnabled:enabled.length?enabled[0].dataset.acctCalDay:null,
+                disabledCount:dis.length,
+                prev:!!cal.querySelector('[data-acct-cal-prev]'),
+                next:!!cal.querySelector('[data-acct-cal-next]'),
+                todayIso:new Date(today.getTime()-today.getTimezoneOffset()*60000)
+                          .toISOString().slice(0,10)}}""", [sel])
+    if got is None:
+        bad("%s no .gb-acct-cal -- board 30621 draws a date picker" % tag)
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(600)
+        return
+
+    for key, want, why in (("calBg", "rgb(255, 255, 255)", "board 30621 is white"),
+                           ("calR", "8px", "board radius is 8"),
+                           ("contentPadY", "20px", "board 30623 pads 20 top"),
+                           ("contentPadX", "24px", "board 30623 pads 24 side"),
+                           ("headH", 32, "board 30625 is 32 tall"),
+                           ("titleSize", "16px", "30627 is 16/24"),
+                           ("titleWeight", "500", "30627 is w500"),
+                           ("titleColor", GREY7, "30627 is #4d4d4d"),
+                           ("cellH", 40, "30631 cells are 40 tall"),
+                           ("cellR", "20px", "30631 radius is 20"),
+                           ("dayWeight", "500", "the Mo/Tu row is w500"),
+                           ("dayColor", GREY7, "the Mo/Tu row is #4d4d4d"),
+                           ("prev", True, "30626 is the back arrow"),
+                           ("next", True, "30628 is the forward arrow")):
+        if got[key] == want:
+            good(tag)
+        else:
+            bad("%s calendar %s=%s want %s -- %s" % (tag, key, got[key], want, why))
+
+    # 30631..30643 verbatim, "Sat" included: three letters where the rest are two
+    want_days = ["Mo", "Tu", "We", "Th", "Fr", "Sat", "Su"]
+    if got["dayNames"] == want_days:
+        good(tag)
+    else:
+        bad("%s day row %r, board reads %r (Sat really is three letters)"
+            % (tag, got["dayNames"], want_days))
+
+    # the grid is generated, so these are the invariants the board cannot give
+    # whole Monday-first weeks, and no more of them than the month needs: an
+    # off-by-one at either end silently adds a seventh row of the next month
+    start = datetime.date.fromisoformat(got["gridStart"])
+    end = datetime.date.fromisoformat(got["gridEnd"])
+    view = datetime.date.fromisoformat(got["selIso"]).replace(day=1)
+    nxt = (view.replace(day=28) + datetime.timedelta(days=4)).replace(day=1)
+    span = (nxt - view).days
+    want_start = view - datetime.timedelta(days=view.weekday())
+    want_end = want_start + datetime.timedelta(days=((view.weekday() + span + 6) // 7) * 7 - 1)
+    if (start, end) == (want_start, want_end):
+        good(tag)
+    else:
+        bad("%s grid runs %s..%s, the whole weeks around this month are %s..%s"
+            % (tag, start, end, want_start, want_end))
+    if got["cellCount"] == (want_end - want_start).days + 1:
+        good(tag)
+    else:
+        bad("%s %d cells for a %s..%s grid" % (tag, got["cellCount"], start, end))
+    # the caption names the grid for a reader without being drawn
+    if got["captionH"] in (0, 1):
+        good(tag)
+    else:
+        bad("%s the table caption is %spx tall -- it should not draw" % (tag, got["captionH"]))
+    if got["selCount"] == 1:
+        good(tag)
+    else:
+        bad("%s %d days selected, board 30669 fills exactly one" % (tag, got["selCount"]))
+    if got["selBg"] == GREEN and got["selColor"] == "rgb(255, 255, 255)":
+        good(tag)
+    else:
+        bad("%s picked day is %s on %s, board is white on #005635"
+            % (tag, got["selColor"], got["selBg"]))
+    if got["outColor"] == GREY8 and got["outDisabled"]:
+        good(tag)
+    else:
+        bad("%s days outside the month are %s / disabled=%s, board greys them #808080"
+            % (tag, got["outColor"], got["outDisabled"]))
+    # note 30923: the resume day has to be a whole future day, so today is out
+    tomorrow = (datetime.date.fromisoformat(got["todayIso"])
+                + datetime.timedelta(days=1)).isoformat()
+    if got["firstEnabled"] == tomorrow:
+        good(tag)
+    else:
+        bad("%s first selectable day is %s, note 30923 makes it %s -- today and "
+            "earlier are not whole future days" % (tag, got["firstEnabled"], tomorrow))
+    if got["selIso"] == tomorrow:
+        good(tag)
+    else:
+        bad("%s opens with %s picked, want the first selectable day %s"
+            % (tag, got["selIso"], tomorrow))
+    if got["disabledCount"] > 0:
+        good(tag)
+    else:
+        bad("%s nothing is disabled -- the past-day gate is not running" % tag)
+
+    # picking a different day moves the fill
+    moved = pg.evaluate(r"""a=>{const p=document.querySelector(a[0]);
+        if(!p)return null;
+        const cells=[...p.querySelectorAll('.gb-acct-cal tbody button')].filter(c=>!c.disabled);
+        if(cells.length<2)return null;
+        cells[1].click();
+        const on=[...p.querySelectorAll('.gb-acct-cal tbody button')]
+                 .filter(c=>c.getAttribute('aria-pressed')==='true');
+        return {n:on.length, day:on.length?on[0].dataset.acctCalDay:null,
+                want:cells[1].dataset.acctCalDay}}""", [sel])
+    if moved is None:
+        bad("%s fewer than two selectable days to test the pick on" % tag)
+    elif moved["n"] == 1 and moved["day"] == moved["want"]:
+        good(tag)
+    else:
+        bad("%s after clicking %s the fill is on %s (%d selected)"
+            % (tag, moved["want"], moved["day"], moved["n"]))
+
+    # the month arrows move the grid
+    stepped = pg.evaluate(r"""a=>{const p=document.querySelector(a[0]);
+        if(!p||!p.querySelector('[data-acct-cal-title]'))return null;
+        const t=()=>p.querySelector('[data-acct-cal-title]').textContent.trim();
+        const before=t();
+        p.querySelector('[data-acct-cal-next]').click();
+        const fwd=t();
+        p.querySelector('[data-acct-cal-prev]').click();
+        return {before:before, fwd:fwd, back:t()}}""", [sel])
+    if stepped is None:
+        bad("%s no month title to step" % tag)
+    elif stepped["fwd"] != stepped["before"] and stepped["back"] == stepped["before"]:
+        good(tag)
+    else:
+        bad("%s month arrows: %r -> %r -> %r"
+            % (tag, stepped["before"], stepped["fwd"], stepped["back"]))
+
+    pg.keyboard.press("Escape")
+    pg.wait_for_timeout(600)
+
+
+def check_cancel_chain(pg, w, label):
+    """Walking the funnel keeps one lock and measures the scrollbar once."""
+    tag = "%s [cancel-flow]" % label
+    set_state(pg, BASE_STATE)
+    pg.evaluate("""()=>{window.__sbw=0;
+        const st=document.documentElement.style;
+        const orig=st.setProperty.bind(st);
+        st.setProperty=function(k,v){if(k==='--scrollbar-w')window.__sbw++;
+                                     return orig(k,v)}}""")
+
+    # the entry point is the offer, not the reason list
+    pg.click("[data-acct-view='detail'] [data-acct-modal='cancel-offer-skip']", timeout=2000)
+    pg.wait_for_timeout(500)
+    here = pg.evaluate("()=>{const e=document.querySelector('.gb-acct-modal.is-open');"
+                       "return e?e.getAttribute('data-acct-modal-panel'):null}")
+    if here == "cancel-offer-skip":
+        good(tag)
+    else:
+        bad("%s Cancel Subscription opened %r, board order puts 29596 first"
+            % (tag, here))
+
+    steps = [
+        (_panel("cancel-offer-skip") + " [data-acct-cta]", "cancel-skipped"),
+    ]
+    for click_sel, want in steps:
+        if not _click(pg, click_sel, tag, "the offer CTA"):
+            continue
+        pg.wait_for_timeout(600)
+        here = pg.evaluate("()=>{const e=document.querySelector('.gb-acct-modal.is-open');"
+                           "return e?e.getAttribute('data-acct-modal-panel'):null}")
+        if here == want:
+            good(tag)
+        else:
+            bad("%s %s led to %r, want %r" % (tag, click_sel, here, want))
+
+    # back to the offer, then out through "Cancel now" into the reason list
+    pg.evaluate("()=>window.gumiAcct.modal.open('cancel-offer-skip')")
+    pg.wait_for_timeout(500)
+    _click(pg, _panel("cancel-offer-skip") + " .gb-acct-modal__foot .gb-acct-link",
+           tag, "'Cancel now' on the offer")
+    pg.wait_for_timeout(600)
+    here = pg.evaluate("()=>{const e=document.querySelector('.gb-acct-modal.is-open');"
+                       "return e?e.getAttribute('data-acct-modal-panel'):null}")
+    if here == "cancel-reason":
+        good(tag)
+    else:
+        bad("%s 'Cancel now' on the offer led to %r, want cancel-reason -- note "
+            "34516 wants the reason recorded before the cancel" % (tag, here))
+
+    # branch through to the holiday screen, then check the lock survived it all
+    if _click(pg, _panel("cancel-reason") + " [data-acct-reason][value='going-away']",
+              tag, "the Going away radio"):
+        pg.wait_for_timeout(300)
+        _click(pg, _panel("cancel-reason") + " [data-acct-cta]", tag, "the reason CTA")
+    pg.wait_for_timeout(600)
+    st = pg.evaluate("""()=>({open:(document.querySelector('.gb-acct-modal.is-open')||{})
+            .getAttribute?.('data-acct-modal-panel')||null,
+        n:document.querySelectorAll('.gb-acct-modal.is-open').length,
+        locked:document.documentElement.classList.contains('is-modal-open'),
+        sbw:window.__sbw,
+        headerTop:Math.round(document.querySelector('.gb-acct-header')
+                  .getBoundingClientRect().top)})""")
+    if st["open"] == "cancel-holiday":
+        good(tag)
+    else:
+        bad("%s Going away led to %r, want cancel-holiday" % (tag, st["open"]))
+    if st["n"] == 1:
+        good(tag)
+    else:
+        bad("%s %d panels open after walking the funnel, want 1" % (tag, st["n"]))
+    if st["locked"]:
+        good(tag)
+    else:
+        bad("%s the lock was dropped somewhere in the funnel" % tag)
+    # ⚠ the whole point of chaining through open(): four screens, one measurement
+    if st["sbw"] == 1:
+        good(tag)
+    else:
+        bad("%s --scrollbar-w was written %s times walking four screens -- the "
+            "second reading is 0 and wipes the compensation" % (tag, st["sbw"]))
+    if st["headerTop"] >= 0:
+        good(tag)
+    else:
+        bad("%s sticky header top=%s during the funnel" % (tag, st["headerTop"]))
+
+    # a terminal reason ends it: the CTA closes rather than opening a sixth screen
+    pg.evaluate("()=>window.gumiAcct.modal.open('cancel-reason')")
+    pg.wait_for_timeout(500)
+    if _click(pg, _panel("cancel-reason") + " [data-acct-reason][value='taste-texture']",
+              tag, "the Taste or texture radio"):
+        pg.wait_for_timeout(300)
+        _click(pg, _panel("cancel-reason") + " [data-acct-cta]", tag, "the reason CTA")
+    pg.wait_for_timeout(700)
+    end = pg.evaluate("""()=>({n:document.querySelectorAll('.gb-acct-modal.is-open').length,
+        locked:document.documentElement.classList.contains('is-modal-open')})""")
+    if end["n"] == 0 and end["locked"] is False:
+        good(tag)
+    else:
+        bad("%s a terminal reason left %d panels open (locked=%s) -- note 34512 "
+            "says there is no second screen" % (tag, end["n"], end["locked"]))
+
+
+def check_restart(pg, w, label):
+    tag = "%s [restart]" % label
+    sel = _panel("restart")
+    _open(pg, "restart")
+
+    got = pg.evaluate(r"""a=>{const p=document.querySelector(a[0]);
+        if(!p)return null;
+        const q=s=>p.querySelector(s);
+        const cs=e=>e?getComputedStyle(e):null;
+        const r=e=>e?e.getBoundingClientRect():null;
+        const body=q('.gb-acct-modal__body');
+        const lead=q('.gb-acct-modal__lead');
+        const field=q('.gb-acct-field__input');
+        const save=q('[data-acct-save]');
+        const hint=q('.gb-acct-modal__hint');
+        const bb=cs(body);
+        return {sheet:p.classList.contains('gb-acct-modal--sheet'),
+                h:Math.round(r(q('.gb-acct-modal__panel')).height),
+                footH:q('.gb-acct-modal__foot')?
+                      Math.round(r(q('.gb-acct-modal__foot')).height):null,
+                bodyPadY:bb&&bb.paddingTop,
+                bodyGap:q('.gb-acct-flow')?cs(q('.gb-acct-flow')).rowGap:null,
+                title:q('.gb-acct-modal__title').textContent.trim(),
+                lead:lead?lead.textContent.trim():null,
+                value:field?field.value:null,
+                icon:!!q('.gb-acct-field__icon'),
+                hint:hint?cs(hint).fontSize:null,
+                saveDisabled:save?save.disabled:null,
+                ungated:p.hasAttribute('data-acct-save-ungated')}}""", [sel])
+    if got is None:
+        bad("%s panel missing" % tag)
+        return
+
+    # 34339 is a 329 card, not the 672 drawer the rest of this task uses
+    if got["sheet"] is False:
+        good(tag)
+    else:
+        bad("%s is a --sheet; board 34339 is a centred 329 card" % tag)
+    if w <= 767:
+        if abs(got["h"] - 329) <= 2:
+            good(tag)
+        else:
+            bad("%s panel %spx tall, board 2284:34192 is 329" % (tag, got["h"]))
+    if got["footH"] == 72:
+        good(tag)
+    else:
+        bad("%s foot %s, board 34349 is 72 (not the drawer's 80)" % (tag, got["footH"]))
+    # 34344 pads 20 and gaps 15 -- neither the 24/20 card ramp nor the drawer's 32
+    if got["bodyGap"] == "15px":
+        good(tag)
+    else:
+        bad("%s body gap %s, board 34344 is 15" % (tag, got["bodyGap"]))
+    if got["title"] == "Restart subscoption":
+        good(tag)
+    else:
+        bad("%s title %r -- the board's own misspelling is kept (SPEC 8)"
+            % (tag, got["title"]))
+    if got["lead"] == "Select a restart date":
+        good(tag)
+    else:
+        bad("%s lead %r, board 34345 says 'Select a restart date'" % (tag, got["lead"]))
+    if got["value"] == "22/07/2026":
+        good(tag)
+    else:
+        bad("%s date field %r, board is 22/07/2026" % (tag, got["value"]))
+    if got["icon"]:
+        good(tag)
+    else:
+        bad("%s no trailing calendar glyph -- 34347 draws one" % tag)
+    if got["hint"] == "12px":
+        good(tag)
+    else:
+        bad("%s note is %s, board 34348 is 12/18" % (tag, got["hint"]))
+    # ⚠ 34351 is GREEN while edit-date's identical-looking Save (31976) is grey.
+    # Both are opt-in: the panel says so, rather than the difference hiding in a
+    # missing attribute.
+    if got["saveDisabled"] is False and got["ungated"]:
+        good(tag)
+    else:
+        bad("%s Save disabled=%s ungated=%s -- board 34351 draws it green"
+            % (tag, got["saveDisabled"], got["ungated"]))
 
     pg.keyboard.press("Escape")
     pg.wait_for_timeout(600)
