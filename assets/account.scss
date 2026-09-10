@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260910-a7";
+$build-acct: "20260910-a8";
 
 // ==========================================================================
 // Variables
@@ -2163,4 +2163,195 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
     &__backdrop,
     &__panel { transition-duration: 0.01ms; }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Product panels — 2284:30960 edit / 28942 add / 33847 locked. All three are the
+// 672 sheet, so the body is 32 top and bottom (not the short panels' 24/20) and
+// the foot is 80 tall, i.e. 20 rather than 16. Sides ride the same 24/20 ramp.
+// ---------------------------------------------------------------------------
+.gb-acct-modal--sheet {
+  .gb-acct-modal__body {
+    padding: 32px 24px;
+
+    @include narrow { padding: 32px 20px; }
+    @include tablet { padding-inline: fluid(20px, 24px); }
+  }
+
+  .gb-acct-modal__foot { padding-block: 20px; }
+}
+
+// 33999: the "at least one product" banner sits between the head and the body,
+// outside the scroll area, so it stays put while the cards move.
+.gb-acct-modal__alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding: 16px;
+  background: #fbeae9;
+  box-shadow: inset 0 0 0 1px #f6d4d2;   // INSIDE stroke, like the head rule
+
+  svg { flex: 0 0 auto; width: 20px; height: 20px; }
+
+  p {
+    margin: 0;
+    @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+    color: #011307;
+  }
+
+  // 34003: only the leading "Sorry!" carries the dark ink, the rest is grey
+  span { color: $c-gray-600; }
+}
+
+// 29095: two 168 columns, 15 apart, rows 24 apart. The board's 168+15+168 is 351
+// in a 350 box, so the columns are shared out instead of pinned -- one card then
+// still lands in the left column, which is what 30960 draws.
+.gb-acct-prod-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 15px;
+  row-gap: 24px;
+}
+
+// 31114: 16 all round, 20 between blocks, centred, r8.
+.gb-acct-prod {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  row-gap: 20px;
+  padding: 16px;
+  border-radius: $r-sm;
+  background: $c-white;
+}
+
+// 196:19033 is a flat #d9d9d9 square: the design has no product photography.
+// Square is the invariant, the board's 136 is just 168 minus the padding.
+.gb-acct-prod__thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 4.43px;
+  background: $c-gray-200;
+}
+
+.gb-acct-prod__info {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.gb-acct-prod__name {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-900;
+}
+
+.gb-acct-prod__price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin: 0;
+}
+
+.gb-acct-prod__now {
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: #011307;
+}
+
+// 14/18 here, not the 14/20 next to it -- the board sets the struck price on a
+// tighter leading.
+.gb-acct-prod__was {
+  @include font($font-brand-stack, 14px, 400, 18px, -0.28px);
+  color: $c-gray-600;
+  text-decoration: line-through;
+}
+
+.gb-acct-prod__opts {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  row-gap: 12px;
+}
+
+.gb-acct-prod__opt {
+  display: flex;
+  flex-direction: column;
+  row-gap: 4px;
+}
+
+.gb-acct-prod__opt-label {
+  @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
+  color: $c-gray-600;
+}
+
+// 84:8161. Drawn but inert: note 30913 says flavour is not an option yet
+// (待裁决 J), so it carries aria-disabled and no handler rather than looking
+// clickable. No hover here for the same reason -- global rule 13 cuts both ways.
+.gb-acct-prod__select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 40px;
+  padding: 10px 16px;
+  border: 1px solid $c-gray-350;
+  border-radius: $r-sm;
+  background: $c-white;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-700;
+
+  &[aria-disabled="true"] { cursor: default; }
+
+  svg { flex: 0 0 auto; width: 10px; height: 5px; }
+}
+
+// 31129: one 42-tall box split 40 | 54 | 40 by its own hairlines.
+.gb-acct-qty {
+  display: flex;
+  align-items: stretch;
+  align-self: stretch;
+  height: 42px;
+  border: 1px solid $c-gray-350;
+  border-radius: $r-sm;
+  background: $c-white;
+  overflow: hidden;
+}
+
+.gb-acct-qty__btn {
+  flex: 0 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: $c-white;
+  color: $c-gray-700;
+  cursor: pointer;
+
+  transition: trans(background-color, color);
+
+  @include hover { background: $c-cream; }
+
+  // 34020: the board greys the fill rather than the glyph when the step is not
+  // available -- that is the last product at 1 (note 34502).
+  &:disabled {
+    background: $c-cream;
+    color: $c-gray-350;
+    cursor: default;
+  }
+
+  svg { width: 14px; height: 14px; }
+}
+
+.gb-acct-qty__btn--down { border-right: 1px solid $c-gray-350; }
+.gb-acct-qty__btn--up { border-left: 1px solid $c-gray-350; }
+
+.gb-acct-qty__value {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-700;
 }

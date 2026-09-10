@@ -2082,3 +2082,220 @@
     transition-duration: 0.01ms;
   }
 }
+.gb-acct-modal--sheet .gb-acct-modal__body {
+  padding: 32px 24px;
+}
+@media (max-width: 767px) {
+  .gb-acct-modal--sheet .gb-acct-modal__body {
+    padding: 32px 20px;
+  }
+}
+@media (min-width: 768px) and (max-width: 1280px) {
+  .gb-acct-modal--sheet .gb-acct-modal__body {
+    padding-inline: clamp(20px, 20px + 4 * (100vw - 768px) / 513, 24px);
+  }
+}
+.gb-acct-modal--sheet .gb-acct-modal__foot {
+  padding-block: 20px;
+}
+
+.gb-acct-modal__alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding: 16px;
+  background: #fbeae9;
+  box-shadow: inset 0 0 0 1px #f6d4d2;
+}
+.gb-acct-modal__alert svg {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+}
+.gb-acct-modal__alert p {
+  margin: 0;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: #011307;
+}
+.gb-acct-modal__alert span {
+  color: #666666;
+}
+
+.gb-acct-prod-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 15px;
+  row-gap: 24px;
+}
+
+.gb-acct-prod {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  row-gap: 20px;
+  padding: 16px;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.gb-acct-prod__thumb {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 4.43px;
+  background: #d9d9d9;
+}
+
+.gb-acct-prod__info {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.gb-acct-prod__name {
+  margin: 0;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: #1a1a1a;
+}
+
+.gb-acct-prod__price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin: 0;
+}
+
+.gb-acct-prod__now {
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: #011307;
+}
+
+.gb-acct-prod__was {
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 18px;
+  letter-spacing: -0.28px;
+  color: #666666;
+  text-decoration: line-through;
+}
+
+.gb-acct-prod__opts {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  row-gap: 12px;
+}
+
+.gb-acct-prod__opt {
+  display: flex;
+  flex-direction: column;
+  row-gap: 4px;
+}
+
+.gb-acct-prod__opt-label {
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  letter-spacing: -0.24px;
+  color: #666666;
+}
+
+.gb-acct-prod__select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 40px;
+  padding: 10px 16px;
+  border: 1px solid #b3b3b3;
+  border-radius: 8px;
+  background: #ffffff;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: #4d4d4d;
+}
+.gb-acct-prod__select[aria-disabled=true] {
+  cursor: default;
+}
+.gb-acct-prod__select svg {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 5px;
+}
+
+.gb-acct-qty {
+  display: flex;
+  align-items: stretch;
+  align-self: stretch;
+  height: 42px;
+  border: 1px solid #b3b3b3;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.gb-acct-qty__btn {
+  flex: 0 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: #ffffff;
+  color: #4d4d4d;
+  cursor: pointer;
+  transition: background-color 0.2s cubic-bezier(0.33, 1, 0.68, 1), color 0.2s cubic-bezier(0.33, 1, 0.68, 1);
+}
+@media (hover: hover) {
+  .gb-acct-qty__btn:hover {
+    background: #faf9f8;
+  }
+}
+.gb-acct-qty__btn:disabled {
+  background: #faf9f8;
+  color: #b3b3b3;
+  cursor: default;
+}
+.gb-acct-qty__btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.gb-acct-qty__btn--down {
+  border-right: 1px solid #b3b3b3;
+}
+
+.gb-acct-qty__btn--up {
+  border-left: 1px solid #b3b3b3;
+}
+
+.gb-acct-qty__value {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: #4d4d4d;
+}

@@ -113,6 +113,62 @@
     }
   };
 
+  /* acctQty — the product card stepper.
+   *
+   * ⚠ The floor is declared per card (data-acct-qty-min), not inferred from how
+   * many cards are on screen. Note 34502 is about the subscription's last
+   * product, and how many of its products a panel happens to render is not the
+   * same question -- 30960 draws one card that may still go to 0 because the
+   * subscription has others.
+   */
+  var acctQty = {
+    bind: function (root) {
+      if (root.getAttribute('data-acct-qty-bound')) return;   // delegated: once only
+      root.setAttribute('data-acct-qty-bound', '1');
+      var self = this;
+      root.addEventListener('click', function (e) {
+        var btn = e.target.closest && e.target.closest('[data-acct-qty]');
+        if (!btn || btn.disabled) return;
+        var row = btn.closest('[data-acct-product]');
+        var out = row && row.querySelector('[data-acct-qty-value]');
+        if (!out) return;
+        var n = parseInt(out.textContent, 10) || 0;
+        var min = parseInt(row.getAttribute('data-acct-qty-min'), 10) || 0;
+        var next = n + (btn.getAttribute('data-acct-qty') === 'up' ? 1 : -1);
+        if (next < min) return;
+        out.textContent = next;
+        self._sync(root, row, next, min);
+      });
+      var rows = root.querySelectorAll('[data-acct-product]');
+      for (var i = 0; i < rows.length; i++) {
+        var v = rows[i].querySelector('[data-acct-qty-value]');
+        var m = parseInt(rows[i].getAttribute('data-acct-qty-min'), 10) || 0;
+        this._sync(root, rows[i], parseInt(v ? v.textContent : '0', 10) || 0, m);
+      }
+    },
+
+    _sync: function (root, row, n, min) {
+      var down = row.querySelector('[data-acct-qty="down"]');
+      if (down) down.disabled = n <= min;
+      var cta = root.querySelector('[data-acct-save]');
+      if (!cta) return;
+      // note 34504: a product stepped down to nothing turns the action into a
+      // removal -- but only where 0 means "take it out". In the picker 0 just
+      // means "not chosen", and 28942/29399 keep the CTA at "Add products", so
+      // the swap is opt-in per panel rather than automatic.
+      var zeroLabel = cta.getAttribute('data-acct-label-zero');
+      if (!zeroLabel) return;
+      var zero = false;
+      var rows = root.querySelectorAll('[data-acct-product]');
+      for (var i = 0; i < rows.length; i++) {
+        var v = rows[i].querySelector('[data-acct-qty-value]');
+        var m = parseInt(rows[i].getAttribute('data-acct-qty-min'), 10) || 0;
+        if (m === 0 && parseInt(v ? v.textContent : '1', 10) === 0) { zero = true; break; }
+      }
+      cta.textContent = zero ? zeroLabel : cta.getAttribute('data-acct-label-default');
+    }
+  };
+
   /* modal — every [data-acct-modal] opens the panel of the same name.
    *
    * The lock reuses the site's own is-modal-open rather than a second class of
@@ -135,7 +191,10 @@
       // Armed up front, not on first open: the board ships Save greyed out, so
       // it has to be disabled before the panel is ever shown.
       var panels = document.querySelectorAll('.gb-acct-modal');
-      for (var i = 0; i < panels.length; i++) acctForm.watch(panels[i]);
+      for (var i = 0; i < panels.length; i++) {
+        acctForm.watch(panels[i]);
+        acctQty.bind(panels[i]);
+      }
       document.addEventListener('click', function (e) {
         if (!e.target.closest) return;
         var open = e.target.closest('[data-acct-modal]');
@@ -243,5 +302,5 @@
     }
   });
 
-  window.gumiAcct = { acctNav: acctNav, view: view, modal: modal, form: acctForm };
+  window.gumiAcct = { acctNav: acctNav, view: view, modal: modal, form: acctForm, qty: acctQty };
 })();

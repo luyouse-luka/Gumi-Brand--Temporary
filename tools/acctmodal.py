@@ -340,6 +340,7 @@ def run_width(b, w):
             bad("%s page shifted %.2fpx sideways when the lock removed the scrollbar"
                 % (label, after - before))
     check_forms(pg, w, label)
+    check_products(pg, w, label)
     pg.close()
 
 
@@ -518,6 +519,210 @@ def check_forms(pg, w, label):
             else:
                 bad("%s copy block %spx wide, board frame is 320" % (tag, got["copyW"]))
 
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(600)
+
+
+# ---------------------------------------------------------------------------
+# Task 10: the three product panels, all 672 bottom sheets.
+#
+# Notes driving this: 34502 the last product cannot be taken to 0, 34504 taking
+# an extra one to 0 turns the action into a removal, 30917 many products means
+# the body scrolls while the action stays put, 30913/30915 Flavour is not
+# editable yet (待裁决 J) so it is drawn but inert.
+# ---------------------------------------------------------------------------
+PRODUCTS = {
+    # hook: (board, cards, qty floor, CTA label, alert banner?, label at qty 0)
+    # ⚠ the zero label is per panel, not automatic: 31145 swaps Save for a
+    # removal, but 28942/29399 sit at 0 with the CTA still reading Add products
+    # because 0 there means "not chosen", not "take it out".
+    "edit-product":   ("2284:30960", 1, 0, "Save", False, "Remove this product"),
+    "add-product":    ("2284:28942", 4, 0, "Add products", False, None),
+    "product-locked": ("2284:33847", 1, 1, "Save", True, None),
+}
+
+
+def check_products(pg, w, label):
+    pad = PAD_PHONE if w <= 767 else PAD_DESK
+    for name in PRODUCTS:
+        node, ncards, floor, cta, alert, zero_label = PRODUCTS[name]
+        tag = "%s [%s]" % (label, name)
+        sel = ".gb-acct-modal[data-acct-modal-panel='%s']" % name
+        set_state(pg, BASE_STATE)
+        pg.evaluate("n=>window.gumiAcct.modal.open(n)", name)
+        pg.wait_for_timeout(450)
+
+        got = pg.evaluate("""a=>{const p=document.querySelector(a[0]);
+            if(!p)return null;
+            const q=s=>p.querySelector(s), qa=s=>[...p.querySelectorAll(s)];
+            const cs=e=>e?getComputedStyle(e):null;
+            const bodyEl=q('.gb-acct-modal__body');
+            const foot=q('.gb-acct-modal__foot');
+            const save=q('[data-acct-save]');
+            const cards=qa('[data-acct-product]');
+            const thumb=q('.gb-acct-prod__thumb');
+            const opt=q('.gb-acct-prod__select');
+            const qty=q('.gb-acct-qty');
+            const bb=cs(bodyEl), fb=cs(foot);
+            return {sheet:p.classList.contains('gb-acct-modal--sheet'),
+                    bodyOverflow:bb&&bb.overflowY, bodyPadX:bb&&bb.paddingLeft,
+                    bodyPadY:bb&&bb.paddingTop,
+                    lenis:bodyEl?bodyEl.hasAttribute('data-lenis-prevent'):null,
+                    footPadY:fb&&fb.paddingTop,
+                    cards:cards.length,
+                    ctaText:save?save.textContent.trim():null,
+                    ctaDefault:save?save.getAttribute('data-acct-label-default'):null,
+                    alert:!!q('.gb-acct-modal__alert'),
+                    thumbRatio:thumb?Math.round(thumb.getBoundingClientRect().width
+                                 /thumb.getBoundingClientRect().height*100)/100:null,
+                    optInert:opt?(opt.getAttribute('aria-disabled')==='true'||opt.disabled===true):null,
+                    qtyH:qty?Math.round(qty.getBoundingClientRect().height):null,
+                    qtyR:qty?cs(qty).borderTopLeftRadius:null,
+                    qtyBorder:qty?cs(qty).borderTopColor:null,
+                    floor:q('[data-acct-product]')?
+                          q('[data-acct-product]').getAttribute('data-acct-qty-min'):null}}""", [sel])
+        if got is None:
+            bad("%s panel missing" % tag)
+            continue
+
+        if got["sheet"]:
+            good(tag)
+        else:
+            bad("%s is not a --sheet: board %s is the 672 bottom sheet" % (tag, node))
+        if got["cards"] == ncards:
+            good(tag)
+        else:
+            bad("%s %s cards, board %s draws %s" % (tag, got["cards"], node, ncards))
+        if got["alert"] is alert:
+            good(tag)
+        else:
+            bad("%s alert banner=%s want %s" % (tag, got["alert"], alert))
+        # 30917: the body is what scrolls, and it has to hold the wheel itself
+        if got["bodyOverflow"] == "auto":
+            good(tag)
+        else:
+            bad("%s body overflow-y=%s, want auto" % (tag, got["bodyOverflow"]))
+        if got["lenis"]:
+            good(tag)
+        else:
+            bad("%s body has no data-lenis-prevent -- Lenis eats the wheel" % tag)
+        # the sheet's own padding: 32 top and bottom on the board, sides on the
+        # account's 24/20 ramp; the foot is 20 here, not the short panels' 16
+        if got["bodyPadX"] == pad:
+            good(tag)
+        else:
+            bad("%s body gutter %s want %s" % (tag, got["bodyPadX"], pad))
+        if got["bodyPadY"] == "32px":
+            good(tag)
+        else:
+            bad("%s body padding-top %s, board is 32" % (tag, got["bodyPadY"]))
+        if got["footPadY"] == "20px":
+            good(tag)
+        else:
+            bad("%s foot padding-top %s, the 80 foot is 20" % (tag, got["footPadY"]))
+        if got["ctaText"] == cta:
+            good(tag)
+        else:
+            bad("%s CTA is %r, board says %r" % (tag, got["ctaText"], cta))
+        if got["ctaDefault"] == cta:
+            good(tag)
+        else:
+            bad("%s CTA has no data-acct-label-default to restore to" % tag)
+        # 196:19033 is a square placeholder, and the card is fluid, so the ratio
+        # is the invariant rather than the 136
+        if got["thumbRatio"] == 1:
+            good(tag)
+        else:
+            bad("%s thumb aspect %s, board is square" % (tag, got["thumbRatio"]))
+        # 30913/30915: drawn, not operable (待裁决 J)
+        if got["optInert"]:
+            good(tag)
+        else:
+            bad("%s Flavour is operable -- note 30913 says not yet" % tag)
+        for key, want, why in (("qtyH", 42, "board QTY block is 42"),
+                               ("qtyR", "8px", "board radius is 8"),
+                               ("qtyBorder", "rgb(179, 179, 179)", "board border is #b3b3b3")):
+            if got[key] == want:
+                good(tag)
+            else:
+                bad("%s %s=%s want %s -- %s" % (tag, key, got[key], want, why))
+        if got["floor"] == str(floor):
+            good(tag)
+        else:
+            bad("%s first card data-acct-qty-min=%s want %s (note 34502)"
+                % (tag, got["floor"], floor))
+
+        # -- behaviour: the stepper
+        if not got["cards"] or got["floor"] is None:
+            bad("%s no stepper to drive -- the behaviour checks cannot run" % tag)
+            pg.keyboard.press("Escape")
+            pg.wait_for_timeout(600)
+            continue
+        first = sel + " [data-acct-product]:first-child "
+        start = pg.evaluate("s=>parseInt(document.querySelector(s).textContent,10)",
+                            first + "[data-acct-qty-value]")
+        # Down as far as it goes. The button disables itself at the floor, and
+        # Playwright's click waits for "enabled", so this has to stop on the
+        # state rather than count clicks.
+        down = first + "[data-acct-qty='down']"
+        for _ in range(start + 4):
+            if pg.evaluate("s=>document.querySelector(s).disabled", down):
+                break
+            pg.click(down)
+            pg.wait_for_timeout(80)
+        else:
+            bad("%s stepper never bottomed out" % tag)
+        # One more, with the attribute lifted. ⚠ A disabled button does not fire
+        # click even from script, so leaving it on would test nothing: the JS
+        # floor guard would go unexercised on any panel whose button ships
+        # disabled in the markup (product-locked does).
+        pg.evaluate("""s=>{const b=document.querySelector(s);const was=b.disabled;
+            b.disabled=false;b.click();b.disabled=was}""", down)
+        pg.wait_for_timeout(120)
+        low = pg.evaluate("s=>parseInt(document.querySelector(s).textContent,10)",
+                          first + "[data-acct-qty-value]")
+        if low == floor:
+            good(tag)
+        else:
+            bad("%s stepper bottomed out at %s, floor is %s (note 34502)"
+                % (tag, low, floor))
+        after = pg.evaluate("a=>document.querySelector(a[0]+' [data-acct-save]').textContent.trim()",
+                            [sel])
+        want_after = zero_label if (zero_label and low == 0) else cta
+        if after == want_after:
+            good(tag)
+        else:
+            bad("%s CTA at qty=%s is %r, want %r (note 34504)"
+                % (tag, low, after, want_after))
+        pg.click(first + "[data-acct-qty='up']")
+        pg.wait_for_timeout(120)
+        back = pg.evaluate("a=>document.querySelector(a[0]+' [data-acct-save]').textContent.trim()",
+                           [sel])
+        if back == cta:
+            good(tag)
+        else:
+            bad("%s CTA did not go back to %r after stepping up (got %r)"
+                % (tag, cta, back))
+        # one delegated bind only: a second open must not double every click
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(600)
+        pg.evaluate("n=>window.gumiAcct.modal.open(n)", name)
+        pg.wait_for_timeout(450)
+        # ⚠ bind() runs once per panel at init, so simply reopening cannot produce
+        # a double bind and an "open it twice" test would pass no matter what.
+        # Call bind again by hand -- that is the case the guard exists for.
+        pg.evaluate("a=>window.gumiAcct.qty.bind(document.querySelector(a[0]))", [sel])
+        pg.wait_for_timeout(120)
+        before = pg.evaluate("s=>parseInt(document.querySelector(s).textContent,10)",
+                             first + "[data-acct-qty-value]")
+        pg.click(first + "[data-acct-qty='up']")
+        pg.wait_for_timeout(120)
+        step = pg.evaluate("s=>parseInt(document.querySelector(s).textContent,10)",
+                           first + "[data-acct-qty-value]") - before
+        if step == 1:
+            good(tag)
+        else:
+            bad("%s one click moved the stepper by %s -- bound more than once" % (tag, step))
         pg.keyboard.press("Escape")
         pg.wait_for_timeout(600)
 

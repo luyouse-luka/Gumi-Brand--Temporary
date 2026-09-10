@@ -954,16 +954,18 @@ var acctForm = {
 **接口**
 - 产出：`acctQty.bind(rootEl)` —— 加减按钮、0 时改按钮文案、最后一个产品锁定
 
-- [ ] **步骤 1：追加断言（先红）**
+- [x] **步骤 1：追加断言（先红）**
   - QTY 减到 0 时按钮文案变 `Remove this product`
   - 只剩一个产品时 QTY 减不到 0（点减号后值仍为 1）
   - 多产品时 panel 内出现 `overflow-y: auto` 的容器且 CTA `position: sticky` 贴底
 
-- [ ] **步骤 2：跑判据确认红**
+- [x] **步骤 2：跑判据确认红**
 
-- [ ] **步骤 3：写结构与样式**，Flavour 下拉标 `aria-disabled="true"` 且不绑事件
+- [x] **步骤 3：写结构与样式**，Flavour 下拉标 `aria-disabled="true"` 且不绑事件
 
-- [ ] **步骤 4：写 acctQty**
+- [x] **步骤 4：写 acctQty**  ← 下限**按卡声明 `data-acct-qty-min`**，没用 PLAN 那个
+      「面板里只有一张卡 = 最后一个产品」的推断：便签 34502 说的是订阅里最后一个，
+      面板渲染几张卡是另一回事（`30960` 一张卡也能减到 0，那就是 `31145`）
 
 ```js
 var acctQty = {
@@ -992,7 +994,7 @@ var acctQty = {
 };
 ```
 
-- [ ] **步骤 5：把 acctQty 挂进弹窗打开流程**
+- [x] **步骤 5：把 acctQty 挂进弹窗打开流程**
 
 `acctQty` 是委托绑定，同一个 panel 绑两次会让点一下加两次。在 `acctModal.open()`
 里紧跟 `acctForm.watch(el)` 之后加：
@@ -1007,11 +1009,12 @@ var acctQty = {
     root.dataset.acctQtyBound = '1';
 ```
 
-- [ ] **步骤 6：编译、跑判据确认绿、活性自检**
+- [x] **步骤 6：编译、跑判据确认绿、活性自检**
 
-- [ ] **步骤 7：把 panel 内的滚动容器加进 `main.js` 的 `smoothScroll.PREVENT`**（沿用 Task 8 的授权）
+- [x] **步骤 7：把 panel 内的滚动容器加进 `main.js` 的 `smoothScroll.PREVENT`**（沿用 Task 8 的授权）  ← **未改 `main.js`**，沿用 Task 8：`data-lenis-prevent` 直接写在
+      `.gb-acct-modal__body` 标签上，判据每个面板都验了
 
-- [ ] **步骤 8：提交** — `git commit -m "feat(account): 产品编辑与新增弹窗、数量门控"`
+- [x] **步骤 8：提交** — `git commit -m "feat(account): 产品编辑与新增弹窗、数量门控"`
 
 ---
 

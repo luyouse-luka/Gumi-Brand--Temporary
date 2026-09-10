@@ -8,6 +8,108 @@
 
 ---
 
+## Task 10 — 产品编辑与新增弹窗、数量门控（`$build-acct` = `20260910-a8`）
+
+**设计源**：`2284:30960`·`31145`·`33666` edit-product / `28942`·`29200`·`29399` add-product /
+`33847` product-locked；便签 `34502` 最后一个产品不能减到 0 / `34504` 减到 0 时按钮变删除 /
+`30917` 多产品滚动、按钮不动 / `30913`·`30915` Flavour 暂不可编辑（待裁决 J）。
+
+### 三个面板都是 672 抽屉，尺寸与短弹窗不同
+
+| 项 | 短弹窗 | 产品抽屉 |
+|---|---|---|
+| 体的上下内边距 | 24 / 20 | **32**（板值，两端一致） |
+| 脚高 | 72（16 上下） | **80（20 上下）** |
+| 左右内边距 | 24 桌面 / 20 手机 | 同 |
+
+卡片网格取自 `29095`：两列 **168**、列距 **15**、行距 **24**。板上 `168+15+168 = 351`
+装在 350 的内容框里（超 1px），实现改成 `minmax(0,1fr)` 平分而不是钉死 168 ——
+只有一张卡时它仍落在左列，与 `30960` 画的一致。
+
+### 数量门控：下限按卡声明，不按卡片数推断
+
+PLAN 给的 `acctQty` 用 `root.querySelectorAll('[data-acct-product]').length === 1`
+判断「是不是最后一个」。**这个推断在本实现里是错的** —— 便签 `34502` 说的是
+「**订阅里**最后一个产品」，而面板渲染几张卡是另一回事：`30960` 只画一张卡，
+但它照样能减到 0（`31145` 就是那个态），因为该订阅还有别的产品。
+
+改成每张卡自己声明 `data-acct-qty-min`：`edit-product` / `add-product` 为 `0`，
+`product-locked` 为 `1`。
+
+### 「减到 0 = 删除」是每个面板自己选的，不是自动的
+
+第一版按便签 `34504` 让任何卡到 0 都把 CTA 换成 `Remove this product`，**判据当场报红**：
+`add-product` 的四张卡本来就都是 0，而板 `28942`/`29399` 的 CTA 仍是 `Add products` ——
+**选购面板里的 0 是「没选」，不是「删掉」**。改成由 CTA 上的
+`data-acct-label-zero` 显式声明，只有 `edit-product` 有（对应板 `31145`）。
+
+### 做了什么
+
+- **`edit-product`**：一张卡（Flavour + Size 两个下拉 + 步进器，QTY 1），CTA `Save`，
+  到 0 时变 `Remove this product`。
+- **`add-product`**：四张卡两列（Flavour + 步进器，QTY 全 0），CTA `Add products`；
+  体是滚动区（`30917`），CTA 在脚里不随之滚动。
+- **`product-locked`**：`33847` 的警示条（`#fbeae9` 底、`#f6d4d2` INSIDE 描边、coral 图标、
+  `Sorry!` 深色其余 `#666`）+ 一张 QTY 1 且减号已禁用的卡。**它没有自己的触发器**，
+  由 `gumiAcct.modal.open('product-locked')` 打开 —— 真实站点由订阅数据决定何时出现。
+- **Flavour 下拉画出来但不可交互**（待裁决 J）：`aria-disabled="true"`、不绑事件、
+  也不给 hover（铁律 13 反过来同样成立：不可点的别加 hover）。
+- 步进器减号到下限时**禁用**，板 `34020` 的禁用底色就是 `#faf9f8`。
+
+### 判据自己的两个「不可能失败」的洞（都补了）
+
+活性自检把三处守卫全删掉后**只转红 4 条**，一查是判据的问题：
+
+1. **禁用按钮不派发 click，程序化 `.click()` 也不派发** —— `product-laked` 的减号在标签里
+   就带 `disabled`，判据的「再点一下必须被拒」永远打不出去，**那条 JS 守卫从没被测过**。
+   改成先摘掉 `disabled` 再点、点完还原。
+2. **`bind()` 只在 init 跑一次**，所以「重开面板会不会重复绑定」怎么测都是绿的。
+   改成判据自己手动再调一次 `bind()` —— 那才是守卫存在的场景。
+
+补完后同样的 mutation 转红 **14** 条（含 `product-locked` 下限被突破、三个面板的重复绑定），
+这两类之前一条都抓不到。
+
+### 文件清单
+
+| 文件 | 改动 |
+|---|---|
+| `account.html` | edit-product / add-product 填入网格与脚；新建 product-locked 面板（含警示条）；`?v=` → `a8` |
+| `assets/account.scss` | 新增 `--sheet` 的体/脚内边距覆盖、`__alert`、`.gb-acct-prod-grid`、`.gb-acct-prod` 一族、`.gb-acct-qty` 三段式步进器 |
+| `assets/account.css` | 编译产物（双写） |
+| `assets/account.js` | 新增 `acctQty`，`modal.init` 里对每个面板绑一次，挂进 `window.gumiAcct.qty` |
+| `images/acct-qty-minus.svg`·`acct-qty-plus.svg`·`acct-opt-chevron.svg`·`acct-alert.svg` | 新增 4 个 |
+| `tools/acctmodal.py` | 追加 `check_products`（3 面板 × 2 断点）；修掉上面两个洞 |
+| `figma/account/cut-icons.py` | 追加 3 条 JOBS；**bbox 有一边为 0 时自动撑开 2px**（减号是纯横线，viewBox 高度为 0 会什么都不画）；`acct-alert` 那条注释掉并说明不可自动重生。⚠ 不入库 |
+
+### 判据
+
+| 判据 | 结果 |
+|---|---|
+| `tools/acctmodal.py` | **768 ok / 0 red / 2 aborted**（Task 9 收尾 648） |
+| 活性自检：删下限守卫 / 删禁用同步 / 删重复绑定守卫 | 转红 **14** ✅ |
+| `tools/acctcheck.py` / `rwd.py` / `acctvars.py` / `assetpath.py` | 未回归 |
+| 双写一致 | IN SYNC |
+
+### 稿件不一致三处（照多数实现，已登记）
+
+| 项 | 情况 | 取法 |
+|---|---|---|
+| Size 下拉 | `30960`/`31145` 有，`33666`/`33847` 没有 | edit-product 取有（自己那两张板都有），product-locked 取无（自己那张板） |
+| Flavour 下拉 | `28942`（4 卡）有，`29200`/`29399`（2 卡）没有 | add-product 取有 |
+| CTA 在 0 时的文案 | `31145` 换成删除，`28942`/`29399` 不换 | 按面板显式声明，见上 |
+
+### 遗留
+
+- **PLAN 步骤 7「把滚动容器加进 `main.js` 的 `smoothScroll.PREVENT`」未做** ——
+  沿用 Task 8 的做法，`data-lenis-prevent` 直接写在 `.gb-acct-modal__body` 标签上，
+  行为等价且不必碰 `main.js`；判据每个面板都验了这条。
+- **`product-locked` 没有触发路径**：什么时候算「最后一个产品」取决于真实订阅数据，
+  静态页判断不了。面板做好了，接后端时由数据决定何时 `open()`。
+- **产品缩略图是 `#d9d9d9` 空方块** —— 板 `196:19033` 本来就没有产品图（SPEC §8b 已登记）。
+- **四张卡是同一件商品重复四次**，板上就是如此，属占位数据。
+
+---
+
 ## Task 9 — 六类表单弹窗与脏值门控的保存按钮（`$build-acct` = `20260910-a7`）
 
 **设计源**：`2284:31330` edit-name / `31976` edit-date / `32135` edit-frequency /
