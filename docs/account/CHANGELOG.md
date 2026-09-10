@@ -8,6 +8,112 @@
 
 ---
 
+## Task 8 — 弹窗基础设施与滚动锁（`$build-acct` = `20260910-a6`）
+
+**设计源**：`2284:31330`（居中卡结构）、`2284:28942`（贴底抽屉）、`MODALS.txt`（13 类 / 37 态标题）。
+
+### 弹窗有两种形态，不是一种
+
+把 29 个 390×840 弹窗板逐个量下来，形态**只有两类**，且判据一眼可分：
+
+| 形态 | 高 | 位置 | 圆角 | 板 |
+|---|---|---|---|---|
+| **居中卡** | ≤394 | `top == bottom`，全部居中 | `12` 四角 | 17 张 |
+| **贴底抽屉** | `672` = 840−168 | 贴底（`bottom == 0`） | `[12,12,0,0]` 只有上两角 | 12 张 |
+
+抽屉那批内部固定是 `64 头 + 528 体 + 80 脚`，`528` 的体是滚动区
+（`MODALS.txt` 里那个 `_Scroll bar` 16×528 就是它）。两种形态的遮罩都是
+`#000000` @ **0.6**（`31476`），面板都是**满 390 宽**（板宽即面板宽，手机上左右不留边）。
+
+### 与 PLAN 的写法不同的一处：不另起一套锁
+
+PLAN 给的是新建 `.acct-locked`，`html` 与 `body` 都上 `overflow:hidden` + 都补
+`padding-right`。**实测这在本页会坏两处**，所以改成复用站内已有的 `is-modal-open`
+（`customstyle.css` 本来就加载在 account 页上）：
+
+| PLAN 写法 | 实测后果 |
+|---|---|
+| `body { overflow: hidden }` | **`.gb-acct-header` 是 `position: sticky`，body 变成它的 scrollport 后当场掉出视口** —— 活性自检里读到 `headerTop = -485` |
+| `html` 与 `body` 都补 `padding-right` | 让出来的滚动条宽度**付两遍**，居中布局左移半个滚动条 |
+
+站内那份 CSS 早就解了这两个（body 用 `overflow-x:clip; overflow-y:visible`，
+padding 只落在 `html`），再造一份等于把同样的坑重踩一遍。
+**写同一个 class 不等于调 `main.js`** —— 两个脚本仍然互不调用，决策 6 不破。
+⚠ `main.js` 的 `modal` 也用这个 class 驱动 `[data-modal]`；account 页上没有任何
+`[data-modal]` 触发器，两者不会同时持锁。**以后若在此页加 `[data-modal]`，先关的那个会把另一个解锁。**
+
+### 做了什么
+
+- **`gumiAcct.modal`**（`account.js`）：`open(name, trigger)` / `close()` / `isOpen()`。
+  委托点击 `[data-acct-modal]` 开、`[data-acct-modal-close]` 与遮罩关，ESC 关，
+  Tab 在面板内循环，关闭后焦点回到触发器。**同时只允许一个面板**：开第二个会先收起第一个
+  且**全程不松锁**。
+- **补偿只测一次**：`is-modal-open` 已在就不再测 —— 取消流程 7 屏是同一个弹窗换内容，
+  第二次测量会读到 0 并把第一次的补偿抹掉。
+- **解锁等淡出结束**（`--acct-modal-exit`，随 `prefers-reduced-motion` 压到 `0.01ms`）；
+  被顶掉的面板留了 token 守卫，过期回调不会去解锁顶替它的那个。
+- **13 个面板壳**：遮罩 + 面板 + 头（标题 + 关闭叉）+ 可滚动 body。
+  标题**逐字取自板**（`MODALS.txt`），`restart` 的 `Restart subscoption` 是板上的错字，
+  照抄并已登记 SPEC §8。**body 全空**，内容是 Task 9–13。
+- **关闭叉** `images/acct-modal-close.svg` 从板 SVG 按 `I2284:31481;30:887` 的 bbox 裁出，
+  `figma/account/cut-icons.py` 加了一条 JOBS（该脚本在 `.gitignore` 的 `figma/` 内，不入库）。
+
+### 两个静默坑
+
+1. **`display:flex` 压过 UA 的 `[hidden]{display:none}`** —— 面板带着 `hidden` 仍然铺满视口、
+   吞掉整页点击（判据里表现为 Playwright 报「subtree intercepts pointer events」）。
+   补 `.gb-acct-modal[hidden] { display: none; }`。
+2. **Lenis 吃滚轮**：`main.js` 的 `smoothScroll.PREVENT` 扫描**只在 init 时跑一次**。
+   本轮**没有改 `main.js`** —— 直接把 `data-lenis-prevent` 写在 `.gb-acct-modal__body`
+   标签上（Lenis 在 wheel 时自己读这个属性），行为等价。判据实测：摘掉属性后
+   滚轮把面板 body 滚 **0px**，加上就正常滚。
+
+### 文件清单
+
+| 文件 | 改动 |
+|---|---|
+| `assets/account.js` | 新增 `modal` 模块（焦点陷阱 / ESC / 遮罩关 / 单面板 / 一次性补偿 / token 守卫），挂进 `modules` 与 `window.gumiAcct` |
+| `assets/account.scss` | 新增 Modal 一段：外层 + 遮罩 + 面板（两形态）+ 头 + 标题 + 关闭叉 + 滚动 body + reduced-motion；`$build-acct` → `20260910-a6` |
+| `assets/account.css` | 编译产物（双写） |
+| `account.html` | `</footer>` 后插入 13 个面板壳；`?v=` → `a6` |
+| `images/acct-modal-close.svg` | 新增 |
+| `tools/acctmodal.py` | 新建判据 |
+| `figma/account/cut-icons.py` | 追加 1 条 JOBS。⚠ 不入库 |
+
+### 判据
+
+| 判据 | 结果 |
+|---|---|
+| `tools/acctmodal.py` | **438 ok / 0 red / 2 aborted** |
+| 活性自检 A：`html.is-modal-open` 的 `padding-right` 打掉 | 转红 2 ✅ |
+| 活性自检 B：换成 PLAN 那份锁（两边 `overflow:hidden` + 两边补 padding） | 转红 **42** ✅，其中 `sticky header top=-485` |
+| 活性自检 C：摘掉 `data-lenis-prevent` | 转红 4 ✅（滚轮滚 0px） |
+| `tools/acctcheck.py` | 541 ok / 0 red（未回归） |
+| `tools/rwd.py` / `acctvars.py` / `assetpath.py` | 全绿 / 54 ok / GREEN |
+| 双写一致 | IN SYNC |
+| 关闭叉 hover + transition（Playwright 实测） | 变色 ✅ 有过渡 ✅ |
+
+### ⚠ 两条 ABORT，不是绿也不是红
+
+`headless chromium 画的是 overlay 滚动条，宽度恒 0`，所以**「开弹窗页面会不会横向跳」
+这条真实测试在本机跑不出来**，判据**明确 abort 而不是报绿**。
+CSS 机制本身用合成的 `--scrollbar-w: 15px` 验过（`html` 补到 15px、`body` 保持 0px、
+第二次开不变）。**真实位移必须在有实体滚动条的桌面浏览器上人工确认一次。**
+
+### 遗留
+
+- **面板 body 全空**，13 个弹窗现在点开只有标题和关闭叉 —— 内容是 Task 9–13。
+- **桌面弹窗宽度仍是待裁决 E**。面板暂用板上的 390 居中，
+  这是**源数据里的值**不是自拟；给了宽度后只改 `--acct-modal-w` 一个变量。
+- **7 个 hook 还没有触发器**（`product-locked` / `shipping-form` / `shipping-success` /
+  `cancel-skipped` / `cancel-reason` / `cancel-holiday` / `cancel-discount`），
+  它们由 Task 10–13 的流程内部调起，届时补面板。
+- **是否把 `.gb-acct-modal__body` 登记进 `main.js` 的 `smoothScroll.PREVENT`** ——
+  行为上不需要（属性已直接写在标签上），但 `font-check.html` 有探针盯着未登记的可滚容器。
+  改 `main.js` 需单独授权，**未做**。
+
+---
+
 ## Task 7 — Detail 的 PAUSED / CANCELLED / 折扣码状态（`$build-acct` = `20260909-a5`）
 
 **设计源**：`2284:28478`（折扣码已应用）、`28627`·`28774`（PAUSED 两版）、

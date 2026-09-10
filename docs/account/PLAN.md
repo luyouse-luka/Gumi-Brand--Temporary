@@ -762,7 +762,7 @@ restart
 - 产出：`acctModal.open(name, trigger)` / `acctModal.close()` / `acctModal.isOpen()`
 - 产出：`.gb-acct-modal`（外层，`.is-open` 状态类）、`.gb-acct-modal__panel`、`.gb-acct-modal__backdrop`
 
-- [ ] **步骤 1：写弹窗判据（先红）**
+- [x] **步骤 1：写弹窗判据（先红）**
 
 创建 `tools/acctmodal.py`：逐个 `data-acct-modal` 触发器点击 → 断言对应 panel 可见、
 backdrop 存在、焦点落进 panel、按 ESC 关闭、关闭后焦点回到触发器。
@@ -786,9 +786,9 @@ def check_no_shift(pg, trigger_sel):
     return abs(after - before) < 0.5
 ```
 
-- [ ] **步骤 2：跑判据确认红** → `python3 tools/acctmodal.py`
+- [x] **步骤 2：跑判据确认红** → `python3 tools/acctmodal.py`
 
-- [ ] **步骤 3：实现 acctModal**
+- [x] **步骤 3：实现 acctModal**
 
 ```js
 var acctModal = {
@@ -851,18 +851,21 @@ var acctModal = {
 ⚠ **html 与 body 都设** —— overflow 传导权归属不确定，两个都补无害。
 ⚠ **解锁要等淡出结束**（上面的 `setTimeout`），提前解锁页面会在淡出中途跳一下。
 
-- [ ] **步骤 4：把新增的可滚动容器登记进 main.js 的 PREVENT**
+- [ ] **步骤 4：把新增的可滚动容器登记进 main.js 的 PREVENT**  ← **未做，改法不同**：`data-lenis-prevent` 直接写在 `.gb-acct-modal__body`
+      的标签上（Lenis 在 wheel 时自己读这个属性），行为等价且**不必碰 `main.js`**，已用判据
+      实测（摘掉属性 → 滚轮把面板滚 0px）。若仍要登记进 `smoothScroll.PREVENT`
+      （`font-check.html` 有探针盯着未登记容器），需单独授权改 `main.js`。
 
 弹窗内若有 `overflow-y:auto` 的区域（多产品列表、取消原因列表、日历），
 必须加进 `main.js` 的 `smoothScroll.PREVENT`，否则 Lenis 吃掉滚轮、那个容器再也滚不动。
 ⚠ **这是本计划唯一需要改 `main.js` 的地方**，改之前单独向用户申请，把理由与改动行数一并说明。
 
-- [ ] **步骤 5：编译、跑判据确认绿**
+- [x] **步骤 5：编译、跑判据确认绿**
 
-- [ ] **步骤 6：活性自检** —— 把 `padding-right: var(--acct-sbw)` 临时删掉重跑，
+- [x] **步骤 6：活性自检** —— 把 `padding-right: var(--acct-sbw)` 临时删掉重跑，
       横向位移那条**必须转红**。若删了还是绿，说明测试环境没有真滚动条，判据无效。
 
-- [ ] **步骤 7：提交** — `git commit -m "feat(account): 弹窗基础设施与滚动锁补偿"`
+- [x] **步骤 7：提交** — `git commit -m "feat(account): 弹窗基础设施与滚动锁补偿"`
 
 ---
 

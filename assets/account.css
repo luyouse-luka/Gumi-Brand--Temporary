@@ -1795,3 +1795,124 @@
     top: clamp(176px, 176px + 11 * (100vw - 768px) / 513, 187px);
   }
 }
+
+.gb-acct-modal {
+  --acct-modal-w: 390px;
+  --acct-modal-exit: 0.3s;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.gb-acct-modal[hidden] {
+  display: none;
+}
+
+.gb-acct-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.gb-acct-modal.is-open .gb-acct-modal__backdrop {
+  opacity: 1;
+}
+
+.gb-acct-modal__panel {
+  position: relative;
+  width: 100%;
+  max-width: var(--acct-modal-w);
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  background: #ffffff;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.3s cubic-bezier(0.33, 1, 0.68, 1), transform 0.3s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.gb-acct-modal__panel:focus {
+  outline: none;
+}
+.gb-acct-modal.is-open .gb-acct-modal__panel {
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 767px) {
+  .gb-acct-modal--sheet {
+    align-items: flex-end;
+  }
+  .gb-acct-modal--sheet .gb-acct-modal__panel {
+    max-width: none;
+    max-height: calc(100vh - 168px);
+    border-radius: 12px 12px 0 0;
+    transform: translateY(16px);
+  }
+  .gb-acct-modal--sheet.is-open .gb-acct-modal__panel {
+    transform: none;
+  }
+}
+
+.gb-acct-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 20px;
+}
+
+.gb-acct-modal__title {
+  margin: 0;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: #1a1a1a;
+}
+
+.gb-acct-modal__close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #1a1a1a;
+  cursor: pointer;
+  transition: color 0.2s cubic-bezier(0.33, 1, 0.68, 1), transform 0.2s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.gb-acct-modal__close svg {
+  width: 10px;
+  height: 10px;
+}
+@media (hover: hover) {
+  .gb-acct-modal__close:hover {
+    color: #666666;
+    transform: scale(1.1);
+  }
+}
+
+.gb-acct-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gb-acct-modal {
+    --acct-modal-exit: 0.01ms;
+  }
+  .gb-acct-modal__backdrop, .gb-acct-modal__panel {
+    transition-duration: 0.01ms;
+  }
+}

@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260909-a5";
+$build-acct: "20260910-a6";
 
 // ==========================================================================
 // Variables
@@ -1891,4 +1891,133 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
   @include narrow { top: 176px; }
   @include tablet { top: fluid(176px, 187px); }
+}
+
+// ---------------------------------------------------------------------------
+// Modal — 2284:31477 (short card) and 2284:28942 (tall sheet). One shell, two
+// shapes; the panels themselves are filled in by later tasks.
+//
+// Both boards draw the panel at the full 390 board width, so the phone panel is
+// edge to edge. The two shapes differ only in where they sit:
+//   short  h<=394  centred (top == bottom on all nine boards), radius 12
+//   tall   h=672   flush to the bottom, radius 12 12 0 0, body scrolls
+//
+// ⚠ Desktop has no board (SPEC 待裁决 E). The panel keeps the board's own 390
+// and centres; only --acct-modal-w changes once a width is given.
+// ---------------------------------------------------------------------------
+.gb-acct-modal {
+  --acct-modal-w: #{$bp-design-m};
+  --acct-modal-exit: #{$t-slow};
+
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  // display:flex outranks the UA's [hidden]{display:none}, so a closed panel
+  // would keep covering the page and swallowing every click.
+  &[hidden] { display: none; }
+}
+
+// 31476: black at 60%, over the whole viewport.
+.gb-acct-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity $t-slow $ease-out;
+
+  .gb-acct-modal.is-open & { opacity: 1; }
+}
+
+.gb-acct-modal__panel {
+  position: relative;
+  width: 100%;
+  max-width: var(--acct-modal-w);
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  background: $c-white;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity $t-slow $ease-out, transform $t-slow $ease-out;
+
+  &:focus { outline: none; }   // scripted focus, so the ring would paint on open
+
+  .gb-acct-modal.is-open & { opacity: 1; transform: none; }
+}
+
+// 28942: the tall shape is a bottom sheet on the phone -- flush to the bottom,
+// top corners only. It stays a centred card from 768 up, where there is room.
+.gb-acct-modal--sheet {
+  @include narrow {
+    align-items: flex-end;
+
+    .gb-acct-modal__panel {
+      max-width: none;
+      max-height: calc(100vh - 168px);
+      border-radius: 12px 12px 0 0;
+      transform: translateY(16px);
+    }
+
+    &.is-open .gb-acct-modal__panel { transform: none; }
+  }
+}
+
+// 31478: 64 tall, 20 all round, title left and the cross right.
+.gb-acct-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 20px;
+}
+
+.gb-acct-modal__title {
+  margin: 0;
+  @include font($font-brand-stack, 16px, 500, 24px, -0.32px);
+  color: $c-gray-900;
+}
+
+.gb-acct-modal__close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: $c-gray-900;
+  cursor: pointer;
+  transition: color $t-base $ease-out, transform $t-base $ease-out;
+
+  svg { width: 10px; height: 10px; }
+
+  @include hover { color: $c-gray-600; transform: scale(1.1); }
+}
+
+// The only part of the panel that scrolls. ⚠ data-lenis-prevent belongs on this
+// element in the markup: Lenis takes the wheel site-wide and its PREVENT sweep
+// runs once at main.js init, so anything that scrolls has to carry the attribute
+// itself.
+.gb-acct-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gb-acct-modal {
+    --acct-modal-exit: 0.01ms;
+
+    &__backdrop,
+    &__panel { transition-duration: 0.01ms; }
+  }
 }

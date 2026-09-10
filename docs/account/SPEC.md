@@ -164,7 +164,7 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | B | **评论与稿矛盾** | 评论 `2284:27077`：「原来的 contact preference 以及 refer a friend 去除了」，但两处稿上仍画着 |
 | C | **~~六项~~两项只有导航条目、没有页面稿** | 原列 Order History / My Details / Change Password / Refer a Friend / Help / Contact Preferences。**r-a5 逐节点比对推翻了一半**：Order History（`2284:27202`）/ My Details（`27081`·`27116`）/ Change Password（`27151`）/ Help（`27170`）**其实都有 390 手机稿**，另外还多出一个导航里没有的 **Order Detail**（`27304`）。真正无稿的只剩 **Refer a Friend** 与 **Contact Preferences**。⚠ 这五个页面**不在 PLAN 的 15 个 Task 里**，做不做、要不要补桌面稿，需拍板。比对见 `DETAIL-STATES.md` |
 | D | **左侧导航图标未设计** | 便签 `27602`：灰圆是占位 |
-| E | **21 类弹窗的桌面稿全缺** | 已定按决策 3 做居中卡片，具体宽度/内边距需给值 |
+| E | **21 类弹窗的桌面稿全缺** | 已定按决策 3 做居中卡片，具体宽度/内边距需给值。**r-a6 起面板暂用板上的 390 居中**（`--acct-modal-w`，源数据里的值、非自拟），给了宽度只改这一个变量。手机稿本身**有两种形态**：≤394 的居中卡（r12）与 672 的贴底抽屉（r12/12/0/0，内含 528 的滚动区），桌面是否也分两种一并回答 |
 | F | **footer 内容差异** | 稿：两栏平铺 13 条链接 + Snapchat + `Subscribe now`；现站：三栏 + FB/IG/TikTok + `Subscribe`。且 Influencers / Press Inquiries / Careers 的目标页可能不存在 |
 | G | **header 差异** | 稿：logo 左 + 人形 + 汉堡、浅绿底；Log in 稿另有 `Shop now` 按钮。已定单独覆盖，但需确认这是最终态 |
 | H | **Add items 是否开启** | 便签 `30905`：「can be turned off for now until other items get added」，且「Edit 跳购物车还是 PDP？」设计方自己也没定 |
@@ -229,6 +229,15 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | `Superfood Greens Gummies` / `Quantity: 1` / `+4 More Products` / `$1245.60` | `account.html` 三张订阅卡 | 板上的示例订阅数据 |
 | `19 Jul 2026`（active）/ `17 Aug 2026`（paused）/ `123 Express Ln, VIC 3121` | 同上 | 板上的示例日期与地址 |
 | 三处 `href="#"`（View Order / Refer a Friend / Re-Activate Subscription） | `account.html`，已标 `TODO client link` | 目标页未定 |
+
+## 8c. 弹窗几何（r-a6 起，取自 29 张弹窗板）
+
+- 遮罩 `#000000` @ 0.6（`2284:31476`），面板满 390 宽、白底
+- 居中卡：高 ≤394，`top == bottom`，圆角 12 四角
+- 贴底抽屉：高 672 = 840−168，贴底，圆角 `[12,12,0,0]`，内部 `64 头 / 528 滚动体 / 80 脚`
+- 头 64 高、四周 20，标题 16/24 w500 `-0.32` `#1a1a1a`，右侧 24×24 关闭叉（10×10 线条）
+- ⚠ 滚动锁**复用站内 `is-modal-open`**，不另起一套：body 必须 `overflow-x:clip; overflow-y:visible`
+  （用 `hidden` 会让 sticky 的 `.gb-acct-header` 当场掉出视口），补偿只落在 `html`
 
 ## 9. 验证判据
 
