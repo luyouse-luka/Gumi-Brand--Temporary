@@ -2031,9 +2031,15 @@
    * phoneCode — the phone placeholder's dial code follows the country select.
    *
    * Client r137: the country list grew from AU alone to six, and the placeholder
-   * has to agree with whatever is picked. The dial code lives on each option as
-   * data-dial; only that prefix is swapped, the rest of the board's AU example
-   * (400 000 000) is kept as the template.
+   * has to agree with whatever is picked -- dial code AND digit count.
+   *
+   * ⚠ Each option carries its own data-example, because the lengths genuinely
+   * differ: SG is 8 digits, AU 9, US/CA/GB 10. r137 shipped with one shared tail
+   * (the board's AU "400 000 000") behind every dial code, which was wrong for
+   * four of the six -- US/CA/GB a digit short, SG a digit over, and NZ has no
+   * 400 range at all. Numbers are real prefixes with zeroed tails, the way the
+   * board writes AU; US/CA use 555, the North American range reserved for
+   * fiction, so no placeholder points at a live line.
    *
    * ⚠ Bound to the NATIVE select, not to our widget: selectBox syncs
    * native.selectedIndex and fires a bubbling change on every pick, so this one
@@ -2052,12 +2058,15 @@
       var input = field && field.querySelector('input[type="tel"]');
       if (!input) { return; }
       // Captured once, before anything rewrites it: the number pattern the board
-      // drew, minus its dial code.
+      // drew, minus its dial code. Only a fallback now -- an option without its
+      // own data-example keeps whatever the markup shipped with.
       var rest = (input.getAttribute("placeholder") || "").replace(/^\+\d+\s*/, "");
       var apply = function () {
         var opt = select.options[select.selectedIndex];
         var dial = opt && opt.getAttribute("data-dial");
-        if (dial) { input.setAttribute("placeholder", rest ? dial + " " + rest : dial); }
+        if (!dial) { return; }
+        var example = opt.getAttribute("data-example") || rest;
+        input.setAttribute("placeholder", example ? dial + " " + example : dial);
       };
       select.addEventListener("change", apply);
       apply();

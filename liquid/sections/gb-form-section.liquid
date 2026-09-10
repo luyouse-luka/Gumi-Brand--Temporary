@@ -39,12 +39,12 @@
           <label class="gb-field__label" for="phone-{{ section.id }}">Phone number</label>
           <div class="gb-field__phone">
             <select aria-label="Country code" name="contact[country]" data-select="bare" data-phone-code>
-              <option value="AU" data-dial="+61">AU</option>
-              <option value="NZ" data-dial="+64">NZ</option>
-              <option value="US" data-dial="+1">US</option>
-              <option value="GB" data-dial="+44">GB</option>
-              <option value="CA" data-dial="+1">CA</option>
-              <option value="SG" data-dial="+65">SG</option>
+              <option value="AU" data-dial="+61" data-example="400 000 000">AU</option>
+              <option value="NZ" data-dial="+64" data-example="21 000 0000">NZ</option>
+              <option value="US" data-dial="+1" data-example="201 555 0000">US</option>
+              <option value="GB" data-dial="+44" data-example="7400 000000">GB</option>
+              <option value="CA" data-dial="+1" data-example="204 555 0000">CA</option>
+              <option value="SG" data-dial="+65" data-example="8000 0000">SG</option>
             </select>
             <input type="tel" id="phone-{{ section.id }}" name="contact[phone]" placeholder="+61 400 000 000">
           </div>

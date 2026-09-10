@@ -937,3 +937,14 @@ shopify theme push --store je1ka9-er.myshopify.com --theme 180348977399 --path w
 ⚠ **线上跑判据要先摘掉 `#promo-modal`** —— 它 4 秒自动弹出、遮罩拦截点击，
 判据跑到第四个国家就超时。只设我们的 `sessionStorage['gb-promo-seen']` **不管用**：
 线上开它的不是我们的 `promoModal`，是按 `data-promo-delay` 走的另一套。
+
+| 轮次 | 推了什么 | 文件数 | 回读 | 基线 |
+|---|---|---|---|---|
+| **第一三八轮** | `assets/customstyle.css` / `.scss` / `main.js` / **`sections/gb-form-section.liquid`** | 4 | 4 ok / 0 red | 624 → **`baseline-20260910-r138`** |
+
+三方对比 `ours` **4** / `theirs` **0** / `CONFLICT` **0**。
+⚠ **又推了 liquid**（各国号码样例写在 option 的 `data-example` 上）。
+**改的仍是从线上拉下来的那份**，用六个锚点逐个替换 option 行，`diff` 核对过只有这六行。
+`customstyle.scss` 本轮**只动了 `$build`** —— 样式零改动，升它是给 `main.js` 破缓存。
+判据：`phonecode.py` 本地与线上各 **34/0**（比 r137 多 12 条位数断言，`--strip` 反向 20 红）；
+回归 `cartsplit` 5-0 / `inkringlive` 9-0。顺手清掉 `baseline-20260910-r136`。

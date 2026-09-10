@@ -6,6 +6,29 @@
 > **更早轮次的状态段**（第七十三～一二三轮）在 [archive/HANDOFF-STATUS-r73-r123.md](archive/HANDOFF-STATUS-r73-r123.md)；其中的「不要报成 bug」已原文沉淀进下面第一节的 `### 4`。
 > **推送记录**（推了什么 / 验了没 / 基线滚到哪）在 [PUSH-LOG.md](PUSH-LOG.md)。
 >
+> 状态：**第一三八轮（2026-09-10）—— placeholder 的号码长度按各国实际位数改，`$build` = `20260910-r138`，已推 live**。
+> 推 `assets/customstyle.scss` + `.css` + `main.js` + **`sections/gb-form-section.liquid`**。
+> 新基线 **`baseline-20260910-r138`**（624 文件）。三方对比 ours 4 / theirs 0 / CONFLICT 0。
+>
+> 判据：`tools/phonecode.py` 本地与线上各 **34/0**（比 r137 多 12 条位数断言，`--strip` 反向 20 红）；
+> 回归 `cartsplit` 5-0 / `inkringlive` 9-0；回读 4 个逐字节一致 + 620 个清单外 0。
+>
+> ⚠ **不要报成 bug**（第一三八轮）：
+> 1. **六个 `data-example` 不能合并回一条共用尾数** —— 位数按国家真的不同
+>    （SG 8 / AU、NZ 9 / US、CA、GB 10）。r137 就是共用一条才错了四个。
+>    判据那张表带位数就是钉这件事的，合并回去当场 12 条红。
+> 2. **US / CA 的 `555` 是有意选的号段** —— 北美保留给虚构用途，换成别的三位数
+>    就可能指向真实线路。
+> 3. **`201` / `204` 是真实区号，只为让格式合法**，不代表业务所在地。
+>    要绑客服所在地换这两个数即可，位数断言会守住长度。
+> 4. **`apply()` 里 `|| rest` 的回退不是死代码** —— 将来加国家忘了写 `data-example` 时，
+>    回退到 markup 原有尾数，而不是让 placeholder 只剩一个区号。
+> 5. **本轮 scss 只有 `$build` 一行变化，不是漏推样式。**
+> 6. **没跑全站 `rwd`** —— 只动 HTML 属性与 JS 一行，无 CSS 改动；
+>    placeholder 宽度已用 canvas 在 390 档实测（最长 GB 160px / 可用 263px）。
+
+---
+
 > 状态：**第一三七轮（2026-09-10）—— 电话区号从 AU 一个扩到六个，placeholder 跟随，`$build` = `20260910-r137`，已推 live**。
 > 推 `assets/customstyle.scss` + `.css` + `main.js` + **`sections/gb-form-section.liquid`**（本轮动了 markup）。
 > 新基线 **`baseline-20260910-r137`**（624 文件）。三方对比 ours 4 / theirs 0 / CONFLICT 0。

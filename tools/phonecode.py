@@ -33,15 +33,27 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 CHROME = '/home/ly/.cache/ms-playwright/chromium-1217/chrome-linux64/chrome'
 LIVE = 'https://gumi.com.au'
 
-WANT = [('AU', '+61'), ('NZ', '+64'), ('US', '+1'),
-        ('GB', '+44'), ('CA', '+1'), ('SG', '+65')]
+# iso, dial, example tail, digits after the dial code.
+# ⚠ The digit counts are the point of this table. r137 first shipped one shared
+# tail (the board's AU "400 000 000") behind every dial code, which was wrong for
+# four of the six: US/CA/GB a digit short, SG a digit over, and NZ has no 400
+# range. Real prefixes with zeroed tails; US/CA use 555, the North American range
+# reserved for fiction, so no placeholder points at a live line.
+WANT = [('AU', '+61', '400 000 000', 9),
+        ('NZ', '+64', '21 000 0000', 9),
+        ('US', '+1', '201 555 0000', 10),
+        ('GB', '+44', '7400 000000', 10),
+        ('CA', '+1', '204 555 0000', 10),
+        ('SG', '+65', '8000 0000', 8)]
 
 PAGES = [('get-in-touch.html', '/pages/get-in-touch'),
          ('referral.html', '/pages/referral')]
 
 STRIP = """
 () => {
-  document.querySelectorAll('[data-phone-code] option').forEach(o => o.removeAttribute('data-dial'));
+  document.querySelectorAll('[data-phone-code] option').forEach(o => {
+    o.removeAttribute('data-dial'); o.removeAttribute('data-example');
+  });
 }
 """
 
@@ -107,7 +119,8 @@ def main():
               const s = document.querySelector('[data-phone-code]');
               if (!s) return null;
               return {
-                opts: [...s.options].map(o => [o.value, o.textContent.trim(), o.getAttribute('data-dial')]),
+                opts: [...s.options].map(o => [o.value, o.textContent.trim(),
+                        o.getAttribute('data-dial'), o.getAttribute('data-example')]),
                 widget: !!document.querySelector('.gb-select--bare .gb-select__button'),
               };
             }""")
@@ -121,15 +134,15 @@ def main():
                 continue
 
             if not args.strip:
-                got = [(v, t) for v, t, _ in shape['opts']]
+                got = [(v, t) for v, t, _, _ in shape['opts']]
                 report(f'{label}: six countries, ISO letters, board order',
-                       got == [(c, c) for c, _ in WANT], str(got))
-                dials = [(v, d) for v, _, d in shape['opts']]
-                report(f'{label}: dial codes attached',
-                       dials == WANT, str(dials))
+                       got == [(c, c) for c, _, _, _ in WANT], str(got))
+                pairs = [(v, d, e) for v, _, d, e in shape['opts']]
+                report(f'{label}: dial code + per-country example attached',
+                       pairs == [(c, d, e) for c, d, e, _ in WANT], str(pairs))
 
             # open the custom list and click each row
-            for idx, (iso, dial) in enumerate(WANT):
+            for idx, (iso, dial, example, ndigits) in enumerate(WANT):
                 # belt and braces: it can be injected after DOMContentLoaded
                 pg.evaluate("""() => {
                   const m = document.getElementById('promo-modal');
@@ -162,10 +175,18 @@ def main():
                     listBox: list ? [Math.round(list.clientHeight), list.scrollHeight] : null,
                   };
                 }""")
-                want_ph = f'{dial} 400 000 000'
+                want_ph = f'{dial} {example}'
                 report(f'{label}: pick {iso} -> button + placeholder follow',
                        st['button'] == iso and st['placeholder'] == want_ph,
                        f"button={st['button']} placeholder={st['placeholder']}")
+                # The question this table exists to answer: is the number the
+                # right LENGTH for the country, not just the right prefix.
+                tail = (st['placeholder'] or '')
+                tail = tail[len(dial):] if tail.startswith(dial) else tail
+                got_digits = sum(c.isdigit() for c in tail)
+                report(f'{label}: {iso} number is {ndigits} digits',
+                       got_digits == ndigits,
+                       f'{got_digits} digits in "{tail.strip()}"')
                 if idx == 1 and not args.strip:
                     report(f'{label}: the current row is ticked',
                            st['tickPainted'] and st['selectedRow'] == iso,
