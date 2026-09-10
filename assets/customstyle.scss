@@ -33,7 +33,7 @@
 // font url()s read it. Previewing over file:// caches css/js/woff2 until a hard
 // refresh, so without it a real change reads as "nothing happened".
 // font-check.html prints the value the browser actually got.
-$build: "20260908-r98";
+$build: "20260909-r135";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -67,7 +67,7 @@ $c-gray-500:    #737373;
 $c-gray-400:    #808080;   // 341:42573 stepper border / disabled checkout label
 $c-gray-350:    #b3b3b3;   // 316:18260 subscription dropdown border
 $c-gray-300:    #cccccc;
-$c-gray-200:    #d9d9d9;
+$c-gray-200:    #d9d9d9;   // borders only -- r120 dropped every placeholder ground
 $c-gray-150:    #e6e6e6;   // 341:42573 cart line rule / disabled checkout fill
 $c-gray-100:    #eeeeee;
 $c-gray-050:    #f3f3f3;   // 326:83143 table header / zebra fill
@@ -128,6 +128,14 @@ $t-panel:     0.35s;   // header dropdown: height / background / chevron must ma
 // Mobile drawer. Lifted from funkyfood's .header-mobile-menu at the client's
 // request — the slide is long and heavily eased, quite unlike $t-panel.
 $t-drawer:    0.7s;
+// Accordion body. Client r110: $t-slow (0.3s) read as a snap rather than a
+// slide -- the panel travels a lot more height than a card lift does, so it
+// needs longer to read as motion at all.
+$t-acc:       0.45s;
+// Phone. r127: $t-acc alone was not the whole story -- $ease-out puts 51% of the
+// travel in the first 100ms, and the phone panels are short enough that the rest
+// is invisible. Longer AND a symmetric curve; house values, no board.
+$t-acc-narrow: 0.6s;
 $ease-drawer: cubic-bezier(0.77, 0, 0.175, 1);
 // easeOutCubic. The default `ease` is flat at both ends and reads as no transition.
 $ease-out:    cubic-bezier(0.33, 1, 0.68, 1);
@@ -352,7 +360,7 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 // scallop-card the card-coloured bite out of a review card image
 //              (324:63924 Union, 573x94).
 
-$mask-scallop-box: url("data:image/png;base64,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");
+$mask-scallop-box: url("data:image/svg+xml,<svg width='520' height='520' viewBox='0 0 520 520' xmlns='http://www.w3.org/2000/svg'><path d='M460.893 0C493.537 7.93682e-05 520 26.4634 520 59.1074C520 80.3097 508.833 98.9005 492.064 109.331C508.833 119.761 520 138.352 520 159.554C520 180.756 508.834 199.345 492.065 209.776C508.834 220.206 520 238.798 520 259.999C520 281.201 508.834 299.792 492.065 310.223C508.834 320.653 520 339.244 520 360.446C520 381.648 508.834 400.239 492.065 410.669C508.834 421.1 520 439.691 520 460.893C520 493.536 493.536 520 460.893 520C439.691 520 421.1 508.834 410.669 492.065C400.239 508.834 381.648 520 360.446 520C339.244 520 320.653 508.834 310.223 492.065C299.792 508.834 281.201 520 259.999 520C238.798 520 220.206 508.834 209.776 492.065C199.345 508.834 180.756 520 159.554 520C138.352 520 119.761 508.833 109.331 492.064C98.9005 508.833 80.3097 520 59.1074 520C26.4634 520 7.93786e-05 493.537 0 460.893C0 439.691 11.1647 421.1 27.9335 410.669C11.1648 400.239 0 381.647 0 360.446C0.000202225 339.245 11.1647 320.653 27.9335 310.223C11.1648 299.792 0 281.201 0 259.999C0.000202225 238.798 11.1647 220.206 27.9335 209.776C11.165 199.345 5.15539e-05 180.755 0 159.554C0 138.352 11.1656 119.761 27.9349 109.331C11.1655 98.9004 5.15556e-05 80.3094 0 59.1074C0 26.4634 26.4634 0 59.1074 0C80.3094 5.15489e-05 98.9004 11.1655 109.331 27.9349C119.761 11.1656 138.352 0 159.554 0C180.755 5.15472e-05 199.345 11.165 209.776 27.9335C220.206 11.1647 238.798 0.000202251 259.999 0C281.201 0 299.792 11.1648 310.223 27.9335C320.653 11.1647 339.245 0.000202251 360.446 0C381.647 0 400.239 11.1648 410.669 27.9335C421.1 11.1647 439.691 0 460.893 0Z' fill='%23000'/></svg>");
 
 // scallop-lip   the promo card's vertical seam. Same seven circles the static
 //               build ships as an SVG child (126x764, r=63 at 106 pitch);
@@ -742,11 +750,37 @@ table { border-collapse: collapse; border-spacing: 0; }
 
 :focus-visible { outline: 2px solid $c-green; outline-offset: 2px; }
 
+// Escape and close buttons hand focus back to whatever opened the thing, and a
+// programmatic .focus() keeps the :focus-visible state that came before it -- the
+// ring lands on a control the user never tabbed to. main.js marks that one return
+// (returnFocus) and clears the mark on the next real key or blur.
+.is-refocused:focus-visible { outline: none; }
+
 // The dialog itself takes initial focus (main.js), which is what keeps the close
 // button from painting a ring the moment the modal appears. A container is not
 // an interactive control, so it gets no ring of its own.
 [role="dialog"][tabindex="-1"]:focus,
 [role="dialog"][tabindex="-1"]:focus-visible { outline: none; }
+
+// ⚠ The cart drawer is NOT one of ours -- it is Horizon's <theme-drawer> /
+// <dialog>, so the line above does not apply to it: the dialog hands initial
+// focus to its first focusable child, which is .gb-cart__close, and Safari
+// counts that as keyboard focus and paints the ring. The drawer then opens
+// looking like its close button is selected.
+// Client r107: drop the ring where there is no keyboard for it to describe.
+// Desktop keyboard users keep it -- (pointer: coarse) is the touch screen only.
+// ⚠ Reported on small-screen Safari and NOT reproducible here: this machine has
+//   chromium only, and :focus-visible heuristics differ per engine. Verify on a
+//   real device.
+@media (pointer: coarse) {
+  .gb-cart__close,
+  .gb-header__icon,
+  .gb-header__panel-close,
+  .gb-nl-panel__close,
+  .gb-promo-panel__close {
+    &:focus-visible { outline: none; }
+  }
+}
 
 // Inputs are the exception: focus is a border colour change. A dark green outline
 // on the footer's dark green ground is invisible anyway, and every input already
@@ -1181,6 +1215,13 @@ html.js {
 .gb-product__acc-item {
   display: block;
   interpolate-size: allow-keywords;   // lets block-size animate 0 -> auto
+
+  // r131: the gap under a row used to be booked twice -- summary padding-bottom
+  // while shut, .gb-acc-body padding-bottom while open -- so opening ran the
+  // summary's padding to 0 over $t-slow while main.js slid the body over 400ms,
+  // and the boundary between them moved twice. Parked here it is constant in
+  // both states, leaving the body's height as the only thing that ever changes.
+  padding-bottom: var(--acc-gap, 20px);
 }
 
 // The disclosure triangle: `display: flex` on the summary already removes it in
@@ -1198,9 +1239,25 @@ html.js {
   .gb-product__acc-item::details-content {
     block-size: 0;
     overflow: hidden;
-    transition:
-      block-size $t-slow $ease-out,
-      content-visibility $t-slow allow-discrete;
+  }
+
+  // Fallback only. main.js runs the slide itself (jQuery slideUp/slideDown on
+  // .gb-acc-body) and sets html.js-acc, which switches this off -- two engines
+  // animating the same box would fight. Kept because Safari < 18.4 has no
+  // ::details-content at all and because a dead main.js must still animate.
+  html:not(.js-acc) {
+    .gb-faq__item::details-content,
+    .gb-product__acc-item::details-content {
+      transition:
+        block-size $t-acc $ease-out,
+        content-visibility $t-acc allow-discrete;
+
+      @include narrow {
+        transition:
+          block-size $t-acc-narrow $ease-in-out,
+          content-visibility $t-acc-narrow allow-discrete;
+      }
+    }
   }
 
   .gb-faq__item[open]::details-content,
@@ -1222,9 +1279,14 @@ html.js {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding-top: 10px;
-  // Open: hold the gap the container no longer provides
-  padding-bottom: var(--acc-gap, 20px);
+
+  // r132: the 10 above the copy is the CHILD's margin, not this box's padding.
+  // main.js animates this box's height to 0, and a border-box with padding
+  // cannot render shorter than that padding -- the slide stalled at 10px for
+  // three frames and then dropped the last 10 in one, which read as a jolt at
+  // the end of every collapse. A margin inside an overflow:hidden box is
+  // clipped instead, so height 0 really is 0.
+  > :first-child { margin-top: 10px; }
 }
 
 .gb-acc-body__text {
@@ -1242,11 +1304,8 @@ html.js {
   }
 }
 
-// The component's `image 15` — a grey rectangle, exactly like the reels and the
-// product gallery placeholders elsewhere in this build.
 .gb-acc-body__media {
   height: 218px;
-  background: $c-gray-200;
   border-radius: $r-lg;
   overflow: hidden;   // clip the image to the radius
 
@@ -1339,6 +1398,11 @@ html.js {
   letter-spacing: 0.48px;
   text-transform: capitalize;
   border: 1px solid $c-green;
+
+  // Client r133. 324:64978 draws this button at 44 / 40 on 390 -- until now only
+  // .gb-crev__more carried those, because this class is shared with the header
+  // and the cart. It is the phone tier for all of them now.
+  @include narrow { height: 44px; padding: 0 40px; }
 
   @include hover {
     background: $c-lime;
@@ -1471,6 +1535,10 @@ $nl-ease-out: $ease-in-out;
   // what read as "closes too fast", see the note above.
   @include narrow {
     width: 100%;
+    // 698 is the board's sheet height; without it the Ingredient List pane grew
+    // the sheet by 101px on tab change. min() keeps the 45px of page visible on
+    // any viewport shorter than the board's 743.
+    height: min(698px, calc(100svh - 45px));
     max-height: calc(100svh - 45px);
     border-radius: $r-lg $r-lg 0 0;
 
@@ -1584,14 +1652,18 @@ $nl-ease-out: $ease-in-out;
 }
 
 // Body ---------------------------------------------------------------------
+// Fixed height, not max-: the two panes are 457 and 970 tall, so a max- let the
+// panel resize as the tab changed. flex-shrink still hands the height back on a
+// viewport too short for it.
 .gb-nl-panel__body {
   flex: 1 1 auto;
   min-height: 0;
-  max-height: 459px;
+  height: 459px;
   overflow-y: auto;
   background: $c-green;
 
-  @include narrow { max-height: none; }
+  // Phone sizes the panel itself (see .gb-nl-panel), so the body just fills it.
+  @include narrow { height: auto; }
 }
 
 // Only ::-webkit-scrollbar is used: setting scrollbar-width/color as well would
@@ -1837,182 +1909,6 @@ body.is-modal-open {
 // spends the width twice and pulls a centred layout left by half a scrollbar.
 html.is-modal-open { padding-right: var(--scrollbar-w, 0px); }
 
-// Reel video lightbox ------------------------------------------------------
-// The design has no lightbox for the reels — the cards are grey Video
-// placeholders with a Play glyph and nothing behind them, and no note asks for
-// one. This shell is a house build on the request that a reel opens a video, so
-// the framing (centred, fades in) follows the lightbox convention rather than the
-// bottom sheet the nutritional panel uses, and it reuses that panel's curve.
-// Confirm the treatment with the designer.
-$rv-in: 0.28s;
-
-.gb-rv-modal {
-  position: fixed;
-  inset: 0;
-  z-index: $z-modal;
-  visibility: hidden;
-  transition: visibility 0s linear $rv-in;
-  // How long the exit runs. main.js holds the scroll lock this long after
-  // `is-open` drops: give the scrollbar back while the panel is still on screen
-  // and this fixed box -- whose containing block is the viewport -- narrows by
-  // the scrollbar width under it, sliding the centred panel sideways mid-fade.
-  --modal-exit: #{$rv-in};
-
-  &.is-open {
-    visibility: visible;
-    transition-delay: 0s;
-  }
-}
-
-.gb-rv-modal__overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(1, 19, 7, 0.78);
-  opacity: 0;
-  transition: opacity $rv-in $ease-out;
-
-  .gb-rv-modal.is-open & { opacity: 1; }
-}
-
-.gb-rv-modal__wrap {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 20px;
-  pointer-events: none;
-}
-
-// Client-set (r62): 16/9 at up to 960 wide, replacing the design's 304/540 reel
-// card ratio -- the panel frames a landscape video now, not the card. Width
-// leads (16/9 meets the side edges first); the svh term shrinks the whole box on
-// a short viewport instead of letting a max-height squash the ratio. The 80 is
-// __wrap's own 40px top+bottom padding.
-.gb-rv-panel {
-  position: relative;
-  aspect-ratio: 16 / 9;
-  width: min(100%, 960px);
-  max-width: calc((100svh - 80px) * 16 / 9);
-  border-radius: $r-xl;
-  overflow: hidden;
-  pointer-events: auto;
-  // Opacity only — the scale(0.94)->1 the panel used to carry was dropped.
-  opacity: 0;
-  transition: opacity $rv-in $ease-out;
-
-  .gb-rv-modal.is-open & {
-    opacity: 1;
-  }
-}
-
-// Grey box + play glyph, kept as the fallback for a card with no data-video.
-// main.js puts `has-video` on the dialog when the trigger names one.
-.gb-rv-panel__video {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  background: $c-gray-200;
-  color: $c-ink;
-  // Client-set. The design has no hover for this placeholder (it has no
-  // lightbox at all), so the colour is the house accent -- see PROJECT-STATUS.
-  transition: trans(color);
-
-  // Client-set: the play glyph stays out of the panel entirely. Targets the svg
-  // itself, not .gb-rv-panel__glyph, because the live liquid still ships it bare
-  // (docs/LIQUID-TODO-reels.md item 1) — the wrapper only exists on the static
-  // pages, so a rule hung on it would miss on the live site.
-  svg { display: none; }
-
-  @include hover { color: $c-green; }
-}
-
-// main.js builds one of these into .gb-rv-panel__video according to what
-// data-video turns out to be -- a file gets the <video>, a hosted page
-// (YouTube, Vimeo) can only be embedded and gets the <iframe>. Neither needs a
-// display toggle: the one that is not wanted is never created.
-.gb-rv-panel__player,
-.gb-rv-panel__embed {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  background: $c-ink;
-}
-
-// contain, not cover: the panel and the placeholder footage are both 16/9,
-// but a real portrait reel must not be cropped to fit the frame.
-.gb-rv-panel__player { object-fit: contain; }
-
-// file:// has a null origin and YouTube refuses to configure its player for
-// one, painting its own "Error 153" where the video should be. The client
-// previews by double-clicking, so playVideo() puts this note there instead.
-// Never rendered off file://.
-.gb-rv-panel__offline {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  width: 100%;
-  height: 100%;
-  padding: 24px;
-  background: $c-ink;
-  color: $c-white;
-  text-align: center;
-}
-
-.gb-rv-panel__offline-text {
-  max-width: 34ch;
-  font-size: 15px;
-  line-height: 1.5;
-}
-
-.gb-rv-panel__offline-link {
-  // lime, not $c-green: on $c-ink the green reads 2.2:1, under AA. The footer
-  // already pairs this lime with a dark green ground.
-  color: $c-lime;
-  text-decoration: underline;
-  transition: trans(opacity);
-
-  @include hover { opacity: 0.75; }
-}
-
-.gb-rv-modal.has-video,
-.gb-rv-modal.has-embed {
-  .gb-rv-panel__glyph { display: none; }
-  // The node is removed the moment the dialog closes (the only way to stop a
-  // third-party player), but the panel keeps fading for another --modal-exit.
-  // Without this the grey placeholder ground flashes through that fade.
-  .gb-rv-panel__video { background: $c-ink; }
-}
-
-.gb-rv-panel__close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: $r-pill;
-  background: rgba(1, 19, 7, 0.55);
-  color: $c-white;
-  transition: trans(background, transform);
-
-  svg {
-    width: 16px;
-    height: 16px;
-    stroke: currentColor;
-  }
-
-  @include hover { background: rgba(1, 19, 7, 0.8); }
-  &:active { transform: scale(0.94); }
-}
-
-
 // Promo modal — "Get 20% off your first order" (Figma 285:18988/285:19179
 // mobile, 285:19373 desktop, all three mislabelled "Pop up"/"Homepage Desktop").
 // Never built in the first 25 rounds — the audit that caught the "285:19373 is
@@ -2101,6 +1997,13 @@ $promo-fade-out: 0.5s;
   opacity: 0;
   transition: opacity $promo-fade-out $ease-in-out;
   will-change: opacity;
+
+  // Mobile stacks the content column over the bear strip (460 + 252), so any
+  // viewport under 712 cut the bears off with nothing to scroll. Hand the scroll
+  // to the panel here; overflow-x stays clipped for the art's scallop. Desktop
+  // is a row that never outgrows the panel, and scrolls its content column
+  // instead -- see .gb-promo-panel__content.
+  @include narrow { overflow: hidden auto; }
 
   .gb-promo-modal.is-open & {
     opacity: 1;
@@ -2249,13 +2152,14 @@ $promo-fade-out: 0.5s;
   order: 1;
   position: relative;
   flex-shrink: 0;
-  max-height: 100%;
   display: flex;
   flex-direction: column;
   gap: 64px;                 // 285:19013 / 336:27155 both space head to body by 64
-  overflow-y: auto;
 
-  @include panel-wide { order: 0; width: 531px; height: 100%; }
+  // Desktop only: the panel is a row here, so this column is the one thing that
+  // can scroll. On mobile the panel itself scrolls and a cap here would make a
+  // second, nested scroller.
+  @include panel-wide { order: 0; width: 531px; height: 100%; max-height: 100%; overflow-y: auto; }
 }
 
 // 336:27156 — 64 tall: 16 padding around the 32 close button. The logo is
@@ -2275,7 +2179,10 @@ $promo-fade-out: 0.5s;
   display: block;
   height: 24px;
 
-  svg { display: block; height: 100%; width: auto; }
+  // <img> as well as <svg>: snippets/gb-logo.liquid swaps to an <img> once
+  // settings.logo is uploaded, and its width/height attributes carry the 124x32
+  // pair, which overflows this 24-tall row by 8.
+  svg, img { display: block; height: 100%; width: auto; }
 }
 
 .gb-promo-panel__close {
@@ -2326,22 +2233,35 @@ $promo-fade-out: 0.5s;
   line-height: 40px;
   letter-spacing: -0.36px;
   color: $c-green;
-  text-shadow: ink-outline(0.4167em, $c-lime);
   // PP Palma's ascent+descent is 1.25em, so here half-leading is (40-45)/2 =
   // -2.5px. Figma rounds it to -2 and paints the ink 1px lower; 0.5px puts it
   // back, the negative margin keeps the 80px the board gives the box.
+  // ⚠ Both must stay ABOVE ink-split(): the mixin ends in a nested rule, and a
+  // declaration after one is the mixed-decls deprecation (order changes in a
+  // future Sass).
   padding-top: 0.5px;
   margin-bottom: -0.5px;
+
+  // The title always wraps (310 / 403 box, 36 / 40 face) and text-shadow paints
+  // one line at a time, so the second line's 15px halo lands on top of the first
+  // line's descenders and slices them flat. ink-split() paints one halo for the
+  // whole block on a layer underneath instead. Same pairing as .gb-stat__value.
+  // ⚠ The copy is built by main.js (inkSplit), not by markup: live the title is
+  // a theme setting piped through newline_to_br in a snippet we do not own.
+  @include ink-split(0.4167em, $c-lime);
+  // The halo is absolute at top:0, so it has to carry the same nudge or it
+  // paints 0.5px above the glyphs it is outlining. inherit tracks both tiers.
+  > .gb-ink-halo { padding-top: inherit; }
 
   @include panel-wide {
     max-width: 403px;
     font-size: 40px;
     line-height: 48px;
     letter-spacing: -0.4px;
-    text-shadow: ink-outline(0.4em, $c-lime);
     // (48 - 50) / 2 is already whole, so nothing to correct here
     padding-top: 0;
     margin-bottom: 0;
+    > .gb-ink-halo { text-shadow: ink-outline(0.4em, $c-lime); }
   }
 }
 
@@ -2565,12 +2485,11 @@ $cart-w: 391px;
   height: 24px;
   color: $c-black;          // board strokes this one plain black, not $c-ink
   cursor: pointer;
-  transition: trans(color, transform);
+  transition: trans(color);
 
   svg { width: 24px; height: 24px; }
 
   @include hover { color: $c-green; }
-  &:active { transform: scale(0.92); }
 }
 
 // Free-delivery bar. Height is 12 + the 24 icon + 12; left to the padding so a
@@ -2638,15 +2557,16 @@ $cart-w: 391px;
   border-top: 1px solid $c-gray-150;
 }
 
-// Board ships a #D9D9D9 placeholder here, so the box is the artwork until the
-// client supplies one (decision AZ).
 .gb-cart-item__media {
   flex: none;
   width: 56px;
   height: 56px;
-  background: $c-gray-200;
+  // Client r106. overflow, not radius alone: a square shot fills the box under
+  // `contain`, so its own corners would sit outside the rounded edge.
+  border-radius: $r-xs;
+  overflow: hidden;
 
-  img, video, picture { @include cover-img; }
+  img, video, picture { @include cover-img(contain); }
 }
 
 .gb-cart-item__main {
@@ -2687,12 +2607,11 @@ $cart-w: 391px;
   height: 20px;
   color: $c-black;
   cursor: pointer;
-  transition: trans(color, transform);
+  transition: trans(color);
 
   svg { width: 16px; height: 20px; }
 
   @include hover { color: $c-coral; }
-  &:active { transform: scale(0.92); }
 }
 
 .gb-cart-item__variant {
@@ -2730,12 +2649,11 @@ $cart-w: 391px;
   height: 16px;
   color: $c-ink;
   cursor: pointer;
-  transition: trans(color, transform);
+  transition: trans(color);
 
   svg { width: 16px; height: 16px; }
 
   @include hover { color: $c-green; }
-  &:active { transform: scale(0.88); }
 }
 
 // 2 borders + 22 padding + two 16 icons + two 8 gaps is 72; the board's 102
@@ -2812,7 +2730,10 @@ $cart-w: 391px;
   flex: none;
   width: 47px;
   height: 47px;
-  background: $c-gray-200;   // placeholder, same as the line-item media
+  // Client r119. overflow alongside it: the shot fills the box under `cover`, so
+  // its own square corners would sit outside the rounded edge.
+  border-radius: $r-xs;
+  overflow: hidden;
 
   img, video, picture { @include cover-img; }
 }
@@ -3078,6 +2999,11 @@ $cart-w: 391px;
   .gb-cart__body,
   .gb-cart__bar-total { display: none; }
 
+  // pointer-events on the button is what blocks the click, but it also stops
+  // the cursor resolving there -- not-allowed written on the button itself is
+  // never seen. The bar underneath is the element the pointer actually hits.
+  .gb-cart__bar { cursor: not-allowed; }
+
   // Visual only -- there is no JS to keep an aria-disabled in step with the
   // class, and the real state comes from Shopify later.
   .gb-cart__checkout {
@@ -3179,6 +3105,10 @@ $cart-w: 391px;
 // swaps the whole image, which means the vee snaps while the label transitions.
 select.gb-cart-item__interval:not(.gb-select__native) {
   appearance: none;
+  // A <select> sizes to its LONGEST option, so short intervals left a gap between
+  // the label and the chevron. Chrome 123+ / Edge only; elsewhere it falls back to
+  // the old behaviour, which is what ships today.
+  field-sizing: content;
   padding: 0 18px 0 0;
   background-color: transparent;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%230374a5' stroke-width='1.667' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
@@ -3416,10 +3346,21 @@ $line-descend: 0.12em;
 }
 
 .is-revealed .gb-line-mask__inner {
-  animation: gm-line-up 1.4s var(--e-power4-out) both;
+  // Client r107: 0.7s, the same as .wowo's fadeInUp. At 1.4s the banner title
+  // landed 249-600ms AFTER the copy below it (the more lines, the worse), which
+  // read as the title lagging. The 150ms per-line stagger is what makes it read
+  // as line-by-line, so that stays.
+  animation: gm-line-up 0.7s var(--e-power4-out) both;
   // --line-base is 0 unless the host sits in a [data-line-sequence] group, where
   // main.js continues the line index across siblings so they play in order.
   animation-delay: calc((var(--line-base, 0) + var(--line-i, 0)) * 150ms);
+}
+
+// A wowo element taking its turn in a [data-line-sequence]: same 150ms beat as the
+// lines above it. 0-3-0 so the delay-in-N class in the markup loses -- that markup is
+// the theme's liquid and cannot be edited from here.
+[data-seq-step].wowo.animated {
+  animation-delay: calc(var(--line-base, 0) * 150ms);
 }
 
 // A viewport resize re-splits lines because the wrap points moved. A line that
@@ -3477,7 +3418,7 @@ $line-descend: 0.12em;
 }
 
 .is-revealed > .gb-ink-halo--line {
-  animation: gm-halo-up 1.4s var(--e-power4-out) both;
+  animation: gm-halo-up 0.7s var(--e-power4-out) both;   // must match gm-line-up
   animation-delay: calc((var(--line-base, 0) + var(--line-i, 0)) * 150ms);
 }
 
@@ -3769,6 +3710,108 @@ html.js [data-line-reveal]:not(.is-split) > .gb-ink-halo {
 .gb-scallop--edge     { bottom: 0; }
 .gb-scallop--edge-top { bottom: 100%; }
 
+// Wave clearance ------------------------------------------------------------
+// An --edge wave is absolutely positioned, so its host leaves the room for it in
+// its own padding-bottom. Which room is not something the module can know on its
+// own: whether it emits a wave is a per-instance setting and the size lives in
+// the liquid. Reading both off the DOM keeps the two in step, and gives 0 for a
+// boundary that has moved to a Gumi Wave section -- that one is in the flow and
+// owns its height, so nothing above it must reserve anything.
+// ⚠ --edge-top is deliberately not matched: it hangs off the host's TOP edge and
+//   its room belongs to the section ABOVE, which cannot see it from here. The one
+//   place that mattered (index, stats -> science) is migrated to a Gumi Wave.
+// Specificity does the picking, not source order: the --lg rule is 0-2-0 inside
+// :has() against the base rule's 0-1-0.
+:where(section, div, footer):has(> .gb-scallop--edge) { --sc-res: var(--sc-h); }
+:where(section, div, footer):has(> .gb-scallop--edge.gb-scallop--lg) { --sc-res: var(--sc-lg-h); }
+
+// ...and the two boundaries the board models as the LOWER section's Spacer Top.
+// Those hang off the next section's top edge, so the room still belongs to the
+// section BEFORE them -- which cannot see the wave from inside itself. Read it
+// off the next sibling instead. Without this .gb-stats and .gb-nutrition reserve
+// nothing and the wave eats their last 96 / 129 px (index only, both static).
+// Live models the same two as a Gumi Wave section; the nutrition one carries
+// --lap, which pulls itself back over the block above and wants the same room.
+// ⚠ `+ *`, not `+ section`: live wraps the module in a div.shopify-section, so
+//   the wave's parent is that wrapper on one side and the module on the other.
+:where(section, div, footer):has(+ * > .gb-scallop--edge-top) { --sc-res: var(--sc-h); }
+:where(section, div, footer):has(+ * > .gb-scallop--edge-top.gb-scallop--lg) { --sc-res: var(--sc-lg-h); }
+:where(section, div, footer):has(+ * > .gb-wave--lap) { --sc-res: var(--sc-h); }
+:where(section, div, footer):has(+ * > .gb-wave--lg.gb-wave--lap) { --sc-res: var(--sc-lg-h); }
+
+// Merchant-placed wave ------------------------------------------------------
+// Everything is drawn by .gb-scallop; this only retunes the pitch, so a wave
+// added from the theme editor carries an exact number of arcs across the
+// viewport instead of however many the design's fixed pitch happens to fit.
+//
+//   <div class="gb-scallop gb-wave gb-scallop--white-to-cream" style="--wave-n:3">
+//
+// The 58 built-in waves are untouched: they never carry .gb-wave, so --wave-w
+// still comes from :root as before.
+//
+// It stays in the flow and owns its height -- .gb-scallop is position:relative
+// and only --edge/--edge-top take it out, which is what lets the merchant drop
+// it between any two sections without the section above reserving room for it in
+// padding-bottom. That reservation is the thing most easily got wrong about the
+// built-in waves (see docs/SCALLOP.md §3); this variant does not have it.
+//
+// ⚠ 100vw counts the scrollbar, so on desktop the last arc would be clipped and
+//   the count read short. --scrollbar-w is measured by scrollbarProbe in main.js;
+//   it is 0 where the scrollbar is an overlay (mobile), which is correct there.
+//   ⚠ Headless Chromium reports 0 as well, so the subtraction cannot be verified
+//   locally -- see docs/SCALLOP.md.
+//
+// Band: the near-zero run of --sc-lg-band, so the height is essentially the arc
+// amplitude. Reusing --sc-band would add a solid strip that grows the box without
+// changing the wave, which reads as a stray coloured bar at 5 arcs.
+.gb-wave {
+  --wave-w: calc((100vw - var(--scrollbar-w, 0px)) / var(--wave-n, 5));
+  --wave-band: #{clamp(0.5px, 0.139vw, 2px)};
+  --wave-h: calc(var(--wave-w) * 0.24008 + var(--wave-band));
+}
+
+// Board pitch instead of an arc count, so a merchant-placed wave is the same
+// object as the 58 built-in ones -- same height, same curvature, arcs falling
+// where the design puts them rather than dividing the viewport evenly.
+// It is what makes the boundary match the static build: live already pads the
+// block above by the net value (--sc-res does not fire, the wave is in flow),
+// so restoring the height restores the gap as well.
+// Same 0-1-0 as .gb-wave, so these must stay below it.
+.gb-wave--sm {
+  --wave-w: var(--sc-w);
+  --wave-band: var(--sc-band);
+  --wave-h: var(--sc-h);
+
+  height: calc(var(--wave-h) + 1px);   // see .gb-scallop
+}
+
+.gb-wave--lg {
+  --wave-w: var(--sc-lg-w);
+  --wave-band: var(--sc-lg-band);
+  --wave-h: var(--sc-lg-h);
+
+  height: calc(var(--wave-h) + 1px);
+}
+
+// Laps back over the block above instead of taking its own room, which is what
+// the board's --edge-top --bleed boundary needs (index, nutrition -> product):
+// the arcs are the block below and the gaps show the block above THROUGH them,
+// pack art overflowing it included. An in-flow wave cannot do that -- a
+// transparent top would show the page ground -- because it sits below the block
+// rather than over it.
+//
+// The pull-up goes on the SECTION, not on the wave. Putting it on the wave only
+// works through margin collapsing -- the child's margin escaping a parent with
+// no padding or border -- and Shopify's section wrapper is not ours to
+// guarantee that of. Keyed per board size because a parent cannot read the
+// --wave-h its child declares.
+// Pair it with an empty top colour, or the strip paints over what should show
+// through. ⚠ The block above needs overflow:hidden for the arcs to cut its
+// overflow, which is what .gb-nutrition already does.
+.gb-wave-section:has(> .gb-wave--lap) { position: relative; }
+.gb-wave-section:has(> .gb-wave--sm.gb-wave--lap) { margin-top: calc(-1 * var(--sc-h)); }
+.gb-wave-section:has(> .gb-wave--lg.gb-wave--lap) { margin-top: calc(-1 * var(--sc-lg-h)); }
+
 // ==========================================================================
 // Scallop box
 // ==========================================================================
@@ -3787,10 +3830,10 @@ html.js [data-line-reveal]:not(.is-split) > .gb-ink-halo {
 // would also clip anything laid over it, and the Science board puts the
 // ingredient artwork on top with labels that reach past the scallop's notches.
 //
-// --box-bg is what shows where there is no image, i.e. the design's own
-// placeholder colour.
+// --box-bg is what shows where there is no image. Transparent since r120; a host
+// that wants a real ground sets it (see .gb-ingredients__disc).
 .gb-scallop-box {
-  --box-bg: #{$c-gray-200};
+  --box-bg: transparent;
   --box-mask: #{$mask-scallop-box} center / 100% 100% no-repeat;
 
   position: relative;
@@ -4068,12 +4111,20 @@ html.js [data-line-reveal]:not(.is-split) > .gb-ink-halo {
 .gb-header__icon {
   display: block;
   color: $c-green;
-  transition: trans(opacity, transform);
+  transition: trans(opacity);
 
   svg { width: 24px; height: 24px; }
 
   @include hover { opacity: 0.6; }
-  &:active { transform: scale(0.92); }
+}
+
+// Client r129: the cart glyph reads a pixel high against the account one on
+// phones. Two selectors because the markup differs -- static ships a plain <a>,
+// the theme wraps a <button> in <cart-icon>. transform, so the bubble's
+// positioning parent and the row's alignment are untouched.
+.gb-header__icon-wrap,
+.gb-header__icon[data-modal="gb-cart"] {
+  @include narrow { transform: translateY(1px); }
 }
 
 .gb-header__cta {
@@ -4141,9 +4192,11 @@ html.js [data-line-reveal]:not(.is-split) > .gb-ink-halo {
     // dropdown that never locks anything. ⚠ The slide is $t-drawer, NOT the
     // $t-panel the desktop dropdown uses.
     --modal-exit: #{$t-drawer};
-    overflow-y: auto;
-    overscroll-behavior: contain;  // the page under it is locked; don't chain
-
+    // ⚠ The drawer must NOT be the scroller. `fixed` inside a transformed
+    // ancestor resolves against that ancestor -- and if it is also the scroll
+    // container, the "fixed" box scrolls with the content exactly like an abspos
+    // one (measured: the CTA slid 93px up at 390x600). The scrolling lives on
+    // .gb-header__panel-clip instead, one level down.
     // Re-zeroed because the base is-open rule above is 0-2-0 and would paint a
     // sand hairline across the top and bottom of the full-viewport drawer.
     .gb-header.is-open & { transform: translateX(0); border-width: 0; }
@@ -4170,12 +4223,11 @@ html.js [data-line-reveal]:not(.is-split) > .gb-ink-halo {
   justify-self: start;
   display: block;
   color: $c-green;
-  transition: trans(opacity, transform);
+  transition: trans(opacity);
 
   svg { display: block; width: 24px; height: 24px; }
 
   @include hover { opacity: 0.6; }
-  &:active { transform: scale(0.92); }
 }
 
 .gb-header__panel-logo {
@@ -4192,6 +4244,18 @@ html.js [data-line-reveal]:not(.is-split) > .gb-ink-halo {
 .gb-header__panel-clip {
   min-height: 0;
   overflow: hidden;
+
+  // The phone drawer scrolls HERE, not on .gb-header__panel -- see the note
+  // there. Registered in main.js's Lenis PREVENT list.
+  @include narrow {
+    height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;  // the page under it is locked; don't chain
+    // The CTA bar is fixed over this scroller, so anything the keyboard scrolls
+    // into view would land underneath it. 20 + 44 button + 20 = the bar's height.
+    // ⚠ menutab.py catches this as "blind Tab stops" -- 3 of them without it.
+    scroll-padding-bottom: 84px;
+  }
 }
 
 .gb-header__panel-inner {
@@ -4211,6 +4275,8 @@ html.js [data-line-reveal]:not(.is-split) > .gb-ink-halo {
     gap: 15px;
     padding-top: 9px;
     padding-bottom: 40px;
+    // Fills the drawer so the CTA's auto margin has somewhere to sink to.
+    min-height: 100svh;
   }
   @include tablet { padding-top: fluid(9px, 32px); padding-bottom: fluid(40px, 32px); }
 }
@@ -4221,13 +4287,55 @@ html.js [data-line-reveal]:not(.is-split) > .gb-ink-halo {
   gap: 16px;
   width: 304px;
 
-  @include narrow { width: 100%; order: 2; }
+  // flex: 1 makes this the column that eats the drawer's leftover height, so its
+  // own floor is the drawer's floor and the CTA below can anchor to it.
+  // Client r131: the CTA is out of flow, so the gap it used to take from `gap`
+  // becomes reserved room here -- 52 button + the client's 57.
+  @include narrow {
+    width: 100%;
+    order: 2;
+    flex: 1;
+    // Client r134, a flat figure (r133 was 121 = 20 bottom + 44 button + 57 gap).
+    // ⚠ What the reader sees at the scroll floor is this + the inner's own 40
+    // padding-bottom - the CTA's 20 bottom - its 44 height, i.e. 56, because the
+    // reserve sits on this column while the CTA hangs off .gb-header__panel.
+    padding-bottom: 80px;
+  }
 
   // The drawer is full-bleed, so without a cap this button ran the whole 727 at
   // 767. No board value exists (390 draws it at the full 350); 520 is the same
   // cap .gb-product__cta carries, and 390 stays under it either way. Left-
   // aligned on purpose -- an auto margin would centre it away from the links.
-  .gb-btn.gb-btn--lg { max-width: 520px; }
+  // Client r134: the CTA rides in its own bar so the menu scrolls BEHIND it
+  // rather than through it -- the bar carries the drawer's own ground.
+  // ⚠ display: contents on the wider tiers, so the button stays a direct flex
+  // child of this column and the desktop layout is untouched.
+  // ⚠ The bar is fixed, and its containing block is .gb-header__panel, NOT the
+  // viewport: the drawer carries `transform: translateX()`, and a transformed
+  // ancestor is the containing block for fixed descendants. That is what makes
+  // it slide in with the drawer and stay off screen while the drawer is shut.
+  .gb-header__nav-cta {
+    display: contents;
+
+    @include narrow {
+      display: flex;
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 20px var(--pad-x);
+      background: $c-cream;
+    }
+  }
+
+  .gb-btn.gb-btn--lg {
+    max-width: 520px;
+
+    // The bar is the positioned box now, so the button only has to fill it.
+    // ⚠ flex, not the inherited inline-flex: an inline-level box would shrink to
+    // its label instead of running the bar's width.
+    @include narrow { flex: 1; }
+  }
 }
 
 .gb-header__links {
@@ -4408,6 +4516,11 @@ a.gb-header__link {
 // opened yet. Opening the panel restores display:block and it loads then.
 .gb-nav-card__art {
   display: none;
+  // Client r130: hold the art through the panel's exit. `display` is discrete, so
+  // without allow-discrete it flips to none the instant .is-open goes and the
+  // image blinks out while the drawer still has its whole slide left to play.
+  // Browsers without it (Safari < 17.4) fall back to today's behaviour.
+  transition: display $t-panel allow-discrete;
   position: absolute;
   left: 21.8%;
   top: 20.1%;
@@ -4417,9 +4530,8 @@ a.gb-header__link {
   pointer-events: none;
   z-index: 1;
 
-  // Client r85: the phone drawer's card is far narrower than the desktop one, so
-  // the 135.2% overhang ran the artwork outside it.
-  @include narrow { width: 100%; }
+  // The drawer's slide is $t-drawer, not the dropdown's $t-panel.
+  @include narrow { transition-duration: $t-drawer; }
 
   .gb-header.is-open & { display: block; }
 }
@@ -4481,8 +4593,22 @@ html.is-menu-open {
 
 // Floating bears. Offsets are the image's own position inside the Figma
 // footer section (1441 wide), so left is expressed as a percentage of it.
+// Live lifted this section's wave out into its own Gumi Wave (2026-09-08). The
+// board draws it INSIDE the wrapper, and both bears are positioned against that
+// box -- --a by a length off the top edge, --b by a percentage of the height --
+// so a wrapper that starts a wave lower and is a wave shorter drags both of them
+// with it (measured: A slid a full wave, B an irregular fraction of one).
+// Giving the wrapper its own box back costs nothing in layout, the margin and
+// the padding cancel, and it leaves every bear value exactly as the board set it.
+// Only the two board sizes are compensated: an arc-count wave is not a shape the
+// board ever draws here, and --cta-wave-h stays 0 for it and for the static build.
+.gb-wave-section:has(> .gb-wave--sm) + .gb-footer-cta-section { --cta-wave-h: var(--sc-h); }
+.gb-wave-section:has(> .gb-wave--lg) + .gb-footer-cta-section { --cta-wave-h: var(--sc-lg-h); }
+
 .gb-footer-cta-wrap {
   position: relative;
+  margin-top: calc(-1 * var(--cta-wave-h, 0px));
+  padding-top: var(--cta-wave-h, 0px);
   // The decorative bears enter with rotate(-5deg), which widens their bounding
   // box mid-tween and briefly pushed a horizontal scrollbar onto narrow screens.
   // Clip sideways only, so the bears can still overhang the section vertically.
@@ -4854,7 +4980,10 @@ html.is-menu-open {
     letter-spacing: fluid(-0.28px, -0.32px);
   }
 
-  @include hover { color: $c-white; }
+  // r86 took the underline off on the grounds that the colour change carried
+  // the hover on its own. It does not here: #f4fce7 -> #ffffff on #004128 is
+  // invisible. The brand lime is the one accent the dark footer already uses.
+  @include hover { color: $c-lime; }
 }
 
 .gb-footer__social {
@@ -4934,7 +5063,7 @@ html.is-menu-open {
   a {
     transition: trans(color);
 
-    @include hover { color: $c-white; }
+    @include hover { color: $c-lime; }
   }
 }
 
@@ -4955,10 +5084,10 @@ html.is-menu-open {
 .gb-page-hero {
   position: relative;
   background: $c-lime-150;
-  padding: 56px 0 calc(88px + var(--sc-lg-h));
+  padding: 56px 0 calc(88px + var(--sc-res, 0px));
 
-  @include narrow { padding: 32px 0 calc(64px + var(--sc-lg-h)); }
-  @include tablet { padding: fluid(32px, 56px) fluid(0, 0) calc(fluid(64px, 88px) + var(--sc-lg-h)); }
+  @include narrow { padding: 32px 0 calc(64px + var(--sc-res, 0px)); }
+  @include tablet { padding: fluid(32px, 56px) fluid(0, 0) calc(fluid(64px, 88px) + var(--sc-res, 0px)); }
 }
 
 .gb-page-hero__inner {
@@ -5061,8 +5190,6 @@ html.is-menu-open {
   @include tablet { font-size: fluid(16px, 18px); line-height: fluid(24px, 28px); letter-spacing: fluid(-0.32px, -0.36px); }
 }
 
-// The design ships a plain #d9d9d9 rectangle here — no photography exists yet,
-// so the placeholder stays a placeholder (docs/PROJECT-STATUS.md, content rule).
 // ⚠ This used to be `flex: 0 0 570px` down to 1025 and `flex: 1 1 0` below it,
 // which broke in both directions: above 1024 the rigid 570 starved the text
 // (243.8 wide at 1100, a six-line title), and below it a basis of 0 against the
@@ -5072,7 +5199,6 @@ html.is-menu-open {
   flex: 1 1 570px;
   aspect-ratio: 570 / 430;
   border-radius: 26px;
-  background: $c-gray-200;
   overflow: hidden;
 
   // Client-set cap. 390 is unaffected (350 content), so this only bites on the
@@ -5157,7 +5283,9 @@ html.is-menu-open {
 // sets its own heading size on mobile (36/40, not the 30/36 the other boards
 // use). faq / get-in-touch / privacy-policy / referral / shipping use this.
 .gb-page-hero--center {
-  --hero-wave: var(--sc-h);
+  --hero-wave: var(--sc-res, 0px);
+  // 324:69636 draws 64. r106 raised it to 80 on the client's word, r107 put it
+  // back. Mobile has always been the board's 32, so only the ramp's top moves.
   padding: 64px 0 calc(70px + var(--hero-wave));
 
   @include narrow { padding: 32px 0 calc(64px + var(--hero-wave)); }
@@ -5182,6 +5310,7 @@ html.is-menu-open {
     // this 0-2-0 rule cancels the base's phone AND tablet inset in one line.
     // A one-sided inset on centred text just shifts it off centre.
     padding-right: 0;
+    max-width: 990px;   // client r121
 
     @include narrow { font-size: 36px; line-height: 40px; letter-spacing: -0.36px; }
     @include tablet {
@@ -5195,7 +5324,7 @@ html.is-menu-open {
 // how-gumi-works / our-story run the same --center padding over the large
 // scallop. Only the wave size differs, so this carries no values of its own --
 // the section cannot read the wave's size off its own child.
-.gb-page-hero--lg { --hero-wave: var(--sc-lg-h); }
+// .gb-page-hero--lg no longer sets a wave size -- :has() reads it off the child.
 
 // A line break the mobile board draws (U+2028) where the desktop board runs the
 // line on. Width alone cannot reproduce it: 236:10402's 350 measure still fits
@@ -5204,14 +5333,11 @@ html.is-menu-open {
   @media (min-width: #{$bp-narrow + 1px}) { display: none; }
 }
 
-// The mirror of the above, for copy the two boards break in DIFFERENT places
-// rather than one breaking and the other running flat: .gb-dosed__title is
-// "One pouch. Once a day. / That's the whole ritual." on 1440 and
-// "One pouch. / Once a day. That's / the whole ritual." on 390, so the two
-// break points have to be able to hide independently.
-.gb-br-wide {
-  @include narrow { display: none; }
-}
+// Was the mirror of the above -- a break only the desktop board draws. Client
+// r115 wants it at every width, so it hides nowhere and carries no rule at all.
+// ⚠ Two consequences: gb-lines' `^^` and `//` now render the same thing, and
+// .gb-dosed__title (static build only -- live's copy has no markers) gains a
+// fourth break on 390. Nothing else on the site uses the class.
 
 // ==========================================================================
 // Hero
@@ -5226,12 +5352,28 @@ html.is-menu-open {
   overflow-y: visible;
   background: $c-lime-150;
   // room for the large scallop
-  padding-bottom: var(--sc-lg-h);
+  padding-bottom: var(--sc-res, 0px);
 
   // The bear hangs below the section on mobile (see .gb-hero__art) -- reserve the
   // "Hovering Bear/Bear 2" block's own 496 so the next section clears it. The
   // scallop already sits inside padding-bottom, so only the rest is margin.
-  @include narrow { margin-bottom: calc(496px - var(--sc-lg-h)); }
+  @include narrow { margin-bottom: calc(496px - var(--sc-res, 0px)); }
+}
+
+// Live only. r105 replaced the hero's built-in scallop with a flow
+// .gb-wave-section AFTER the hero's own wrapper, so the reserve above -- which
+// exists for the bear, not for the wave -- pushed the wave 496 down with it and
+// the wave stopped touching the banner. 228:5932 draws it ON the hero's bottom
+// edge (572..608) with the "Hovering Bear/Bear 2" block (572..1068) overlapping.
+// So the reserve has to sit BELOW the wave: the hero gives it up, the wave
+// section carries what is left after its own height.
+// ⚠ Both selectors are inert on the static build -- there is no .shopify-section
+//   there, and the hero keeps its absolutely positioned scallop child.
+@include narrow {
+  .shopify-section:has(+ .gb-wave-section) .gb-hero { margin-bottom: 0; }
+  .shopify-section:has(> .gb-hero) + .gb-wave-section {
+    margin-bottom: calc(496px - var(--sc-lg-h));
+  }
 }
 
 // 1440 draws 110px gutters here, wider than the 80px site container.
@@ -5475,10 +5617,16 @@ html.is-menu-open {
 
   // 228:5932 tilts the other way and further: rotation -15deg, glow 292.95 wide
   // in a 432.74 slot.
+  // 243:28351 is 292.97 wide inside the slot, plus its 16 CENTRE stroke = 308.97,
+  // and that is an absolute size on the 390 board, not a ratio. As a percentage
+  // it tracked .gb-hero__art's own `max-width: 100%`: right at 390, but from 400
+  // up the slot reopens to 433 and the bear grew with it (343.75 by 500), eating
+  // the 18.7px the board leaves between the USP row and the glow. min() keeps the
+  // ratio below 390, where no board exists.
   @include narrow {
     --bear-rot: -15deg;
     left: 65%;
-    width: 79.39%;
+    width: min(309px, 79.39%);
   }
 }
 
@@ -5494,11 +5642,11 @@ html.is-menu-open {
 .gb-logo-scroll {
   position: relative;
   background: $c-white;
-  padding: 88px 0 calc(64px + var(--sc-h));
+  padding: 88px 0 calc(64px + var(--sc-res, 0px));
   overflow: hidden;
 
-  @include narrow { padding: 56px 0 calc(40px + var(--sc-h)); }
-  @include tablet { padding: fluid(56px, 88px) fluid(0, 0) calc(fluid(40px, 64px) + var(--sc-h)); }
+  @include narrow { padding: 56px 0 calc(40px + var(--sc-res, 0px)); }
+  @include tablet { padding: fluid(56px, 88px) fluid(0, 0) calc(fluid(40px, 64px) + var(--sc-res, 0px)); }
 }
 
 .gb-logo-scroll--off { background: $c-cream; }
@@ -5601,10 +5749,10 @@ html.is-menu-open {
 .gb-stats {
   position: relative;
   background: $c-cream;
-  padding: 96px 0 calc(120px + var(--sc-h));
+  padding: 96px 0 calc(120px + var(--sc-res, 0px));
 
-  @include narrow { padding: 64px 0 calc(88px + var(--sc-h)); }
-  @include tablet { padding: fluid(64px, 96px) fluid(0, 0) calc(fluid(88px, 120px) + var(--sc-h)); }
+  @include narrow { padding: 64px 0 calc(88px + var(--sc-res, 0px)); }
+  @include tablet { padding: fluid(64px, 96px) fluid(0, 0) calc(fluid(88px, 120px) + var(--sc-res, 0px)); }
 }
 
 .gb-stats__inner {
@@ -6045,13 +6193,13 @@ html.is-menu-open {
 .gb-science {
   position: relative;
   background: $c-sand;
-  padding: 96px 0 calc(96px + var(--sc-lg-h));
+  padding: 96px 0 calc(96px + var(--sc-res, 0px));
 
   // Client-set. 228:8164 is paddingTop 64 measured from a 36-tall Spacer Top,
   // while --sc-h renders 48.03 down here — see the changelog note on the small
   // wave. 53 is the gap that reads right against the taller build wave.
-  @include narrow { padding: 53px 0 calc(64px + var(--sc-lg-h)); }
-  @include tablet { padding: fluid(53px, 96px) fluid(0, 0) calc(fluid(64px, 96px) + var(--sc-lg-h)); }
+  @include narrow { padding: 53px 0 calc(64px + var(--sc-res, 0px)); }
+  @include tablet { padding: fluid(53px, 96px) fluid(0, 0) calc(fluid(64px, 96px) + var(--sc-res, 0px)); }
 }
 
 // The Science page runs the same cards on cream, and its second board (the
@@ -6071,10 +6219,10 @@ html.is-menu-open {
 }
 
 .gb-science--tight {
-  padding: 48px 0 calc(96px + var(--sc-lg-h));
+  padding: 48px 0 calc(96px + var(--sc-res, 0px));
 
-  @include narrow { padding: 32px 0 calc(64px + var(--sc-lg-h)); }
-  @include tablet { padding: fluid(32px, 48px) fluid(0, 0) calc(fluid(64px, 96px) + var(--sc-lg-h)); }
+  @include narrow { padding: 32px 0 calc(64px + var(--sc-res, 0px)); }
+  @include tablet { padding: fluid(32px, 48px) fluid(0, 0) calc(fluid(64px, 96px) + var(--sc-res, 0px)); }
 
   // Client-specified. 324:56865 section 2 has itemSpacing 48 like section 1;
   // this pulls the card row up to the heading on the tight board only.
@@ -6084,6 +6232,11 @@ html.is-menu-open {
 
   // Client r96. The base card is 16 at every width; only the tight board opens up.
   .gb-science-card { gap: 22px; }
+
+  // 48 - the gaps above. 0-2-0, so these beat the base tier no matter the order.
+  .gb-science__cta { margin-top: 26px; }                          // 22 + 26
+  @include narrow { .gb-science__cta { margin-top: 0; } }         // 48 already
+  @include tablet { .gb-science__cta { margin-top: fluid(16px, 26px); } }
 }
 
 .gb-science__inner {
@@ -6180,6 +6333,16 @@ html.is-menu-open {
   }
   @include narrow { gap: 31px; }
   @include tablet { gap: fluid(31px, 24px); }
+}
+
+// Client r115: a CTA 48px under the card grid. It is a flex child of __inner,
+// so __inner's own gap already sits above it -- what is set here is only the
+// remainder. ⚠ Move either gap and these have to move with it; the --tight
+// tier restates all three.
+.gb-science__cta {
+  margin-top: 0;                                  // base gap is already 48
+  @include narrow { margin-top: 2px; }            // 46 + 2
+  @include tablet { margin-top: fluid(2px, 0px); }
 }
 
 .gb-science-card {
@@ -6338,15 +6501,15 @@ html.is-menu-open {
   // --sc-lg-h inside the padding box, so overflow:hidden here puts the green
   // ground and the overflowing pack under the wave, cut only by the arcs —
   // which is what .gb-scallop--bleed wants.
-  padding-bottom: var(--sc-lg-h);
+  padding-bottom: var(--sc-res, 0px);
 
   // 390: Frame 992568 laps the wave 9px OVER the pack band (itemSpacing -9), so
   // only 36 - 9 = 27 of it hangs below this section. 1440 has no such overlap
   // (316:27135 opens straight onto its 128 Spacer), hence the ramp to 0.
   // Written against --sc-lg-h rather than as a flat 27px: the wave grows with
   // the viewport, so a fixed value steps 27 -> 68 across the 767/768 seam.
-  @include narrow { padding-bottom: calc(var(--sc-lg-h) - 9px); }
-  @include tablet { padding-bottom: calc(var(--sc-lg-h) - #{fluid(9px, 0px)}); }
+  @include narrow { padding-bottom: calc(var(--sc-res, 0px) - 9px); }
+  @include tablet { padding-bottom: calc(var(--sc-res, 0px) - #{fluid(9px, 0px)}); }
 }
 
 .gb-nutrition__top {
@@ -6427,11 +6590,9 @@ html.is-menu-open {
   }
 }
 
-// Placeholder art: the design ships a flat grey box here, kept as-is
 .gb-highlight-card__media {
   position: relative;
   aspect-ratio: 363 / 274;
-  background: $c-gray-200;
   // rectangleCornerRadii: 285:21045 [16,16,8,8] / 228:8968 [8,8,0,0]
   border-radius: 16px 16px 8px 8px;
   overflow: hidden;
@@ -6440,6 +6601,13 @@ html.is-menu-open {
   @include tablet {
     border-radius: fluid(8px, 16px) fluid(8px, 16px) fluid(0px, 8px) fluid(0px, 8px);
   }
+
+  // The grey placeholder sits under the photo inside the same clip box, so the
+  // rounded corners anti-alias it into the edge -- a pale hairline on the green
+  // card (worst corner pixel luminance 91 against the card's 65). Live fills
+  // this with an <img>; the board ships a flat grey box, so the static site
+  // never matches and keeps the placeholder.
+  &:has(img) { background: none; }
 
   img, video, picture { @include cover-img; }
 }
@@ -6614,7 +6782,7 @@ html.is-menu-open {
 .gb-product {
   position: relative;
   background: $c-white;
-  padding: 96px 0 calc(96px + var(--sc-h));
+  padding: 96px 0 calc(96px + var(--sc-res, 0px));
 
   // Client-set, second revision: the top is back on the board's ramp (r89 had
   // flattened it to 32 at every width). 52 on mobile is 243:22226's own
@@ -6622,8 +6790,8 @@ html.is-menu-open {
   // Client-set 46 at the foot. --lg and --page both restate padding-bottom in
   // this tier, so the 46 reaches only the plain tiles (reviews / our-story /
   // how-gumi-works) — which is exactly the :not() the brief named.
-  @include narrow { padding: 52px 0 calc(46px + var(--sc-h)); }
-  @include tablet { padding: fluid(52px, 96px) fluid(0, 0) calc(fluid(46px, 96px) + var(--sc-h)); }
+  @include narrow { padding: 52px 0 calc(46px + var(--sc-res, 0px)); }
+  @include tablet { padding: fluid(52px, 96px) fluid(0, 0) calc(fluid(46px, 96px) + var(--sc-res, 0px)); }
 }
 
 .gb-product--lg {
@@ -6633,15 +6801,15 @@ html.is-menu-open {
   // first child (Product image, 191:2214) adds -- the build has no element for
   // that inner frame, so the two collapse into one value here.
   padding-top: 96px;
-  padding-bottom: calc(96px + var(--sc-lg-h));
+  padding-bottom: calc(96px + var(--sc-res, 0px));
 
   // 191:2468 (Product USP) is paddingBottom 48 and the board hands the wave to
   // the section BELOW; here the wave is this section's own --edge child, so the
   // reserve is that 48 plus the wave's height.
-  @include narrow { padding-top: 52px; padding-bottom: calc(50px + var(--sc-lg-h)); }
+  @include narrow { padding-top: 52px; padding-bottom: calc(50px + var(--sc-res, 0px)); }
   @include tablet {
     padding-top: fluid(52px, 96px);
-    padding-bottom: calc(fluid(50px, 96px) + var(--sc-lg-h));
+    padding-bottom: calc(fluid(50px, 96px) + var(--sc-res, 0px));
   }
 }
 
@@ -6649,15 +6817,15 @@ html.is-menu-open {
   // Client-set: 32 at the top, against the base class's 96 and the PDP board's
   // own 96. The tier below has to land on 32 too or 1280 -> 1281 steps 64px.
   padding-top: 32px;
-  padding-bottom: calc(96px + var(--sc-lg-h));
+  padding-bottom: calc(96px + var(--sc-res, 0px));
 
   // --lg opens with 52 on mobile (the board's 32 + the inner frame's 20
   // collapsed into one). The PDP's own board starts at 20 instead; the client
   // named the desktop end only, so this one is unchanged.
-  @include narrow { padding-top: 20px; padding-bottom: calc(64px + var(--sc-lg-h)); }
+  @include narrow { padding-top: 20px; padding-bottom: calc(64px + var(--sc-res, 0px)); }
   @include tablet {
     padding-top: fluid(20px, 32px);
-    padding-bottom: calc(fluid(64px, 96px) + var(--sc-lg-h));
+    padding-bottom: calc(fluid(64px, 96px) + var(--sc-res, 0px));
   }
 }
 
@@ -6781,13 +6949,11 @@ html.is-menu-open {
   }
 }
 
-// Grey boxes are the design's own placeholders — no product photos exist yet
 .gb-product__thumb {
   flex-shrink: 0;
   width: 48px;
   height: 48px;
   padding: 0;
-  background: $c-gray-200;
   border: 2px solid transparent;
   border-radius: $r-xs;
   overflow: hidden;   // clip the image to the radius
@@ -6836,7 +7002,6 @@ html.is-menu-open {
 // curve). Reduced motion is handled at init -- speed 0 -- because the duration
 // arrives as an inline style the reset's !important rule cannot reach.
 .gb-product__image {
-  background: $c-gray-200;
   border-radius: $r-xl;
   overflow: hidden;   // clip the image to the radius
   // Client-set: the stage is draggable, so say so on the slide itself.
@@ -6876,6 +7041,7 @@ html.is-menu-open {
   // Mobile boards draw this at 350x52, 16px, ls +0.48 (desktop 60/18 is correct)
   @include narrow {
     height: 52px;
+    padding: 0 40px;      // client r132
     font-size: 16px;
     letter-spacing: 0.48px;
   }
@@ -6947,6 +7113,11 @@ html.is-menu-open {
 }
 
 .gb-product__tag {
+  // Live wraps every block in div.shopify-block, so the tag is a plain <p> in
+  // normal flow, not a flex item -- align-self cannot reach it there and the
+  // green plate runs the whole column.
+  display: inline-flex;
+  width: auto;
   align-self: flex-start;
   padding: 6px 12px;
   background: #cbf390;
@@ -7105,9 +7276,7 @@ html.is-menu-open {
 }
 
 .gb-sub__banner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   padding: 8px;
   background: $c-green;
   color: $c-lime;
@@ -7457,10 +7626,7 @@ html.is-menu-open {
   color: $c-ink;
   text-align: left;
 
-  // The container gap moved in here. Zeroed when open so the panel's own 16px top
-  // takes over — the board has 16 between summary and body, 20 between rows
-  padding-bottom: var(--acc-gap);
-  transition: color $t-base $ease-out, padding-bottom $t-slow $ease-out;
+  transition: color $t-base $ease-out;
 
   cursor: pointer;
 
@@ -7470,6 +7636,18 @@ html.is-menu-open {
   // .shopify-block and is that wrapper's first child, so test the list instead.
   .gb-product__accordion > :first-child & { padding-top: 0; border-top: 0; }
 
+  // r64 kept the inter-row gap inside the summary so it stays clickable; r131
+  // took the gap itself to the item. Padding plus an equal negative margin
+  // rebuilds the hit area without occupying any space, so opening -- which drops
+  // both together -- moves nothing.
+  .gb-product__acc-item:not([open]) > & {
+    padding-bottom: var(--acc-gap);
+    margin-bottom: calc(0px - var(--acc-gap));
+  }
+
+  // ⚠ Live only: Horizon puts 11.2px of padding-bottom on an OPEN <summary>.
+  // Dropping the declaration from the base rule above hands that slot to the
+  // theme, so the open state has to claim it back at the same specificity.
   .gb-product__acc-item[open] > & { padding-bottom: 0; }
 
   .gb-acc-icon { color: $c-green; }
@@ -7513,6 +7691,13 @@ html.is-menu-open {
   gap: 16px;
   width: 350px;
   max-width: 100%;
+
+  // Client r110: one per row under 370. A layout threshold, so it carries the
+  // arrangement only and no values -- the item keeps its own 106 width below.
+  @media (max-width: 370px) {
+    flex-direction: column;
+    justify-content: flex-start;
+  }
 }
 
 .gb-product__taste-item {
@@ -7573,19 +7758,19 @@ html.is-menu-open {
 // how-gumi-works / our-story, with the large wave.
 .gb-reviews--cream {
   background: $c-cream;
-  padding-bottom: calc(96px + var(--sc-lg-h));
+  padding-bottom: calc(96px + var(--sc-res, 0px));
 
-  @include narrow { padding-bottom: calc(64px + var(--sc-lg-h)); }
-  @include tablet { padding-bottom: calc(fluid(64px, 96px) + var(--sc-lg-h)); }
+  @include narrow { padding-bottom: calc(64px + var(--sc-res, 0px)); }
+  @include tablet { padding-bottom: calc(fluid(64px, 96px) + var(--sc-res, 0px)); }
 }
 
 // 324:52658 runs the same block on sand instead of mint — pdp, with the small wave.
 .gb-reviews--sand {
   background: $c-sand;
-  padding-bottom: calc(96px + var(--sc-h));
+  padding-bottom: calc(96px + var(--sc-res, 0px));
 
-  @include narrow { padding-bottom: calc(64px + var(--sc-h)); }
-  @include tablet { padding-bottom: calc(fluid(64px, 96px) + var(--sc-h)); }
+  @include narrow { padding-bottom: calc(64px + var(--sc-res, 0px)); }
+  @include tablet { padding-bottom: calc(fluid(64px, 96px) + var(--sc-res, 0px)); }
 }
 
 .gb-reviews__inner {
@@ -7683,11 +7868,10 @@ html.is-menu-open {
 // whole set is already side by side.
 [data-slider].is-static .gb-reels__nav { display: none; }
 
-// Grey box with a play glyph is the design's own placeholder for the reel.
-// Hover scales the INNER IMAGE only; the card itself does not move and takes no
-// shadow, so the image needs its own .gb-reel__media layer and the play glyph and
-// radius stay undistorted. Drop the client's poster into that layer as
-// <img class="reel__media-img"> — the styles are already there.
+// Client r123: the card plays in place, it no longer opens a lightbox. .gb-reel is
+// the frame; .gb-reel__trigger is the button that starts playback and is replaced by
+// the player. Hover scales the INNER IMAGE only, so the frame, its radius and the
+// play glyph stay undistorted.
 .gb-reel {
   position: relative;
   display: flex;
@@ -7712,11 +7896,27 @@ html.is-menu-open {
   border-radius: 21px;
   color: $c-ink;
 
-  cursor: pointer;
   overflow: hidden;                // clips the scaled image back inside the radius
-  transition: trans(transform);
 
-  &:active { transform: scale(0.99); }
+  // Figma mobile 228 x 405 (Reels Row 716 = 3 x 228 + 2 x 16)
+  @include narrow { width: 228px; height: 405px; }
+  @include tablet { height: fluid(405px, 540px); }
+}
+
+.gb-reel__trigger {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: inherit;
+
+  // ⚠ Same trap as .gb-crev-card and .gb-btn: reelPlayer hides this with the
+  // [hidden] attribute, whose UA rule is display:none at 0-0-0 and loses to the
+  // flex above. Without this the button stays painted and focusable underneath
+  // the player -- Tab lands on a control nobody can see.
+  &[hidden] { display: none; }
 
   // Client r81: focus-visible mirrors hover instead of drawing a ring. The rail
   // (.gb-reels.swiper) clips at exactly this card's top and bottom, so the
@@ -7731,21 +7931,52 @@ html.is-menu-open {
   }
 
   // :hover sticks after a tap on touch, so this goes through @include hover.
-  // The scale lands on .gb-reel__media only: the card, its radius and the play
-  // glyph do not move.
   @include hover {
     .gb-reel__media { transform: scale(1.06); }
   }
+}
 
-  // Figma mobile 228 x 405 (Reels Row 716 = 3 x 228 + 2 x 16)
-  @include narrow { width: 228px; height: 405px; }
-  @include tablet { height: fluid(405px, 540px); }
+// The player replaces the poster in the same frame. $c-ink is the letterbox behind
+// a portrait reel, NOT a placeholder ground -- r120 removed those, this is not one.
+.gb-reel__video,
+.gb-reel__embed {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: $c-ink;
+}
+
+// contain, not cover: a real portrait reel must not be cropped to the frame.
+.gb-reel__video { object-fit: contain; }
+
+// file:// has a null origin and YouTube answers it with its own error frame. The
+// client previews by double-clicking, so say why rather than showing them that.
+.gb-reel__offline {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  background: $c-ink;
+  color: $c-white;
+  text-align: center;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.gb-reel__offline-link {
+  color: $c-lime;
+  text-decoration: underline;
 }
 
 .gb-reel__media {
   position: absolute;
   inset: 0;
-  background: $c-gray-200;         // the board's own grey placeholder, no real poster
   transition: trans(transform);
 }
 
@@ -7791,10 +8022,9 @@ html.is-menu-open {
   color: $c-green;
   // The inline SVG hard-codes its fill, so an inherited colour cannot reach it —
   // feedback has to ride on opacity / transform instead.
-  transition: trans(opacity, transform);
+  transition: trans(opacity);
 
   @include hover { opacity: 0.75; }
-  &:active { transform: scale(0.95); }
 
   // Set by the slider script at each end of the track. No pointer-events:none —
   // that would swallow the cursor and leave no hint why the button is inert.
@@ -7911,8 +8141,12 @@ html.is-menu-open {
   @include tablet { font-size: fluid(16px, 18px); line-height: fluid(24px, 28px); letter-spacing: fluid(0px, -0.36px); }
 }
 
+// The theme renders this as <cite>, which the UA sheet italicises
+// (i, cite, em, var, address, dfn). The static build's <figcaption> does not,
+// so this only shows up live.
 .gb-testimonial__name {
   margin-top: -8px;
+  font-style: normal;
   font-size: 16px;
   font-weight: 500;
   line-height: 24px;
@@ -8046,11 +8280,9 @@ html.is-menu-open {
 .gb-promo-card--white { background: $c-white; }
 
 // Halves -------------------------------------------------------------------
-// The image is the design's own grey placeholder — no product photo exists yet.
 .gb-promo-card__media {
   position: relative;
   flex: 0 0 50%;
-  background: $c-gray-200;
   overflow: hidden;   // clip the image to the radius
 
   @include narrow { flex: 0 0 auto; width: 100%; aspect-ratio: 1; border-radius: $r-lg; }
@@ -8489,11 +8721,11 @@ html.is-menu-open {
 .gb-vs {
   position: relative;
   background: $c-white;
-  padding: 120px 0 calc(120px + var(--sc-h));
+  padding: 120px 0 calc(120px + var(--sc-res, 0px));
 
-  @include narrow { padding: 52px 0 calc(64px + var(--sc-h)); }
+  @include narrow { padding: 52px 0 calc(64px + var(--sc-res, 0px)); }
   @include tablet {
-    padding: fluid(52px, 120px) 0 calc(#{fluid(64px, 120px)} + var(--sc-h));
+    padding: fluid(52px, 120px) 0 calc(#{fluid(64px, 120px)} + var(--sc-res, 0px));
   }
 }
 
@@ -8956,8 +9188,14 @@ html.is-menu-open {
   text-align: left;
   cursor: pointer;
 
-  padding-bottom: var(--acc-gap);
-  transition: color $t-base $ease-out, padding-bottom $t-slow $ease-out;
+  transition: color $t-base $ease-out;
+
+  // Same hit-area-without-space trick as .gb-product__acc-row, and the same
+  // Horizon padding to re-zero on the open row; see there.
+  .gb-faq__item:not([open]) > & {
+    padding-bottom: var(--acc-gap);
+    margin-bottom: calc(0px - var(--acc-gap));
+  }
 
   .gb-faq__item[open] > & { padding-bottom: 0; }
 
@@ -8979,21 +9217,21 @@ html.is-menu-open {
 .gb-app-section {
   position: relative;
   background: $c-cream;
-  padding: 96px 0 calc(96px + var(--sc-h));
+  padding: 96px 0 calc(96px + var(--sc-res, 0px));
 
-  @include narrow { padding: 64px 0 calc(64px + var(--sc-h)); }
-  @include tablet { padding: fluid(64px, 96px) fluid(0, 0) calc(fluid(64px, 96px) + var(--sc-h)); }
+  @include narrow { padding: 64px 0 calc(64px + var(--sc-res, 0px)); }
+  @include tablet { padding: fluid(64px, 96px) fluid(0, 0) calc(fluid(64px, 96px) + var(--sc-res, 0px)); }
 }
 
 .gb-app-section--lg {
-  padding-bottom: calc(96px + var(--sc-lg-h));
+  padding-bottom: calc(96px + var(--sc-res, 0px));
 
   // Client-set 52 on mobile; the base section opens with 64. The tablet ramp has
   // to carry it too or the 767/768 seam steps 52 -> 64.
-  @include narrow { padding-top: 52px; padding-bottom: calc(64px + var(--sc-lg-h)); }
+  @include narrow { padding-top: 52px; padding-bottom: calc(64px + var(--sc-res, 0px)); }
   @include tablet {
     padding-top: fluid(52px, 96px);
-    padding-bottom: calc(fluid(64px, 96px) + var(--sc-lg-h));
+    padding-bottom: calc(fluid(64px, 96px) + var(--sc-res, 0px));
   }
 }
 
@@ -9081,7 +9319,20 @@ html.is-menu-open {
   // the 100% against this flex box and feeds it back in. Measured 1500x1500 per
   // star on the storefront, 10533px of section. The static build hid it because
   // its own star file carries real dimensions.
-  img { flex: none; width: 32px; height: 32px; }
+  img {
+    flex: none;
+    width: 32px;
+    height: 32px;
+  // ⚠ The padding is the point, not the box. Measured ink inside each file:
+  // the old star.svg was viewBox 32x32 with the shape filling 79.7% x 75.2%;
+  // the replacement (r108, other session) is viewBox 25x24 filled 99.6% x 99.2%.
+  // Same container, so the mark itself jumped 25.5 -> 31.87 wide and read as a
+  // size change. 10% padding each side hands the old breathing room back.
+  // ⚠ The BOX stays at the board's figure -- 324:63950 is 32 and the row frame
+  // is 160 (5 x 32) -- so only the ink moves, not the layout.
+    box-sizing: border-box;
+    padding: 3.2px;
+  }
 }
 
 .gb-crev__count {
@@ -9233,8 +9484,14 @@ html.is-menu-open {
   display: flex;
   flex: none;
 
-  // Same as .gb-crev__stars -- see the note there.
-  img { flex: none; width: 20px; height: 20px; }
+  // Same as .gb-crev__stars -- see the note there, padding included.
+  img {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    box-sizing: border-box;
+    padding: 2px;
+  }
 }
 
 // 4.5 dims the whole fifth point to 30%; the board never half-fills one
@@ -9261,6 +9518,17 @@ html.is-menu-open {
   line-height: 24px;
   letter-spacing: -0.32px;
   color: $c-ink;
+
+  // Client r110: one line on mobile, clipped with an ellipsis. min-width:0 is
+  // required, not decoration -- the title is a flex item and its default
+  // min-width:auto refuses to shrink below the text, so the ellipsis never
+  // appears and the row overflows instead.
+  @include narrow {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 .gb-crev-card__text {
@@ -9269,14 +9537,11 @@ html.is-menu-open {
   color: $c-gray-700;
 }
 
-// 191:5468 is a flat grey block on both boards. The bear standing in it is a
-// placeholder the client asked for -- contain, so the grey still reads as the
-// empty slot behind it rather than the image bleeding to the corners.
+// contain, not cover: the bear the client put in 191:5468 must not be cropped.
 .gb-crev-card__image {
   flex: none;
   width: 64px;
   height: 64px;
-  background: #d5d4d4;
   border-radius: $r-xs;
   overflow: hidden;
 
@@ -9311,12 +9576,11 @@ html.is-menu-open {
   line-height: 20px;
   letter-spacing: -0.28px;
   color: $c-gray-600;
-  transition: trans(color, transform);
+  transition: trans(color);
 
   svg { flex: none; width: 16px; height: 16px; stroke-width: 1.33333; transition: trans(stroke-width); }
 
   @include hover { color: $c-green; }
-  &:active { transform: scale(0.94); }
 
   // Live only: sections/gb-app-section.liquid's inline script toggles .is-voted
   // and persists it in localStorage. Same 0-2-0 as the :hover above, so it has
@@ -9364,14 +9628,12 @@ html.is-menu-open {
   }
 }
 
-// The design's own grey placeholder — no photography has been supplied.
 .gb-faq-image__media {
   // Client-set: shrinkable, not a hard 520 (see .gb-ingredients__disc).
   flex: 0 1 520px;
   width: auto;
   aspect-ratio: 1;
   border-radius: $r-xl;
-  background: $c-gray-200;
   overflow: hidden;
 
   // Client-set: 520 caps the square on mobile too (r42 removed the cap and it
@@ -9475,11 +9737,11 @@ html.is-menu-open {
 .gb-expert {
   position: relative;
   background: $c-white;
-  padding: 96px 0 calc(120px + var(--sc-h));
+  padding: 96px 0 calc(120px + var(--sc-res, 0px));
 
-  @include narrow { padding: 64px 0 calc(64px + var(--sc-h)); }
+  @include narrow { padding: 64px 0 calc(64px + var(--sc-res, 0px)); }
   @include tablet {
-    padding: fluid(64px, 96px) 0 calc(#{fluid(64px, 120px)} + var(--sc-h));
+    padding: fluid(64px, 96px) 0 calc(#{fluid(64px, 120px)} + var(--sc-res, 0px));
   }
 }
 
@@ -9598,7 +9860,6 @@ html.is-menu-open {
   position: relative;
   aspect-ratio: 363 / 274;
   border-radius: 16px 16px 8px 8px;
-  background: $c-gray-200;
   overflow: hidden;
 
   @include narrow { aspect-ratio: 265 / 200; border-radius: 8px 8px 0 0; }
@@ -9694,28 +9955,27 @@ html.is-menu-open {
 .gb-dosed {
   position: relative;
   background: $c-white;
-  padding: 96px 0 calc(96px + var(--sc-lg-h));
+  padding: 96px 0 calc(96px + var(--sc-res, 0px));
 
-  @include narrow { padding: 64px 0 calc(64px + var(--sc-lg-h)); }
-  @include tablet { padding: fluid(64px, 96px) fluid(0, 0) calc(fluid(64px, 96px) + var(--sc-lg-h)); }
+  @include narrow { padding: 64px 0 calc(64px + var(--sc-res, 0px)); }
+  @include tablet { padding: fluid(64px, 96px) fluid(0, 0) calc(fluid(64px, 96px) + var(--sc-res, 0px)); }
 }
 
 .gb-dosed__inner {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 80px;                  // client-set (board 96)
+  // Client-set 80 (the board is 96 desktop / 48 mobile). Now flat across every
+  // tier: the client asked for 80 on mobile too, which collapses the old
+  // 48 -> ramp -> 80 into one value, so the tiers carry padding only.
+  gap: 80px;
   width: 100%;
   max-width: 1440px;          // 1250 content + 95 each side
   margin-inline: auto;
   padding-inline: 95px;
 
-  // Client-set 80 (was the board's 96). The stack point is 767, so 768-1280 is a
-  // row band and the gap belongs on the value tier: the old `stack` copy sat on a
-  // layout threshold, overlapped narrow, and stepped at 768/1025. The ramp meets
-  // 48 at 768 and 80 at 1281, so neither seam moves.
-  @include narrow { gap: 48px; padding-inline: var(--pad-x); }
-  @include tablet { gap: fluid(48px, 80px); padding-inline: var(--pad-x); }
+  @include narrow { padding-inline: var(--pad-x); }
+  @include tablet { padding-inline: var(--pad-x); }
 
   // align-items:center makes every flex item shrink-to-fit. On Shopify the item
   // is a bare <div class="shopify-block">, not .gb-dosed__block, so the block's
@@ -9900,7 +10160,6 @@ html.is-menu-open {
 .gb-story-card__media {
   aspect-ratio: 411 / 310;
   border-radius: $r-lg;
-  background: $c-gray-200;
   overflow: hidden;
 
   @include narrow { aspect-ratio: 350 / 264; }
@@ -9958,10 +10217,10 @@ html.is-menu-open {
 .gb-cta-band {
   position: relative;
   background: $c-white;
-  padding: 48px 0 calc(120px + var(--sc-lg-h));
+  padding: 48px 0 calc(120px + var(--sc-res, 0px));
 
-  @include narrow { padding: 32px 0 calc(64px + var(--sc-lg-h)); }
-  @include tablet { padding: fluid(32px, 48px) fluid(0, 0) calc(fluid(64px, 120px) + var(--sc-lg-h)); }
+  @include narrow { padding: 32px 0 calc(64px + var(--sc-res, 0px)); }
+  @include tablet { padding: fluid(32px, 48px) fluid(0, 0) calc(fluid(64px, 120px) + var(--sc-res, 0px)); }
 }
 
 .gb-cta-band__inner { @include container; }
@@ -10135,6 +10394,18 @@ html.is-menu-open {
   max-width: 624px;
 }
 
+// Shopify's bot protection appends <div class="h-captcha" data-size="invisible">
+// as the form's last child, but only after a field takes focus. It paints
+// nothing (height 0) yet it is still a flex item, so it earns one whole gap:
+// measured 788 -> 820 on the contact form, 108 -> 120 in the promo panel.
+// ⚠ Take it out of flow, do NOT hide it. The widget is invisible but live, and
+//   it raises its challenge inside this very container -- display:none would
+//   make the form impossible to submit. Absolute positioning drops it out of
+//   flex layout while leaving it rendered.
+// ⚠ Keyed on data-size="invisible" so a checkbox-mode widget still lays out
+//   normally, gap and all.
+.h-captcha[data-size="invisible"] { position: absolute; }
+
 .gb-form__fields {
   display: flex;
   flex-direction: column;
@@ -10306,6 +10577,31 @@ html.is-menu-open {
   }
 }
 
+// 196:18033 marks the chosen row with a check at the far edge (20 box, 13.33 x
+// 9.17 ink, 1.667 round stroke). ::after rather than markup: role="option" takes
+// its accessible name from the text, and an empty pseudo stays out of it.
+// ⚠ Only the default variant. --bare is the phone country code, one option that
+//   is always selected, and --inline is the cart's interval list, whose open
+//   state the client ruled out of scope in r76.
+// The board draws the tick #000 on a #656565 row; ours follows the row's own
+// $c-green (see [aria-selected] above) -- black beside green reads as a slip.
+.gb-select:not(.gb-select--bare):not(.gb-select--inline) {
+  .gb-select__option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .gb-select__option[aria-selected="true"]::after {
+    content: "";
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    margin-left: auto;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M16.6667 5L7.5 14.1667L3.33333 10' stroke='%23005635' stroke-width='1.667' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / 20px 20px;
+  }
+}
+
 // Client-set: the phone field's country code is the same widget (data-select
 // "bare"). It sits inside .gb-field__phone's own border, so the trigger carries
 // no box -- only the typography the native select had.
@@ -10430,6 +10726,10 @@ html.is-menu-open {
     letter-spacing: -0.32px;
     color: $c-gray-700;
 
+    // Client r106: this field carried no rule, so it was left on the UA's own
+    // grey (#757575 local, rgba(51,51,51,.6) under the theme's reset).
+    &::placeholder { color: $c-gray-600; }
+
     &:focus-visible { outline: none; }
   }
 }
@@ -10442,12 +10742,10 @@ html.is-menu-open {
   font-size: 16px;
   line-height: 24px;
   color: #656565;
-  // Clicking anywhere in the label toggles the box, so the cursor and the hover
-  // feedback belong on the label, not only on the 20px input inside it.
+  // Clicking anywhere in the label toggles the box, so the cursor belongs on
+  // the label, not only on the 20px input inside it.
+  // Client r107: no hover colour shift here. The <a> inside keeps its own.
   cursor: pointer;
-  transition: trans(color);
-
-  @include hover { color: $c-ink; }
 
   // The native box paints its accent-color instantly -- transition never applies
   // to it. Client-set: hide the input and draw the box on ::before instead.
@@ -10468,7 +10766,7 @@ html.is-menu-open {
   input[type="checkbox"] { @include visually-hidden; }
 
   a {
-    color: $c-ink;
+    color: #656565;   // client r106: the label's own grey, not $c-ink
     text-decoration: underline;
     transition: trans(color);
 
@@ -10747,7 +11045,8 @@ html.is-menu-open {
   // The board hugs the label column and fills the other, so the hugging one is
   // px: at the board's own 350 that is exactly 88 / 262, and a wider viewport
   // only grows the fill side instead of stretching both.
-  th:first-child { width: 88px; }
+  // Client r115: 124, not the board's 88.
+  th:first-child { width: 124px; }
 }
 
 // 326:83187 fills the first column instead and fixes the 147 Cost one.
@@ -10964,17 +11263,17 @@ html.is-menu-open {
 .gb-ingredients {
   position: relative;
   background: $c-white;
-  padding: 48px 0 calc(120px + var(--sc-h));
+  padding: 48px 0 calc(120px + var(--sc-res, 0px));
 
-  @include narrow { padding: 32px 0 calc(64px + var(--sc-h)); }
-  @include tablet { padding: fluid(32px, 48px) fluid(0, 0) calc(fluid(64px, 120px) + var(--sc-h)); }
+  @include narrow { padding: 32px 0 calc(64px + var(--sc-res, 0px)); }
+  @include tablet { padding: fluid(32px, 48px) fluid(0, 0) calc(fluid(64px, 120px) + var(--sc-res, 0px)); }
 }
 
 .gb-ingredients--lg {
-  padding-bottom: calc(120px + var(--sc-lg-h));
+  padding-bottom: calc(120px + var(--sc-res, 0px));
 
-  @include narrow { padding-bottom: calc(64px + var(--sc-lg-h)); }
-  @include tablet { padding-bottom: calc(fluid(64px, 120px) + var(--sc-lg-h)); }
+  @include narrow { padding-bottom: calc(64px + var(--sc-res, 0px)); }
+  @include tablet { padding-bottom: calc(fluid(64px, 120px) + var(--sc-res, 0px)); }
 }
 
 .gb-ingredients__inner {
@@ -11130,6 +11429,89 @@ html.is-menu-open {
   @include tablet { padding-block-end: fluid(64px, 120px); }
 }
 
+// Client r106: /collections/all reads as a different site -- Horizon's Inter
+// 48/700 black heading inside Horizon's 16/40 gutters, next to gb-* modules that
+// are neither.
+// ⚠ Hook is theme.liquid's own data-template. The heading and the grid are
+//   Horizon's generic `section` / `main-collection`, whose schemas are shared
+//   with other templates, so there is no class to scope on the way .gb-404 does.
+#MainContent[data-template^="collection"] {
+  // The theme declares --page-margin on <body>; redeclaring it here re-gutters
+  // every section on this template at once, and keeps the safe-area floor.
+  --page-margin: max(var(--pad-x), var(--safe-area-inset-left, 0px), var(--safe-area-inset-right, 0px));
+
+  // Client r117: the gutter alone only aligns while it is the binding side.
+  // Past 1440 the shell takes over and the grid creeps inside the header.
+  // ⚠ Horizon's --page-width INCLUDES both margins -- its own value is
+  // calc(90rem + margin*2), i.e. content 1440 plus 2x40. So this is the
+  // container mixin's max-width, not $w-container: passing the bare content
+  // width moves everything a further $pad-x in (measured live, 160 vs 80).
+  --page-width: #{$w-container + $pad-x-desktop * 2};
+
+  // Client r119: Horizon's own components name a font VARIABLE, and every one of
+  // those is still Inter -- PP Palma is a custom face, so the theme editor's
+  // Typography picker cannot be pointed at it. Only what inherits from <body>
+  // reaches the brand face; the price, the Sale badge, the Filter toggle and the
+  // in-page skip link all name a variable and land on Inter.
+  // ⚠ The variables, not the elements: .product-badges sets
+  // `--badge-font-family: var(--font-body--family)` INLINE, which no rule of ours
+  // can outrank -- but that var() resolves against whatever is declared here.
+  // ⚠ Family only. The weights are Horizon's type scale, and this template has
+  // no board to take numbers from.
+  @each $v in (--font-body--family, --font-heading--family, --font-paragraph--family,
+               --font-subheading--family, --font-accent--family,
+               --font-h1--family, --font-h2--family, --font-h3--family,
+               --font-h4--family, --font-h5--family, --font-h6--family,
+               --button-font-family-primary, --button-font-family-secondary,
+               --cart-primary-font-family, --cart-secondary-font-family) {
+    #{$v}: #{$font-brand-stack};
+  }
+
+  // Client r110: below 768 the grid and the facet bar still ran edge to edge
+  // while the h1 sat at --pad-x. Not the --page-margin above failing -- the
+  // collection section carries `full_width_on_mobile: true`, which drops the
+  // gutter on those two on purpose. That setting lives in templates/*.json,
+  // which we never push, so the gutter is restored from here.
+  // ⚠ Measured, not guessed: 1440 was already 80/80 on both; only 390 was 0.
+  @include narrow {
+    .product-grid,
+    .facets-toggle { padding-inline: var(--pad-x); }
+  }
+
+  // Same type and same doubled-class trick as .gb-404 -- the type preset class
+  // sits on the .text-block WRAPPER, so a bare `h1` (0-0-1) never wins.
+  // ⚠ h1 only, not :is(h1..h6): the product cards are text blocks too, and an
+  //   unscoped heading selector puts 56/800 on every product name (the note on
+  //   .ui-test-product-list is the same trap).
+  .text-block.text-block h1 {
+    font-family: $font-brand-stack;
+    font-size: 56px;
+    font-weight: 800;
+    line-height: 64px;
+    letter-spacing: -0.56px;
+    color: $c-green;
+
+    @include narrow { font-size: 30px; line-height: 36px; letter-spacing: -0.3px; }
+    @include tablet {
+      font-size: fluid(30px, 56px);
+      line-height: fluid(36px, 64px);
+      letter-spacing: fluid(-0.3px, -0.56px);
+    }
+  }
+}
+
+// Client r110: Horizon's product card ships a slideshow and a quick-add button
+// inside .card-gallery. Neither is in the boards, and the arrows sit on top of
+// the image on touch where there is nothing to click them with.
+// ⚠ Custom elements, not classes -- .quick-add is on the component, but
+//   <slideshow-arrows> carries no class at all, so the tag name is the only hook.
+// ⚠ Scoped to .card-gallery on purpose: the PDP gallery is our own
+//   .gb-product__gallery and must keep its controls.
+.card-gallery {
+  slideshow-arrows,
+  quick-add-component { display: none; }
+}
+
 // ==========================================================================
 // 404
 // ==========================================================================
@@ -11223,6 +11605,16 @@ html.is-menu-open {
 // mobile) sitting on the product names. Overriding the longhand, not the inline
 // custom property; .spacing-style is 0-1-0 so 0-2-0 is enough.
 .gb-page-wrapper [data-testid="product-list"] {
+  // Client r107: Horizon leaves this section on its own 40/40/16 gutters while
+  // every gb-* module runs --pad-x (80/20/20). Redeclaring --page-margin here
+  // re-gutters the header, the grid and the cards in one line, safe-area floor
+  // kept -- the same move r106 made on /collections/all, scoped to this section
+  // because main-404 above it was not named.
+  --page-margin: max(var(--pad-x), var(--safe-area-inset-left, 0px), var(--safe-area-inset-right, 0px));
+  // Client r117: and the width half of the same formula -- see the note on
+  // #MainContent[data-template^="collection"], including why this is the
+  // mixin's max-width and not $w-container.
+  --page-width: #{$w-container + $pad-x-desktop * 2};
   padding-block-end: 120px;
 
   @include narrow { padding-block-end: 64px; }

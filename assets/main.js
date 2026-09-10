@@ -2,6 +2,44 @@
 (function () {
   "use strict";
 
+  /* Focus handed back by script -- Escape, a close button, a closing dropdown --
+     keeps whatever :focus-visible state came before it, so the trigger paints a
+     ring as if the user had tabbed to it (client r121). Mark it instead; CSS drops
+     the ring, and the next real key or blur clears the mark so a genuine Tab rings. */
+  function markRefocused(el) {
+    if (!el) { return; }
+    el.classList.add("is-refocused");
+    var clear = function () {
+      el.classList.remove("is-refocused");
+      el.removeEventListener("blur", clear);
+      el.removeEventListener("keydown", clear);
+    };
+    el.addEventListener("blur", clear);
+    el.addEventListener("keydown", clear);
+  }
+
+  function returnFocus(el) {
+    if (!el || !el.focus) { return; }
+    markRefocused(el);
+    el.focus();
+  }
+
+  /* An outline drawn with text-shadow is painted per line, so on a wrapping
+     heading the next line's halo covers the previous line's descenders. CSS
+     ink-split() fixes that by moving the halo to an absolutely positioned copy
+     underneath -- the copy has to exist in the DOM. Where the markup carries it
+     (.gb-stat__value, .gb-usp__value) nothing to do; where the text comes from a
+     theme setting, build it here. innerHTML is read before the copy is inserted,
+     so it never nests; aria-hidden keeps it out of the accessible name. */
+  function inkSplit(el) {
+    if (!el || el.querySelector(".gb-ink-halo")) { return; }
+    var halo = document.createElement("span");
+    halo.className = "gb-ink-halo";
+    halo.setAttribute("aria-hidden", "true");
+    halo.innerHTML = el.innerHTML;
+    el.insertBefore(halo, el.firstChild);
+  }
+
   /* ---------------------------------------------------------------------
    * wowo — scroll reveal, ported 1:1 from the Terra theme (jQuery dropped).
    * Contract: markup carries `class="wowo fadeInUp"`, optional `delay-in-N`
@@ -13,11 +51,27 @@
    * The <noscript> override in each page stays as a second net.
    * ------------------------------------------------------------------- */
   var wowo = {
+    // Client r117: on the first pass the banner and the modules under it are
+    // both in view, so they start together -- and the banner loses, because its
+    // media carries delay-in-1 while the modules below it usually carry none.
+    // The phone then reads bottom-up. Hold the rest back by one beat so the
+    // banner lands first. 700 measured, not guessed: at 400 the gap was 66ms
+    // (still reads as simultaneous), at 900 the modules below arrive at 1.5s
+    // and the page feels held back. Self-chosen either way, no board backing --
+    // see the "awaiting design sign-off" list.
+    FIRST_HOLD: 700,
+    BANNER: ".gb-hero, .gb-page-hero",
+    firstRun: true,
+
     run: function () {
       var wTop = window.pageYOffset || document.documentElement.scrollTop;
       var wHeight = window.innerHeight;
       var wBottom = wTop + wHeight;
-      var els = document.querySelectorAll(".wowo:not(.animated)");
+      // Held elements are excluded so a scroll landing mid-hold cannot start
+      // the same reveal a second time.
+      var els = document.querySelectorAll(".wowo:not(.animated):not([data-wowo-hold])");
+      var first = this.firstRun;
+      this.firstRun = false;
 
       for (var i = 0; i < els.length; i++) {
         var el = els[i];
@@ -27,16 +81,33 @@
         var meBottom = meTop + meHeight;
 
         if (meTop > wTop - meHeight && meBottom < wBottom + meHeight) {
-          this.play(el);
+          if (first && el.closest && !el.closest(this.BANNER)) {
+            this.hold(el, this.FIRST_HOLD);
+          } else {
+            this.play(el);
+          }
         }
       }
     },
 
     play: function (el) {
       el.classList.add("animated");
+      // Terra strips at a flat 1500, which assumes the delay is one of the small
+      // delay-in-N steps. A sequenced step (r122) can start at 900ms, and stripping
+      // mid-fade drops it straight to its end state. Wait out its own delay too.
+      var d = parseFloat(getComputedStyle(el).animationDelay) * 1000;
       setTimeout(function () {
         el.classList.remove("wowo", "animated");
-      }, 1500);
+      }, 1500 + (d > 0 ? d : 0));
+    },
+
+    hold: function (el, ms) {
+      var self = this;
+      el.setAttribute("data-wowo-hold", "");
+      setTimeout(function () {
+        el.removeAttribute("data-wowo-hold");
+        self.play(el);
+      }, ms);
     },
 
     init: function () {
@@ -63,6 +134,7 @@
    * ------------------------------------------------------------------- */
   var header = {
     lockToken: 0,
+    skipFocusOpen: false,
 
     init: function () {
       var el = document.getElementById("site-header");
@@ -77,16 +149,36 @@
         self.set(!el.classList.contains("is-open"));
       });
 
+      // Tab landing on the toggle opens the menu, so the next Tab walks its
+      // links instead of a shut panel. Pointer focus must NOT open it: focus
+      // fires before click, and the click would toggle it straight back shut.
+      // :focus-visible is the only thing that tells the two apart.
+      toggle.addEventListener("focus", function () {
+        if (self.skipFocusOpen) { return; }
+        if (toggle.matches && toggle.matches(":focus-visible")) { self.set(true); }
+      });
+
+      // .focus() dispatches synchronously, so the flag needs no timer. Without
+      // it every close that hands focus back to the toggle reopens the menu --
+      // programmatic focus keeps whatever :focus-visible state came before it.
+      var refocus = function () {
+        self.skipFocusOpen = true;
+        returnFocus(toggle);
+        self.skipFocusOpen = false;
+      };
+
       // On mobile the drawer covers the whole viewport, bar included, so the
       // toggle underneath it is not hit-testable and there is nothing "outside"
       // the panel to click. Its own close button is the only way back out.
       var close = el.querySelector(".gb-header__panel-close");
       if (close) {
-        close.addEventListener("click", function () { self.set(false); });
+        close.addEventListener("click", function () { self.set(false); refocus(); });
       }
 
       document.addEventListener("keydown", function (e) {
-        if (e.key === "Escape") self.set(false);
+        if (e.key !== "Escape" || !el.classList.contains("is-open")) { return; }
+        self.set(false);
+        refocus();           // else focus is stranded on what just slid away
       });
 
       document.addEventListener("click", function (e) {
@@ -99,14 +191,108 @@
           var btn = item.querySelector(".gb-header__link");
           if (!btn) return;
           btn.addEventListener("click", function () {
-            var open = item.classList.toggle("is-open");
-            btn.setAttribute("aria-expanded", open ? "true" : "false");
+            self.expand(item, !item.classList.contains("is-open"));
           });
         })(items[i]);
       }
+
+      // Keyboard reveal. The panel and each sublist are shut by geometry (a 0fr
+      // grid row, translateX on the drawer), never by display, so everything
+      // inside keeps its place in the tab order while invisible -- measured 6
+      // dead stops on desktop, 19 in the phone drawer. Open what the focus lands
+      // in rather than skipping it: the menu is meant to be reachable by Tab.
+      var panel = el.querySelector(".gb-header__panel");
+      el.addEventListener("focusin", function (e) {
+        var sub = e.target.closest && e.target.closest(".gb-header__sublist");
+        var item = sub && sub.closest("[data-collapsible]");
+        if (item) {
+          self.expand(item, true);
+          // The sublist opens on a 0fr -> 1fr row, so the browser's own focus
+          // scroll has already run against the collapsed geometry -- and while
+          // the row is still 0fr there is nothing to scroll. Re-run it once the
+          // row has grown, or the last links land under the drawer's fixed CTA
+          // (tools/menutab.py reads that as a blind stop).
+          (function (target, row) {
+            var again = function () {
+              row.removeEventListener("transitionend", again);
+              if (document.activeElement === target && target.scrollIntoView) {
+                target.scrollIntoView({ block: "nearest" });
+              }
+            };
+            row.addEventListener("transitionend", again);
+          })(e.target, sub);
+        }
+        if (panel && panel.contains(e.target)) { self.set(true); }
+      });
+      el.addEventListener("focusout", function (e) {
+        // A null relatedTarget is the browser chrome, or a click on dead space
+        // inside the panel; neither means the user has left the menu.
+        if (e.relatedTarget && !el.contains(e.relatedTarget)) { self.set(false); }
+      });
+
+      // The panel is the last child of <header>, so in source order the bar's
+      // own controls (logo, Shop now, account, cart) sit between the toggle and
+      // the menu. Reroute the two seams so Tab runs
+      //   toggle -> menu -> rest of the bar -> page.
+      // Only rendered stops count: the other breakpoint's list is display:none
+      // on an ancestor, which leaves each link's own computed display intact --
+      // getClientRects() is the one test that sees through that.
+      var bar = el.querySelector(".gb-header__bar");
+      var shown = function (root, skip) {
+        var all = root.querySelectorAll(FOCUSABLE), out = [];
+        for (var i = 0; i < all.length; i++) {
+          if (all[i] !== skip && all[i].getClientRects().length) { out.push(all[i]); }
+        }
+        return out;
+      };
+      // First rendered stop after the whole header. DOCUMENT_POSITION_PRECEDING
+      // (2) reads "el comes before this node", i.e. the node is past the header.
+      var past = function () {
+        var all = document.querySelectorAll(FOCUSABLE);
+        for (var i = 0; i < all.length; i++) {
+          if (!el.contains(all[i]) && (all[i].compareDocumentPosition(el) & 2)
+              && all[i].getClientRects().length) { return all[i]; }
+        }
+        return null;
+      };
+      el.addEventListener("keydown", function (e) {
+        if (e.key !== "Tab" || !el.classList.contains("is-open")) { return; }
+        // The phone drawer covers the bar and inerts it: there is no second
+        // group to interleave, and the panel already holds every stop.
+        if (!panel || !bar || bar.hasAttribute("inert")) { return; }
+        var inPanel = shown(panel), inBar = shown(bar, toggle);
+        if (!inPanel.length || !inBar.length) { return; }
+        var last = inPanel[inPanel.length - 1], a = document.activeElement;
+        // toggle.focus() re-enters the focus handler, but set() early-returns
+        // on an unchanged state, so reopening here is a no-op.
+        if (!e.shiftKey && a === toggle) { e.preventDefault(); inPanel[0].focus(); }
+        else if (!e.shiftKey && a === last) { e.preventDefault(); inBar[0].focus(); }
+        else if (!e.shiftKey && a === inBar[inBar.length - 1]) {
+          // Third seam, and the one that makes the path terminate: the panel is
+          // the header's LAST child, so a plain Tab off the end of the bar walks
+          // back into the menu and loops forever. Jump past the header instead;
+          // focusout closes the menu on the way out.
+          var nxt = past();
+          if (nxt) { e.preventDefault(); nxt.focus(); }
+        }
+        else if (e.shiftKey && a === inPanel[0]) { e.preventDefault(); toggle.focus(); }
+        else if (e.shiftKey && a === inBar[0]) { e.preventDefault(); last.focus(); }
+      });
+    },
+
+    expand: function (item, open) {
+      item.classList.toggle("is-open", open);
+      var btn = item.querySelector(".gb-header__link");
+      if (btn) { btn.setAttribute("aria-expanded", open ? "true" : "false"); }
     },
 
     set: function (open) {
+      var wasOpen = this.el.classList.contains("is-open");
+      // focusin fires on every Tab step inside an open panel. Re-running the
+      // open path would remeasure --scrollbar-w with the bar already locked --
+      // it reads 0 there, the compensation padding drops and the page steps
+      // sideways.
+      if (open === wasOpen) { return; }
       // Measure the real scrollbar width while it is still on screen: the lock
       // below removes it and the viewport would widen by that much, shunting the
       // page sideways. The is-menu-open rule pads the freed width back in.
@@ -114,25 +300,39 @@
         var scrollbarW = window.innerWidth - document.documentElement.clientWidth;
         document.documentElement.style.setProperty("--scrollbar-w", scrollbarW + "px");
       }
-      var wasOpen = this.el.classList.contains("is-open");
       this.el.classList.toggle("is-open", open);
       var toggle = this.el.querySelector(".gb-header__toggle");
       if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
       // html carries the scroll (the reset puts overflow-x on it), so the lock
       // has to sit on both. The rule itself is scoped to the phone tier.
+      // The phone drawer is fixed and full-viewport, so it covers the bar while
+      // the bar's own links stay tabbable behind it -- 4 more dead stops. Read
+      // the panel's used position rather than repeat the breakpoint here.
+      var panel = this.el.querySelector(".gb-header__panel");
+      var bar = this.el.querySelector(".gb-header__bar");
+      var covered = !!(panel && getComputedStyle(panel).position === "fixed");
       var token = ++this.lockToken;
       if (open) {
+        if (bar && covered) {
+          // Opened from the bar (a click on the toggle): hand focus to the
+          // drawer BEFORE inerting the bar, or the browser drops it to <body>.
+          if (bar.contains(document.activeElement)) {
+            var into = panel.querySelector(".gb-header__panel-close");
+            if (into) { into.focus(); }
+          }
+          bar.setAttribute("inert", "");
+        }
         document.documentElement.classList.add("is-menu-open");
         document.body.classList.add("is-menu-open");
         return;
       }
+      if (bar) { bar.removeAttribute("inert"); }
       // Same shape as modal.close(): dropping the lock in this frame hands the
       // scrollbar back while the drawer is still sliding shut, and the drawer's
       // containing block narrows by that width -- it steps 15px sideways in full
       // view. Hold the lock for the slide-out, which the panel declares itself.
       // Token, not a stored timer id: reopening mid-exit must not let the stale
       // callback unlock the drawer that replaced this one.
-      var panel = this.el.querySelector(".gb-header__panel");
       var ms = (wasOpen && panel) ? modalExitMs(panel) : 0;
       var self = this;
       var run = function () {
@@ -362,9 +562,24 @@
    * ------------------------------------------------------------------- */
   var LINE_ROOT_MARGIN = "0px 0px -5% 0px"; /* ScrollTrigger "top 95%" */
   var LINE_RESIZE_DEBOUNCE = 200;
+  /* Hard cap on waiting for the brand font before revealing. Only a font that
+     is still unresolved this late gets the fallback metrics. */
+  var LINE_FONT_WAIT = 1500;
 
   var lineReveal = {
+    /* The hero plays as one run: the title's lines first, then each item in the CTA
+       block a beat behind the last (client r122). The hooks are set here instead of
+       authored because that markup is the theme's gb-hero.liquid. */
+    wireHero: function () {
+      var text = document.querySelector(".gb-hero__text");
+      if (!text || !text.querySelector(".gb-hero__cta")) { return; }
+      text.setAttribute("data-line-sequence", "");
+      var steps = text.querySelectorAll(".gb-hero__cta > .wowo");
+      for (var i = 0; i < steps.length; i++) { steps[i].setAttribute("data-seq-step", ""); }
+    },
+
     init: function () {
+      this.wireHero();
       var els = document.querySelectorAll("[data-line-reveal]");
       if (!els.length) return;
       this.els = els;
@@ -385,7 +600,16 @@
          with the mask count still at 2 so the animation slid two lines at once.
          So re-split once the font lands. groupLines is idempotent (it unwraps the
          old masks and rebuilds against the current wrap points) and paragraphs
-         that already revealed go through is-settled straight to the end state. */
+         that already revealed go through is-settled straight to the end state.
+
+         ⚠ r132: that end-state shortcut is why the reveal must NOT start before
+         the font is in. Measured cold: split at 490ms, hero revealed at 492ms,
+         font landed at 824ms -- the re-split caught both hero blocks mid-run and
+         settled them, so the entrance played half way and then every line
+         appeared at once. Warm loads never showed it because fonts.ready beats
+         the timer. So the wait below gates the REVEAL, not just the split, and
+         a host that is still animating when the font lands is re-split after its
+         own run ends rather than during it. */
       var started = false;
       var refined = false;
 
@@ -399,15 +623,12 @@
         if (refined) return;
         refined = true;
         if (!started) { start(); return; }   // font was fast; the first split already used it
-        for (var n = 0; n < self.els.length; n++) {
-          try { self.split(self.els[n]); } catch (e) { /* leave last-good state */ }
-        }
-        self.sequence();
+        for (var n = 0; n < self.els.length; n++) { self.resplitWhenIdle(self.els[n]); }
       };
 
       if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === "function") {
         document.fonts.ready.then(refine, refine);
-        window.setTimeout(start, 500);
+        window.setTimeout(start, LINE_FONT_WAIT);
       } else {
         start();
       }
@@ -446,6 +667,29 @@
           self.sequence();
         }, LINE_RESIZE_DEBOUNCE);
       });
+    },
+
+    /* Re-split against the font that just landed, but never on top of a running
+       entrance: groupLines sends a revealing host straight to its end state, so
+       doing it mid-run stops the animation dead. Wait out whatever is left of
+       this host's own lines first -- by then the shortcut is a no-op. */
+    resplitWhenIdle: function (el) {
+      var self = this;
+      var wait = 0;
+      if (el.getAnimations) {
+        var anims = el.getAnimations({ subtree: true });
+        for (var i = 0; i < anims.length; i++) {
+          if (anims[i].playState !== "running" || !anims[i].effect) continue;
+          var end = anims[i].effect.getComputedTiming().endTime || 0;
+          var left = end - (anims[i].currentTime || 0);
+          if (left > wait) wait = left;
+        }
+      }
+      var run = function () {
+        try { self.split(el); } catch (e) { /* leave last-good state */ }
+        self.sequence();
+      };
+      if (wait > 0) { window.setTimeout(run, wait + 50); } else { run(); }
     },
 
     runInitialSplit: function () {
@@ -611,13 +855,132 @@
     sequence: function () {
       var groups = document.querySelectorAll("[data-line-sequence]");
       for (var g = 0; g < groups.length; g++) {
-        var hosts = groups[g].querySelectorAll("[data-line-reveal]");
+        // [data-seq-step] is a whole element (a button, a list) rather than text,
+        // so it takes one beat; a line host takes as many as it has lines.
+        var hosts = groups[g].querySelectorAll("[data-line-reveal], [data-seq-step]");
         var base = 0;
         for (var h = 0; h < hosts.length; h++) {
           hosts[h].style.setProperty("--line-base", base);
-          base += hosts[h].querySelectorAll(".gb-line-mask").length || 1;
+          base += hosts[h].hasAttribute("data-line-reveal")
+            ? (hosts[h].querySelectorAll(".gb-line-mask").length || 1)
+            : 1;
         }
       }
+    }
+  };
+
+  /* ---------------------------------------------------------------------
+   * reelPlayer — a reel card plays where it stands (client r123). It used to open
+   * the shared lightbox; that dialog and its styles are gone.
+   *
+   * data-video takes either a media file or a hosted page (YouTube, Vimeo). Only a
+   * file can go in <video>: given a watch URL it fetches an HTML page and fails
+   * silently, black frame and no error. A hosted page is embedded instead.
+   * ------------------------------------------------------------------- */
+  var reelPlayer = {
+    init: function () {
+      var cards = document.querySelectorAll("[data-reel]");
+      if (!cards.length) return;
+      var self = this;
+      for (var i = 0; i < cards.length; i++) {
+        (function (card) {
+          var trigger = card.querySelector("[data-reel-play]");
+          if (!trigger) return;
+          trigger.addEventListener("click", function () { self.play(card, trigger); });
+        })(cards[i]);
+      }
+    },
+
+    // youtube-nocookie is YouTube's own privacy-enhanced host.
+    embedUrl: function (src) {
+      var m = src.match(/(?:youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{6,})/);
+      if (m) {
+        var t = src.match(/[?&#]t=(\d+)/);
+        return "https://www.youtube-nocookie.com/embed/" + m[1] +
+               "?autoplay=1&rel=0&playsinline=1" + (t ? "&start=" + t[1] : "");
+      }
+      m = src.match(/(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/);
+      if (m) { return "https://player.vimeo.com/video/" + m[1] + "?autoplay=1"; }
+      return null;
+    },
+
+    play: function (card, trigger) {
+      if (card.querySelector("[data-reel-node]")) { return; }   // already playing
+      var src = trigger.getAttribute("data-video");
+      if (!src) { return; }
+      this.stopAll(card);
+      var embed = this.embedUrl(src);
+      var node;
+
+      // YouTube and Vimeo refuse a null origin, which is exactly what a file://
+      // page has, and render their own error in place of the video. The client
+      // previews by double-clicking, so say why. Never runs off file://.
+      if (embed && location.protocol === "file:") {
+        node = document.createElement("div");
+        node.className = "gb-reel__offline";
+        node.setAttribute("data-reel-node", "");
+        var msg = document.createElement("span");
+        msg.textContent = "Hosted video cannot play from a local file.";
+        var link = document.createElement("a");
+        link.className = "gb-reel__offline-link";
+        link.href = src;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.textContent = "Open it in a new tab";
+        node.appendChild(msg);
+        node.appendChild(link);
+      } else if (embed) {
+        node = document.createElement("iframe");
+        node.className = "gb-reel__embed";
+        node.setAttribute("data-reel-node", "");
+        node.title = "Customer reel";
+        node.allow = "autoplay; encrypted-media; picture-in-picture";
+        node.setAttribute("allowfullscreen", "");
+        node.src = embed;
+      } else {
+        node = document.createElement("video");
+        node.className = "gb-reel__video";
+        node.setAttribute("data-reel-node", "");
+        node.playsInline = true;
+        node.controls = true;
+        node.setAttribute("aria-label", trigger.getAttribute("aria-label") || "Customer reel");
+        node.src = src;
+      }
+
+      trigger.hidden = true;
+      card.classList.add("is-playing");
+      card.appendChild(node);
+      if (node.tagName === "VIDEO") {
+        // Inside the click's gesture, so audio is allowed; a refusal still rejects
+        // and must not surface as an unhandled rejection.
+        var pr = node.play();
+        if (pr && pr.catch) { pr.catch(function () {}); }
+      }
+    },
+
+    // One at a time: ten cards playing at once is ten audio tracks.
+    stopAll: function (except) {
+      var open = document.querySelectorAll("[data-reel].is-playing");
+      for (var i = 0; i < open.length; i++) {
+        if (open[i] === except) { continue; }
+        this.stop(open[i]);
+      }
+    },
+
+    stop: function (card) {
+      var node = card.querySelector("[data-reel-node]");
+      if (!node) { return; }
+      // Pausing first stops the audio in the same frame the node goes away; for the
+      // iframe, removing it is the only way to stop a third-party player.
+      if (node.tagName === "VIDEO") {
+        node.pause();
+        node.removeAttribute("src");
+        node.load();
+      }
+      card.removeChild(node);
+      card.classList.remove("is-playing");
+      var trigger = card.querySelector("[data-reel-play]");
+      if (trigger) { trigger.hidden = false; }
     }
   };
 
@@ -697,30 +1060,104 @@
   };
 
   /* ---------------------------------------------------------------------
-   * accordion — one open item per group.
+   * accordion — jQuery-style slideUp/slideDown, one open row per group.
    *
-   * Native <details name="…"> does the work: the browser keeps one item open per
-   * name, and keyboard, the a11y tree and the no-JS case are unaffected
-   * (Chrome 120+ / Safari 17.2+ / Firefox 130+). This only covers older browsers,
-   * which ignore name as an unknown attribute and open several at once.
+   * The element stays a native <details>: open/close, keyboard and the a11y tree
+   * are the browser's, and a dead main.js still opens rows (round 13 shipped a
+   * JS+grid version that reported as "does not open at all" when the script did
+   * not land). This module only replaces the ANIMATION and the exclusivity.
    *
-   * No feature detection: where it is supported the others are already closed and
-   * this loop is a no-op, while `'name' in HTMLDetailsElement.prototype` reports
-   * support on some versions that do not have it.
+   * Why not ::details-content: Safari < 18.4 has no such pseudo-element, so the
+   * CSS slide simply does not run there. Animating .gb-acc-body's own box gives
+   * every browser the same motion. The stylesheet keeps the CSS slide behind
+   * `html:not(.js-acc)` -- this module sets .js-acc, so if it never runs the CSS
+   * one is still there.
    * ------------------------------------------------------------------- */
+  /* Live renders these rows from blocks/_gb-accordion-row.liquid, which emits no
+   * name=, so nothing there is exclusive. One group per accordion container; the
+   * static build already ships the attribute and never enters this branch. */
+  var ACC_HOSTS = ".gb-product__accordion, .gb-faq__list, .gb-faq-image__list";
+  var ACC_MS = 400;                                  // jQuery's slideUp/slideDown default
+  var ACC_EASE = "cubic-bezier(0.42, 0, 0.58, 1)";   // approximates jQuery's `swing`
+
+  function nameAccordionGroups() {
+    var hosts = document.querySelectorAll(ACC_HOSTS);
+    for (var i = 0; i < hosts.length; i++) {
+      var rows = hosts[i].querySelectorAll("details:not([name])");
+      for (var j = 0; j < rows.length; j++) {
+        rows[j].setAttribute("name", "gb-acc-" + i);
+      }
+    }
+  }
+
+  /* Height only. jQuery also animates the vertical padding, but here that moves
+   * the copy DOWN as the row opens -- the box grows from the top while the text
+   * is being pushed off the padding, which reads as a wobble. ::details-content
+   * is already clipping, so a padding that never animates is never visible.
+   * ⚠ Reads offsetHeight while open: the row must already be open when this is
+   * called for a slideDown, or the target height is 0. */
+  function accSlide(item, open) {
+    var body = item.querySelector(".gb-acc-body");
+    if (!body || !body.animate) { item.open = open; return; }
+    if (item.gbAccAnim) { item.gbAccAnim.cancel(); }
+    if (open) { item.open = true; }
+
+    var end = body.offsetHeight + "px";
+    body.style.overflow = "hidden";
+
+    /* fill: forwards, and the row is shut BEFORE the fill is dropped. Without it
+     * the closing animation ends, height falls back to auto for one frame while
+     * ::details-content is still open, and the panel flashes back to full height
+     * on its way out. */
+    var anim = body.animate(
+      [{ height: open ? "0px" : end }, { height: open ? end : "0px" }],
+      { duration: prefersReduced() ? 0 : ACC_MS, easing: ACC_EASE, fill: "forwards" });
+    item.gbAccAnim = anim;
+    anim.onfinish = function () {
+      if (!open) { item.open = false; }
+      anim.cancel();
+      body.style.overflow = "";
+      item.gbAccAnim = null;
+    };
+  }
+
+  function prefersReduced() {
+    return matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
   var accordion = {
     init: function () {
-      var all = document.querySelectorAll("details[name]");
-      for (var i = 0; i < all.length; i++) {
+      nameAccordionGroups();
+      var items = document.querySelectorAll(".gb-faq__item, .gb-product__acc-item");
+      if (!items.length) { return; }
+      document.documentElement.classList.add("js-acc");
+
+      for (var i = 0; i < items.length; i++) {
         (function (d) {
-          d.addEventListener("toggle", function () {
-            if (!d.open) { return; }
-            var group = document.querySelectorAll('details[name="' + d.getAttribute("name") + '"]');
-            for (var j = 0; j < group.length; j++) {
-              if (group[j] !== d && group[j].open) { group[j].open = false; }
+          var row = d.querySelector("summary");
+          if (!row) { return; }
+          /* Park the group on a data attribute: with name= still on the element
+           * the browser closes its siblings the instant `open` is set, which cuts
+           * their slideUp off mid-flight. Without JS the attribute stays put and
+           * native exclusivity keeps working. */
+          var group = d.getAttribute("name");
+          if (group) {
+            d.setAttribute("data-acc-group", group);
+            d.removeAttribute("name");
+          }
+
+          row.addEventListener("click", function (e) {
+            e.preventDefault();
+            var opening = !d.open;
+            if (opening && group) {
+              var sib = document.querySelectorAll('[data-acc-group="' + group + '"]');
+              for (var j = 0; j < sib.length; j++) {
+                if (sib[j] !== d && sib[j].open) { accSlide(sib[j], false); }
+              }
             }
+            accSlide(d, opening);
           });
-        })(all[i]);
+        })(items[i]);
       }
     }
   };
@@ -768,9 +1205,12 @@
       });
 
       document.addEventListener("keydown", function (e) {
-        if (!self.current) return;
+        if (e.key !== "Escape" && e.key !== "Tab") { return; }
+        // Not `current` alone: a dialog that arrived already open never set it.
+        var el = self.current || self.showing();
+        if (!el) { return; }
         if (e.key === "Escape") { self.close(); return; }
-        if (e.key === "Tab") self.trap(e);
+        self.trap(e, el);
       });
 
       this.tabs();
@@ -783,7 +1223,6 @@
       if (this.current) { this.close(); }
       this.lastFocus = document.activeElement;
       this.current = el;
-      this.playVideo(el, trigger);   // before is-open: an empty frame would fade in first
       el.classList.add("is-open");
       el.setAttribute("aria-hidden", "false");
       /* html carries the scroll, body does not: the reset sets overflow-x on
@@ -805,10 +1244,9 @@
     },
 
     close: function () {
-      var el = this.current;
+      var el = this.current || this.showing();
       if (!el) return;
       this.current = null;
-      this.stopVideo(el);   // not in unlockAfter: sound must stop before the fade
       el.classList.remove("is-open");
       el.setAttribute("aria-hidden", "true");
       // The lock stays on until the exit has played. Dropping it here hands the
@@ -816,7 +1254,26 @@
       // position:fixed -- its containing block is the viewport, which narrows by
       // the scrollbar width -- so the centred panel jumps sideways mid-fade.
       this.unlockAfter(modalExitMs(el), el);
-      if (this.lastFocus) this.lastFocus.focus();
+      returnFocus(this.lastFocus);
+    },
+
+    // A dialog of ours that is on screen without having gone through open().
+    // Two conditions, both load-bearing:
+    //   [data-modal-close] inside -- the test for "ours to drive". The live cart
+    //     drawer also ships is-open, but two of its three branches wire the
+    //     overlay to the theme's own close command; adopting those would have us
+    //     fight Horizon over the same drawer.
+    //   getClientRects()          -- it has to actually be on screen. That same
+    //     drawer sits inside a <dialog> that decides whether it shows, so the
+    //     class alone would match a shut drawer and close something invisible.
+    showing: function () {
+      var all = document.querySelectorAll('[role="dialog"].is-open');
+      for (var i = 0; i < all.length; i++) {
+        if (all[i].querySelector("[data-modal-close]") && all[i].getClientRects().length) {
+          return all[i];
+        }
+      }
+      return null;
     },
 
     // A token rather than a stored timer id: open() can land inside the wait, and
@@ -829,116 +1286,12 @@
         document.documentElement.classList.remove("is-modal-open");
         document.body.classList.remove("is-modal-open");
         smoothScroll.resume();
-        // Media state goes only once the exit has played: drop it in close()
-        // and the emptied black frame is swapped for the grey placeholder
-        // while the panel is still fully opaque.
-        if (el) { el.classList.remove("has-video", "has-embed"); }
       };
       if (ms > 0) { setTimeout(run, ms); } else { run(); }
     },
 
-    // data-video takes either a media file or a hosted page (YouTube, Vimeo).
-    // Only a file can go in <video>: given a watch URL it fetches an HTML page
-    // and fails silently, black frame and no error. A hosted page has to be
-    // embedded instead, so this returns the player URL when it recognises one.
-    // youtube-nocookie is YouTube's own privacy-enhanced host.
-    embedUrl: function (src) {
-      var m = src.match(/(?:youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{6,})/);
-      if (m) {
-        var t = src.match(/[?&#]t=(\d+)/);
-        return "https://www.youtube-nocookie.com/embed/" + m[1] +
-               "?autoplay=1&rel=0&playsinline=1" + (t ? "&start=" + t[1] : "");
-      }
-      m = src.match(/(?:player\.)?vimeo\.com\/(?:video\/)?(\d+)/);
-      if (m) { return "https://player.vimeo.com/video/" + m[1] + "?autoplay=1"; }
-      return null;
-    },
-
-    // One dialog serves all ten reel cards. [data-modal-media] is an empty box:
-    // the element is built here from what data-video turns out to be, so the
-    // markup carries neither a <video> nor an <iframe> it may not need.
-    playVideo: function (el, trigger) {
-      var box = el.querySelector("[data-modal-media]");
-      if (!box) { return; }
-      this.stopVideo(el);
-      var src = trigger ? trigger.getAttribute("data-video") : null;
-      var embed = src ? this.embedUrl(src) : null;
-      el.classList.toggle("has-video", !!src && !embed);
-      el.classList.toggle("has-embed", !!embed);
-      if (!src) { return; }
-
-      var node;
-      // YouTube (and Vimeo) refuse a null origin, which is exactly what a
-      // file:// page has, and render their own "Error 153" in place of the
-      // video. The client previews by double-clicking, so say why instead of
-      // leaving them to read that as a broken page. Never runs off file://.
-      if (embed && location.protocol === "file:") {
-        node = document.createElement("div");
-        node.className = "gb-rv-panel__offline";
-        node.setAttribute("data-modal-node", "");
-        var msg = document.createElement("p");
-        msg.className = "gb-rv-panel__offline-text";
-        msg.textContent = "Hosted video needs a real address. Opened from a local " +
-                          "file, YouTube blocks its own player (error 153).";
-        var link = document.createElement("a");
-        link.className = "gb-rv-panel__offline-link";
-        link.href = src;
-        link.target = "_blank";
-        link.rel = "noopener";
-        link.textContent = "Open the video in a new tab";
-        node.appendChild(msg);
-        node.appendChild(link);
-        box.appendChild(node);
-        return;
-      }
-      if (embed) {
-        node = document.createElement("iframe");
-        node.className = "gb-rv-panel__embed";
-        node.setAttribute("data-modal-node", "");
-        node.title = "Customer reel";
-        // Set before src: permissions are read when the frame starts loading.
-        node.setAttribute("allow", EMBED_ALLOW);
-        node.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
-        node.setAttribute("allowfullscreen", "");
-        node.src = embed;
-        box.appendChild(node);
-        return;
-      }
-
-      node = document.createElement("video");
-      node.className = "gb-rv-panel__player";
-      node.setAttribute("data-modal-node", "");
-      node.playsInline = true;
-      node.controls = true;
-      node.setAttribute("aria-label", "Customer reel");
-      node.src = src;
-      box.appendChild(node);
-      // Inside the click's gesture, so audio is allowed; a refusal still
-      // rejects and must not surface as an unhandled rejection.
-      var pr = node.play();
-      if (pr && pr.catch) { pr.catch(function () {}); }
-    },
-
-    stopVideo: function (el) {
-      var box = el ? el.querySelector("[data-modal-media]") : null;
-      if (!box) { return; }
-      // By hook, not by tag name: what got built depends on the source, and
-      // file:// gets a plain <div> explaining why the embed cannot run.
-      var node = box.querySelector("[data-modal-node]");
-      if (!node) { return; }
-      // Pausing first stops the audio in the same frame the node goes away;
-      // for the iframe, removing it is the only way to stop a third-party
-      // player, which otherwise keeps running for as long as it has a src.
-      if (node.tagName === "VIDEO") {
-        node.pause();
-        node.removeAttribute("src");
-        node.load();
-      }
-      box.removeChild(node);
-    },
-
-    trap: function (e) {
-      var f = this.current.querySelectorAll(FOCUSABLE);
+    trap: function (e, el) {
+      var f = (el || this.current).querySelectorAll(FOCUSABLE);
       if (!f.length) return;
       var first = f[0], last = f[f.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
@@ -978,6 +1331,9 @@
     init: function () {
       var el = document.getElementById("promo-modal");
       if (!el) return;
+      // Runs before the open timer below, so the halo is in place the first
+      // time the panel is painted -- inserting it later reflows the heading.
+      inkSplit(el.querySelector(".gb-promo-panel__title"));
       this.bindForm(el);
       this.bindCopy(el);
 
@@ -1341,7 +1697,12 @@
     init: function () {
       var form = document.querySelector("[data-prefill-enquiry]");
       if (!form) return;
-      var select = form.querySelector("#enquiry");
+      // ⚠ Not #enquiry: the theme's contact section suffixes every field id with
+      // its own section id (enquiry-template--...__form), so that id only ever
+      // existed on the static page. The name is the stable hook -- Shopify wraps
+      // it as contact[...] and the static form posts it bare.
+      var select = form.querySelector(
+        'select[name="enquiry"], select[name="contact[enquiry]"]');
       if (!select) return;
 
       var want = (new URLSearchParams(window.location.search).get("type") || "").toLowerCase();
@@ -1544,7 +1905,7 @@
       box.wrap.classList.remove("is-open");
       box.btn.setAttribute("aria-expanded", "false");
       box.list.removeAttribute("aria-activedescendant");
-      if (refocus) { box.btn.focus(); }
+      if (refocus) { returnFocus(box.btn); }
     },
 
     move: function (box, i) {
@@ -1610,7 +1971,7 @@
    * ------------------------------------------------------------------- */
   var smoothScroll = {
     // Every overflow-y:auto container on the site has to be registered here
-    PREVENT: ".gb-product__thumbs, .gb-header__panel, .gb-nl-panel__body, .gb-select__list, .gb-cart__body, .gb-cart__empty",
+    PREVENT: ".gb-product__thumbs, .gb-header__panel, .gb-header__panel-clip, .gb-nl-panel__body, .gb-select__list, .gb-cart__body, .gb-cart__empty, .gb-field__input--area, .gb-promo-panel",
 
     lenis: null,
 
@@ -1627,7 +1988,10 @@
       }
 
       this.lenis = new Lenis({
-        duration: 1,
+        // Client r129: "weaker". easeOutExpo's long tail is what reads as drift,
+        // and duration is how long that tail runs -- 1s -> 0.6s keeps the curve
+        // (still smooth, not stepped) and cuts the coast. House value, no board.
+        duration: 0.6,
         // easeOutExpo: quick start, long tail — the difference between smooth and sticky
         easing: function (t) { return t === 1 ? 1 : 1 - Math.pow(2, -10 * t); },
         smoothWheel: true,
@@ -1689,6 +2053,77 @@
     }
   };
 
+  /* ---------------------------------------------------------------------
+   * cartDrawer — resync a drawer the theme rendered already open.
+   *
+   * /cart ships it expanded by putting `open` on the inner <dialog>, but
+   * <theme-drawer>'s own open attribute stays unset. Its close() guards on that
+   * attribute, so the close button and the overlay -- both wired to
+   * `#cart-drawer/close` -- do nothing until something toggles it once. Escape
+   * still works because that is the dialog's native path, which skips the
+   * component. Handing the component the state it is missing costs no repaint:
+   * the panel does not move (measured over a full second).
+   * ------------------------------------------------------------------- */
+  var cartDrawer = {
+    init: function () {
+      var self = this;
+      this.guardInitialFocus();
+      // Attribute callbacks only exist once the element is upgraded, and the
+      // theme's own setup should land first -- whenDefined resolves right away
+      // if it already is, so the frame is what actually orders us after it.
+      var run = function () {
+        requestAnimationFrame(function () { self.resync(); });
+      };
+      if (window.customElements && customElements.whenDefined) {
+        customElements.whenDefined("theme-drawer").then(run, run);
+      } else { run(); }
+    },
+
+    /* The drawer is Horizon's <dialog>, so the [role=dialog][tabindex=-1] rule
+       that keeps OUR modals from ringing their close button never reaches it:
+       showModal() hands initial focus to the first focusable child, which is
+       .gb-cart__close. Landing straight on /cart opens the drawer during load,
+       so that focus has no user gesture behind it -- the drawer appears with its
+       close control looking selected. Mark it the way returnFocus marks a
+       handed-back focus (r121); a real key or blur clears the mark.
+       ⚠ Armed only until the first real input. After that, focus landing there
+       is the user's own doing and has to keep its ring -- a keyboard user who
+       tabs to this button must still see where they are. */
+    guardInitialFocus: function () {
+      var armed = true;
+      var types = ["keydown", "pointerdown", "touchstart"];
+      var disarm = function () {
+        armed = false;
+        for (var j = 0; j < types.length; j++) {
+          document.removeEventListener(types[j], disarm, true);
+        }
+      };
+      for (var i = 0; i < types.length; i++) {
+        document.addEventListener(types[i], disarm, true);
+      }
+
+      var mark = function (node) {
+        var btn = node && node.closest ? node.closest(".gb-cart__close") : null;
+        if (btn) { markRefocused(btn); }
+      };
+      // The theme can open and focus the drawer before this file even parses.
+      mark(document.activeElement);
+      document.addEventListener("focusin", function (e) {
+        if (armed) { mark(e.target); }
+      }, true);
+    },
+
+    resync: function () {
+      var host = document.getElementById("cart-drawer");
+      if (!host) return;
+      var dialog = host.querySelector("dialog");
+      // Act on the split state only. A drawer that starts shut, or one the
+      // theme opens itself later, already has both halves in step.
+      if (!dialog || !dialog.open || host.hasAttribute("open")) { return; }
+      host.setAttribute("open", "");
+    }
+  };
+
   function ready(fn) {
     if (document.readyState !== "loading") { fn(); }
     else { document.addEventListener("DOMContentLoaded", fn); }
@@ -1698,11 +2133,12 @@
     // One IIFE, ten modules: without a boundary the first throw takes every
     // module after it with it, silently -- the page renders and simply stops
     // responding from that point on. Failing one module is the smaller loss.
-    var modules = [["scrollbarProbe", scrollbarProbe],
+    var modules = [["scrollbarProbe", scrollbarProbe], ["cartDrawer", cartDrawer],
                    ["wowo", wowo], ["header", header], ["bearMeter", bearMeter],
                    ["packBand", packBand],
                    ["popText", popText], ["countUp", countUp], ["lineReveal", lineReveal], ["modal", modal], ["promoModal", promoModal],
                    ["slider", slider], ["gallery", gallery], ["accordion", accordion],
+                   ["reelPlayer", reelPlayer],
                    ["smoothScroll", smoothScroll], ["enquiryPrefill", enquiryPrefill],
                    ["selectBox", selectBox]];
     for (var i = 0; i < modules.length; i++) {
@@ -1719,5 +2155,6 @@
                   lineReveal: lineReveal, modal: modal, promoModal: promoModal, slider: slider,
                   gallery: gallery, accordion: accordion,
                   smoothScroll: smoothScroll, enquiryPrefill: enquiryPrefill,
-                  selectBox: selectBox, scrollbarProbe: scrollbarProbe };
+                  selectBox: selectBox, scrollbarProbe: scrollbarProbe,
+                  cartDrawer: cartDrawer, reelPlayer: reelPlayer };
 })();

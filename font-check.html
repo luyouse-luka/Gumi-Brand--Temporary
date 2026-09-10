@@ -6,9 +6,9 @@
 <title>Gumi — 构建自检（开发用，不属于站点）</title>
 <!-- 故意不带 ?v=：这页要读的就是「浏览器当前手上的那份 style.css」是哪一版 -->
 <script>(function(h){h.classList.add("js");function u(){window.gumi||h.classList.remove("js")}addEventListener("load",u);setTimeout(u,10000)})(document.documentElement)</script>
-<link rel="icon" href="images/favicon.ico?v=20260908-r98" sizes="32x32">
-<link rel="icon" href="images/favicon.svg?v=20260908-r98" type="image/svg+xml">
-<link rel="apple-touch-icon" href="images/favicon-180.png?v=20260908-r98">
+<link rel="icon" href="images/favicon.ico?v=20260909-r135" sizes="32x32">
+<link rel="icon" href="images/favicon.svg?v=20260909-r135" type="image/svg+xml">
+<link rel="apple-touch-icon" href="images/favicon-180.png?v=20260909-r135">
 <link rel="stylesheet" href="assets/customstyle.css">
 <style>
   body { margin:0; padding:28px; background:#fff; color:#111;
@@ -155,10 +155,13 @@ function run() {
        return cs.scrollSnapType === "none" && cs.overflowX === "hidden" &&
               parseFloat(cs.columnGap) > 0;
      })],
-    ["reel 视频弹窗外壳 .rv-modal（第十一轮）",
-     probe('<div class="gb-rv-modal"><div class="gb-rv-panel"></div></div>', function (el) {
-       return getComputedStyle(el).visibility === "hidden" &&
-              getComputedStyle(el.querySelector(".gb-rv-panel")).aspectRatio.indexOf("304") > -1;
+    // 第一二三轮：客户要求 reel 就地播放，弹窗外壳 .gb-rv-* 整套已删，改验新外壳
+    ["reel 就地播放外壳 .gb-reel__trigger（第一二三轮）",
+     probe('<div class="gb-reel"><button class="gb-reel__trigger"></button></div>', function (el) {
+       var t = el.querySelector(".gb-reel__trigger");
+       return getComputedStyle(t).position === "absolute" &&
+              getComputedStyle(t).cursor === "pointer" &&
+              getComputedStyle(el).overflow === "hidden";
      })],
     ["logo 不再 object-fit:cover（第六轮）",
      probe('<img class="gb-logo-scroll__img">', function (el) {
