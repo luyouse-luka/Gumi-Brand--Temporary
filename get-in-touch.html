@@ -6,10 +6,10 @@
 <title>Gumi — Get in Touch</title>
 <meta name="description" content="Send it through, we'll get back to you before your next gumi.">
 <script>(function(h){h.classList.add("js");function u(){window.gumi||h.classList.remove("js")}addEventListener("load",u);setTimeout(u,10000)})(document.documentElement)</script>
-<link rel="icon" href="images/favicon.ico?v=20260910-r136" sizes="32x32">
-<link rel="icon" href="images/favicon.svg?v=20260910-r136" type="image/svg+xml">
-<link rel="apple-touch-icon" href="images/favicon-180.png?v=20260910-r136">
-<link rel="stylesheet" href="assets/customstyle.css?v=20260910-r136">
+<link rel="icon" href="images/favicon.ico?v=20260910-r137" sizes="32x32">
+<link rel="icon" href="images/favicon.svg?v=20260910-r137" type="image/svg+xml">
+<link rel="apple-touch-icon" href="images/favicon-180.png?v=20260910-r137">
+<link rel="stylesheet" href="assets/customstyle.css?v=20260910-r137">
 <noscript><style>.wowo{opacity:1 !important}</style></noscript>
 </head>
 <body>
@@ -158,8 +158,13 @@
             <div class="gb-field">
               <label class="gb-field__label" for="phone">Phone number</label>
               <div class="gb-field__phone">
-                <select aria-label="Country code" name="country" data-select="bare">
-                  <option value="AU">AU</option>
+                <select aria-label="Country code" name="country" data-select="bare" data-phone-code>
+                  <option value="AU" data-dial="+61">AU</option>
+                  <option value="NZ" data-dial="+64">NZ</option>
+                  <option value="US" data-dial="+1">US</option>
+                  <option value="GB" data-dial="+44">GB</option>
+                  <option value="CA" data-dial="+1">CA</option>
+                  <option value="SG" data-dial="+65">SG</option>
                 </select>
                 <input type="tel" id="phone" name="phone" placeholder="+61 400 000 000">
               </div>
@@ -400,11 +405,11 @@
               <div class="gb-cart__pay">
                 <p class="gb-cart__pay-note">Discount codes applied at checkout</p>
                 <div class="gb-cart__pay-marks">
-            <img src="images/pay-visa.svg?v=20260910-r136" alt="visa" width="35" height="24" loading="lazy" decoding="async">
-            <img src="images/pay-mastercard.svg?v=20260910-r136" alt="mastercard" width="35" height="24" loading="lazy" decoding="async">
-            <img src="images/pay-applepay.svg?v=20260910-r136" alt="applepay" width="35" height="24" loading="lazy" decoding="async">
-            <img src="images/pay-amex.svg?v=20260910-r136" alt="amex" width="35" height="24" loading="lazy" decoding="async">
-            <img src="images/pay-paypal.svg?v=20260910-r136" alt="paypal" width="35" height="24" loading="lazy" decoding="async">
+            <img src="images/pay-visa.svg?v=20260910-r137" alt="visa" width="35" height="24" loading="lazy" decoding="async">
+            <img src="images/pay-mastercard.svg?v=20260910-r137" alt="mastercard" width="35" height="24" loading="lazy" decoding="async">
+            <img src="images/pay-applepay.svg?v=20260910-r137" alt="applepay" width="35" height="24" loading="lazy" decoding="async">
+            <img src="images/pay-amex.svg?v=20260910-r137" alt="amex" width="35" height="24" loading="lazy" decoding="async">
+            <img src="images/pay-paypal.svg?v=20260910-r137" alt="paypal" width="35" height="24" loading="lazy" decoding="async">
                 </div>
               </div>
               <button class="gb-cart__continue" type="button" data-modal-close>Continue Shopping</button>
@@ -446,7 +451,7 @@
     </div>
 
 
-  <script src="assets/lenis.min.js?v=20260910-r136"></script>
-  <script src="assets/main.js?v=20260910-r136"></script>
+  <script src="assets/lenis.min.js?v=20260910-r137"></script>
+  <script src="assets/main.js?v=20260910-r137"></script>
 </body>
 </html>

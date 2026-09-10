@@ -33,7 +33,7 @@
 // font url()s read it. Previewing over file:// caches css/js/woff2 until a hard
 // refresh, so without it a real change reads as "nothing happened".
 // font-check.html prints the value the browser actually got.
-$build: "20260910-r136";
+$build: "20260910-r137";
 
 // Brand
 $c-lime:        #b5ed61;
@@ -10580,12 +10580,14 @@ html.is-menu-open {
 // 196:18033 marks the chosen row with a check at the far edge (20 box, 13.33 x
 // 9.17 ink, 1.667 round stroke). ::after rather than markup: role="option" takes
 // its accessible name from the text, and an empty pseudo stays out of it.
-// ⚠ Only the default variant. --bare is the phone country code, one option that
-//   is always selected, and --inline is the cart's interval list, whose open
-//   state the client ruled out of scope in r76.
+// ⚠ Everything except --inline, the cart's interval list, whose open state the
+//   client ruled out of scope in r76.
+//   --bare (the phone country code) was excluded here too until r137, when its
+//   list went from one option to six: with a single always-selected row a tick
+//   said nothing, with six there is no other way to see which one is current.
 // The board draws the tick #000 on a #656565 row; ours follows the row's own
 // $c-green (see [aria-selected] above) -- black beside green reads as a slip.
-.gb-select:not(.gb-select--bare):not(.gb-select--inline) {
+.gb-select:not(.gb-select--inline) {
   .gb-select__option {
     display: flex;
     align-items: center;
@@ -10629,6 +10631,16 @@ html.is-menu-open {
     right: auto;
     width: max-content;
     min-width: 100%;
+    // The base cap (224) was sized for five 40px rows; r137 made this list six,
+    // which lands 26px over it and leaves the last row half-cut at the scroll
+    // edge -- that reads as a rendering fault, not as "there is more below".
+    // Derived, not eyeballed: 6 rows x 40 + the list's own 4/4 padding + its
+    // 1/1 border, which border-box counts inside max-height. Leaving the border
+    // out costs exactly 2px and still clips -- invisible by eye, caught by
+    // tools/phonecode.py reading clientHeight against scrollHeight.
+    // ⚠ Add a seventh country and this needs recomputing (or the row goes back
+    //   to being clipped). No board backing for the number -- see PROJECT-STATUS.
+    max-height: 6 * 40px + 8px + 2px;
   }
 
   // Same 14 mirrored: the field pads 10 top and bottom, so the trigger's line

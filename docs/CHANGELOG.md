@@ -109,6 +109,114 @@
 
 </details>
 
+## 第一三七轮（2026-09-10）— 电话区号从 AU 一个扩到六个，placeholder 跟随（`$build` = `20260910-r137`）
+
+需求方：「表单这个下拉只有 AU，需要多增加几个，补充一下」。
+经确认：**AU / NZ / US / GB / CA / SG**，保持稿上的 ISO 两字母，
+且**切换时表单里默认的电话区号要跟着改变**。
+
+⚠ **稿里没有依据** —— `196:18017`（下拉的设计稿）只画了 Enquiry Type 的四项，
+get-in-touch 板的电话字段就是孤零零一个 `AU`。国家范围是需求方直接拍板的，不是还原。
+历史上这个状态也被记过：`--bare` 变体「只有一个选项且恒选中」。
+
+### 1. 六个国家 + 区号挂在 option 上
+
+```html
+<select ... data-select="bare" data-phone-code>
+  <option value="AU" data-dial="+61">AU</option>   <!-- NZ +64 / US +1 / GB +44 / CA +1 / SG +65 -->
+```
+
+⚠ **US 与 CA 都是 `+1`**，事实如此，不是复制错。判据里也是这么断言的。
+
+### 2. `phoneCode` 模块 —— placeholder 的区号跟着选中项走
+
+⚠ **挂在原生 `<select>` 的 `change` 上，不是挂在我们的控件上** ——
+`selectBox` 每次选中都会 `native.selectedIndex = i` 并派发**冒泡的 change**，
+所以这一个钩子同时覆盖：自定义列表、JS 没建控件时的原生回退、浏览器自动填充。
+
+只替换区号前缀，**其余保留稿上 AU 那串 `400 000 000` 作为模板**：
+
+```js
+var rest = (input.getAttribute("placeholder") || "").replace(/^\+\d+\s*/, "");
+```
+
+⚠ **各国真实的号码位数/前缀没有依据，没有编** —— NZ 手机实际是 `21`/`27` 开头而不是 `400`。
+现在是「澳洲模板换区号」，要按各国真实格式写需要需求方给一份。**已登记进待确认。**
+
+### 3. `--bare` 也显示选中打勾
+
+`.gb-select:not(.gb-select--bare):not(.gb-select--inline)` 里的 `--bare` 排除去掉了。
+那条排除写的理由是「one option that is always selected」——
+一项时打勾没有意义，六项时**没有别的方式看出当前选的是哪个**。
+`--inline`（购物车配送周期）仍然排除，实测三个变体只有 bare 变了。
+
+### 4. 列表放不下第六项（本轮改动直接引出的）
+
+`.gb-select__list` 的 `max-height: 224px` 是按**五行** 40px 定的（5×40+8=208）。
+六行要 248，于是第六项 SG 半截卡在滚动边缘 —— 看起来像渲染坏了，而不是「下面还有」。
+
+⚠ **第一次改还差 2px**：`box-sizing: border-box` 把列表自己的 1px 上下边框也算进
+`max-height`，`clientHeight` 只有 246 而内容 248，**肉眼完全看不出来**，
+是判据读 `clientHeight` vs `scrollHeight` 抓到的。终值 `6 * 40px + 8px + 2px`，可推导。
+
+### 文件清单
+
+```
+改  get-in-touch.html / referral.html   select 加 data-phone-code + 六个 option（含 data-dial）
+改  assets/main.js            新增 phoneCode 模块并注册；window.gumi 暴露
+改  assets/customstyle.scss   $build r136→r137；打勾规则去掉 :not(--bare)；
+                              --bare 列表 max-height 6*40+8+2
+改  assets/customstyle.css    重新编译（0 条 Sass 警告）
+改  *.html (12)               ?v= r136 → r137
+改  liquid/sections/gb-form-section.liquid   仓库副本同改（线上那份单独改，见下）
+新  tools/phonecode.py        判据（含 --live / --strip）
+新  tools/r137push.py         三方对比与推送清单
+```
+
+⚠ **本轮推了 liquid**（选项写在 liquid 里，不改线上就还是只有 AU）。
+**改的是从线上拉下来的那份，不是仓库副本** —— 两者有历史差异
+（privacy policy 链接：仓库副本走 `shop.privacy_policy`，线上是写死的 `/pages/privacy-policy`
+带 `target="_blank"`）。用锚点只替换 select 那三行，`diff` 核对过只有 select 变动。
+
+### 验证
+
+| 判据 | 结果 |
+|---|---|
+| `tools/phonecode.py` 本地 / 线上 | **22 / 0** 两端一致（两页 × 六国逐个点，走自定义控件而非脚本设 value） |
+| `--strip` 反向 | **10 红**（删掉 `data-dial`，placeholder 卡在 `+61`；AU 那两条仍绿是对的） |
+| 变体影响面 | 默认 flex/gap8 不变、bare 新增打勾、inline 仍 `list-item` 无勾 |
+| 回归 `rwd` | 全绿 |
+| 回归 `cartsplit` / `inkringlive` | 5-0 / 9-0 |
+| 三方对比 | ours 4 / theirs 0 / **CONFLICT 0** |
+| 回读逐字节 | 4 个一致，清单外 **0**，624 → 624 |
+
+新基线 **`baseline-20260910-r137`**（624 文件）。
+
+### ⚠ 不要报成 bug
+
+1. **US 与 CA 同为 `+1`** —— 事实，判据也这么断言。
+2. **placeholder 的号码模板是澳洲的 `400 000 000`** —— 各国真实格式无依据，
+   **有意不编**。见「待确认」。
+3. **`max-height` 里那个 `+ 2px` 是列表自己的边框** —— border-box 下 `max-height` 含 border，
+   少了它正好还差 2px、第六行照样被裁，而且**看不出来**。别当成凑数。
+4. **`phoneCode` 绑的是原生 select 不是我们的控件** —— 不是接错了，
+   `selectBox` 会派发冒泡 change，绑原生一处即可覆盖三条路径。
+5. **`--inline` 仍然没有打勾** —— 购物车配送周期的展开态 r76 就判定不在范围内，未动。
+6. **`phonecode.py` 会把 `#promo-modal` 从判据环境里摘掉** ——
+   线上那个弹窗 4 秒自动弹出、遮罩拦截点击，判据跑到第四项就超时。
+   ⚠ **只设我们的 `sessionStorage['gb-promo-seen']` 不管用**：线上开它的不是我们的
+   `promoModal`（那个读这个 key），是按 `data-promo-delay` 走的另一套。所以直接移除元素。
+   **这是判据环境的处理，站点行为没有任何改变。**
+
+### 待确认
+
+- **各国电话号码的示例格式**：现在是「澳洲模板换区号」（如 NZ 显示 `+64 400 000 000`），
+  而 NZ 手机实际是 `21`/`27` 开头。要按各国真实格式写请给一份，或确认就用现在这样。
+- **`max-height: 6*40+8+2` 是派生值但没有稿依据** —— 加第七个国家要重算，
+  否则那一行又会被裁。已同步登记进 `PROJECT-STATUS.md`。
+
+---
+
 ## 第一三六轮（2026-09-10）— 从 `/cart` 进来的抽屉关不掉：组件与内层 dialog 状态分裂（`$build` = `20260910-r136`）
 
 需求方：「通过 `https://gumi.com.au/cart` 进入页面，此时购物车是展开的，

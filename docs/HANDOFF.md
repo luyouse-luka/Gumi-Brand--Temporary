@@ -6,6 +6,39 @@
 > **更早轮次的状态段**（第七十三～一二三轮）在 [archive/HANDOFF-STATUS-r73-r123.md](archive/HANDOFF-STATUS-r73-r123.md)；其中的「不要报成 bug」已原文沉淀进下面第一节的 `### 4`。
 > **推送记录**（推了什么 / 验了没 / 基线滚到哪）在 [PUSH-LOG.md](PUSH-LOG.md)。
 >
+> 状态：**第一三七轮（2026-09-10）—— 电话区号从 AU 一个扩到六个，placeholder 跟随，`$build` = `20260910-r137`，已推 live**。
+> 推 `assets/customstyle.scss` + `.css` + `main.js` + **`sections/gb-form-section.liquid`**（本轮动了 markup）。
+> 新基线 **`baseline-20260910-r137`**（624 文件）。三方对比 ours 4 / theirs 0 / CONFLICT 0。
+>
+> 判据：`tools/phonecode.py` 本地与线上各 **22/0**（`--strip` 反向 10 红）；
+> 回归 `rwd` 全绿 / `cartsplit` 5-0 / `inkringlive` 9-0；回读 4 个逐字节一致 + 620 个清单外 0。
+>
+> ⚠ **不要报成 bug**（第一三七轮）：
+> 1. **US 与 CA 都是 `+1`** —— 事实，不是复制错，判据也这么断言。
+> 2. **placeholder 用的是稿上澳洲那串 `400 000 000`，只换区号前缀** ——
+>    各国真实号码格式（NZ 实际是 21/27 开头）**没有依据，有意不编**。见待确认。
+> 3. **`max-height: 6 * 40px + 8px + 2px` 里的 `+ 2px` 是列表自己的边框** ——
+>    border-box 下 `max-height` 含 border；少这 2px 第六行照样被裁，**而且肉眼看不出来**
+>    （判据读 `clientHeight` vs `scrollHeight` 才抓到）。别当成凑数删掉。
+>    ⚠ **加第七个国家要重算**，否则那行又被裁。
+> 4. **`phoneCode` 绑的是原生 `<select>` 的 change，不是我们的控件** ——
+>    `selectBox` 会 `native.selectedIndex = i` 并派发冒泡 change，绑原生一处即可覆盖
+>    自定义列表 / 原生回退 / 浏览器自动填充三条路径。
+> 5. **`--inline`（购物车配送周期）仍然没有打勾** —— r76 判定其展开态不在范围内，未动。
+>    本轮只把 `--bare` 从那条排除里放出来。
+> 6. **`tools/phonecode.py` 会把 `#promo-modal` 从判据环境里摘掉** —— 线上那个弹窗
+>    4 秒自动弹出、遮罩拦截点击，判据跑到第四项就超时。
+>    ⚠ **只设我们的 `sessionStorage['gb-promo-seen']` 不管用**：线上开它的不是我们的
+>    `promoModal`（那个读这个 key），是按 `data-promo-delay` 走的另一套。
+>    **判据环境的处理，站点行为没有改变。**
+> 7. **推的 liquid 是从线上拉下来改的，不是仓库副本** —— 两份有历史差异
+>    （privacy policy 链接：仓库副本走 `shop.privacy_policy`，线上写死 `/pages/privacy-policy`
+>    带 `target="_blank"`）。**别整份覆盖过去。**
+>
+> ⚠ **待确认**：各国电话号码的示例格式（现在是澳洲模板换区号）。
+
+---
+
 > 状态：**第一三六轮（2026-09-10）—— 从 `/cart` 进来的抽屉关不掉（组件与内层 dialog 状态分裂），`$build` = `20260910-r136`，已推 live**。
 > 只推 `assets/customstyle.scss` + `.css` + `main.js`（scss 只动了 `$build`，为的是给 `main.js` 破缓存）。
 > 新基线 **`baseline-20260910-r136`**（624 文件）。三方对比 ours 3 / theirs 0 / CONFLICT 0。

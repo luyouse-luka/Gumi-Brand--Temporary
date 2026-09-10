@@ -2028,6 +2028,43 @@
   };
 
   /* ---------------------------------------------------------------------
+   * phoneCode — the phone placeholder's dial code follows the country select.
+   *
+   * Client r137: the country list grew from AU alone to six, and the placeholder
+   * has to agree with whatever is picked. The dial code lives on each option as
+   * data-dial; only that prefix is swapped, the rest of the board's AU example
+   * (400 000 000) is kept as the template.
+   *
+   * ⚠ Bound to the NATIVE select, not to our widget: selectBox syncs
+   * native.selectedIndex and fires a bubbling change on every pick, so this one
+   * hook covers the custom list, the native fallback when JS builds no widget,
+   * and browser autofill.
+   * ⚠ US and CA are both +1. That is correct, not a copy-paste slip.
+   * ------------------------------------------------------------------- */
+  var phoneCode = {
+    init: function () {
+      var selects = document.querySelectorAll("[data-phone-code]");
+      for (var i = 0; i < selects.length; i++) { this.bind(selects[i]); }
+    },
+
+    bind: function (select) {
+      var field = select.closest(".gb-field__phone");
+      var input = field && field.querySelector('input[type="tel"]');
+      if (!input) { return; }
+      // Captured once, before anything rewrites it: the number pattern the board
+      // drew, minus its dial code.
+      var rest = (input.getAttribute("placeholder") || "").replace(/^\+\d+\s*/, "");
+      var apply = function () {
+        var opt = select.options[select.selectedIndex];
+        var dial = opt && opt.getAttribute("data-dial");
+        if (dial) { input.setAttribute("placeholder", rest ? dial + " " + rest : dial); }
+      };
+      select.addEventListener("change", apply);
+      apply();
+    }
+  };
+
+  /* ---------------------------------------------------------------------
    * scrollbarProbe — keeps --scrollbar-w current for locks we do not open.
    *
    * modal.open() and header.set() measure the bar themselves right before they
@@ -2169,7 +2206,7 @@
                    ["slider", slider], ["gallery", gallery], ["accordion", accordion],
                    ["reelPlayer", reelPlayer],
                    ["smoothScroll", smoothScroll], ["enquiryPrefill", enquiryPrefill],
-                   ["selectBox", selectBox]];
+                   ["selectBox", selectBox], ["phoneCode", phoneCode]];
     for (var i = 0; i < modules.length; i++) {
       try {
         modules[i][1].init();
@@ -2184,6 +2221,6 @@
                   lineReveal: lineReveal, modal: modal, promoModal: promoModal, slider: slider,
                   gallery: gallery, accordion: accordion,
                   smoothScroll: smoothScroll, enquiryPrefill: enquiryPrefill,
-                  selectBox: selectBox, scrollbarProbe: scrollbarProbe,
+                  selectBox: selectBox, phoneCode: phoneCode, scrollbarProbe: scrollbarProbe,
                   cartDrawer: cartDrawer, reelPlayer: reelPlayer };
 })();

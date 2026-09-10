@@ -922,3 +922,18 @@ shopify theme push --store je1ka9-er.myshopify.com --theme 180348977399 --path w
 ⚠ **`tools/r135live.py` 改名为 `tools/inkringlive.py`** —— 原判据把 `$build` 写死成
 `'r135' in build`，推完 r136 当场变红而站点无恙。改用 `>= 135` 比较。
 **单轮判据别写死 `$build`、判据文件名别带轮次号**，这两条项目里早就写着，本轮又踩了一次。
+
+| 轮次 | 推了什么 | 文件数 | 回读 | 基线 |
+|---|---|---|---|---|
+| **第一三七轮** | `assets/customstyle.css` / `.scss` / `main.js` / **`sections/gb-form-section.liquid`** | 4 | 4 ok / 0 red | 624 → **`baseline-20260910-r137`** |
+
+三方对比 `ours` **4** / `theirs` **0** / `CONFLICT` **0**。
+⚠ **本轮推了 liquid**（六个 `<option>` 写在 liquid 里，不推线上就还是只有 AU）。
+**改的是从线上拉下来的那份，不是仓库副本** —— 两者有历史差异（privacy policy 链接的写法），
+用锚点只替换 select 那三行，`diff` 核对过只有 select 变动。
+判据：`phonecode.py` 本地与线上各 **22/0**（`--strip` 反向 10 红）；
+回归 `rwd` 全绿 / `cartsplit` 5-0 / `inkringlive` 9-0。顺手清掉 `baseline-20260909-r135`。
+
+⚠ **线上跑判据要先摘掉 `#promo-modal`** —— 它 4 秒自动弹出、遮罩拦截点击，
+判据跑到第四个国家就超时。只设我们的 `sessionStorage['gb-promo-seen']` **不管用**：
+线上开它的不是我们的 `promoModal`，是按 `data-promo-delay` 走的另一套。
