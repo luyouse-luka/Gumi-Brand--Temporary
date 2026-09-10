@@ -837,14 +837,45 @@ GROUPS = {
     ("account.html", 390, GOTO_DETAILS): [
         ("css", MD + ".gb-acct-intro__title", "font-size", "20px"),
     ],
+    # -- Task 17: Change Password (2284:27151) --
+    # The board dresses this page in the Order Card component, so .gb-acct-card
+    # is built once and Task 20 reuses it. 350 = 348 + two 1px edges: the card's
+    # strokesIncludedInLayout is true, so it is a real border.
     ("account.html", 1440, GOTO_PASSWORD): [
         ("shown", "[data-acct-view='password']", True),
         ("text", CP + ".gb-acct-intro__title", ["Change Password"]),
         ("css", CP + ".gb-acct-intro__title", "font-size", "24px"),
         ("vis", ".gb-acct-nav__link[data-acct-goto='password'].is-current", True),
+        ("css", CP + ".gb-acct-card", "border-radius", "12px"),
+        ("css", CP + ".gb-acct-card", "border-top-width", "1px"),
+        ("css", CP + ".gb-acct-card", "border-top-color", "rgb(230, 230, 230)"),
+        ("css", CP + ".gb-acct-card", "background-color", "rgb(255, 255, 255)"),
+        ("css", CP + ".gb-acct-card__body", "padding-top", "20px"),
+        ("css", CP + ".gb-acct-card__body", "padding-left", "20px"),
+        ("css", CP + ".gb-acct-card__group", "row-gap", "16px"),
+        ("css", CP + ".gb-acct-card__foot", "padding-top", "8px"),
+        ("css", CP + ".gb-acct-card__foot", "padding-left", "16px"),
+        ("css", CP + ".gb-acct-card__foot", "padding-bottom", "20px"),
+        ("text", CP + ".gb-acct-card__title", ["Need to update your password?"]),
+        ("css", CP + ".gb-acct-card__title", "font-size", "16px"),
+        ("css", CP + ".gb-acct-card__title", "font-weight", "500"),
+        ("css", CP + ".gb-acct-card__title", "color", "rgb(26, 26, 26)"),
+        # The board's copy reads "instructions ro reset it" -- typo, see SPEC 8
+        ("text", CP + ".gb-acct-card__text", ['Click the button below and we’ll send you an email with instructions to reset it.']),
+        ("css", CP + ".gb-acct-card__text", "font-weight", "400"),
+        ("css", CP + ".gb-acct-card__text", "color", "rgb(102, 102, 102)"),
+        ("text", CP + ".gb-acct-btn", ["Change Password"]),
+        ("css", CP + ".gb-acct-btn", "height", "44px"),
+        ("css", CP + ".gb-acct-btn", "border-radius", "72px"),
+        ("css", CP + ".gb-acct-page", "row-gap", "16px"),
+        ("nofit", CP + ".gb-acct-card"),
     ],
     ("account.html", 390, GOTO_PASSWORD): [
         ("css", CP + ".gb-acct-intro__title", "font-size", "20px"),
+        ("css", CP + ".gb-acct-card", "width", "350px"),
+        ("css", CP + ".gb-acct-card__body", "padding-top", "20px"),
+        ("css", CP + ".gb-acct-page", "row-gap", "24px"),
+        ("nofit", CP + ".gb-acct-card"),
     ],
     ("account.html", 1440, GOTO_HELP): [
         ("shown", "[data-acct-view='help']", True),

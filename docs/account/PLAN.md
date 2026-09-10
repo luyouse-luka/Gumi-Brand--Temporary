@@ -1424,14 +1424,18 @@ Order Detail **不进导航** —— 它的入口是 Order History 卡上的 `Vi
 
 **文件**：修改 `account.html`、`assets/account.scss`、`tools/acctcheck.py`
 
-- [ ] **步骤 1：从节点数据取全部数值** —— 卡片 padding / radius / row-gap /
+- [x] **步骤 1：从节点数据取全部数值** —— 卡片 padding / radius / row-gap /
       按钮高与内边距 / 各 TEXT 的 `characterStyleOverrides`
-- [ ] **步骤 2：追加断言（先红）** —— 卡片存在、按钮文案、1440 与 390 两档的标题字号
-- [ ] **步骤 3：跑判据确认红**
-- [ ] **步骤 4：实现**。按钮**不要用 `.gb-btn--lg`**（≤767 掉到 44 高，客户 r133），
+- [x] **步骤 2：追加断言（先红）** —— 卡片存在、按钮文案、1440 与 390 两档的标题字号
+- [x] **步骤 3：跑判据确认红**
+- [x] **步骤 4：实现**。按钮**不要用 `.gb-btn--lg`**（≤767 掉到 44 高，客户 r133），
       account 线按钮一律自写，与 `.gb-acct-auth__submit` 同一路子
-- [ ] **步骤 5：编译、跑判据确认绿、`tools/rwd.py` 扫 14 档无溢出**
-- [ ] **步骤 6：提交** — `git commit -m "feat(account): Change Password 视图"`
+- [x] **步骤 5：编译、跑判据确认绿** —— `691 → 717 ok / 0 red`（+26）。
+      `rwd.py` 390/768/1440 全绿、`acctvars.py` 54 ok、`assetpath.py` GREEN。
+      版本号 bump 到 `20260910-a13`（源码变量 + 三页各两处 `?v=`）。
+      ⚠ 卡片按钮直接复用了已有的 `.gb-acct-btn`（44 高 / padding-inline 40 /
+      radius 72 / 绿底 / 16-24-500 白字），与板 `27151` 的 Button 逐值一致，没有新写。
+- [x] **步骤 6：提交** — `git commit -m "feat(account): Change Password 视图"`
 
 ---
 ## Task 18：My Details 视图

@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260910-a12";
+$build-acct: "20260910-a13";
 
 // ==========================================================================
 // Variables
@@ -1895,6 +1895,66 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
   @include narrow { top: 176px; }
   @include tablet { top: fluid(176px, 187px); }
+}
+
+// ==========================================================================
+// Section pages — the five views decision C added (2026-09-10)
+// ==========================================================================
+
+// 2284:27151 / 27202 / 27081 / 27170 / 27304 are 390 boards only. The desktop
+// side is extrapolated from the three desktop boards, where the page heading is
+// the single step that changes (20/24 -> 24/30, already on .gb-acct-intro__title);
+// 16/24, 14/20 and 12/18 are identical at both ends.
+.gb-acct-page {
+  display: flex;
+  flex-direction: column;
+  row-gap: 16px;
+
+  @include narrow { row-gap: 24px; }
+  @include tablet { row-gap: fluid(24px, 16px); }
+}
+
+// The boards dress every one of these pages in the same Order Card component,
+// so it is built once. strokesIncludedInLayout is true on it, which is why this
+// is a real border and not an inset shadow: 350 = 348 + two 1px edges.
+.gb-acct-card {
+  display: flex;
+  flex-direction: column;
+  background: $c-white;
+  border: 1px solid $c-gray-150;
+  border-radius: $r-md;
+}
+
+.gb-acct-card__body {
+  display: flex;
+  flex-direction: column;
+  row-gap: 24px;
+  padding: 20px;
+}
+
+.gb-acct-card__group {
+  display: flex;
+  flex-direction: column;
+  row-gap: 16px;
+}
+
+.gb-acct-card__foot {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+  padding: 8px 16px 20px;
+}
+
+.gb-acct-card__title {
+  margin: 0;
+  @include font($font-brand-stack, 16px, 500, 24px, -0.32px);
+  color: $c-gray-900;
+}
+
+.gb-acct-card__text {
+  margin: 0;
+  @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+  color: $c-gray-600;
 }
 
 // ==========================================================================

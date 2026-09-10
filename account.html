@@ -10,7 +10,7 @@
 <link rel="icon" href="images/favicon.svg?v=20260909-r134" type="image/svg+xml">
 <link rel="apple-touch-icon" href="images/favicon-180.png?v=20260909-r134">
 <link rel="stylesheet" href="assets/customstyle.css?v=20260909-r134">
-<link rel="stylesheet" href="assets/account.css?v=20260910-a12">
+<link rel="stylesheet" href="assets/account.css?v=20260910-a13">
 <noscript><style>.wowo{opacity:1 !important}</style></noscript>
 </head>
 <body>
@@ -486,6 +486,7 @@
              three desktop boards (decision C, 2026-09-10). Only the heading
              changes size between the two: 20/24 phone, 24/30 desktop. -->
         <section class="gb-acct__view" data-acct-view="orders" hidden>
+          <div class="gb-acct-page">
           <div class="gb-acct-intro">
             <button class="gb-acct-intro__back" type="button" data-acct-goto="overview" aria-label="Back to account overview"><svg class="gb-acct-intro__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="26 174 20 20" fill="none" aria-hidden="true"><path d="M41.8307 184.001H30.1641M35.9974 178.168L30.1641 184.001L35.9974 189.835" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
             <div class="gb-acct-intro__text">
@@ -493,47 +494,69 @@
               <p class="gb-acct-intro__sub">Review, track, or create a return for your orders.</p>
             </div>
           </div>
+          </div>
         </section>
 
         <!-- 2284:27304 phone only. Reached from a card's View Order,
              so it has no row of its own in the nav. -->
         <section class="gb-acct__view" data-acct-view="order" hidden>
+          <div class="gb-acct-page">
           <div class="gb-acct-intro">
             <button class="gb-acct-intro__back" type="button" data-acct-goto="orders" aria-label="Back to order history"><svg class="gb-acct-intro__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="26 174 20 20" fill="none" aria-hidden="true"><path d="M41.8307 184.001H30.1641M35.9974 178.168L30.1641 184.001L35.9974 189.835" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
             <div class="gb-acct-intro__text">
               <h1 class="gb-acct-intro__title">Order #12345678</h1>
             </div>
           </div>
+          </div>
         </section>
 
         <!-- 2284:27081 phone only. 27116 is the same board word for word
              at the same height, so only one is built (decision O). -->
         <section class="gb-acct__view" data-acct-view="details" hidden>
+          <div class="gb-acct-page">
           <div class="gb-acct-intro">
             <button class="gb-acct-intro__back" type="button" data-acct-goto="overview" aria-label="Back to account overview"><svg class="gb-acct-intro__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="26 174 20 20" fill="none" aria-hidden="true"><path d="M41.8307 184.001H30.1641M35.9974 178.168L30.1641 184.001L35.9974 189.835" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
             <div class="gb-acct-intro__text">
               <h1 class="gb-acct-intro__title">Your details</h1>
             </div>
           </div>
+          </div>
         </section>
 
         <!-- 2284:27151 phone only -->
         <section class="gb-acct__view" data-acct-view="password" hidden>
+          <div class="gb-acct-page">
           <div class="gb-acct-intro">
             <button class="gb-acct-intro__back" type="button" data-acct-goto="overview" aria-label="Back to account overview"><svg class="gb-acct-intro__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="26 174 20 20" fill="none" aria-hidden="true"><path d="M41.8307 184.001H30.1641M35.9974 178.168L30.1641 184.001L35.9974 189.835" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
             <div class="gb-acct-intro__text">
               <h1 class="gb-acct-intro__title">Change Password</h1>
             </div>
           </div>
+
+          <div class="gb-acct-card">
+            <div class="gb-acct-card__body">
+              <div class="gb-acct-card__group">
+                <p class="gb-acct-card__title">Need to update your password?</p>
+                <!-- board 27151 reads "instructions ro reset it" -- typo, SPEC 8 -->
+                <p class="gb-acct-card__text">Click the button below and we&rsquo;ll send you an email with instructions to reset it.</p>
+              </div>
+            </div>
+            <div class="gb-acct-card__foot">
+              <button class="gb-acct-btn" type="button">Change Password</button>
+            </div>
+          </div>
+          </div>
         </section>
 
         <!-- 2284:27170 phone only -->
         <section class="gb-acct__view" data-acct-view="help" hidden>
+          <div class="gb-acct-page">
           <div class="gb-acct-intro">
             <button class="gb-acct-intro__back" type="button" data-acct-goto="overview" aria-label="Back to account overview"><svg class="gb-acct-intro__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="26 174 20 20" fill="none" aria-hidden="true"><path d="M41.8307 184.001H30.1641M35.9974 178.168L30.1641 184.001L35.9974 189.835" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
             <div class="gb-acct-intro__text">
               <h1 class="gb-acct-intro__title">Help</h1>
             </div>
+          </div>
           </div>
         </section>
       </div>
@@ -1268,6 +1291,6 @@
 
   <script src="assets/lenis.min.js?v=20260909-r134"></script>
   <script src="assets/main.js?v=20260909-r134"></script>
-  <script src="assets/account.js?v=20260910-a12"></script>
+  <script src="assets/account.js?v=20260910-a13"></script>
 </body>
 </html>
