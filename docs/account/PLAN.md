@@ -1212,7 +1212,7 @@ var cancelFlow = {
       `rwd.py` 两页全绿、`acctvars` 54 ok、`assetpath` GREEN、`acctmodal` 1313/0/2（同基线）。
       活性自检做了 11 处逐条突变（含往 login 页塞一个 `.gb-acct-nav` 验负向断言），
       17 条红逐条可归因，无一处漏网
-- [ ] **步骤 6：提交** — `git commit -m "feat(account): 登录与注册两页"`
+- [x] **步骤 6：提交** — `git commit -m "feat(account): 登录与注册两页"` → `a4bc57b`
 
 ---
 
@@ -1220,7 +1220,11 @@ var cancelFlow = {
 
 **文件**：`assets/account.scss`、`tools/`、`docs/account/`
 
-- [ ] **步骤 1：断点重叠扫描**
+- [x] **步骤 1：断点重叠扫描** —— grep 只能看见 `@include`，看不见 `@include font()`
+      展开出的 font-size / line-height / letter-spacing，而这个文件的字号几乎全那样写。
+      落成 `tools/acctbp.py`（解析 scss、展开 font mixin、按属性比对档位区间）：
+      **1842 declarations / 0 red**。account.scss 实际只用了 narrow 与 tablet 两档，
+      两者天然互斥 —— 判据在当前代码上必然全绿，专门做了突变自检证明它能转红
 
 ```bash
 grep -n '@include \(mobile\|narrow\|tablet\|pc\)' assets/account.scss
@@ -1228,7 +1232,10 @@ grep -n '@include \(mobile\|narrow\|tablet\|pc\)' assets/account.scss
 逐个确认值档互斥：同一属性不得同时落在两个档内。
 ⚠ 重叠不会报错，只会让「同一行字的字号来自手机档、字距来自插值档」，肉眼只觉得怪。
 
-- [ ] **步骤 2：hover / 过渡配平**
+- [x] **步骤 2：hover / 过渡配平** —— 数个数不够（`background` 对 `background-color`、
+      hover 挂祖先而 transition 挂后代，两种都会误判）。落成 `tools/accthover.py`
+      逐属性比对：**30 hover properties / 0 red**。**修掉一处真漏**：
+      `.gb-acct-header__logo` 的 hover opacity 一直没有过渡（Task 2 起就漏着）
 
 ```bash
 grep -c ':hover' assets/account.scss
@@ -1237,7 +1244,11 @@ grep -c 'transition' assets/account.scss
 两个数差很多就是漏了过渡。逐个补齐，hover 规则包进 `@media (hover: hover)`。
 ⚠ 直连 headless 下 `(hover:hover)` 恒 false，**验证 hover 必须用 Playwright**。
 
-- [ ] **步骤 3：补 reduced-motion**
+- [x] **步骤 3：补 reduced-motion** —— **没有照抄这段**：`customstyle.scss` 顶部已有
+      一条 `*, *::before, *::after { ... !important }`，account.css 在它之后加载，
+      所有过渡本来就被压平，再写一遍是死代码。改成用 `tools/acctmotion.py` 证明它够得着
+      （**12 ok / 0 red**），并用 `no-preference` 的读数做不变量对照 —— 只读 reduce 一次
+      分不出「压平了」和「这个元素压根没有过渡」
 
 ```scss
 @media (prefers-reduced-motion: reduce) {
@@ -1248,14 +1259,16 @@ grep -c 'transition' assets/account.scss
 }
 ```
 
-- [ ] **步骤 4：全档溢出扫描**
+- [x] **步骤 4：全档溢出扫描** —— `rwd.py` 无参会 glob 全站 14 页，只跑了 account 三页
+      （另外 11 页属主站线，不该把它们的结果算进本轮）。三页 × 14 档**全绿**
 
 ```bash
 python3 tools/rwd.py
 ```
 扩到 account 三页 x 14 档。判据：无横向溢出、无文字被裁、无滚轮黑洞。
 
-- [ ] **步骤 5：全量回归**
+- [x] **步骤 5：全量回归** —— 八条判据全绿；顺带把 `acctmodal.py` 挂了很久的两条 abort
+      解掉一条（桌面档的页面横移现在真的在测）
 
 ```bash
 python3 tools/acctvars.py && python3 tools/acctcheck.py && \
@@ -1263,7 +1276,7 @@ python3 tools/acctmodal.py && python3 tools/assetpath.py && python3 tools/scroll
 ```
 **全绿才算完**。任何一条红就停下修，不要标「已知问题」放过。
 
-- [ ] **步骤 6：清掉探针临时文件**
+- [x] **步骤 6：清掉探针临时文件** —— 项目内无遗留；本轮探针都落在 scratchpad，已删
 
 ```bash
 git status --short
@@ -1272,7 +1285,9 @@ git status --short
 ⚠ snap chromium 读不到 `/tmp`，探针临时文件只能落在项目内，**跑完必须删**，
 否则会被同步脚本当成改动推上线。
 
-- [ ] **步骤 7：写交接文档**
+- [x] **步骤 7：写交接文档** —— `docs/account/HANDOFF.md`，第 5 节是「不要报成 bug 的清单」
+      （四组：稿里就没有的 / 稿自带的错字与矛盾 / 有意的实现取舍 / 预览时会以为坏了的）。
+      `CHANGELOG.md` 早已按 Task 逐条记着，不需要重写
 
 创建 `docs/account/HANDOFF.md`，必须包含**「不要报成 bug 的清单」**：
 - 无稿的六项只在导航里、不可点，是**有意为之**（待裁决 C）
@@ -1286,7 +1301,7 @@ git status --short
 创建 `docs/account/CHANGELOG.md`，把 15 个任务归并成若干条记录，
 每条写「改了什么 / 为什么 / 文件清单 / 遗留」。
 
-- [ ] **步骤 8：提交** — `git commit -m "docs(account): 收尾回归、交接文档与不要报成 bug 清单"`
+- [x] **步骤 8：提交** — `git commit -m "docs(account): 收尾回归、交接文档与不要报成 bug 清单"`
 
 ---
 

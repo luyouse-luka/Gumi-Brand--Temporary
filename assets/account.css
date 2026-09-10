@@ -75,6 +75,7 @@
   display: block;
   height: 32px;
   color: #005635;
+  transition: opacity 0.2s cubic-bezier(0.33, 1, 0.68, 1);
 }
 .gb-acct-header__logo svg {
   display: block;

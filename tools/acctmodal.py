@@ -22,7 +22,16 @@ import sys, pathlib, datetime
 from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-CHROME = pathlib.Path.home() / ".cache/ms-playwright/chromium-1217/chrome-linux64/chrome"
+# The build number moves with the package and this box is shared; pinning one
+# made the run die outright.
+def _chrome():
+    hits = sorted((pathlib.Path.home() / ".cache/ms-playwright").glob(
+        "chromium-*/chrome-linux64/chrome"))
+    if not hits:
+        sys.exit("no chromium installed -- run: npx playwright install chromium")
+    return hits[-1]
+
+CHROME = _chrome()
 
 PAGE = "account.html"
 WIDTHS = (390, 1440)
@@ -342,20 +351,38 @@ def run_width(b, w):
     sbw = pg.evaluate("()=>{document.body.style.minHeight='4000px';"
                       "return window.innerWidth-document.documentElement.clientWidth}")
     if sbw == 0:
-        aborted.append("%s no real scrollbar (overlay scrollbars) -- the "
-                       "page-shift check proves nothing here, verify on a real browser" % label)
+        if w <= 767:
+            # Expected, not a gap: a phone paints an overlay scrollbar that takes
+            # no layout width, so locking the page frees nothing and there is no
+            # sideways shift to catch. The desktop width is where this matters.
+            aborted.append("%s overlay scrollbar (phone) -- nothing to compensate, "
+                           "the desktop width carries this check" % label)
+        else:
+            aborted.append("%s no real scrollbar on a desktop viewport -- the launch "
+                           "drops --hide-scrollbars, so this should not happen" % label)
     else:
-        before = pg.evaluate("()=>document.querySelector('.gb-acct-nav')"
-                             ".getBoundingClientRect().left")
+        # Measure something RIGHT-aligned. The scrollbar sits on the right, so
+        # when the lock frees its width a left-aligned element (.gb-acct-nav,
+        # the logo) does not move at all -- measured: 0px with the compensation
+        # on AND 0px with it forced off. The header icons move the full 15.
+        EDGE = ("()=>{const e=document.querySelector('.gb-acct-header__icons');"
+                "return e?e.getBoundingClientRect().right:null}")
+        before = pg.evaluate(EDGE)
         pg.click("[data-acct-view='detail'] [data-acct-modal='%s']" % names[0], timeout=2000)
         pg.wait_for_timeout(450)
-        after = pg.evaluate("()=>document.querySelector('.gb-acct-nav')"
-                            ".getBoundingClientRect().left")
-        if abs(after - before) < 0.5:
+        after = pg.evaluate(EDGE)
+        if before is None or after is None:
+            bad("%s no .gb-acct-header__icons to measure the shift against" % label)
+        elif abs(after - before) < 0.5:
             good(label)
         else:
             bad("%s page shifted %.2fpx sideways when the lock removed the scrollbar"
                 % (label, after - before))
+        # This branch opens a panel; every check after it assumes none is open,
+        # and modal.open() will not swap one live panel for another.
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(600)
+        pg.evaluate("()=>{document.body.style.minHeight=''}")
     check_forms(pg, w, label)
     check_products(pg, w, label)
     check_discount(pg, w, label)
@@ -2243,10 +2270,20 @@ def check_restart(pg, w, label):
 
 def main():
     with sync_playwright() as p:
-        b = p.chromium.launch(executable_path=str(CHROME))
+        # Playwright passes --hide-scrollbars by default, which makes
+        # innerWidth - clientWidth 0 -- the page-shift check aborted on every
+        # run because of it. Dropping the flag gives a real desktop scrollbar
+        # (tools/scrolllock.py does the same for the site pages).
+        #
+        # Desktop widths only. A phone paints an overlay scrollbar that takes no
+        # layout width, so forcing a classic one there is not "more realistic":
+        # it turns the 390 board into 375 of content and the panels stop opening.
         for w in WIDTHS:
+            b = p.chromium.launch(
+                executable_path=str(CHROME),
+                ignore_default_args=["--hide-scrollbars"] if w > 767 else [])
             run_width(b, w)
-        b.close()
+            b.close()
     for a in aborted:
         print("ABORT  " + a)
     print("\n%d ok / %d red%s" % (ok, red, " / %d aborted" % len(aborted) if aborted else ""))

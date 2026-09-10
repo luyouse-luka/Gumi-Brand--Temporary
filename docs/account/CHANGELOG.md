@@ -8,6 +8,102 @@
 
 ---
 
+## Task 15 — 收尾：三条新判据、一处真漏、一条久挂的 abort（`$build-acct` = `20260910-a12`）
+
+样式只动了一行（补一条 transition），其余全是**判据**：把 PLAN 里三条靠 `grep` 数数的
+收尾检查换成能复跑、能证伪的脚本，顺带发现它们各自都会骗人。
+
+### 三条 grep 各有各的骗法
+
+**断点重叠（步骤 1）**：`grep '@include narrow'` 看得见 `@include narrow { ... }`，
+看不见里面 `@include font($f, 24px, 800, 30px, -0.24px)` 展开出的
+font-size / line-height / letter-spacing / font-weight —— 而这个文件的字号**几乎全是**
+那样写的。`tools/acctbp.py` 解析 scss、展开 font mixin、按「属性 × 档位区间」比对。
+⚠ 第一版还漏得更狠：它按行读，于是 `@include narrow { height: 24px; }` 这种**单行**
+写法里的声明一条都没进表 —— 而单行是这个文件的主要写法。改成按 token 扫描后
+声明数从 1184 涨到 1841。
+
+**hover 配平（步骤 2）**：`grep -c ':hover'` 对 `grep -c 'transition'` 只能看出数量差，
+看不出配对。逐属性比对之后又发现两种误判：
+- `hover { background: $c-lime }` 配 `transition: trans(background-color)` 是**对的**
+  （简写改的就是 background-color），按字面比会误报 9 条；
+- hover 挂在祖先、被改的属性和它的 transition 都在后代（`.gb-acct-addr__pick` 的 hover
+  改 `.gb-acct-addr__radio` 的 box-shadow），按选择器路径查会误报。
+
+两条归一之后剩下**一条真漏**：`.gb-acct-header__logo` 的 `@include hover { opacity: .7 }`
+从 Task 2 起就没有过渡 —— 正是全局铁律 13 说的「最常见的漏法」。
+
+**reduced-motion（步骤 3）**：PLAN 让写一段 blanket 规则，**没有照写**。
+`customstyle.scss` 顶部已经有 `*, *::before, *::after { ... !important }`，
+account.css 在它之后加载，所有过渡本来就被压平 —— 再写一遍是死代码（铁律 22）。
+改成用 `tools/acctmotion.py` 证明那条够得着，**并且两次读数**：`reduce` 下必须塌到 0，
+`no-preference` 下同一批选择器必须仍有真时长。只读 reduce 一次分不出
+「压平了」和「这个元素压根没有过渡」。
+
+### `acctmodal.py` 那两条 abort：一条能解，一条本就该在
+
+「开弹窗时页面有没有横移」从 Task 8 起一直 abort，记的是「本机测不出，欠一次真桌面浏览器」。
+**这个结论是错的** —— 同一台机器上的 `tools/scrolllock.py` 一直在测真滚动条，
+办法是 `launch(ignore_default_args=["--hide-scrollbars"])`：Playwright 默认带这个标志，
+去掉就有真滚动条。
+
+改的时候连着踩了三个坑：
+
+1. **不能全宽度都去掉**。手机画的是 overlay 滚动条、不占布局宽度，强行给 390 一个经典
+   滚动条等于把板宽压到 375，面板直接不开了。改成按宽度分别 launch，`>767` 才去掉。
+2. **那条 else 分支自己是坏的**。它点开一个弹窗测完就走，没关；后面的 `check_forms`
+   于是在「已经有面板开着」的状态下跑，`modal.open()` 不会换面板，量到的全是 `0px`。
+   这个 bug 藏了很久 —— 因为那条分支从来没执行过。
+3. **测点选错了，判据一直恒真**。原本测 `.gb-acct-nav` 的 `left`。滚动条在**右边**，
+   锁滚动释放的是右边的宽度，左对齐的元素根本不动 —— 实测：补偿开着 0px，
+   把 `--scrollbar-w` 强行改成 0 **还是 0px**。换成右对齐的 `.gb-acct-header__icons`
+   的 `right` 之后，关掉补偿会稳定报 **15px**，判据这才有活性。
+
+结果：**1314 ok / 0 red / 1 aborted**。剩下那条 `@390` 的 abort 是**预期**而非欠验证，
+措辞也一并改了 —— 手机没有可释放的滚动条宽度，也就没有横移可测。
+
+### 文件清单
+
+| 文件 | 改动 |
+|---|---|
+| `tools/acctbp.py` | **新增**。断点值档互斥 + 阈值不带数值，按 token 解析、展开 font mixin |
+| `tools/accthover.py` | **新增**。hover 属性逐条配对 transition，含简写归一与祖先/后代归一 |
+| `tools/acctmotion.py` | **新增**。reduced-motion 覆盖，两档读数互为不变量 |
+| `tools/acctmodal.py` | 桌面档去掉 `--hide-scrollbars`；补 else 分支的 Escape 收尾；横移测点换成右对齐元素；`CHROME` 改为自动发现 |
+| `assets/account.scss` | `.gb-acct-header__logo` 补 `transition: trans(opacity)`（放在嵌套 `svg{}` **之前**，否则 Sass 报 mixed-decls 弃用警告） |
+| `assets/account.css` | 编译产物（双写） |
+| `docs/account/HANDOFF.md` | **新增**。第 5 节「不要报成 bug 的清单」分四组 |
+| `docs/account/PLAN.md` | Task 15 步骤 1–7 打勾，逐条记下与原文的出入 |
+
+### 判据
+
+| 判据 | 结果 |
+|---|---|
+| `tools/acctcheck.py` | 660 ok / 0 red |
+| `tools/acctmodal.py` | **1314 ok / 0 red / 1 aborted**（原 1313 / 2 aborted） |
+| `tools/acctvars.py` | 54 ok / 0 red |
+| `tools/assetpath.py` | GREEN |
+| `tools/acctbp.py` | 1842 declarations / 0 red |
+| `tools/accthover.py` | 30 hover properties / 0 red |
+| `tools/acctmotion.py` | 12 ok / 0 red |
+| `tools/rwd.py` × 三页 × 14 档 | 全绿 |
+| `tools/scrolllock.py`（共用，只读） | 36 assertions / 0 failed |
+
+三条新判据都做了突变自检：`acctbp` 造一处 mobile/narrow 同属性重叠 + 一处 stack 带数值
+→ 6 条红；`accthover` 摘掉三处 transition → 5 条红（含祖先/后代那条）；
+`acctmotion` 靠自带的不变量对照（no-preference 必须有真时长）。
+
+### 遗留
+
+- **PLAN 走到 94/95**。剩的一步是 Task 8 步骤 4（登记 `main.js` 的 `smoothScroll.PREVENT`），
+  **有意未做**：改用把 `data-lenis-prevent` 写在标签上，行为等价且不必碰主站线的文件。
+- ⚠ **chromium 版本那件事**见 Task 14 的遗留 —— 软链还在，重装 playwright 前要先 `rm`。
+- **`account.html` 的主站 `?v=` 仍是 `r134`**，两个 auth 页是 `r138`。未统一（属主站线的节奏）。
+- **待裁决已积到 A–AB**（SPEC 第 7 节），全部已按暂定方案实现、一处可改。
+  最要紧的四条：A 导航条目、E 弹窗桌面稿全缺、G/Z header 用哪个、C 五个只有手机稿的页面。
+
+---
+
 ## Task 14 — 登录与注册两页（`$build-acct` = `20260910-a12`）
 
 **设计源**：桌面 `2284:35137` Log in / `35059` Sign up；手机 `2284:34993` / `35023`。
