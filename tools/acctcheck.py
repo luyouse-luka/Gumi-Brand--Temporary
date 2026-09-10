@@ -38,6 +38,11 @@ DETAIL_PAUSED = "detail-paused"
 DETAIL_CANCELLED = "detail-cancelled"
 DETAIL_DISCOUNT = "detail-discount"
 DETAIL_LONGCODE = "detail-longcode"
+GOTO_ORDERS = "goto-orders"
+GOTO_ORDER = "goto-order"
+GOTO_DETAILS = "goto-details"
+GOTO_PASSWORD = "goto-password"
+GOTO_HELP = "goto-help"
 # 2284:28878, the board's own worst case (note 34044)
 LONG_CODE = "THISISADISAVERYVERYVERYVERYVERYLONGDISCOUNTCODE1265"
 
@@ -45,6 +50,11 @@ LONG_CODE = "THISISADISAVERYVERYVERYVERYVERYLONGDISCOUNTCODE1265"
 # so querySelector cannot reach the hidden copies in the other two.
 D = "[data-acct-view='detail'] "
 S = "[data-acct-view='subscriptions'] "
+OH = "[data-acct-view='orders'] "
+OD = "[data-acct-view='order'] "
+MD = "[data-acct-view='details'] "
+CP = "[data-acct-view='password'] "
+HP = "[data-acct-view='help'] "
 # state-scoped prefixes: the anchor selector is asserted visible in each group
 # before any absence is claimed inside it
 P = ".gb-acct-detail[data-acct-sub-state='paused'] "
@@ -109,6 +119,11 @@ GROUPS = {
           "Refer a Friend",
           "Help", "Contact Preferences",
           "Logout"]),
+        # Decision C (2026-09-10) turned four of these into real rows. The two
+        # left dead have no board at all, not even a phone one, so building
+        # them would mean inventing content (global rule 3).
+        ("text", ".gb-acct-nav__link[aria-disabled='true']",
+         ["Refer a Friend", "Contact Preferences"]),
         # Two-column shell (2284:27842). The asymmetric 244/352 gutters are
         # identical on all three desktop boards, so they are intended.
         ("css", ".gb-acct__inner", "column-gap", "32px"),
@@ -397,6 +412,7 @@ GROUPS = {
           "My Details", "Change Password",
           "Refer a Friend",
           "Help"]),
+        ("text", ".gb-acct-list__link[aria-disabled='true']", ["Refer a Friend"]),
 
         # -- Task 4: Overview, phone (2284:27604) --
         # The greeting is bare here (2284:27610), not the desktop's lime card
@@ -792,6 +808,64 @@ GROUPS = {
          ["Account", "My Subscriptions", "My Details", "Log Out"]),
     ],
 
+    # -- Task 16: the five views added by decision C (2026-09-10).
+    # Only the page heading changes between phone and desktop -- 20/24 -> 24/30,
+    # measured on 27792 vs 28330. Every other step (16/24, 14/20, 12/18) is the
+    # same on both, which is why these groups assert the title size at both
+    # widths and nothing else about type.
+    ("account.html", 1440, GOTO_ORDERS): [
+        ("shown", "[data-acct-view='orders']", True),
+        ("shown", "[data-acct-view='overview']", False),
+        ("text", OH + ".gb-acct-intro__title", ["Order History"]),
+        ("text", OH + ".gb-acct-intro__sub",
+         ["Review, track, or create a return for your orders."]),
+        ("css", OH + ".gb-acct-intro__title", "font-size", "24px"),
+        ("css", OH + ".gb-acct-intro__title", "line-height", "30px"),
+        ("vis", ".gb-acct-nav__link[data-acct-goto='orders'].is-current", True),
+    ],
+    ("account.html", 390, GOTO_ORDERS): [
+        ("css", OH + ".gb-acct-intro__title", "font-size", "20px"),
+        ("css", OH + ".gb-acct-intro__title", "line-height", "24px"),
+        ("vis", OH + ".gb-acct-intro__back", True),
+    ],
+    ("account.html", 1440, GOTO_DETAILS): [
+        ("shown", "[data-acct-view='details']", True),
+        ("text", MD + ".gb-acct-intro__title", ["Your details"]),
+        ("css", MD + ".gb-acct-intro__title", "font-size", "24px"),
+        ("vis", ".gb-acct-nav__link[data-acct-goto='details'].is-current", True),
+    ],
+    ("account.html", 390, GOTO_DETAILS): [
+        ("css", MD + ".gb-acct-intro__title", "font-size", "20px"),
+    ],
+    ("account.html", 1440, GOTO_PASSWORD): [
+        ("shown", "[data-acct-view='password']", True),
+        ("text", CP + ".gb-acct-intro__title", ["Change Password"]),
+        ("css", CP + ".gb-acct-intro__title", "font-size", "24px"),
+        ("vis", ".gb-acct-nav__link[data-acct-goto='password'].is-current", True),
+    ],
+    ("account.html", 390, GOTO_PASSWORD): [
+        ("css", CP + ".gb-acct-intro__title", "font-size", "20px"),
+    ],
+    ("account.html", 1440, GOTO_HELP): [
+        ("shown", "[data-acct-view='help']", True),
+        ("text", HP + ".gb-acct-intro__title", ["Help"]),
+        ("css", HP + ".gb-acct-intro__title", "font-size", "24px"),
+        ("vis", ".gb-acct-nav__link[data-acct-goto='help'].is-current", True),
+    ],
+    ("account.html", 390, GOTO_HELP): [
+        ("css", HP + ".gb-acct-intro__title", "font-size", "20px"),
+    ],
+    # Order Detail has no nav row of its own -- Task 20 gives it one on the
+    # order card's View Order button. Until then the hash is the only way in.
+    ("account.html", 1440, GOTO_ORDER): [
+        ("shown", "[data-acct-view='order']", True),
+        ("text", OD + ".gb-acct-intro__title", ["Order #12345678"]),
+        ("css", OD + ".gb-acct-intro__title", "font-size", "24px"),
+    ],
+    ("account.html", 390, GOTO_ORDER): [
+        ("css", OD + ".gb-acct-intro__title", "font-size", "20px"),
+    ],
+
     # -- Task 14: Log in, desktop (2284:35137) --
     # These two pages carry the SITE header, not the account one: the board's
     # instance is Header Navigation Desktop/Closed, the same component the 11
@@ -1027,6 +1101,9 @@ def main():
                             print("RED  %-52s no .gb-acct-summary__code to fill" % label)
                             red += len(checks); pg.close(); continue
                         pg.wait_for_timeout(120)
+                elif action == GOTO_ORDER:
+                    pg.evaluate("()=>{location.hash='#order'}")
+                    pg.wait_for_timeout(450)
                 elif action in (STATE_PREPARING, STATE_RENEWAL):
                     state = action.split("-", 1)[1]
                     n = pg.evaluate(
@@ -1040,10 +1117,14 @@ def main():
                     # returns an interpolated colour that matches nothing
                     pg.wait_for_timeout(450)
                 else:
+                    nav = ".gb-acct-nav" if w > 767 else ".gb-acct-list"
                     trigger = {
                         OPEN_MENU: "[data-acct-menu-toggle]",
-                        GOTO_SUBS: ("%s [data-acct-goto='subscriptions']"
-                                    % (".gb-acct-nav" if w > 767 else ".gb-acct-list")),
+                        GOTO_SUBS: nav + " [data-acct-goto='subscriptions']",
+                        GOTO_ORDERS: nav + " [data-acct-goto='orders']",
+                        GOTO_DETAILS: nav + " [data-acct-goto='details']",
+                        GOTO_PASSWORD: nav + " [data-acct-goto='password']",
+                        GOTO_HELP: nav + " [data-acct-goto='help']",
                     }[action]
                     try:
                         pg.click(trigger, timeout=2000)

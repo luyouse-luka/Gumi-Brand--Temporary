@@ -250,6 +250,18 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 - ⚠ **两个 auth 桌面板的 note 卡标题是 PP Palma 500，手机板是 400**（`35207`/`35134` vs
   `35020`/`35056`），颜色也是 `#1B1C1E` vs `#011307`。**已各按各自的板实现**，与待裁决 AB 同源。
 
+- ⚠ **`2284:27151` Change Password 的说明文案有错字**：「…we'll send you an email with
+  instructions **ro** reset it.」—— `ro` 应为 `to`。**按 `to` 实现**。
+- ⚠ **`2284:27081` My Details 的电话字段 label 写的是「Email*」**，应为「Phone number*」——
+  上一组 Email 字段的 label 复制过来忘了改（同组内 `Your name` 的两个 label 都是对的）。
+  **按 `Phone number*` 实现**。
+- ⚠ **`2284:27202` Order History 的五张订单卡里有三张完全相同**（`Order #12345680` /
+  `Aug 15, 2026` / `Delivered` / `$45.00`）—— 只有前三张是三种不同状态
+  （Shipped / Delivered / Cancelled），后两张是复制凑数。**照稿做五张**，
+  但内容属占位（见 §8b）。
+- ⚠ **`2284:27081` 与 `27116` 两张 My Details 逐字相同、同高 2206**（待裁决 O）——
+  **只实现一个**，不是漏了一页。
+
 ## 8b. 上线前必须替换的占位内容
 
 混在正文里看不出来，不单独列就一定会带上线。
@@ -273,6 +285,11 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | `22/07/2026` | `restart` 面板的重启日期 | 板上的示例日期 |
 | 三处 `href="#"`（View Order / Refer a Friend / Re-Activate Subscription） | `account.html`，已标 `TODO client link` | 目标页未定 |
 | `href="#"` 的 **Forgot your password?** | `account-login.html`，已标 `TODO` | 密码找回页在稿里根本不存在，目标未定 |
+| **Help 页手风琴的全部文案** | `account.html` 的 `[data-acct-view="help"]`，已标 `TODO 待客户文案` | 板 `27170` 上七行的标题就是字面的 `Accordion Open` / `Accordion Closed`，正文是 `Text here` —— 设计里根本没有 FAQ 内容，**不许自拟** |
+| `email@email.com.au` / `0400 000 000` / `Mon - Fri, 6am - 11pm AEST` | `.gb-acct-help` 卡（Help 与 Order Detail 共用） | 板上的示例联系方式 |
+| Order History 的五张订单卡 | `[data-acct-view="orders"]` | `Order #1234567x` / `Aug 14-16, 2026` / `$89.99`·`$45.00`·`$0.00` 全是示例，且后两张是第二张的复制（见 §8） |
+| `Page 1 of 10` 与两个翻页箭头 | 同上 | 静态站只有一页，箭头做成 disabled；接后端后才有真分页 |
+| Order Detail 的订单数据 | `[data-acct-view="order"]` | `Order #12345678` / `Aug 13, 2026` / `$121.50` / `$134.50`→`$133.50` ×4 / Order Summary 的四个 `$00.00` / `Susanna Rose, 12 Charnwood Rd…` / `•••• 5467` / `Shipping & Standard: $12.98` 全是板上的示例 |
 | 两个 auth 表单的 `action="#" method="post"` | `account-login.html` / `account-signup.html` | 静态壳，提交后只会跳回 `#`。接 Shopify 时换成 `customers/login` 与 `customers/register` 的真实 form |
 
 ## 8c. 弹窗几何（r-a6 起，取自 29 张弹窗板）

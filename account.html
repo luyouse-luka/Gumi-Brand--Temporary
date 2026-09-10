@@ -40,7 +40,7 @@
       <ul class="gb-acct-menu__list">
         <li class="gb-acct-menu__item"><a class="gb-acct-menu__link" href="#overview" data-acct-goto="overview"><span class="gb-acct-menu__text">Account<span class="gb-acct-menu__more"> Overview</span></span></a></li>
         <li class="gb-acct-menu__item"><a class="gb-acct-menu__link" href="#subscriptions" data-acct-goto="subscriptions"><span class="gb-acct-menu__text">My Subscriptions</span></a></li>
-        <li class="gb-acct-menu__item"><a class="gb-acct-menu__link" href="#"><span class="gb-acct-menu__text">My Details</span></a></li>
+        <li class="gb-acct-menu__item"><a class="gb-acct-menu__link" href="#details" data-acct-goto="details"><span class="gb-acct-menu__text">My Details</span></a></li>
         <li class="gb-acct-menu__item"><a class="gb-acct-menu__link" href="#"><span class="gb-acct-menu__text">Log Out</span></a></li>
       </ul>
     </nav>
@@ -57,17 +57,17 @@
         <ul class="gb-acct-nav__group">
           <li class="gb-acct-nav__item"><button class="gb-acct-nav__link" type="button" data-acct-goto="overview">Account Overview</button></li>
           <li class="gb-acct-nav__item"><button class="gb-acct-nav__link" type="button" data-acct-goto="subscriptions">My Subscriptions</button></li>
-          <li class="gb-acct-nav__item"><span class="gb-acct-nav__link" role="link" aria-disabled="true">Order History</span></li>
+          <li class="gb-acct-nav__item"><button class="gb-acct-nav__link" type="button" data-acct-goto="orders">Order History</button></li>
         </ul>
         <ul class="gb-acct-nav__group">
-          <li class="gb-acct-nav__item"><span class="gb-acct-nav__link" role="link" aria-disabled="true">My Details</span></li>
-          <li class="gb-acct-nav__item"><span class="gb-acct-nav__link" role="link" aria-disabled="true">Change Password</span></li>
+          <li class="gb-acct-nav__item"><button class="gb-acct-nav__link" type="button" data-acct-goto="details">My Details</button></li>
+          <li class="gb-acct-nav__item"><button class="gb-acct-nav__link" type="button" data-acct-goto="password">Change Password</button></li>
         </ul>
         <ul class="gb-acct-nav__group">
           <li class="gb-acct-nav__item"><span class="gb-acct-nav__link" role="link" aria-disabled="true">Refer a Friend</span></li>
         </ul>
         <ul class="gb-acct-nav__group">
-          <li class="gb-acct-nav__item"><span class="gb-acct-nav__link" role="link" aria-disabled="true">Help</span></li>
+          <li class="gb-acct-nav__item"><button class="gb-acct-nav__link" type="button" data-acct-goto="help">Help</button></li>
           <li class="gb-acct-nav__item"><span class="gb-acct-nav__link" role="link" aria-disabled="true">Contact Preferences</span></li>
         </ul>
         <ul class="gb-acct-nav__group">
@@ -108,17 +108,17 @@
           <nav class="gb-acct-list" aria-label="Account sections">
             <ul class="gb-acct-list__group">
               <li class="gb-acct-list__item"><button class="gb-acct-list__link" type="button" data-acct-goto="subscriptions">My Subscriptions</button></li>
-              <li class="gb-acct-list__item"><span class="gb-acct-list__link" role="link" aria-disabled="true">Order History</span></li>
+              <li class="gb-acct-list__item"><button class="gb-acct-list__link" type="button" data-acct-goto="orders">Order History</button></li>
             </ul>
             <ul class="gb-acct-list__group">
-              <li class="gb-acct-list__item"><span class="gb-acct-list__link" role="link" aria-disabled="true">My Details</span></li>
-              <li class="gb-acct-list__item"><span class="gb-acct-list__link" role="link" aria-disabled="true">Change Password</span></li>
+              <li class="gb-acct-list__item"><button class="gb-acct-list__link" type="button" data-acct-goto="details">My Details</button></li>
+              <li class="gb-acct-list__item"><button class="gb-acct-list__link" type="button" data-acct-goto="password">Change Password</button></li>
             </ul>
             <ul class="gb-acct-list__group">
               <li class="gb-acct-list__item"><span class="gb-acct-list__link" role="link" aria-disabled="true">Refer a Friend</span></li>
             </ul>
             <ul class="gb-acct-list__group">
-              <li class="gb-acct-list__item"><span class="gb-acct-list__link" role="link" aria-disabled="true">Help</span></li>
+              <li class="gb-acct-list__item"><button class="gb-acct-list__link" type="button" data-acct-goto="help">Help</button></li>
             </ul>
           </nav>
 
@@ -480,6 +480,61 @@
           <p class="gb-acct-detail__cancel" data-detail-only="active paused"><button class="gb-acct-link" type="button" data-acct-modal="cancel-offer-skip">Cancel Subscription</button></p>
           </div>
         </div>
+        </section>
+
+        <!-- 2284:27202 phone only; the desktop layout is extrapolated from the
+             three desktop boards (decision C, 2026-09-10). Only the heading
+             changes size between the two: 20/24 phone, 24/30 desktop. -->
+        <section class="gb-acct__view" data-acct-view="orders" hidden>
+          <div class="gb-acct-intro">
+            <button class="gb-acct-intro__back" type="button" data-acct-goto="overview" aria-label="Back to account overview"><svg class="gb-acct-intro__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="26 174 20 20" fill="none" aria-hidden="true"><path d="M41.8307 184.001H30.1641M35.9974 178.168L30.1641 184.001L35.9974 189.835" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <div class="gb-acct-intro__text">
+              <h1 class="gb-acct-intro__title">Order History</h1>
+              <p class="gb-acct-intro__sub">Review, track, or create a return for your orders.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2284:27304 phone only. Reached from a card's View Order,
+             so it has no row of its own in the nav. -->
+        <section class="gb-acct__view" data-acct-view="order" hidden>
+          <div class="gb-acct-intro">
+            <button class="gb-acct-intro__back" type="button" data-acct-goto="orders" aria-label="Back to order history"><svg class="gb-acct-intro__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="26 174 20 20" fill="none" aria-hidden="true"><path d="M41.8307 184.001H30.1641M35.9974 178.168L30.1641 184.001L35.9974 189.835" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <div class="gb-acct-intro__text">
+              <h1 class="gb-acct-intro__title">Order #12345678</h1>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2284:27081 phone only. 27116 is the same board word for word
+             at the same height, so only one is built (decision O). -->
+        <section class="gb-acct__view" data-acct-view="details" hidden>
+          <div class="gb-acct-intro">
+            <button class="gb-acct-intro__back" type="button" data-acct-goto="overview" aria-label="Back to account overview"><svg class="gb-acct-intro__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="26 174 20 20" fill="none" aria-hidden="true"><path d="M41.8307 184.001H30.1641M35.9974 178.168L30.1641 184.001L35.9974 189.835" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <div class="gb-acct-intro__text">
+              <h1 class="gb-acct-intro__title">Your details</h1>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2284:27151 phone only -->
+        <section class="gb-acct__view" data-acct-view="password" hidden>
+          <div class="gb-acct-intro">
+            <button class="gb-acct-intro__back" type="button" data-acct-goto="overview" aria-label="Back to account overview"><svg class="gb-acct-intro__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="26 174 20 20" fill="none" aria-hidden="true"><path d="M41.8307 184.001H30.1641M35.9974 178.168L30.1641 184.001L35.9974 189.835" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <div class="gb-acct-intro__text">
+              <h1 class="gb-acct-intro__title">Change Password</h1>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2284:27170 phone only -->
+        <section class="gb-acct__view" data-acct-view="help" hidden>
+          <div class="gb-acct-intro">
+            <button class="gb-acct-intro__back" type="button" data-acct-goto="overview" aria-label="Back to account overview"><svg class="gb-acct-intro__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="26 174 20 20" fill="none" aria-hidden="true"><path d="M41.8307 184.001H30.1641M35.9974 178.168L30.1641 184.001L35.9974 189.835" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <div class="gb-acct-intro__text">
+              <h1 class="gb-acct-intro__title">Help</h1>
+            </div>
+          </div>
         </section>
       </div>
     </div>

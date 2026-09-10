@@ -1305,6 +1305,267 @@ git status --short
 
 ---
 
+## Task 16：五个新视图接入框架（决策 C 已拍板）
+
+> **范围来源**：2026-09-10 用户拍板待裁决 C —— 「C 需要补桌面稿，如果只有手机稿也需补
+> 桌面稿，风格与其他桌面稿类似」。即：`DETAIL-STATES.md` 查明的五个页面**要做**，
+> 且**桌面版由我们按已有三张桌面稿的风格外推**，不等设计方出稿。
+>
+> ⚠ **Refer a Friend 与 Contact Preferences 不在此列** —— 这两项连手机稿都没有，
+> 做了就是自造内容（全局铁律 3）。导航里保持现在的 disabled 占位，等稿。
+
+**设计源**：`2284:27202`（Order History）、`27304`（Order Detail）、`27081`（My Details，
+`27116` 与它逐字相同）、`27151`（Change Password）、`27170`（Help）——
+全部只有 390 手机稿，桌面外推。
+
+**架构**：用户选定**塞进 `account.html` 当新视图**（不新建 HTML 文件），
+`data-acct-view` 从 3 个扩到 8 个。`account.js` 的 `Router.show()` 是遍历实现，
+**新增视图零 JS 改动**，只要 DOM 里有 `data-acct-view` 且导航有 `data-acct-goto`。
+
+**已查明的桌面外推规则**（Task 16 步骤 1 复核，别重新推导）：
+
+| 档 | 手机稿 | 桌面 | 依据 |
+|---|---|---|---|
+| 页面标题 | `20/24 w800 ls-0.2` | `24/30 w800 ls-0.24` | `27792` vs `28330` 实测，`.gb-acct-intro__title` 已实现这条 |
+| 正文 / 卡内标题 | `16/24` | **相同** | 三张桌面稿与对应手机稿逐档比对 |
+| 次要文字 | `14/20` · `12/18` | **相同** | 同上 |
+| 版心 | 390 - 20×2 = 350 | `.gb-acct__inner` 两栏，内容列 `minmax(0,1fr)` | 已实现 |
+
+即**只有标题一档变**，其余照抄手机稿。`.gb-acct-intro`（桌面 lime-200 卡片 136 高 /
+手机无底色）与 `.gb-acct-intro--back`（返回按钮）直接复用，不新写。
+
+**文件**
+- 修改：`account.html`、`assets/account.scss`、`tools/acctcheck.py`、`docs/account/SPEC.md`
+
+- [x] **步骤 1：复核外推规则 + 登记稿件错误**
+
+```bash
+python3 - <<'PY'
+import json,glob,collections
+def load(n):
+    return json.load(open(glob.glob("figma/account/nodes/%s_*.json"%n.replace(':','-'))[0]))["document"]
+def t(n,out):
+    if n.get("visible") is False: return
+    if n["type"]=="TEXT":
+        s=n.get("style",{})
+        out.append((s.get("fontSize"),s.get("lineHeightPx"),s.get("fontWeight"),
+                    s.get("letterSpacing"),(n.get("characters") or "").split("\n")[0][:40]))
+    for c in n.get("children") or []: t(c,out)
+for nid in ["2284:27202","2284:27304","2284:27081","2284:27151","2284:27170"]:
+    o=[]; t(load(nid),o)
+    print(nid, sorted({(a,b,w) for a,b,w,_,_ in o}, reverse=True))
+PY
+```
+
+同时把这四条**稿件自身的错误**补进 `SPEC.md` §8（别当 bug 修）：
+
+| 节点 | 错误 |
+|---|---|
+| `27151` | `…instructions **ro** reset it.` —— `ro` 应为 `to` |
+| `27081` | Phone number 组的 label 写的是 `Email*`，应为 `Phone number*` |
+| `27202` | 五张订单卡里有三张是同一张 `Order #12345680 / Aug 15 / Delivered / $45.00` 复制的 |
+| `27081` vs `27116` | 两张 My Details 逐字相同、同高 2206（已在待裁决 O 登记），**只实现一个** |
+
+以及 `SPEC.md` §8b（上线前必须替换的占位内容）追加：
+
+- `27170` Help 的手风琴标题全是 `Accordion Open` / `Accordion Closed`，正文是 `Text here`
+  —— **是占位，保留原样并标 `TODO 待客户文案`，绝不自拟 FAQ**
+- `27304` Order Summary 的 `$00.00` / `-$00.00` 四处
+- `27170`·`27304` 的 `email@email.com.au` / `0400 000 000`
+
+- [x] **步骤 2：追加断言（先红）** —— 五个视图容器存在、标题正确、导航条目可点
+
+```python
+# tools/acctcheck.py -- every selector MUST carry the view prefix: all eight views
+# live in the DOM and seven of them are hidden (see HANDOFF 5d).
+("account.html", 1440, "[data-acct-view='orders'] .gb-acct-intro__title", "text", "Order History"),
+("account.html", 1440, "[data-acct-view='order'] .gb-acct-intro__title",  "text", "Order #12345678"),
+("account.html", 1440, "[data-acct-view='details'] .gb-acct-intro__title","text", "Your details"),
+("account.html", 1440, "[data-acct-view='password'] .gb-acct-intro__title","text","Change Password"),
+("account.html", 1440, "[data-acct-view='help'] .gb-acct-intro__title",   "text", "Help"),
+```
+
+⚠ 负向断言先验锚点：先断言 `.gb-acct-nav__link[data-acct-goto='orders']` **存在**，
+再断言 `.gb-acct-nav .gb-acct-nav__link[aria-disabled='true']` 只剩 **2** 个
+（Refer a Friend / Contact Preferences）。
+
+- [x] **步骤 3：跑判据确认红** — `python3 tools/acctcheck.py`
+
+- [x] **步骤 4：三处导航一起激活**（少一处手机就进不去）
+
+| 位置 | 选择器 | 改动 |
+|---|---|---|
+| 桌面竖导航 | `.gb-acct-nav` | Order History / My Details / Change Password / Help 四条 `span[aria-disabled]` → `button[data-acct-goto]` |
+| 手机页内列表卡 | `.gb-acct-list` | 同四条（`27617` 本来就列着它们） |
+| 手机汉堡面板 | `.gb-acct-menu` | 只有 My Details 一条（板 `34757` 就 4 项），`href="#"` → `href="#details" data-acct-goto="details"` |
+
+Order Detail **不进导航** —— 它的入口是 Order History 卡上的 `View Order`
+（`data-acct-goto="order"`），与 `subscriptions → detail` 同一套。
+
+- [x] **步骤 5：五个空视图容器**，各带 `.gb-acct-intro`（标题 + 视 `27202` 有副标题）
+      与 `.gb-acct-intro--back`（五张手机稿的 Account Header 都画了 arrow-left）。
+      内容区留空，由 Task 17-21 填。
+
+- [x] **步骤 6：跑判据确认绿** —— `660 → 691 ok / 0 red`（新增 31 条，
+      实现前全红、实现后全绿，先红后绿本身就是活性证明）。`rwd.py` 390/768/1024/1440 全绿。
+      ⚠ **本步没有 bump 版本号**：五个视图全部复用已有的 `.gb-acct-intro`，
+      `account.scss` 一行没改，`account.css` 与 `account.js` 都没变，破缓存无从谈起。
+      Task 17 起真改 scss 时再 bump。
+
+- [x] **步骤 7：提交** — `git commit -m "feat(account): 五个新视图接入导航与路由"`
+
+---
+## Task 17：Change Password 视图
+
+**设计源**：`2284:27151`（h=1820，全套最简单的一页，先用它趟通外推流程）
+
+**结构**：标题卡 → 一张白卡（`Need to update your password?` 16/24 w500 +
+说明 16/24 w400 + 一个绿按钮 `Change Password`）。
+
+**文件**：修改 `account.html`、`assets/account.scss`、`tools/acctcheck.py`
+
+- [ ] **步骤 1：从节点数据取全部数值** —— 卡片 padding / radius / row-gap /
+      按钮高与内边距 / 各 TEXT 的 `characterStyleOverrides`
+- [ ] **步骤 2：追加断言（先红）** —— 卡片存在、按钮文案、1440 与 390 两档的标题字号
+- [ ] **步骤 3：跑判据确认红**
+- [ ] **步骤 4：实现**。按钮**不要用 `.gb-btn--lg`**（≤767 掉到 44 高，客户 r133），
+      account 线按钮一律自写，与 `.gb-acct-auth__submit` 同一路子
+- [ ] **步骤 5：编译、跑判据确认绿、`tools/rwd.py` 扫 14 档无溢出**
+- [ ] **步骤 6：提交** — `git commit -m "feat(account): Change Password 视图"`
+
+---
+## Task 18：My Details 视图
+
+**设计源**：`2284:27081`（h=2206。`27116` 逐字相同，**只做一个**，差异归待裁决 O）
+
+**结构**：标题卡 → 表单卡（Email 单栏 + 一句 12/18 说明 → First name* / Last name*
+**两栏** → Phone number：国别码 `AU` 小 select + `+61 000 0000 000` → checkbox
+`Opt in to order updates via text message`）→ `Save changes` 按钮 → 底部 12/18 居中说明。
+
+**文件**：修改 `account.html`、`assets/account.scss`、`tools/acctcheck.py`
+
+- [ ] **步骤 1：取数值**。姓名两栏的列宽/间距按稿；⚠ 若又是 `168+15+168=351`
+      比内容盒宽 1（待裁决 T 的老问题），沿用 Task 12 的 `1fr / gap / 1fr` 解法
+- [ ] **步骤 2：追加断言（先红）**，含 767 以下两栏塌成一栏
+- [ ] **步骤 3：跑判据确认红**
+- [ ] **步骤 4：实现**。字段复用弹窗里的 `.gb-acct-field`；
+      ⚠ **`<select>` 必须 `appearance: none`**，否则与自绘 chevron 叠成两个箭头
+- [ ] **步骤 5：编译、跑判据确认绿、`rwd.py`**
+- [ ] **步骤 6：提交** — `git commit -m "feat(account): My Details 视图"`
+
+---
+## Task 19：Help 视图
+
+**设计源**：`2284:27170`（h=2100）
+
+**结构**：标题卡 → `Popular Questions` 卡（7 行手风琴：第 1 行展开含 `Text here`，
+其余 6 行收起）→ `Need help with your order?` 卡（营业时间 / Email / Texting only /
+`To find more info` + `visit FAQ page` 链接）。
+
+⚠ **手风琴的标题与正文全是占位**（`Accordion Open` / `Accordion Closed` / `Text here`）——
+照抄并标 `TODO 待客户文案`，**不要填真的 FAQ**（全局铁律 3）。
+
+⚠ **`Need help` 卡与 Task 21 的 Order Detail 共用** —— 在这里就写成独立的
+`.gb-acct-help` 块，Task 21 直接复用，不要复制第二份。
+
+**文件**：修改 `account.html`、`assets/account.scss`、`assets/account.js`、`tools/acctcheck.py`
+
+- [ ] **步骤 1：取数值** —— 行高、分隔线、chevron 尺寸与旋转、展开态的 padding
+- [ ] **步骤 2：追加断言（先红）**，含「点第 2 行 → 它展开且第 1 行收起」的交互断言
+      （放 `tools/acctmodal.py`，那里已有 Playwright 会话）
+- [ ] **步骤 3：跑判据确认红**
+- [ ] **步骤 4：实现**。手风琴写进 `account.js` 新模块，
+      **IIFE + `data-acct-accordion` hook + 早退守卫**（全局铁律 17），
+      不复用样式类做 hook，不调 `window.gumi`（主站 faq 的那套不引进来）
+- [ ] **步骤 5：编译、跑判据确认绿、`accthover.py` 确认手风琴行的 hover 有过渡**
+- [ ] **步骤 6：提交** — `git commit -m "feat(account): Help 视图与手风琴"`
+
+---
+## Task 20：Order History 视图
+
+**设计源**：`2284:27202`（h=2701）
+
+**结构**：标题卡（含副标题 `Review, track, or create a return for your orders.`）→
+5 张 `Order Card`（350×230：`Order Details` 156 + `Order Button Container` 72）→
+`Pagination` 350×45（左箭头 36×36 + `Page 1 of 10` + 右箭头 36×36）。
+
+**状态**：卡上的 `Status:` 有三种值 —— `Shipped` / `Delivered` / `Cancelled`，
+配色从节点取，用 `data-acct-order-state` 区分，**不复制三份 DOM**。
+
+⚠ **分页是静态展示**，静态站没有第 2 页。两个箭头做成 `disabled`（左箭头在第 1 页
+本来就该禁用），并在 HANDOFF「不要报成 bug」里记一笔。
+
+**文件**：修改 `account.html`、`assets/account.scss`、`tools/acctcheck.py`
+
+- [ ] **步骤 1：取数值**（卡片 radius / padding / 行间距 / Status 三色 / 按钮）
+- [ ] **步骤 2：追加断言（先红）**，含三种 Status 各自的颜色与卡片计数 5
+- [ ] **步骤 3：跑判据确认红**
+- [ ] **步骤 4：实现**，`View Order` 带 `data-acct-goto="order"`
+- [ ] **步骤 5：编译、跑判据确认绿、`rwd.py`**
+- [ ] **步骤 6：提交** — `git commit -m "feat(account): Order History 视图"`
+
+---
+## Task 21：Order Detail 视图
+
+**设计源**：`2284:27304`（h=3070，这批里最复杂的一页）
+
+**结构**：标题卡 `Order #12345678`（Order Date / Status / Total 三行）→
+`Order Items:` 4 个商品行（缩略图 + 名称 + Flavour + `Quantity: 1` +
+`Subscription` / `One-off purchase` 标签 + 划线原价 + 现价）→
+`Order Summary`（Subtotal / Promo code discount / Shipping / **Total** 加粗）→
+`Shipping Information`（Shipping Address / Shipping Method）→
+`Payment Information`（`•••• 5467` / Billing Address / **`Download Invoice`**）→
+复用 Task 19 的 `.gb-acct-help` 卡。
+
+⚠ **`Download Invoice` 卡在待裁决 I** —— 便签 `27444`：「Only do if very very very
+cheap. Otherwise, remove.」**照稿做出来**（这是还原不是决策），在 SPEC §7 I 下补一句
+「Order Detail 页已按稿实现，要去掉说一声」。
+
+⚠ 商品行的缩略图从 `figma/account/image-fills/` 取，**一卡一图不复用**（全局铁律 3）；
+稿上四行若确实是同一张图，照稿即可，但在 §8b 记一笔。
+
+**文件**：修改 `account.html`、`assets/account.scss`、`tools/acctcheck.py`
+
+- [ ] **步骤 1：取数值**，四个小节的卡片间距与内部行距分别取
+- [ ] **步骤 2：追加断言（先红）**，含 `Total` 行的字重与 4 个商品行计数
+- [ ] **步骤 3：跑判据确认红**
+- [ ] **步骤 4：实现**，商品行结构尽量复用 Detail 视图已有的 `.gb-acct-row`
+- [ ] **步骤 5：编译、跑判据确认绿、`rwd.py`**
+- [ ] **步骤 6：提交** — `git commit -m "feat(account): Order Detail 视图"`
+
+---
+## Task 22：这批的收尾回归
+
+**文件**：`tools/acct*.py`、`docs/account/{SPEC,CHANGELOG,HANDOFF,PLAN}.md`、三个页面
+
+- [ ] **步骤 1：全量判据**（基线见 `HANDOFF.md` §4，数字只应涨不应跌）
+
+```bash
+python3 tools/acctcheck.py          # ~1 min
+python3 tools/acctmodal.py &        # ~4 min, background
+python3 tools/acctvars.py; python3 tools/assetpath.py
+python3 tools/acctbp.py; python3 tools/accthover.py; python3 tools/acctmotion.py
+for w in 360 390 414 480 576 768 834 991 1024 1200 1280 1366 1440 1920; do
+  python3 tools/rwd.py account.html $w; done
+```
+
+⚠ chromium 现在是 **1208**，`acctcheck.py` / `acctmodal.py` 已改成扫 `chromium-*`
+取最新；PLAN 头部写的 `chromium-1217` 是过时的，靠一条软链撑着（HANDOFF §7）。
+
+- [ ] **步骤 2：`acctbp.py` 突变自检** —— 新增五个视图后必须再造一次假重叠，
+      确认判据还有活性（0 red 本身不证明什么）
+- [ ] **步骤 3：八视图互斥自检** —— 断言任意时刻只有一个 `[data-acct-view]` 不带 `hidden`，
+      且八个 hash 都能命中（未知 hash 回落 overview）
+- [ ] **步骤 4：更新四份文档**
+  - `SPEC.md`：§5 视图表从 3 行扩到 8 行；§7 决策 C **标记为已拍板**（2026-09-10，
+    做五页 + 桌面外推，Refer a Friend / Contact Preferences 仍无稿）；§8 / §8b 追加
+  - `DETAIL-STATES.md`：第一节末尾那句「等用户拍板再做，本轮不动」改成已做
+  - `CHANGELOG.md`：Task 16-22 归并成一条
+  - `HANDOFF.md`：§2 页面表、§5「不要报成 bug」补分页禁用 / Help 占位文案 /
+    `27116` 未单独实现三条
+- [ ] **步骤 5：提交** — `git commit -m "docs(account): 五个新视图的回归与文档"`
+
+---
 ## 阻塞项
 
 不阻塞 Task 1-8，但下列几项在动到对应任务前最好先要到答案。
