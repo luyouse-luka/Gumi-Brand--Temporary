@@ -8,6 +8,116 @@
 
 ---
 
+## Task 9 — 六类表单弹窗与脏值门控的保存按钮（`$build-acct` = `20260910-a7`）
+
+**设计源**：`2284:31330` edit-name / `31976` edit-date / `32135` edit-frequency /
+`32463` edit-payment / `32621` skip-next / `33350` need-now；
+便签 `27446` 脏值门控 / `27448` 预填当前值 / `30925` 频率只有 2·4·6 周。
+共用组件值已抽成 **`docs/account/MODAL-SPECS.md`**，Task 10–13 直接查那份。
+
+### 桌面怎么对齐（用户 2026-09-10 拍板）
+
+用户定：**面板宽仍用板上的 390**，字号/间距/宽度按其他有桌面稿的部分对齐。
+照这条去查，发现**字号根本不用改** —— 桌面板 `2284:27792` 与手机共用同一套阶梯：
+
+| token | 桌面 `27792` | 手机 | |
+|---|---|---|---|
+| 行标签 / Cancel / Edit | `14/20 w400 -0.28` | 同 | 一致 |
+| 按钮 / 总计 | `16/24 w500 -0.32` | 同 | 一致 |
+| 小链接 | `12/18 w400 -0.24` | 同 | 一致 |
+| 页标题 | `24/30 w800 -0.24` | 20/24 | 唯一有 ramp 的 |
+
+Task 6 那个 `1.1554` **只作用在四个日期块上**，不是全局缩放。
+所以桌面唯一真正的差异是**容器内边距**，弹窗照 account 自己的卡片惯例走：
+
+| 元素 | 桌面 | 手机 | 中间 | 对照 |
+|---|---|---|---|---|
+| 头/体/脚 左右 | `24` | `20` | `fluid(20px, 24px)` | `.gb-acct-sub--detail .gb-acct-sub__head` |
+| 体 上下 | `24` | `20` | `fluid(20px, 24px)` | `.gb-acct-sub__body` |
+| 头 上下 | `20` | `20` | — | `.gb-acct-sub__head` 两端都是 20 |
+| 脚 上下 | `16` | `16` | — | 板值 |
+
+### 一个会让每个面板都高 2px 的坑
+
+头的分隔线与脚的分隔线在板上是 `strokeAlign: **INSIDE**` —— 1px 画在 64 / 72 **之内**。
+用 CSS `border-bottom` / `border-top` 会各加 1px，**每个面板都比板高 2px**
+（判据允许 ±2，正好卡在边界上蒙混过关）。改用 `box-shadow: inset 0 ∓1px 0` 复现 INSIDE 描边，
+六个面板的高度这才与板逐值相等：246 / 290 / 290 / 256 / 236 / 256。
+
+### 做了什么
+
+- **三个表单型**（edit-name / edit-date / edit-frequency）：标签 + 44 高控件（r8、`#cccccc`
+  描边、`16/24` `#666`）+ 12/18 说明行。日期与频率各带一个尾部图标，从板 SVG 按 bbox 裁出。
+- **三个确认型**（edit-payment / skip-next / need-now）：只有一段 `14/20` `#666` 正文。
+  正文块是板上的 **320 固定宽**（三张板一致），左对齐、右侧留 30。
+- **脏值门控**（便签 `27446`）：`acctForm.watch()` 在 init 时就给每个面板上表，
+  改动任一字段解锁 Save，**改回原值再次锁上**。确认型没有 `[data-acct-field]`，不受管，
+  板上它们本来就是绿的可用态。
+- **`disabled` 同时写在标签里**，不只靠 JS —— 脚本没加载时按钮也不该可点，且避免
+  「先亮一下再变灰」。
+- **skip-next 的日期用 `<strong>` 单独描粗**：板上 `17 July, 2026` 是
+  `characterStyleOverrides` 里的 w500 `#011307`，不是整句样式。
+  edit-frequency 的说明行同理，`2026-07-19` 是 w800，且后面跟的是 **U+2028** 不是换行 ——
+  HTML 里写成 `<br>`（memory `nl2br-blind-to-u2028`）。
+
+### 与 PLAN 不同的一处：频率用原生 `<select>`
+
+PLAN 步骤 3 要求「用现站 `selectBox` 的视觉规格重画一份自定下拉」。**没有照做** ——
+板上 `2284:32135` **只有闭合态，展开态一张稿都没有**，自画列表等于自拟视觉（铁律 2/3）。
+原生 `<select>` 与闭合态逐值一致（44 高 / r8 / `#cccccc` / `16/24` `#666` / 尾部箭头），
+键盘与读屏行为免费，选项按便签 `30925` 只给 2 / 4 / 6 周。
+要自定 listbox，需先拿到展开态的稿，或同意照搬现站 `.gb-select` 的规格。已登记 MODAL-SPECS §6。
+
+### 一条自检本身是无效的，已替换
+
+PLAN 步骤 5 让「删掉 `save.disabled = true` → 行为断言必须红」。实测**没有转红** ——
+因为 `disabled` 也写在标签里，删掉 JS 那行初始态照旧。**这条自检证明不了任何事。**
+换成删掉真正起作用的那部分（`input` / `change` 监听器），当场转红 6 条。
+
+### 文件清单
+
+| 文件 | 改动 |
+|---|---|
+| `account.html` | 六个面板填入 body + foot；三个字段、两个尾部图标、三段正文；`?v=` → `a7` |
+| `assets/account.scss` | 头补 INSIDE 描边与 24/20 gutter；body 补内边距与 cream 底；新增 `__foot` / `__copy` / `__hint` / `__fields` / `__save` 与 `.gb-acct-field` 一族；`$build-acct` → `20260910-a7` |
+| `assets/account.css` | 编译产物（双写） |
+| `assets/account.js` | 新增 `acctForm`，`modal.init` 里对每个面板上表，挂进 `window.gumiAcct.form` |
+| `images/acct-field-date.svg`·`acct-field-chevron.svg` | 新增 2 个 |
+| `tools/acctmodal.py` | 追加 Task 9 的 `check_forms`（6 弹窗 × 2 断点）；`<select>` 走 `select_option`；字段缺失时报红而不是崩 |
+| `docs/account/MODAL-SPECS.md` | 新建 —— 弹窗共用组件规格 |
+| `docs/account/SPEC.md` | §8 新增 `wan to skip` 错字 |
+| `figma/account/cut-icons.py` | 追加 2 条 JOBS。⚠ 不入库 |
+
+### 判据
+
+| 判据 | 结果 |
+|---|---|
+| `tools/acctmodal.py` | **648 ok / 0 red / 2 aborted**（Task 8 收尾是 438） |
+| 活性自检 A（PLAN 版：删 `save.disabled = true`） | **没转红 → 判定此自检无效**，已替换 |
+| 活性自检 B1：删掉 `input`/`change` 监听器 | 转红 **6** ✅ |
+| 活性自检 B2：桌面 gutter 退回 20 | 转红 **12** ✅（390 档保持绿，正确） |
+| `tools/acctcheck.py` / `rwd.py` / `acctvars.py` / `assetpath.py` | 未回归 |
+| 双写一致 | IN SYNC |
+| 面板高度对板 | 246 / 290 / 290 / 256 / 236 / 256，六个全中 |
+
+### 判据自己的一个 bug（Task 8 埋的）
+
+Task 8 的 Lenis 滚轮探针收尾时写 `body.innerHTML = ''`，**把被测面板的内容整个抹掉**，
+于是后面 Task 9 的检查量到的是空壳（`edit-name` 报「面板 178px 高」）。
+改成只移除探针塞进去的那个 div —— **不能用 innerHTML 还原**，那会重建节点、
+让 `acctForm` 捕获的字段引用全部失效，Save 再也醒不过来。
+
+### 遗留
+
+- **频率下拉的展开态无稿**（见上）。
+- **正文块 320 固定宽**照板实现，右侧留 30 空；若那其实是漏改，改成 350 即可。
+- **表单只有前端行为**，Save 不落任何数据 —— 决策里就没有后端。
+- 板上错字两处照抄并登记：`wan to skip`（`32775`）、`Restart subscoption`（`34192`）。
+- `edit-name` 另有一版 `2284:33508`（值是人名 `Susanna`），详情页用的是 `31330` 那版
+  （值 `My Subscription`）。人名那版属 My Details 页，不在本计划内。
+
+---
+
 ## Task 8 — 弹窗基础设施与滚动锁（`$build-acct` = `20260910-a6`）
 
 **设计源**：`2284:31330`（居中卡结构）、`2284:28942`（贴底抽屉）、`MODALS.txt`（13 类 / 37 态标题）。

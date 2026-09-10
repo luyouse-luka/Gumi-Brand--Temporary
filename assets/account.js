@@ -82,6 +82,37 @@
     }
   };
 
+  /* acctForm — note 2284:27446: Save stays asleep until the form above it has
+   * actually been changed. Panels with nothing to change (the confirm-only ones)
+   * have no [data-acct-field] and are left alone, which is also how their boards
+   * draw them: green, not #e6e6e6.
+   */
+  var acctForm = {
+    watch: function (panel) {
+      var save = panel.querySelector('[data-acct-save]');
+      var fields = panel.querySelectorAll('[data-acct-field]');
+      if (!save || !fields.length || panel.getAttribute('data-acct-watched')) return;
+      panel.setAttribute('data-acct-watched', '1');
+      var initial = this._snapshot(fields);
+      save.disabled = true;
+      var self = this;
+      panel.addEventListener('input', function () {
+        save.disabled = self._snapshot(fields) === initial;
+      });
+      // A <select> fires change, not input, in older engines; listening to both
+      // costs nothing and the comparison is idempotent.
+      panel.addEventListener('change', function () {
+        save.disabled = self._snapshot(fields) === initial;
+      });
+    },
+
+    _snapshot: function (fields) {
+      var v = [];
+      for (var i = 0; i < fields.length; i++) v.push(fields[i].value);
+      return v.join('\u0000');
+    }
+  };
+
   /* modal — every [data-acct-modal] opens the panel of the same name.
    *
    * The lock reuses the site's own is-modal-open rather than a second class of
@@ -101,6 +132,10 @@
 
     init: function () {
       var self = this;
+      // Armed up front, not on first open: the board ships Save greyed out, so
+      // it has to be disabled before the panel is ever shown.
+      var panels = document.querySelectorAll('.gb-acct-modal');
+      for (var i = 0; i < panels.length; i++) acctForm.watch(panels[i]);
       document.addEventListener('click', function (e) {
         if (!e.target.closest) return;
         var open = e.target.closest('[data-acct-modal]');
@@ -208,5 +243,5 @@
     }
   });
 
-  window.gumiAcct = { acctNav: acctNav, view: view, modal: modal };
+  window.gumiAcct = { acctNav: acctNav, view: view, modal: modal, form: acctForm };
 })();

@@ -1863,7 +1863,18 @@
   justify-content: space-between;
   gap: 8px;
   flex: 0 0 auto;
-  padding: 20px;
+  padding: 20px 24px;
+  box-shadow: inset 0 -1px 0 #e6e6e6;
+}
+@media (max-width: 767px) {
+  .gb-acct-modal__head {
+    padding-inline: 20px;
+  }
+}
+@media (min-width: 768px) and (max-width: 1280px) {
+  .gb-acct-modal__head {
+    padding-inline: clamp(20px, 20px + 4 * (100vw - 768px) / 513, 24px);
+  }
 }
 
 .gb-acct-modal__title {
@@ -1906,6 +1917,161 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  padding: 24px;
+  background: #faf9f8;
+}
+@media (max-width: 767px) {
+  .gb-acct-modal__body {
+    padding: 20px;
+  }
+}
+@media (min-width: 768px) and (max-width: 1280px) {
+  .gb-acct-modal__body {
+    padding: clamp(20px, 20px + 4 * (100vw - 768px) / 513, 24px);
+  }
+}
+
+.gb-acct-modal__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  flex: 0 0 auto;
+  padding: 16px 24px;
+  box-shadow: inset 0 1px 0 #e6e6e6;
+  background: #ffffff;
+}
+@media (max-width: 767px) {
+  .gb-acct-modal__foot {
+    padding-inline: 20px;
+  }
+}
+@media (min-width: 768px) and (max-width: 1280px) {
+  .gb-acct-modal__foot {
+    padding-inline: clamp(20px, 20px + 4 * (100vw - 768px) / 513, 24px);
+  }
+}
+
+.gb-acct-modal__copy {
+  max-width: 320px;
+  margin: 0;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: #666666;
+}
+
+.gb-acct-modal__copy strong {
+  font-weight: 500;
+  color: #011307;
+}
+
+.gb-acct-modal__hint {
+  margin: 0;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  letter-spacing: -0.24px;
+  color: #666666;
+}
+.gb-acct-modal__hint b {
+  font-weight: 800;
+}
+
+.gb-acct-modal__fields {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.gb-acct-field {
+  display: flex;
+  flex-direction: column;
+  row-gap: 6px;
+}
+
+.gb-acct-field__label {
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  color: #666666;
+}
+
+.gb-acct-field__control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gb-acct-field__input {
+  width: 100%;
+  height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #cccccc;
+  border-radius: 8px;
+  background: #ffffff;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: #666666;
+  transition: border-color 0.2s cubic-bezier(0.33, 1, 0.68, 1);
+}
+.gb-acct-field__input:focus-visible {
+  outline: 2px solid #0374a5;
+  outline-offset: 1px;
+}
+
+.gb-acct-field__icon {
+  position: absolute;
+  right: 14px;
+  width: 20px;
+  height: 20px;
+  color: #666666;
+  pointer-events: none;
+}
+
+.gb-acct-field__input--icon {
+  padding-right: 42px;
+}
+
+.gb-acct-modal__save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  column-gap: 8px;
+  height: 40px;
+  padding-inline: 32px;
+  border: 0;
+  border-radius: 10000px;
+  background: #005635;
+  font-family: "PP Palma", "Figtree", "PP Palma Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: 0;
+  color: #ffffff;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s cubic-bezier(0.33, 1, 0.68, 1), opacity 0.2s cubic-bezier(0.33, 1, 0.68, 1);
+}
+@media (hover: hover) {
+  .gb-acct-modal__save:hover {
+    opacity: 0.85;
+  }
+}
+.gb-acct-modal__save:disabled {
+  background: #e6e6e6;
+  color: #808080;
+  cursor: default;
+  opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {

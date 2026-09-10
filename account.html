@@ -10,7 +10,7 @@
 <link rel="icon" href="images/favicon.svg?v=20260909-r134" type="image/svg+xml">
 <link rel="apple-touch-icon" href="images/favicon-180.png?v=20260909-r134">
 <link rel="stylesheet" href="assets/customstyle.css?v=20260909-r134">
-<link rel="stylesheet" href="assets/account.css?v=20260910-a6">
+<link rel="stylesheet" href="assets/account.css?v=20260910-a7">
 <noscript><style>.wowo{opacity:1 !important}</style></noscript>
 </head>
 <body>
@@ -570,7 +570,18 @@
         <h2 class="gb-acct-modal__title" id="acct-modal-edit-name">Edit name</h2>
         <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <div class="gb-acct-modal__body" data-lenis-prevent><!-- 2284:31330 --></div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <div class="gb-acct-modal__fields">
+        <div class="gb-acct-field">
+          <label class="gb-acct-field__label" for="acct-f-name">Name</label>
+          <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-f-name" type="text" value="My Subscription" data-acct-field></div>
+        </div>
+        </div>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+        <button class="gb-acct-modal__save" type="button" data-acct-save disabled>Save</button>
+      </div>
     </div>
   </div>
   <div class="gb-acct-modal" data-acct-modal-panel="edit-date" role="dialog" aria-modal="true"
@@ -581,7 +592,19 @@
         <h2 class="gb-acct-modal__title" id="acct-modal-edit-date">Edit renewal date</h2>
         <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <div class="gb-acct-modal__body" data-lenis-prevent><!-- 2284:31976 --></div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <div class="gb-acct-modal__fields">
+        <div class="gb-acct-field">
+          <label class="gb-acct-field__label" for="acct-f-date">Next renewal date</label>
+          <div class="gb-acct-field__control"><input class="gb-acct-field__input gb-acct-field__input--icon" id="acct-f-date" type="text" value="19/07/2026" data-acct-field><svg class="gb-acct-field__icon" xmlns="http://www.w3.org/2000/svg" viewBox="338.5 398.668 15 16.6667" fill="none" aria-hidden="true"><path d="M353.5 405.335H338.5M349.333 398.668V402.001M342.667 398.668V402.001M342.5 415.335H349.5C350.9 415.335 351.6 415.335 352.135 415.062C352.605 414.822 352.988 414.44 353.228 413.97C353.5 413.435 353.5 412.735 353.5 411.335V404.335C353.5 402.935 353.5 402.234 353.228 401.7C352.988 401.229 352.605 400.847 352.135 400.607C351.6 400.335 350.9 400.335 349.5 400.335H342.5C341.1 400.335 340.4 400.335 339.865 400.607C339.395 400.847 339.012 401.229 338.772 401.7C338.5 402.234 338.5 402.935 338.5 404.335V411.335C338.5 412.735 338.5 413.435 338.772 413.97C339.012 414.44 339.395 414.822 339.865 415.062C340.4 415.335 341.1 415.335 342.5 415.335Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </div>
+          <p class="gb-acct-modal__hint">Your next subscription order will be charged and processed on this date</p>
+        </div>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+        <button class="gb-acct-modal__save" type="button" data-acct-save disabled>Save</button>
+      </div>
     </div>
   </div>
   <div class="gb-acct-modal" data-acct-modal-panel="edit-frequency" role="dialog" aria-modal="true"
@@ -592,7 +615,19 @@
         <h2 class="gb-acct-modal__title" id="acct-modal-edit-frequency">Edit frequency</h2>
         <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <div class="gb-acct-modal__body" data-lenis-prevent><!-- 2284:32135 --></div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <div class="gb-acct-modal__fields">
+        <div class="gb-acct-field">
+          <label class="gb-acct-field__label" for="acct-f-freq">Frequency</label>
+          <div class="gb-acct-field__control"><select class="gb-acct-field__input gb-acct-field__input--icon" id="acct-f-freq" data-acct-field><option>Ships every 2 weeks</option><option selected>Ships every 4 weeks</option><option>Ships every 6 weeks</option></select><svg class="gb-acct-field__icon" xmlns="http://www.w3.org/2000/svg" viewBox="341 404.5 10 5" fill="none" aria-hidden="true"><path d="M341 404.5L346 409.5L351 404.5" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </div>
+          <p class="gb-acct-modal__hint">Your recurring renewal day of the week is <b>2026-07-19</b><br>Please allow 2-5 working days for your order to be with you</p>
+        </div>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+        <button class="gb-acct-modal__save" type="button" data-acct-save disabled>Save</button>
+      </div>
     </div>
   </div>
   <div class="gb-acct-modal" data-acct-modal-panel="edit-payment" role="dialog" aria-modal="true"
@@ -603,7 +638,13 @@
         <h2 class="gb-acct-modal__title" id="acct-modal-edit-payment">Payment details</h2>
         <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <div class="gb-acct-modal__body" data-lenis-prevent><!-- 2284:32463 --></div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <p class="gb-acct-modal__copy">We will email you a link to change your payment method. It might take a few minutes to arrive, try checking your spam folder if you can’t find it.</p>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+        <button class="gb-acct-modal__save" type="button" data-acct-save>Update payment method</button>
+      </div>
     </div>
   </div>
   <div class="gb-acct-modal" data-acct-modal-panel="skip-next" role="dialog" aria-modal="true"
@@ -614,7 +655,13 @@
         <h2 class="gb-acct-modal__title" id="acct-modal-skip-next">Skip next order</h2>
         <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <div class="gb-acct-modal__body" data-lenis-prevent><!-- 2284:32621 --></div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <p class="gb-acct-modal__copy">Are you sure you wan to skip the next order? Your next order date will be changed to <strong>17 July, 2026</strong></p>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+        <button class="gb-acct-modal__save" type="button" data-acct-save>Skip next order</button>
+      </div>
     </div>
   </div>
   <div class="gb-acct-modal" data-acct-modal-panel="need-now" role="dialog" aria-modal="true"
@@ -625,7 +672,13 @@
         <h2 class="gb-acct-modal__title" id="acct-modal-need-now">I need it now</h2>
         <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <div class="gb-acct-modal__body" data-lenis-prevent><!-- 2284:33350 --></div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <p class="gb-acct-modal__copy">Your order will be placed and charged now. If you would like to make changes to your subscription do so before continuing to payment.</p>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+        <button class="gb-acct-modal__save" type="button" data-acct-save>Get it to me now</button>
+      </div>
     </div>
   </div>
   <div class="gb-acct-modal" data-acct-modal-panel="discount-add" role="dialog" aria-modal="true"
@@ -708,6 +761,6 @@
 
   <script src="assets/lenis.min.js?v=20260909-r134"></script>
   <script src="assets/main.js?v=20260909-r134"></script>
-  <script src="assets/account.js?v=20260910-a6"></script>
+  <script src="assets/account.js?v=20260910-a7"></script>
 </body>
 </html>

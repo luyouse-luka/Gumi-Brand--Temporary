@@ -205,6 +205,7 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
   手机 `28315` / `34056` 写 `17 Aug 2026`，桌面 `28109` 还留着 active 的 `19 Jul 2026`。
   **按手机稿实现**。
 - `34192` 标题拼成「Restart **subscoption**」
+- `32775` Skip 弹窗文案拼成「Are you sure you **wan** to skip…」（应为 `want`）。**已按稿照抄**
 - `34079` CANCELLED 的说明文案拼成「You will be **bale** to make changes…」（应为 `able`）。**已按稿照抄**，上线前需设计方改
 - `33847` 文案「You need to **another** product in order to delete this one」语法错
 - `30107` 的取消原因列表里「I have too much product」**重复两次**（`29928`/`30286` 是正常的 5 项）

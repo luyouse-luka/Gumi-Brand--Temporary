@@ -282,8 +282,10 @@ def run_width(b, w):
     pg.evaluate("n=>window.gumiAcct.modal.open(n)", names[0])
     pg.wait_for_timeout(400)
     body_sel = (".gb-acct-modal[data-acct-modal-panel='%s'] .gb-acct-modal__body" % names[0])
+    # ⚠ the panel's real content is put back afterwards. Clearing it instead left
+    # this panel an empty shell for every check that runs later in the file.
     armed = pg.evaluate("""s=>{const b=document.querySelector(s);if(!b)return null;
-        b.innerHTML='<div style="height:2000px"></div>';
+        b.insertAdjacentHTML('beforeend','<div data-probe style="height:2000px"></div>');
         return {prevent:b.hasAttribute('data-lenis-prevent'),
                 scrollable:b.scrollHeight-b.clientHeight}}""", body_sel)
     if armed is None:
@@ -312,7 +314,10 @@ def run_width(b, w):
         else:
             bad("%s [%s] wheel over the panel body scrolled it 0px -- Lenis still "
                 "has the wheel" % (label, names[0]))
-    pg.evaluate("s=>{const b=document.querySelector(s);if(b)b.innerHTML=''}", body_sel)
+    # Only the probe div goes: rewriting innerHTML would rebuild the real fields
+    # and detach the nodes acctForm captured, so Save could never wake up again.
+    pg.evaluate("""s=>{const b=document.querySelector(s);if(!b)return;
+        const d=b.querySelector('[data-probe]');if(d)d.remove();b.scrollTop=0}""", body_sel)
     pg.keyboard.press("Escape")
     pg.wait_for_timeout(600)
 
@@ -334,7 +339,187 @@ def run_width(b, w):
         else:
             bad("%s page shifted %.2fpx sideways when the lock removed the scrollbar"
                 % (label, after - before))
+    check_forms(pg, w, label)
     pg.close()
+
+
+# ---------------------------------------------------------------------------
+# Task 9: the six simple form modals.
+#
+# Phone values are the boards'. Desktop has no board (SPEC 待裁决 E) and the user
+# settled it: keep the board's 390 panel width, take everything else from the
+# account's own desktop language. The type scale needs nothing -- board 27792
+# proves desktop and phone share it (14/20 labels, 16/24 buttons, 12/18 small,
+# 24/30 page title). Container padding is the one real delta, so the modal uses
+# the cards' own ramp: 24 desktop / 20 phone, fluid between.
+# ---------------------------------------------------------------------------
+PAD_DESK = "24px"
+PAD_PHONE = "20px"
+
+# hook -> (board node, phone panel height, save is dirty-gated)
+FORMS = {
+    "edit-name":      ("2284:31330", 246, True),
+    "edit-date":      ("2284:31976", 290, True),
+    "edit-frequency": ("2284:32135", 290, True),
+    "edit-payment":   ("2284:32463", 256, False),
+    "skip-next":      ("2284:32621", 236, False),
+    "need-now":       ("2284:33350", 256, False),
+}
+
+
+def check_forms(pg, w, label):
+    """Structure and behaviour of the six Task 9 panels."""
+    pad = PAD_PHONE if w <= 767 else PAD_DESK
+    for name in FORMS:
+        node, height, gated = FORMS[name]
+        tag = "%s [%s]" % (label, name)
+        sel = ".gb-acct-modal[data-acct-modal-panel='%s']" % name
+        set_state(pg, BASE_STATE)
+        pg.evaluate("n=>window.gumiAcct.modal.open(n)", name)
+        pg.wait_for_timeout(450)
+
+        got = pg.evaluate("""a=>{const p=document.querySelector(a[0]);
+            if(!p)return null;
+            const q=s=>p.querySelector(s);
+            const cs=e=>e?getComputedStyle(e):null;
+            const box=q('.gb-acct-modal__panel');
+            const head=q('.gb-acct-modal__head');
+            const bodyEl=q('.gb-acct-modal__body');
+            const foot=q('.gb-acct-modal__foot');
+            const save=q('[data-acct-save]');
+            const cancel=q('.gb-acct-modal__foot .gb-acct-link');
+            const copy=q('.gb-acct-modal__copy');
+            const field=q('.gb-acct-field__input');
+            const hb=cs(head), bb=cs(bodyEl), fb=cs(foot), sb=cs(save);
+            return {h:Math.round(box.getBoundingClientRect().height),
+                    w:Math.round(box.getBoundingClientRect().width),
+                    headPadX:hb&&hb.paddingLeft, headPadY:hb&&hb.paddingTop,
+                    bodyPad:bb&&bb.paddingLeft, bodyPadY:bb&&bb.paddingTop,
+                    bodyBg:bb&&bb.backgroundColor,
+                    footPadX:fb&&fb.paddingLeft, footPadY:fb&&fb.paddingTop,
+                    hasFoot:!!foot, hasSave:!!save, hasCancel:!!cancel,
+                    saveH:save?Math.round(save.getBoundingClientRect().height):null,
+                    saveDisabled:save?save.disabled:null,
+                    savePad:sb&&sb.paddingLeft,
+                    copyW:copy?Math.round(copy.getBoundingClientRect().width):null,
+                    fieldH:field?Math.round(field.getBoundingClientRect().height):null,
+                    fieldR:field?cs(field).borderTopLeftRadius:null,
+                    fieldBorder:field?cs(field).borderTopColor:null}}""", [sel])
+        if got is None:
+            bad("%s panel missing" % tag)
+            continue
+
+        # the phone panel must come out at the board's own height
+        if w <= 767:
+            if abs(got["h"] - height) <= 2:
+                good(tag)
+            else:
+                bad("%s panel %spx tall, board %s is %s" % (tag, got["h"], node, height))
+        # the user settled the desktop width: the board's 390, not wider
+        if got["w"] == 390 or w <= 390:
+            good(tag)
+        else:
+            bad("%s panel %spx wide, want the board's 390" % (tag, got["w"]))
+
+        for key, want, why in (
+                ("headPadX", pad, "head gutter follows the cards' 24/20 ramp"),
+                ("headPadY", "20px", "head is 20 top and bottom on both boards"),
+                ("bodyPad", pad, "body gutter follows the cards' 24/20 ramp"),
+                ("bodyPadY", pad, "body padding is 24/20 like .gb-acct-sub__body"),
+                ("footPadX", pad, "foot gutter follows the cards' 24/20 ramp"),
+                ("footPadY", "16px", "foot is 16 top and bottom on the boards")):
+            if got[key] == want:
+                good(tag)
+            else:
+                bad("%s %s=%s want %s -- %s" % (tag, key, got[key], want, why))
+
+        if got["bodyBg"] == "rgb(250, 249, 248)":
+            good(tag)
+        else:
+            bad("%s body background %s, board fills it cream #faf9f8" % (tag, got["bodyBg"]))
+
+        for key in ("hasFoot", "hasSave", "hasCancel"):
+            if got[key]:
+                good(tag)
+            else:
+                bad("%s %s is false" % (tag, key))
+
+        if got["saveH"] == 40:
+            good(tag)
+        else:
+            bad("%s save button %spx tall, board is 40" % (tag, got["saveH"]))
+        if got["savePad"] == "32px":
+            good(tag)
+        else:
+            bad("%s save padding-inline %s, board is 32" % (tag, got["savePad"]))
+
+        # note 27446: Save only wakes up once the form above it has been touched.
+        # The three confirm-only panels have nothing to touch and ship enabled --
+        # which is also what their boards draw (green fill, not #e6e6e6).
+        if got["saveDisabled"] is gated:
+            good(tag)
+        else:
+            bad("%s save disabled=%s want %s (note 27446)"
+                % (tag, got["saveDisabled"], gated))
+
+        if gated and got["fieldH"] is None:
+            bad("%s no .gb-acct-field__input to gate Save on" % tag)
+        elif gated:
+            # <select> does not take fill(); pick the option that is not current
+            fsel = sel + " .gb-acct-field__input"
+            if pg.evaluate("s=>document.querySelector(s).tagName", fsel) == "SELECT":
+                opts = pg.evaluate("s=>{const e=document.querySelector(s);"
+                                   "return [...e.options].map(o=>o.value||o.text)}", fsel)
+                cur = pg.evaluate("s=>document.querySelector(s).value", fsel)
+                other = [o for o in opts if o != cur]
+                if not other:
+                    bad("%s the select has only one option, nothing to dirty" % tag)
+                    pg.keyboard.press("Escape")
+                    pg.wait_for_timeout(600)
+                    continue
+                pg.select_option(fsel, other[0])
+            else:
+                pg.fill(fsel, "changed by the judge")
+            pg.wait_for_timeout(250)
+            now = pg.evaluate("a=>document.querySelector(a[0]+' [data-acct-save]').disabled", [sel])
+            if now is False:
+                good(tag)
+            else:
+                bad("%s save stayed disabled after the field changed" % tag)
+            # and back again: restoring the original value re-locks it
+            pg.evaluate("""a=>{const i=document.querySelector(a[0]+' .gb-acct-field__input');
+                if(i.tagName==='SELECT'){const d=[...i.options].find(o=>o.defaultSelected);
+                  if(d)i.value=d.value||d.text;}
+                else i.value=i.defaultValue;
+                i.dispatchEvent(new Event('input',{bubbles:true}));
+                i.dispatchEvent(new Event('change',{bubbles:true}))}""", [sel])
+            pg.wait_for_timeout(250)
+            back = pg.evaluate("a=>document.querySelector(a[0]+' [data-acct-save]').disabled", [sel])
+            if back is True:
+                good(tag)
+            else:
+                bad("%s save stayed enabled after the field was put back" % tag)
+            if got["fieldH"] == 44:
+                good(tag)
+            else:
+                bad("%s field %spx tall, board is 44" % (tag, got["fieldH"]))
+            if got["fieldR"] == "8px":
+                good(tag)
+            else:
+                bad("%s field radius %s, board is 8" % (tag, got["fieldR"]))
+            if got["fieldBorder"] == "rgb(204, 204, 204)":
+                good(tag)
+            else:
+                bad("%s field border %s, board is #cccccc" % (tag, got["fieldBorder"]))
+        else:
+            # 320 fixed copy frame, left aligned -- all three copy boards agree
+            if got["copyW"] == 320:
+                good(tag)
+            else:
+                bad("%s copy block %spx wide, board frame is 320" % (tag, got["copyW"]))
+
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(600)
 
 
 def main():

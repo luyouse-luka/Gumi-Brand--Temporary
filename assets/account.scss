@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260910-a6";
+$build-acct: "20260910-a7";
 
 // ==========================================================================
 // Variables
@@ -1967,14 +1967,26 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   }
 }
 
-// 31478: 64 tall, 20 all round, title left and the cross right.
+// 31478: 64 tall, 20 all round on the phone board, title left and cross right.
+// Desktop has no modal board; the gutter follows the account's own card ramp
+// (.gb-acct-sub--detail head is 24 desktop / 20 phone) so the panel reads as
+// part of the desktop page rather than a phone panel dropped onto it. The
+// vertical 20 is unchanged -- .gb-acct-sub__head keeps it at both widths, and
+// the board's 64 head height depends on it.
 .gb-acct-modal__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   flex: 0 0 auto;
-  padding: 20px;
+  padding: 20px 24px;
+  // 32769 draws this hairline with strokeAlign INSIDE, so it sits within the
+  // board's 64 rather than adding to it. A real border would add 1px here and
+  // another at the foot, and every panel would come out 2 taller than its board.
+  box-shadow: inset 0 -1px 0 $c-gray-150;
+
+  @include narrow { padding-inline: 20px; }
+  @include tablet { padding-inline: fluid(20px, 24px); }
 }
 
 .gb-acct-modal__title {
@@ -2002,15 +2014,146 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   @include hover { color: $c-gray-600; transform: scale(1.1); }
 }
 
-// The only part of the panel that scrolls. ⚠ data-lenis-prevent belongs on this
-// element in the markup: Lenis takes the wheel site-wide and its PREVENT sweep
-// runs once at main.js init, so anything that scrolls has to carry the attribute
-// itself.
+// 32773 / 32128: the cream middle, and the only part of the panel that scrolls.
+// ⚠ data-lenis-prevent belongs on this element in the markup: Lenis takes the
+// wheel site-wide and its PREVENT sweep runs once at main.js init, so anything
+// that scrolls has to carry the attribute itself.
 .gb-acct-modal__body {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  padding: 24px;
+  background: $c-cream;
+
+  @include narrow { padding: 20px; }
+  @include tablet { padding: fluid(20px, 24px); }
+}
+
+// 32776: 72 tall, 16 top and bottom, Cancel then the action, both to the right.
+.gb-acct-modal__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  flex: 0 0 auto;
+  padding: 16px 24px;
+  box-shadow: inset 0 1px 0 $c-gray-150;   // INSIDE stroke, see the head
+  background: $c-white;
+
+  @include narrow { padding-inline: 20px; }
+  @include tablet { padding-inline: fluid(20px, 24px); }
+}
+
+// 32774: a 320 frame inside the 350 content box, left aligned -- the three copy
+// boards (32621 / 33350 / 32463) all draw it, so the 30 of slack on the right is
+// the component, not a stray text box.
+.gb-acct-modal__copy {
+  max-width: 320px;
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-600;
+}
+
+// 32775: the board emphasises the date inside the sentence, per character.
+.gb-acct-modal__copy strong {
+  font-weight: 500;
+  color: #011307;
+}
+
+// 32131: the line under a field.
+.gb-acct-modal__hint {
+  margin: 0;
+  @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
+  color: $c-gray-600;
+
+  b { font-weight: 800; }
+}
+
+// 32129: field then hint, 8 apart.
+.gb-acct-modal__fields {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+// 196:17634 Input: label 20 + 6 + control 44 = the board's 70.
+.gb-acct-field {
+  display: flex;
+  flex-direction: column;
+  row-gap: 6px;
+}
+
+.gb-acct-field__label {
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-600;
+}
+
+.gb-acct-field__control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gb-acct-field__input {
+  width: 100%;
+  height: 44px;
+  padding: 10px 14px;
+  border: 1px solid $c-gray-300;
+  border-radius: $r-sm;
+  background: $c-white;
+  @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+  color: $c-gray-600;
+
+  transition: trans(border-color);
+
+  &:focus-visible { outline: 2px solid $c-blue; outline-offset: 1px; }
+}
+
+// The trailing glyph is decorative: it sits over the control's own padding so
+// the text never runs under it.
+.gb-acct-field__icon {
+  position: absolute;
+  right: 14px;
+  width: 20px;
+  height: 20px;
+  color: $c-gray-600;
+  pointer-events: none;
+}
+
+.gb-acct-field__input--icon { padding-right: 42px; }
+
+// 32778 / 32134: 40 tall, 32 each side, pill, and it hugs its label. The board
+// draws the same component green when live and #e6e6e6 when the form above it
+// has not been touched (note 27446).
+.gb-acct-modal__save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  column-gap: 8px;
+  height: 40px;
+  padding-inline: 32px;
+  border: 0;
+  border-radius: 10000px;
+  background: $c-green;
+  // ls 0 here, not the -0.32 the same size carries elsewhere: the board's button
+  // component sets it to zero.
+  @include font($font-brand-stack, 16px, 500, 24px, 0);
+  color: $c-white;
+  cursor: pointer;
+  white-space: nowrap;
+
+  transition: trans(background-color, opacity);
+
+  @include hover { opacity: 0.85; }
+
+  &:disabled {
+    background: $c-gray-150;
+    color: $c-gray-400;
+    cursor: default;
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -891,17 +891,18 @@ var acctModal = {
 - 消费：Task 8 的 `acctModal.open/close`
 - 产出：`acctForm.watch(panelEl)` —— 监听 panel 内输入，脏了就解锁 Save 按钮
 
-- [ ] **步骤 1：追加断言（先红）** —— 六个 panel 的宽/高/圆角/内边距从各自节点取；
+- [x] **步骤 1：追加断言（先红）** —— 六个 panel 的宽/高/圆角/内边距从各自节点取；
       再加一条行为断言：**未改动时 Save 是 disabled，改动后变 enabled**。
 
-- [ ] **步骤 2：跑判据确认红**
+- [x] **步骤 2：跑判据确认红**
 
-- [ ] **步骤 3：写六个 panel 的结构与样式**
+- [x] **步骤 3：写六个 panel 的结构与样式**  ← 频率下拉**用了原生 `<select>`**，未按「重画自定 listbox」做：
+      板上只有闭合态、展开态无稿，自画等于自拟视觉。见 `MODAL-SPECS.md` §6
 
 ⚠ `edit-frequency` 的下拉：**用现站 `selectBox` 的视觉规格重画一份**在 `account.js` 里
 （决策 6 要求自包含），不要调 `window.gumi.selectBox`。规格从 `2284:32135` 节点取。
 
-- [ ] **步骤 4：写 acctForm**
+- [x] **步骤 4：写 acctForm**
 
 ```js
 var acctForm = {
@@ -928,9 +929,10 @@ var acctForm = {
 ⚠ `save.disabled = true` 会让按钮进入 UA 的 disabled 态；样式要显式写 `&:disabled`
 的外观，且**不要给 disabled 的按钮加 hover 或 `cursor:pointer`**。
 
-- [ ] **步骤 5：编译、跑判据确认绿、活性自检**（删掉 `save.disabled = true` → 行为断言必须红）
+- [x] **步骤 5：编译、跑判据确认绿、活性自检**（删掉 `save.disabled = true` → 行为断言必须红）  ← PLAN 给的自检（删 `save.disabled = true`）**实测不转红、无效**
+      （`disabled` 也写在标签里）。已换成删 `input`/`change` 监听器，转红 6 条
 
-- [ ] **步骤 6：提交** — `git commit -m "feat(account): 六类表单弹窗与脏值门控的保存按钮"`
+- [x] **步骤 6：提交** — `git commit -m "feat(account): 六类表单弹窗与脏值门控的保存按钮"`
 
 ---
 
