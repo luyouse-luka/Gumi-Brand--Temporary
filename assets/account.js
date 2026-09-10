@@ -113,6 +113,23 @@
     }
   };
 
+  /* acctDiscount — Apply follows the field and nothing else.
+   *
+   * ⚠ note 30919: a green Apply is not a claim that the code exists. Whether it
+   * does is the back end's answer; all this decides is that something was typed.
+   */
+  var acctDiscount = {
+    bind: function (panel) {
+      var input = panel.querySelector('[data-acct-discount-input]');
+      var apply = panel.querySelector('[data-acct-apply]');
+      if (!input || !apply || panel.getAttribute('data-acct-discount-bound')) return;
+      panel.setAttribute('data-acct-discount-bound', '1');
+      function sync() { apply.disabled = !input.value.trim(); }
+      input.addEventListener('input', sync);
+      sync();
+    }
+  };
+
   /* acctQty — the product card stepper.
    *
    * ⚠ The floor is declared per card (data-acct-qty-min), not inferred from how
@@ -194,6 +211,7 @@
       for (var i = 0; i < panels.length; i++) {
         acctForm.watch(panels[i]);
         acctQty.bind(panels[i]);
+        acctDiscount.bind(panels[i]);
       }
       document.addEventListener('click', function (e) {
         if (!e.target.closest) return;
@@ -302,5 +320,5 @@
     }
   });
 
-  window.gumiAcct = { acctNav: acctNav, view: view, modal: modal, form: acctForm, qty: acctQty };
+  window.gumiAcct = { acctNav: acctNav, view: view, modal: modal, form: acctForm, qty: acctQty, discount: acctDiscount };
 })();

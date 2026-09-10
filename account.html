@@ -10,7 +10,7 @@
 <link rel="icon" href="images/favicon.svg?v=20260909-r134" type="image/svg+xml">
 <link rel="apple-touch-icon" href="images/favicon-180.png?v=20260909-r134">
 <link rel="stylesheet" href="assets/customstyle.css?v=20260909-r134">
-<link rel="stylesheet" href="assets/account.css?v=20260910-a8">
+<link rel="stylesheet" href="assets/account.css?v=20260910-a9">
 <noscript><style>.wowo{opacity:1 !important}</style></noscript>
 </head>
 <body>
@@ -681,7 +681,7 @@
       </div>
     </div>
   </div>
-  <div class="gb-acct-modal" data-acct-modal-panel="discount-add" role="dialog" aria-modal="true"
+  <div class="gb-acct-modal" data-acct-modal-panel="discount-add" data-acct-discount-state="empty" role="dialog" aria-modal="true"
        aria-labelledby="acct-modal-discount-add" aria-hidden="true" hidden>
     <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
     <div class="gb-acct-modal__panel" tabindex="-1">
@@ -689,10 +689,29 @@
         <h2 class="gb-acct-modal__title" id="acct-modal-discount-add">Add a discount code</h2>
         <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <div class="gb-acct-modal__body" data-lenis-prevent><!-- 2284:31488 --></div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <div class="gb-acct-discount">
+          <div class="gb-acct-discount__field">
+          <label class="gb-acct-field__label" for="acct-f-code">Discount code</label>
+          <div class="gb-acct-discount__row">
+            <input class="gb-acct-discount__input" id="acct-f-code" type="text" placeholder="Discount Code" value="" data-acct-discount-input>
+            <button class="gb-acct-discount__apply" type="button" data-acct-apply disabled>Apply</button>
+          </div>
+          </div>
+          <div class="gb-acct-discount__result">
+            <div class="gb-acct-chip">
+              <p>Discount <strong>CEO90</strong> applied $35.25 off</p>
+              <button class="gb-acct-chip__remove" type="button" data-acct-chip-remove aria-label="Remove discount CEO90"><svg xmlns="http://www.w3.org/2000/svg" viewBox="339 449.129 12 12" fill="none" aria-hidden="true"><path d="M343 449.129H347M339 451.129H351M349.667 451.129L349.199 458.142C349.129 459.194 349.094 459.72 348.867 460.119C348.667 460.47 348.365 460.752 348.001 460.929C347.588 461.129 347.061 461.129 346.006 461.129H343.994C342.939 461.129 342.412 461.129 341.999 460.929C341.635 460.752 341.333 460.47 341.133 460.119C340.906 459.72 340.871 459.194 340.801 458.142L340.333 451.129M343.667 454.129V457.462M346.333 454.129V457.462" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+      </div>
     </div>
   </div>
-  <div class="gb-acct-modal" data-acct-modal-panel="discount-applied" role="dialog" aria-modal="true"
+  <div class="gb-acct-modal" data-acct-modal-panel="discount-applied" data-acct-discount-state="applied" role="dialog" aria-modal="true"
        aria-labelledby="acct-modal-discount-applied" aria-hidden="true" hidden>
     <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
     <div class="gb-acct-modal__panel" tabindex="-1">
@@ -700,7 +719,26 @@
         <h2 class="gb-acct-modal__title" id="acct-modal-discount-applied">Add a discount code</h2>
         <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <div class="gb-acct-modal__body" data-lenis-prevent><!-- 2284:31809 --></div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <div class="gb-acct-discount">
+          <div class="gb-acct-discount__field">
+          <label class="gb-acct-field__label" for="acct-f-code-2">Discount code</label>
+          <div class="gb-acct-discount__row">
+            <input class="gb-acct-discount__input" id="acct-f-code-2" type="text" placeholder="Discount Code" value="" data-acct-discount-input>
+            <button class="gb-acct-discount__apply" type="button" data-acct-apply disabled>Apply</button>
+          </div>
+          </div>
+          <div class="gb-acct-discount__result">
+            <div class="gb-acct-chip">
+              <p>Discount <strong>CEO90</strong> applied $35.25 off</p>
+              <button class="gb-acct-chip__remove" type="button" data-acct-chip-remove aria-label="Remove discount CEO90"><svg xmlns="http://www.w3.org/2000/svg" viewBox="339 449.129 12 12" fill="none" aria-hidden="true"><path d="M343 449.129H347M339 451.129H351M349.667 451.129L349.199 458.142C349.129 459.194 349.094 459.72 348.867 460.119C348.667 460.47 348.365 460.752 348.001 460.929C347.588 461.129 347.061 461.129 346.006 461.129H343.994C342.939 461.129 342.412 461.129 341.999 460.929C341.635 460.752 341.333 460.47 341.133 460.119C340.906 459.72 340.871 459.194 340.801 458.142L340.333 451.129M343.667 454.129V457.462M346.333 454.129V457.462" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+      </div>
     </div>
   </div>
   <div class="gb-acct-modal" data-acct-modal-panel="shipping-current" role="dialog" aria-modal="true"
@@ -909,6 +947,6 @@
 
   <script src="assets/lenis.min.js?v=20260909-r134"></script>
   <script src="assets/main.js?v=20260909-r134"></script>
-  <script src="assets/account.js?v=20260910-a8"></script>
+  <script src="assets/account.js?v=20260910-a9"></script>
 </body>
 </html>

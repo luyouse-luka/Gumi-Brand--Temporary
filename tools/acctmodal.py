@@ -341,6 +341,7 @@ def run_width(b, w):
                 % (label, after - before))
     check_forms(pg, w, label)
     check_products(pg, w, label)
+    check_discount(pg, w, label)
     pg.close()
 
 
@@ -723,6 +724,162 @@ def check_products(pg, w, label):
             good(tag)
         else:
             bad("%s one click moved the stepper by %s -- bound more than once" % (tag, step))
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(600)
+
+
+# ---------------------------------------------------------------------------
+# Task 11: the discount panel, two shipped states plus one driven by the input.
+#
+# 31488 empty / 31648 the same panel with the field filled / 31809 after the code
+# took, which clears the field again and adds the chip. So "filled" is not a
+# third piece of markup -- it is what the input's value does to Apply, which is
+# all a static page can decide (note 30919: whether the code actually exists is
+# the back end's call, so Apply going green is not a promise that it works).
+# ---------------------------------------------------------------------------
+GREEN = "rgb(0, 86, 53)"
+GREY = "rgb(230, 230, 230)"
+
+DISCOUNT = {
+    # hook: (board, panel height at 390, shipped state, chip?)
+    "discount-add":     ("2284:31488", 246, "empty", False),
+    "discount-applied": ("2284:31809", 292, "applied", True),
+}
+
+
+def check_discount(pg, w, label):
+    for name in DISCOUNT:
+        node, height, state, chip = DISCOUNT[name]
+        tag = "%s [%s]" % (label, name)
+        sel = ".gb-acct-modal[data-acct-modal-panel='%s']" % name
+        set_state(pg, BASE_STATE)
+        pg.evaluate("n=>window.gumiAcct.modal.open(n)", name)
+        pg.wait_for_timeout(450)
+
+        got = pg.evaluate("""a=>{const p=document.querySelector(a[0]);
+            if(!p)return null;
+            const q=s=>p.querySelector(s);
+            const cs=e=>e?getComputedStyle(e):null;
+            const box=q('.gb-acct-modal__panel');
+            const apply=q('[data-acct-apply]');
+            const inp=q('.gb-acct-discount__input');
+            const ch=q('.gb-acct-chip');
+            const chShown=!!(ch&&ch.getClientRects().length);
+            const ab=cs(apply), cb=cs(ch);
+            return {h:Math.round(box.getBoundingClientRect().height),
+                    state:p.getAttribute('data-acct-discount-state'),
+                    hasApply:!!apply, hasInput:!!inp, hasChip:!!ch,
+                    applyBg:ab&&ab.backgroundColor, applyDisabled:apply?apply.disabled:null,
+                    applyW:apply?Math.round(apply.getBoundingClientRect().width):null,
+                    applyH:apply?Math.round(apply.getBoundingClientRect().height):null,
+                    applyR:ab&&ab.borderTopLeftRadius,
+                    inputVal:inp?inp.value:null,
+                    placeholder:inp?inp.getAttribute('placeholder'):null,
+                    chipShown:chShown,
+                    chipBg:cb&&cb.backgroundColor, chipR:cb&&cb.borderTopLeftRadius,
+                    chipText:ch?ch.textContent.replace(/\s+/g,' ').trim():null,
+                    chipRemove:!!q('.gb-acct-chip__remove'),
+                    save:!!q('[data-acct-save]')}}""", [sel])
+        if got is None:
+            bad("%s panel missing" % tag)
+            continue
+
+        if w <= 767:
+            if abs(got["h"] - height) <= 2:
+                good(tag)
+            else:
+                bad("%s panel %spx tall, board %s is %s" % (tag, got["h"], node, height))
+        if got["state"] == state:
+            good(tag)
+        else:
+            bad("%s data-acct-discount-state=%s want %s" % (tag, got["state"], state))
+        for key in ("hasApply", "hasInput"):
+            if got[key]:
+                good(tag)
+            else:
+                bad("%s %s is false" % (tag, key))
+        # 31646/31974: the foot carries Cancel only, no action button
+        if got["save"] is False:
+            good(tag)
+        else:
+            bad("%s has a [data-acct-save] -- the board's foot is Cancel only" % tag)
+        # 31645: 96x44, r8 -- an inline field button, not the 40-tall pill
+        for key, want in (("applyW", 96), ("applyH", 44), ("applyR", "8px")):
+            if got[key] == want:
+                good(tag)
+            else:
+                bad("%s %s=%s want %s (board 2284:31645)" % (tag, key, got[key], want))
+        # both shipped states have an empty field, so Apply starts grey
+        if got["inputVal"] == "":
+            good(tag)
+        else:
+            bad("%s input ships with %r, both boards ship it empty" % (tag, got["inputVal"]))
+        if got["placeholder"] == "Discount Code":
+            good(tag)
+        else:
+            bad("%s placeholder %r, board says 'Discount Code'" % (tag, got["placeholder"]))
+        if got["applyBg"] == GREY and got["applyDisabled"] is True:
+            good(tag)
+        else:
+            bad("%s Apply starts %s disabled=%s, want %s + disabled"
+                % (tag, got["applyBg"], got["applyDisabled"], GREY))
+        # the chip lives in both panels and the state switches it, so this is a
+        # visibility question rather than a presence one
+        if got["chipShown"] is chip:
+            good(tag)
+        else:
+            bad("%s chip shown=%s want %s" % (tag, got["chipShown"], chip))
+        if chip:
+            if got["chipBg"] == "rgb(246, 254, 236)":
+                good(tag)
+            else:
+                bad("%s chip fill %s, board 31969 is #f6feec" % (tag, got["chipBg"]))
+            if got["chipR"] == "8px":
+                good(tag)
+            else:
+                bad("%s chip radius %s, board is 8" % (tag, got["chipR"]))
+            if got["chipText"] == "Discount CEO90 applied $35.25 off":
+                good(tag)
+            else:
+                bad("%s chip reads %r" % (tag, got["chipText"]))
+            if got["chipRemove"]:
+                good(tag)
+            else:
+                bad("%s chip has no remove control (31973 is a bin glyph)" % tag)
+
+        # -- behaviour: Apply follows the field, nothing else
+        if not (got["hasApply"] and got["hasInput"]):
+            bad("%s no field/Apply pair -- the behaviour checks cannot run" % tag)
+            pg.keyboard.press("Escape")
+            pg.wait_for_timeout(600)
+            continue
+        inp = sel + " .gb-acct-discount__input"
+        pg.fill(inp, "CEO90")
+        pg.wait_for_timeout(250)
+        on = pg.evaluate("""a=>{const b=document.querySelector(a[0]+' [data-acct-apply]');
+            return [getComputedStyle(b).backgroundColor, b.disabled]}""", [sel])
+        if on[0] == GREEN and on[1] is False:
+            good(tag)
+        else:
+            bad("%s Apply is %s disabled=%s with a code typed, want %s + enabled"
+                % (tag, on[0], on[1], GREEN))
+        # whitespace is not a code
+        pg.fill(inp, "   ")
+        pg.wait_for_timeout(250)
+        ws = pg.evaluate("a=>document.querySelector(a[0]+' [data-acct-apply]').disabled", [sel])
+        if ws is True:
+            good(tag)
+        else:
+            bad("%s Apply woke up on whitespace alone" % tag)
+        pg.fill(inp, "")
+        pg.wait_for_timeout(250)
+        off = pg.evaluate("""a=>{const b=document.querySelector(a[0]+' [data-acct-apply]');
+            return [getComputedStyle(b).backgroundColor, b.disabled]}""", [sel])
+        if off[0] == GREY and off[1] is True:
+            good(tag)
+        else:
+            bad("%s Apply stayed %s disabled=%s after the field was cleared"
+                % (tag, off[0], off[1]))
         pg.keyboard.press("Escape")
         pg.wait_for_timeout(600)
 

@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260910-a8";
+$build-acct: "20260910-a9";
 
 // ==========================================================================
 // Variables
@@ -2037,6 +2037,10 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   justify-content: flex-end;
   gap: 16px;
   flex: 0 0 auto;
+  // 31646 is 72 tall holding nothing but Cancel: the board's frame is fixed, so
+  // the panels whose foot has no button (the discount ones) need the floor
+  // spelled out. Where there is a button, 16 + 40 + 16 already makes 72.
+  min-height: 72px;
   padding: 16px 24px;
   box-shadow: inset 0 1px 0 $c-gray-150;   // INSIDE stroke, see the head
   background: $c-white;
@@ -2178,7 +2182,10 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
     @include tablet { padding-inline: fluid(20px, 24px); }
   }
 
-  .gb-acct-modal__foot { padding-block: 20px; }
+  .gb-acct-modal__foot {
+    min-height: 80px;
+    padding-block: 20px;
+  }
 }
 
 // 33999: the "at least one product" banner sits between the head and the body,
@@ -2354,4 +2361,127 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   justify-content: center;
   @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
   color: $c-gray-700;
+}
+
+// ---------------------------------------------------------------------------
+// Discount panel — 2284:31488 empty / 31648 filled / 31809 applied.
+// 31648 is not separate markup: it is 31488 with something in the field, which
+// is the only part a static page can judge. Note 30919 -- whether the code
+// exists is the back end's call, so Apply turning green promises nothing.
+// ---------------------------------------------------------------------------
+// 31962 nests two groups: 6 between the label and its row, 8 between that whole
+// group and the chip. Flattening them into one 6 puts the chip 6 too low.
+.gb-acct-discount {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.gb-acct-discount__field {
+  display: flex;
+  flex-direction: column;
+  row-gap: 6px;
+}
+
+// 31643: the field and Apply share one 350 row, 8 apart. The button keeps its
+// 96 and the field takes the rest, so the 24 gutter on desktop comes off the
+// field rather than squeezing the label.
+.gb-acct-discount__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gb-acct-discount__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 44px;
+  padding: 10px 14px;
+  border: 1px solid $c-gray-300;
+  border-radius: $r-sm;
+  background: $c-white;
+  @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+  color: $c-gray-600;
+
+  transition: trans(border-color);
+
+  &:focus-visible { outline: 2px solid $c-blue; outline-offset: 1px; }
+}
+
+// 31645: 96x44 with an 8 radius -- an inline field button, not the foot's pill.
+.gb-acct-discount__apply {
+  flex: 0 0 96px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 14px 24px;
+  border: 0;
+  border-radius: $r-sm;
+  background: $c-green;
+  @include font($font-brand-stack, 16px, 500, 24px, 0);
+  color: $c-white;
+  cursor: pointer;
+
+  transition: trans(background-color, opacity);
+
+  @include hover { opacity: 0.85; }
+
+  &:disabled {
+    background: $c-gray-150;
+    color: $c-gray-400;
+    cursor: default;
+    opacity: 1;
+  }
+}
+
+// 31968: only the applied state carries the chip, 8 under the field group.
+.gb-acct-discount__result {
+  [data-acct-discount-state="empty"] & { display: none; }
+}
+
+// 31969. min-height rather than height: the board's 38 is 2 more than its own
+// 8 + 20 + 8, and the padding is the value worth keeping exact.
+.gb-acct-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 38px;
+  padding: 8px 16px;
+  border-radius: $r-sm;
+  background: $c-acct-menu-bg;
+  box-shadow: inset 0 0 0 1px #daf6b0;   // INSIDE stroke
+
+  p {
+    margin: 0;
+    @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+    // 31972 tints the sentence and leaves only the code itself dark
+    color: $c-gray-700;
+  }
+
+  strong {
+    font-weight: 400;
+    color: #011307;
+  }
+}
+
+.gb-acct-chip__remove {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: $c-gray-900;
+  cursor: pointer;
+
+  transition: trans(color, opacity);
+
+  @include hover { opacity: 0.6; }
+
+  svg { width: 12px; height: 12px; }
 }
