@@ -88,6 +88,14 @@
    * draw them: green, not #e6e6e6.
    */
   var acctForm = {
+    // Panels are armed by modal.open(); a form living straight on a page has
+    // nobody to arm it, so it is picked up here instead.
+    init: function () {
+      var forms = document.querySelectorAll('[data-acct-form]');
+      if (!forms.length) return;                 // not on this page
+      for (var i = 0; i < forms.length; i++) this.watch(forms[i]);
+    },
+
     watch: function (panel) {
       var save = panel.querySelector('[data-acct-save]');
       var fields = panel.querySelectorAll('[data-acct-field]');
@@ -468,6 +476,7 @@
     // cancelFlow and acctCal run after modal: modal arms the panels, and both of
     // these read controls inside them.
     var modules = [['acctNav', acctNav], ['view', view], ['modal', modal],
+                   ['acctForm', acctForm],
                    ['cancelFlow', cancelFlow], ['acctCal', acctCal]];
     for (var i = 0; i < modules.length; i++) {
       try { modules[i][1].init(); }

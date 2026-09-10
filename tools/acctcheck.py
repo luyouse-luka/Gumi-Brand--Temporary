@@ -43,6 +43,7 @@ GOTO_ORDER = "goto-order"
 GOTO_DETAILS = "goto-details"
 GOTO_PASSWORD = "goto-password"
 GOTO_HELP = "goto-help"
+DETAILS_DIRTY = "details-dirty"
 # 2284:28878, the board's own worst case (note 34044)
 LONG_CODE = "THISISADISAVERYVERYVERYVERYVERYLONGDISCOUNTCODE1265"
 
@@ -828,14 +829,56 @@ GROUPS = {
         ("css", OH + ".gb-acct-intro__title", "line-height", "24px"),
         ("vis", OH + ".gb-acct-intro__back", True),
     ],
+    # -- Task 18: My Details (2284:27081; 27116 is the same board, decision O) --
+    # Three cards at gap 24, then Save, then the note -- the outer column is
+    # gap 32. The phone board's Save is #e6e6e6 on #808080: it ships disabled and
+    # acctForm wakes it when a field actually changes (note 27446).
     ("account.html", 1440, GOTO_DETAILS): [
         ("shown", "[data-acct-view='details']", True),
         ("text", MD + ".gb-acct-intro__title", ["Your details"]),
         ("css", MD + ".gb-acct-intro__title", "font-size", "24px"),
         ("vis", ".gb-acct-nav__link[data-acct-goto='details'].is-current", True),
+        ("css", MD + ".gb-acct-profile", "row-gap", "32px"),
+        ("css", MD + ".gb-acct-profile__cards", "row-gap", "24px"),
+        ("text", MD + ".gb-acct-card__title", ["Email", "Your name", "Phone number"]),
+        # the board labels the phone field "Email*" -- copy-paste slip, SPEC 8
+        ("text", MD + ".gb-acct-field__label",
+         ["Email*", "First name*", "Last name*", "Phone number*"]),
+        ("css", MD + ".gb-acct-field__input", "height", "44px"),
+        ("css", MD + ".gb-acct-field__input", "border-radius", "8px"),
+        ("css", MD + ".gb-acct-field__box", "height", "44px"),
+        ("text", MD + ".gb-acct-field__prefix", ["AU"]),
+        ("css", MD + ".gb-acct-field__prefix", "color", "rgb(77, 77, 77)"),
+        ("css", MD + ".gb-acct-card__note", "font-size", "12px"),
+        ("css", MD + ".gb-acct-card__note", "line-height", "18px"),
+        ("css", MD + ".gb-acct-card__note", "color", "rgb(102, 102, 102)"),
+        # decision AC: no desktop board, so the two name fields sit side by side
+        # the way sign-up's 35059 does. One row of 70 proves it; 156 would mean
+        # they stacked.
+        ("css", MD + ".gb-acct-profile__row", "height", "70px"),
+        ("text", MD + ".gb-acct-profile__note", ['You will receive an email confirmation to verify changes.']),
+        ("css", MD + ".gb-acct-profile__note", "text-align", "center"),
+        ("css", MD + ".gb-acct-profile__note", "font-size", "12px"),
+        ("vis", MD + ".gb-acct-btn[data-acct-save]", True),
+        # #e6e6e6 on #808080 is the board's Save. Reading green here would mean
+        # acctForm never ran, so this doubles as the JS liveness check.
+        ("css", MD + ".gb-acct-btn[data-acct-save]", "background-color", "rgb(230, 230, 230)"),
+        ("css", MD + ".gb-acct-btn[data-acct-save]", "color", "rgb(128, 128, 128)"),
+        ("css", MD + ".gb-acct-btn[data-acct-save]", "border-top-color", "rgb(230, 230, 230)"),
+        ("nofit", MD + ".gb-acct-profile"),
+    ],
+    # The grey Save above only proves it starts asleep. Typing into one field
+    # has to wake it, or the gate is simply dead.
+    ("account.html", 1440, DETAILS_DIRTY): [
+        ("css", MD + ".gb-acct-btn[data-acct-save]", "background-color", "rgb(0, 86, 53)"),
+        ("css", MD + ".gb-acct-btn[data-acct-save]", "color", "rgb(255, 255, 255)"),
     ],
     ("account.html", 390, GOTO_DETAILS): [
         ("css", MD + ".gb-acct-intro__title", "font-size", "20px"),
+        # the phone board stacks them: 70 + 16 + 70
+        ("css", MD + ".gb-acct-profile__row", "height", "156px"),
+        ("css", MD + ".gb-acct-card", "width", "350px"),
+        ("nofit", MD + ".gb-acct-profile"),
     ],
     # -- Task 17: Change Password (2284:27151) --
     # The board dresses this page in the Order Card component, so .gb-acct-card
@@ -1132,6 +1175,16 @@ def main():
                             print("RED  %-52s no .gb-acct-summary__code to fill" % label)
                             red += len(checks); pg.close(); continue
                         pg.wait_for_timeout(120)
+                elif action == DETAILS_DIRTY:
+                    nav = ".gb-acct-nav" if w > 767 else ".gb-acct-list"
+                    try:
+                        pg.click(nav + " [data-acct-goto='details']", timeout=2000)
+                        pg.wait_for_timeout(450)
+                        pg.fill("#acct-md-first", "Changed")
+                        pg.wait_for_timeout(400)
+                    except Exception as e:
+                        print("RED  %-52s cannot dirty the form: %s" % (label, type(e).__name__))
+                        red += len(checks); pg.close(); continue
                 elif action == GOTO_ORDER:
                     pg.evaluate("()=>{location.hash='#order'}")
                     pg.wait_for_timeout(450)

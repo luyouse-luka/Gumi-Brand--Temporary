@@ -1442,20 +1442,36 @@ Order Detail **不进导航** —— 它的入口是 Order History 卡上的 `Vi
 
 **设计源**：`2284:27081`（h=2206。`27116` 逐字相同，**只做一个**，差异归待裁决 O）
 
-**结构**：标题卡 → 表单卡（Email 单栏 + 一句 12/18 说明 → First name* / Last name*
-**两栏** → Phone number：国别码 `AU` 小 select + `+61 000 0000 000` → checkbox
-`Opt in to order updates via text message`）→ `Save changes` 按钮 → 底部 12/18 居中说明。
+**结构**（⚠ 规划时写错了两处，按稿更正）：标题卡 → **三张独立的卡**
+（① Email 字段 + 12/18 说明 ② `Your name`：First name* / Last name* ③ `Phone number`：
+`AU` 前缀 + 号码 + 12/18 说明）→ 卡外的 `Save changes` → 底部 12/18 **居中**说明。
+
+- ⚠ **First/Last name 在手机稿是上下堆叠不是两栏**（两个 308×70 在 gap 16 的列里）。
+  桌面无稿，已按 Sign up 桌面板 `35059` 做成两栏、≤767 塌回堆叠 —— 决策 AC。
+- ⚠ **`Opt in to order updates via text message` 稿上没有勾选框**，只是一行 12/18 说明，
+  与第一张卡的 `You will receive a confirmation email…` 同一个槽。已按稿做文字 —— 决策 AD。
+- ⚠ **`AU` 不是可选的 select**：它的 chevron 在板上 `visible=false`，与地址弹窗的
+  `+61` 前缀同一个组件，用 `.gb-acct-field__prefix`。
 
 **文件**：修改 `account.html`、`assets/account.scss`、`tools/acctcheck.py`
 
-- [ ] **步骤 1：取数值**。姓名两栏的列宽/间距按稿；⚠ 若又是 `168+15+168=351`
+- [x] **步骤 1：取数值**。姓名两栏的列宽/间距按稿；⚠ 若又是 `168+15+168=351`
       比内容盒宽 1（待裁决 T 的老问题），沿用 Task 12 的 `1fr / gap / 1fr` 解法
-- [ ] **步骤 2：追加断言（先红）**，含 767 以下两栏塌成一栏
-- [ ] **步骤 3：跑判据确认红**
-- [ ] **步骤 4：实现**。字段复用弹窗里的 `.gb-acct-field`；
-      ⚠ **`<select>` 必须 `appearance: none`**，否则与自绘 chevron 叠成两个箭头
-- [ ] **步骤 5：编译、跑判据确认绿、`rwd.py`**
-- [ ] **步骤 6：提交** — `git commit -m "feat(account): My Details 视图"`
+- [x] **步骤 2：追加断言（先红）**，含 767 以下两栏塌成一栏
+- [x] **步骤 3：跑判据确认红**
+- [x] **步骤 4：实现**。字段整套复用弹窗的 `.gb-acct-field` / `__box` / `__prefix`（逐值吻合，没新写）。
+      ⚠ **类名撞车**：新块本来叫 `.gb-acct-form`，而 3034 行早有一个同名块（地址弹窗的
+      字段列，row-gap 20），后者在源码里更靠后、直接把新定义盖掉 —— 判据当场报
+      `row-gap want 32px, got 20px`。改名 `.gb-acct-profile`。**新建 BEM 块前先 grep 类名**。
+      `Save` 的灰态：`.gb-acct-btn:disabled` 补 `#e6e6e6` / `#808080`，**border-color 要一起改**，
+      否则绿边框留在灰底上。JS 侧给 `acctForm` 加了 `init()` 扫 `[data-acct-form]` ——
+      弹窗的表单由 `modal.open()` 唤醒，页面上的表单没人唤醒。
+- [x] **步骤 5：编译、跑判据确认绿** —— `717 → 743 ok / 0 red`（+26）。
+      `acctbp.py` 1911 decl、`accthover.py` 30 hover、`acctmotion.py` 12 ok，全 0 red；
+      `rwd.py` 360/390/768/1024/1440 全绿。版本号 `20260910-a14`。
+      ⚠ 门控活性单独验了一条（`DETAILS_DIRTY`）：进页面 Save 是灰的、往 First name
+      里打一个字就变绿。只验灰态等于没验 —— 永远灰也会全绿。
+- [x] **步骤 6：提交** — `git commit -m "feat(account): My Details 视图"`
 
 ---
 ## Task 19：Help 视图

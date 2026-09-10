@@ -10,7 +10,7 @@
 <link rel="icon" href="images/favicon.svg?v=20260909-r134" type="image/svg+xml">
 <link rel="apple-touch-icon" href="images/favicon-180.png?v=20260909-r134">
 <link rel="stylesheet" href="assets/customstyle.css?v=20260909-r134">
-<link rel="stylesheet" href="assets/account.css?v=20260910-a13">
+<link rel="stylesheet" href="assets/account.css?v=20260910-a14">
 <noscript><style>.wowo{opacity:1 !important}</style></noscript>
 </head>
 <body>
@@ -520,6 +520,59 @@
               <h1 class="gb-acct-intro__title">Your details</h1>
             </div>
           </div>
+
+          <form class="gb-acct-profile" action="#" method="post" data-acct-form>
+            <div class="gb-acct-profile__cards">
+              <div class="gb-acct-card">
+                <div class="gb-acct-card__body">
+                  <div class="gb-acct-card__group">
+                    <p class="gb-acct-card__title">Email</p>
+                    <div class="gb-acct-field">
+                      <label class="gb-acct-field__label" for="acct-md-email">Email*</label>
+                      <input class="gb-acct-field__input" id="acct-md-email" name="email" type="email" autocomplete="email" value="email@gmail.com" data-acct-field>
+                    </div>
+                  </div>
+                  <p class="gb-acct-card__note">You will receive a confirmation email where we will ask you to verify your new email address.</p>
+                </div>
+              </div>
+
+              <div class="gb-acct-card">
+                <div class="gb-acct-card__body">
+                  <div class="gb-acct-card__group">
+                    <p class="gb-acct-card__title">Your name</p>
+                    <div class="gb-acct-profile__row">
+                      <div class="gb-acct-field">
+                        <label class="gb-acct-field__label" for="acct-md-first">First name*</label>
+                        <input class="gb-acct-field__input" id="acct-md-first" name="first_name" type="text" autocomplete="given-name" value="Susanna" data-acct-field>
+                      </div>
+                      <div class="gb-acct-field">
+                        <label class="gb-acct-field__label" for="acct-md-last">Last name*</label>
+                        <input class="gb-acct-field__input" id="acct-md-last" name="last_name" type="text" autocomplete="family-name" value="Rose" data-acct-field>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="gb-acct-card">
+                <div class="gb-acct-card__body">
+                  <div class="gb-acct-card__group">
+                    <p class="gb-acct-card__title">Phone number</p>
+                    <div class="gb-acct-field">
+                      <!-- board 27081 labels this one "Email*" -- copy-paste slip, SPEC 8 -->
+                      <label class="gb-acct-field__label" for="acct-md-phone">Phone number*</label>
+                      <div class="gb-acct-field__box"><span class="gb-acct-field__prefix">AU</span><input class="gb-acct-field__bare" id="acct-md-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" value="+61 000 0000 000" data-acct-field></div>
+                    </div>
+                  </div>
+                  <!-- decision AD: the board draws no checkbox here, only this line -->
+                  <p class="gb-acct-card__note">Opt in to order updates via text message</p>
+                </div>
+              </div>
+            </div>
+
+            <button class="gb-acct-btn gb-acct-profile__submit" type="submit" data-acct-save>Save changes</button>
+            <p class="gb-acct-profile__note">You will receive an email confirmation to verify changes.</p>
+          </form>
           </div>
         </section>
 
@@ -1291,6 +1344,6 @@
 
   <script src="assets/lenis.min.js?v=20260909-r134"></script>
   <script src="assets/main.js?v=20260909-r134"></script>
-  <script src="assets/account.js?v=20260910-a13"></script>
+  <script src="assets/account.js?v=20260910-a14"></script>
 </body>
 </html>

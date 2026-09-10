@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260910-a13";
+$build-acct: "20260910-a14";
 
 // ==========================================================================
 // Variables
@@ -1410,6 +1410,16 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   transition: trans(background-color, opacity);
 
   @include hover { opacity: 0.85; }
+
+  // 27081 draws Save grey until a field actually changes (note 27446). The
+  // border has to travel with the fill or a green outline stays behind it.
+  &:disabled {
+    border-color: $c-gray-150;
+    background: $c-gray-150;
+    color: $c-gray-400;
+    cursor: default;
+    opacity: 1;
+  }
 }
 
 // ==========================================================================
@@ -1955,6 +1965,56 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   margin: 0;
   @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
   color: $c-gray-600;
+}
+
+// 27081's two run-on lines sit in the same slot as 27151's __text but a step
+// smaller. Both boards write them 298 wide inside a 308 box, left-aligned, so
+// the missing 10px is all on the right and carries nothing -- see SPEC 8.
+.gb-acct-card__note {
+  margin: 0;
+  @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
+  color: $c-gray-600;
+}
+
+// 2284:27081. Cards at 24, then Save, then the closing line -- the column
+// itself is 32.
+.gb-acct-profile {
+  display: flex;
+  flex-direction: column;
+  row-gap: 32px;
+}
+
+.gb-acct-profile__cards {
+  display: flex;
+  flex-direction: column;
+  row-gap: 24px;
+}
+
+// Decision AC: the phone board stacks First/Last name, and there is no desktop
+// board. Sign-up's 35059 is the one desktop form the set does have, so the pair
+// follows it and splits above the phone breakpoint.
+.gb-acct-profile__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 32px;
+  row-gap: 16px;
+
+  @include narrow { grid-template-columns: minmax(0, 1fr); }
+}
+
+// Board width is a fixed 316 in a 350 column; capped rather than fixed so a
+// 320-wide phone cannot push it past the gutter.
+.gb-acct-profile__submit {
+  width: 100%;
+  max-width: 316px;
+  align-self: center;
+}
+
+.gb-acct-profile__note {
+  margin: 0;
+  @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
+  color: $c-gray-600;
+  text-align: center;
 }
 
 // ==========================================================================

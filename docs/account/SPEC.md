@@ -188,6 +188,8 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | Z | **Log in / Sign up 的 header 用的是站点 header，不是 account header** | 两页板上的 header instance 是 `Header Navigation Desktop/Closed` —— 与 MVP 11 页同一个组件（Menu 下拉 + logo 居中 + 绿 `Shop now` + 两个图标），**不是** account 那个（logo + 人形 + 汉堡、浅绿底）。未登录访客也确实用不上 account 菜单。**已按站点 header 实现**（直接复用 `.gb-header`，样式与交互都来自 `customstyle.css` / `main.js`，account.scss 一行没写），与 G 是同一件事的两面，请一并确认 |
 | AA | **note 卡在桌面比表单窄 8** | 两个桌面板都是表单 480 / note `472`（`35205`·`35132`），两个手机板则同为 350。桌面差的这 8px 没有语义、居中后左右各差 4，**已按 480 实现**（与表单同宽）。要真是 472 请回一句 |
 | AB | **auth 桌面板的次要文字是 `#656565`，全套其余地方是 `#666666`** | `35189`(副标题)·`35208`/`35135`(note 正文) 三处是 `#656565`，两个手机板同位置是 `#666666`（全套统计：`#666666` 1022 次，`#656565` 只有这三处）。**已各按各自的板实现**（新增 `$c-gray-650`），需给出哪个对 |
+| AC | **My Details 的姓名两栏在桌面无稿** | 手机板 `27081` 把 `First name*` 与 `Last name*` **上下堆叠**（两个 308×70 在同一个 gap 16 的列里）。桌面没有板。**已按 Sign up 桌面板 `35059` 的两栏实现**（≤767 塌回堆叠），因为那是全套里唯一有桌面稿的同类表单，且桌面内容列 571 宽单栏会空。要保持堆叠请回一句 |
+| AD | **`Opt in to order updates via text message` 稿上没有勾选框** | 它在板 `27081` 上是一行 12/18 `#666` 的纯文本，与上一张卡的 `You will receive a confirmation email…` 同一角色（都挂在卡 body 的第二个槽）。但文案是「选择加入」的口吻，像漏画了 checkbox。**已按稿做成纯文字**，需确认 |
 
 ## 8. 稿件自身的错误（不是我们做错）
 
@@ -261,6 +263,12 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
   但内容属占位（见 §8b）。
 - ⚠ **`2284:27081` 与 `27116` 两张 My Details 逐字相同、同高 2206**（待裁决 O）——
   **只实现一个**，不是漏了一页。
+- ⚠ **`2284:27081` 的两段说明文字宽度写死 298，比它们所在的内容盒窄 10**
+  （`You will receive a confirmation email…` 与 `Opt in to order updates…`，
+  两者都是 `textAutoResize=HEIGHT` 的 FIXED 298，而 `Order Info` 是 308）。
+  两段都**左对齐、左边缘与 label 齐平**，所以差的 10px 全在右边、没有语义。
+  **已按撑满 308 实现**，与 note 卡 472 vs 480（待裁决 AA）同类。
+
 
 ## 8b. 上线前必须替换的占位内容
 
