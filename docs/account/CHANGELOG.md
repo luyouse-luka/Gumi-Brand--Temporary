@@ -8,6 +8,110 @@
 
 ---
 
+## Task 14 — 登录与注册两页（`$build-acct` = `20260910-a12`）
+
+**设计源**：桌面 `2284:35137` Log in / `35059` Sign up；手机 `2284:34993` / `35023`。
+
+### 这两页用的是站点 header，不是 account header
+
+板上的 header instance 叫 `Header Navigation Desktop/Closed` —— 与 11 个 MVP 页
+**同一个组件**（Menu 下拉 + logo 居中 + 绿 `Shop now` + 人形/购物车两个图标），
+不是 account 那个（logo + 人形 + 汉堡、浅绿底、汉堡开的是 account 菜单）。
+未登录访客本来也没有 account 菜单可开。
+
+所以骨架整套取自 `faq.html`（head / announcement / header / footer / cart 抽屉 / 脚本），
+只有 `<main>` 是新写的；`account.css` 与 `account.js` 加在原有引用之后。
+两张桌面板的 `Footer CTA` 都是 `visible=false`，跟着不做，与 `account.html` 一致。
+PLAN 原写「复用 Task 1 的 header 骨架」，按源数据改了，已在 PLAN 步骤 3 划掉原文并注明。
+
+### 字段直接复用 `.gb-acct-field`
+
+两页的输入框在稿上就是弹窗用的同一个组件 `196:17634`（44 高 / `10 14` / 1px `#CCCCCC`
+INSIDE / r8 / 16-24 `-0.32` 占位）。Task 9 建的 `.gb-acct-field` 逐值对得上，
+没有再写第二套。
+
+### 按钮没有用 `.gb-btn--lg`
+
+站点那个类在 ≤767 会掉到 44 高 / `padding 40`（客户 r133 的决定，`.gb-crev__more`
+与 header/cart 共用），而 `35016` 的手机按钮**仍是 52 高 / `12 64`**。
+写成 `.gb-acct-auth__submit` 自带值，与 account 线「按钮全自写」的既有惯例一致
+（`account.html` 里 `.gb-btn` 出现 0 次）。
+
+### 桌面与手机的差异不止字号
+
+| 项 | 桌面 | 手机 |
+|---|---|---|
+| 标题 | PP Palma 800 32/40 `-0.32` `#1B1C1E` | 800 24/30 `-0.24` `#011307` |
+| 副标题 | 400 18/28 `-0.36`，限宽 768 | 400 16/24 `-0.32`，满宽 |
+| 按钮↔alt 行↔note 卡 | 32 | **48** |
+| note 卡内边距 | 24 | 16 / 20 |
+| note 标题 | 500 16/24 `#1B1C1E` | **400** 14/20 `#011307` |
+| Sign up 的姓名两栏 | 224 + 32 + 224 | 各占一行 |
+
+姓名两栏那条是**布局阈值**（盒子怎么排），所以只写 `grid-template-columns`、
+不带任何数值；其余全是值档，桌面基础值 + `@include tablet` 插值 + `@include narrow` 手机值，
+三档互斥（全局铁律 18）。
+
+### 判据先红过
+
+`acctcheck.py` 原本在页面不存在时会抛 `ERR_FILE_NOT_FOUND` 把整轮跑崩 —— 那样
+「先写断言、跑一次确认红」根本证明不了任何事。加了一条存在性守卫，缺页记红并继续。
+顺带把写死的 `chromium-1217` 换成「取实际装着的那个」：playwright 1.58 装的是 **1208**，
+1217 今天被清掉了（见下方遗留）。
+
+### 文件清单
+
+| 文件 | 改动 |
+|---|---|
+| `account-login.html` | **新增**。骨架取自 `faq.html`，`<main class="gb-acct-auth">` 新写 |
+| `account-signup.html` | **新增**。同上，多姓名两栏 |
+| `assets/account.scss` | 新增 Auth 分区（排在 Views 之后、Modal 之前）；新增 `$c-gray-650`；`$build-acct` → `20260910-a12` |
+| `assets/account.css` | 编译产物（双写） |
+| `account.html` | 只有两处 `?v=` 跟着 bump，内容未动 |
+| `tools/acctcheck.py` | 追加 Task 14 断言 119 条；新增「页面不存在 = 红」守卫；`CHROME` 改为自动发现 |
+| `docs/account/SPEC.md` | 待裁决新增 Z / AA / AB；第 8 节新增四条稿件错误；8b 新增两条占位 |
+
+### 判据
+
+| 判据 | 结果 |
+|---|---|
+| `tools/acctcheck.py` | **660 ok / 0 red**（541 既有 + 119 新） |
+| 同上，写页面之前 | 541 ok / **119 red** ✅ 先红 |
+| 活性自检：11 处逐条突变（含往 login 页塞一个 `.gb-acct-nav`） | 17 条红**逐条可归因**，无一处漏网 ✅ |
+| `tools/rwd.py account-login.html` / `account-signup.html` | 全绿 |
+| `tools/acctvars.py` | 54 ok / 0 red |
+| `tools/assetpath.py` | GREEN |
+| `tools/acctmodal.py` | 1313 ok / 0 red / 2 aborted（与 Task 13 基线一致） |
+
+活性自检的 11 处：姓名行的手机单列、inner 的手机 48 间距、标题手机墨色、`a.…__aside`
+的下划线、note 卡手机内边距、按钮 52 高、表单 480 宽、副标题手机字号、
+`.gb-acct-nav` 负向断言、alt 行的 `<a>`、以及把 sign-up 的提示行从 `<p>` 换成 `<a>`
+（验「login 有下划线 / sign-up 没有」这个区分真的被守着）。
+
+### 遗留
+
+- ⚠ **`~/.cache/ms-playwright/chromium-1217` 已不存在**，playwright 1.58 期待的是
+  **1208**（`browsers.json` 实测），1217 是过时残留、今天被清掉了。
+  `tools/` 下**约 150 个脚本**（`rwd.py` / `acctmodal.py` / 主站线的 `r*check.py` 全在内）
+  把 1217 写死在 `CHROME` / `EXE` 里，现在全都跑不起来。本轮只改了 PLAN 授权的
+  `acctcheck.py`（改成扫 `chromium-*` 取最新）；其余脚本**未动**，超出本轮范围。
+  为了让它们继续能跑，**留了一条软链** `~/.cache/ms-playwright/chromium-1217 -> chromium-1208`
+  —— 在 `~/.cache` 里，不在仓库、不会被同步脚本推上线。**这是环境层的补丁不是修复**：
+  哪天要重装 playwright，先 `rm` 掉它，否则 `playwright install` 会撞上这个名字。
+  真正的修法是把那 150 处一起换成自动发现，需拍板。
+- **顺带发现未修**：`account.html` 的主站资源版本号还停在 `?v=20260909-r134`，
+  而 11 个 MVP 页已经是 `r138`。两个新页按 `r138` 写。主站线的批量替换看来不含
+  `account.html`，这三个文件的主站 `?v=` 需要 account 线自己跟进。
+- **`Forgot your password?` 是 `href="#"`** —— 稿里根本没有密码找回页（已进 SPEC 8b）。
+- **两个表单都是 `action="#"`**，提交只会跳回 `#`。接 Shopify 时换成
+  `customers/login` / `customers/register` 的真实 form（已进 SPEC 8b）。
+- **`prefers-reduced-motion` 还没补** —— 全局收尾在 Task 15 步骤 3。
+- Sign up 桌面标题的 Lexend、手机的 `Forgot you password?`、手机副标题少 `your`、
+  note 卡宽 472 vs 480、`#656565` vs `#666666` —— 五条都在 SPEC 第 8 节与待裁决 Z/AA/AB，
+  **不要在下一轮审计里当 bug 修回去**。
+
+---
+
 ## Task 13 — 取消流程七屏与重启订阅（`$build-acct` = `20260910-a11`）
 
 **设计源**：`2284:29596` 挽留 / `29767` 已跳过 / `29928`·`30286`·`30107` 原因 /

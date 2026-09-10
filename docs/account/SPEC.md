@@ -185,6 +185,9 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | U | **`shipping-current` 只画了一个地址，却有单选钮** | 有单选就意味着可以有多个，但板上没有第二张卡、没有「新增地址」入口、`Save` 也是灰的。是「以后支持多地址」的预留，还是这一版就只有一个？影响 Save 的语义 |
 | V | **State 下拉的候选项只有 VIC** | `2284:33111` 闭合态显示 `VIC`，展开态无稿。已填澳洲 8 个州的标准缩写（ACT/NSW/NT/QLD/SA/TAS/VIC/WA）—— 是标准枚举不是自拟文案，但排序与是否用全称需确认 |
 | R | **Detail 的四个状态全无桌面稿** | PAUSED / PAUSED+超长码 / CANCELLED / 重启后，都只有 390。桌面沿用基准态 `27792` 的字号阶梯，只有结构与文案随状态走。与 M 同类 |
+| Z | **Log in / Sign up 的 header 用的是站点 header，不是 account header** | 两页板上的 header instance 是 `Header Navigation Desktop/Closed` —— 与 MVP 11 页同一个组件（Menu 下拉 + logo 居中 + 绿 `Shop now` + 两个图标），**不是** account 那个（logo + 人形 + 汉堡、浅绿底）。未登录访客也确实用不上 account 菜单。**已按站点 header 实现**（直接复用 `.gb-header`，样式与交互都来自 `customstyle.css` / `main.js`，account.scss 一行没写），与 G 是同一件事的两面，请一并确认 |
+| AA | **note 卡在桌面比表单窄 8** | 两个桌面板都是表单 480 / note `472`（`35205`·`35132`），两个手机板则同为 350。桌面差的这 8px 没有语义、居中后左右各差 4，**已按 480 实现**（与表单同宽）。要真是 472 请回一句 |
+| AB | **auth 桌面板的次要文字是 `#656565`，全套其余地方是 `#666666`** | `35189`(副标题)·`35208`/`35135`(note 正文) 三处是 `#656565`，两个手机板同位置是 `#666666`（全套统计：`#666666` 1022 次，`#656565` 只有这三处）。**已各按各自的板实现**（新增 `$c-gray-650`），需给出哪个对 |
 
 ## 8. 稿件自身的错误（不是我们做错）
 
@@ -234,6 +237,18 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 - `33847` 文案「You need to **another** product in order to delete this one」语法错
 - `30107` 的取消原因列表里「I have too much product」**重复两次**（`29928`/`30286` 是正常的 5 项）
 - 5 个手机稿的 `Chrome browser` 显示 `gumi.com.au` + 电量 84% + 8:39 —— 假舞台
+- ⚠ **`2284:35059` Sign up 桌面的标题与副标题用的是 Lexend，全套只有这一处**：标题 `35110`
+  是 Lexend 600 36/44 ls -0.72、副标题 `35111` 是 Lexend 400 18/28 ls 0，而同一页的手机板
+  `35032` 是 PP Palma 800 24/30、同组的 Log in 桌面板 `35188`/`35189` 是 PP Palma 800 32/40
+  与 PP Palma 400 18/28 ls -0.36。account 的 112 个节点里 Lexend 只出现在这一个文件。
+  **已按 Log in 桌面板实现**（PP Palma 800 32/40）。Lexend 是站内确有的字体，所以不能
+  当成 Figma 回退字忽略 —— 若设计方确实想让 Sign up 标题与 Log in 不同，需明说。
+- ⚠ **手机 Log in 板 `2284:35015` 写的是「Forgot you password?」**（少一个 r），桌面 `35202`
+  是「Forgot your password?」。**按桌面的正确拼写实现**。
+- ⚠ **手机 Sign up 板 `2284:35034` 的副标题少了「your」**：手机「Sign up to edit, skip or
+  manage subscription」，桌面 `35111`「…manage your subscription」。**按桌面实现**。
+- ⚠ **两个 auth 桌面板的 note 卡标题是 PP Palma 500，手机板是 400**（`35207`/`35134` vs
+  `35020`/`35056`），颜色也是 `#1B1C1E` vs `#011307`。**已各按各自的板实现**，与待裁决 AB 同源。
 
 ## 8b. 上线前必须替换的占位内容
 
@@ -257,6 +272,8 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | `Next order will renew on 17 July, 2026` | `cancel-skipped` 面板 | 板上的示例日期 |
 | `22/07/2026` | `restart` 面板的重启日期 | 板上的示例日期 |
 | 三处 `href="#"`（View Order / Refer a Friend / Re-Activate Subscription） | `account.html`，已标 `TODO client link` | 目标页未定 |
+| `href="#"` 的 **Forgot your password?** | `account-login.html`，已标 `TODO` | 密码找回页在稿里根本不存在，目标未定 |
+| 两个 auth 表单的 `action="#" method="post"` | `account-login.html` / `account-signup.html` | 静态壳，提交后只会跳回 `#`。接 Shopify 时换成 `customers/login` 与 `customers/register` 的真实 form |
 
 ## 8c. 弹窗几何（r-a6 起，取自 29 张弹窗板）
 

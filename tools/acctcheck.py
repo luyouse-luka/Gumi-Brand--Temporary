@@ -18,7 +18,16 @@ import sys, pathlib
 from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-CHROME = pathlib.Path.home() / ".cache/ms-playwright/chromium-1217/chrome-linux64/chrome"
+# Playwright's build number moves whenever the package is reinstalled, and
+# this box is shared -- pinning one made the whole run die mid-task.
+def _chrome():
+    base = pathlib.Path.home() / ".cache/ms-playwright"
+    hits = sorted(base.glob("chromium-*/chrome-linux64/chrome"))
+    if not hits:
+        sys.exit("no chromium under %s -- run: npx playwright install chromium" % base)
+    return hits[-1]
+
+CHROME = _chrome()
 
 OPEN_MENU = "open-menu"
 GOTO_SUBS = "goto-subscriptions"
@@ -782,6 +791,173 @@ GROUPS = {
         ("text", ".gb-acct-menu__link",
          ["Account", "My Subscriptions", "My Details", "Log Out"]),
     ],
+
+    # -- Task 14: Log in, desktop (2284:35137) --
+    # These two pages carry the SITE header, not the account one: the board's
+    # instance is Header Navigation Desktop/Closed, the same component the 11
+    # MVP pages use (Menu / logo / Shop now / two icons). The account header is
+    # a different component and its burger opens the account menu, which a
+    # logged-out visitor has no use for.
+    ("account-login.html", 1440, None): [
+        # anchor first -- every absence below is only meaningful once this exists
+        ("vis", ".gb-acct-auth", True),
+        ("absent", ".gb-acct-nav"),
+        ("absent", ".gb-acct-header"),
+        ("vis", ".gb-header__cta", True),
+        ("text", ".gb-header__cta", ["Shop now"]),
+        ("css", ".gb-header__cta", "background-color", "rgb(0, 86, 53)"),
+        # 2284:35137 fill
+        ("css", ".gb-acct-auth", "background-color", "rgb(250, 249, 248)"),
+        # 35188 / 35189
+        ("text", ".gb-acct-auth__title", ["Log in"]),
+        ("css", ".gb-acct-auth__title", "font-size", "32px"),
+        ("css", ".gb-acct-auth__title", "line-height", "40px"),
+        ("css", ".gb-acct-auth__title", "letter-spacing", "-0.32px"),
+        ("css", ".gb-acct-auth__title", "font-weight", "800"),
+        ("css", ".gb-acct-auth__title", "color", "rgb(27, 28, 30)"),
+        ("text", ".gb-acct-auth__sub", ["Log in to manage your subscription"]),
+        ("css", ".gb-acct-auth__sub", "font-size", "18px"),
+        ("css", ".gb-acct-auth__sub", "line-height", "28px"),
+        ("css", ".gb-acct-auth__sub", "letter-spacing", "-0.36px"),
+        ("css", ".gb-acct-auth__sub", "color", "rgb(101, 101, 101)"),
+        # 35179 pads 64/96 and puts 48 between the heading and the container
+        ("css", ".gb-acct-auth", "padding-top", "64px"),
+        ("css", ".gb-acct-auth", "padding-bottom", "96px"),
+        ("css", ".gb-acct-auth", "row-gap", "48px"),
+        # 35190: 1280 wide, 32 each side, 32 between the form, the alt line and
+        # the note
+        ("css", ".gb-acct-auth__inner", "max-width", "1280px"),
+        ("css", ".gb-acct-auth__inner", "padding-left", "32px"),
+        ("css", ".gb-acct-auth__inner", "row-gap", "32px"),
+        ("css", ".gb-acct-auth__form", "width", "480px"),
+        ("css", ".gb-acct-auth__form", "row-gap", "32px"),
+        ("css", ".gb-acct-auth__fields", "row-gap", "24px"),
+        # 196:17634, the same input component the modals already use
+        ("text", ".gb-acct-auth__form .gb-acct-field__label", ["Email", "Password"]),
+        ("css", ".gb-acct-auth__form .gb-acct-field__input", "height", "44px"),
+        ("css", ".gb-acct-auth__form .gb-acct-field__input", "border-radius", "8px"),
+        ("css", ".gb-acct-auth__form .gb-acct-field__input",
+         "border-top-color", "rgb(204, 204, 204)"),
+        ("css", ".gb-acct-auth__form .gb-acct-field__input", "font-size", "16px"),
+        # 35202: underlined, and it is a link here (35129 on sign-up is not)
+        ("text", ".gb-acct-auth__aside", ["Forgot your password?"]),
+        ("css", ".gb-acct-auth__aside", "font-size", "16px"),
+        ("css", ".gb-acct-auth__aside", "line-height", "24px"),
+        ("css", ".gb-acct-auth__aside", "color", "rgb(128, 128, 128)"),
+        ("css", ".gb-acct-auth__aside", "text-decoration-line", "underline"),
+        # 35203
+        ("text", ".gb-acct-auth__submit", ["Log in"]),
+        ("css", ".gb-acct-auth__submit", "height", "52px"),
+        ("css", ".gb-acct-auth__submit", "background-color", "rgb(0, 86, 53)"),
+        ("css", ".gb-acct-auth__submit", "color", "rgb(255, 255, 255)"),
+        ("css", ".gb-acct-auth__submit", "font-size", "16px"),
+        ("css", ".gb-acct-auth__submit", "line-height", "28px"),
+        ("css", ".gb-acct-auth__submit", "letter-spacing", "0.48px"),
+        # 35204: only the trailing run is green and underlined
+        ("text", ".gb-acct-auth__alt", [u"Don\u2019t have an account? Sign up"]),
+        ("css", ".gb-acct-auth__alt", "font-size", "16px"),
+        ("css", ".gb-acct-auth__alt", "color", "rgb(102, 102, 102)"),
+        ("css", ".gb-acct-auth__alt a", "color", "rgb(0, 86, 53)"),
+        ("css", ".gb-acct-auth__alt a", "text-decoration-line", "underline"),
+        # 35205
+        ("css", ".gb-acct-auth__note", "background-color", "rgb(245, 241, 233)"),
+        ("css", ".gb-acct-auth__note", "border-radius", "8px"),
+        ("css", ".gb-acct-auth__note", "padding-top", "24px"),
+        ("css", ".gb-acct-auth__note", "padding-left", "24px"),
+        ("css", ".gb-acct-auth__note", "row-gap", "4px"),
+        ("text", ".gb-acct-auth__note-title",
+         [u"Ordered before but haven\u2019t set up an account?"]),
+        ("css", ".gb-acct-auth__note-title", "font-size", "16px"),
+        ("css", ".gb-acct-auth__note-title", "font-weight", "500"),
+        ("css", ".gb-acct-auth__note-title", "color", "rgb(27, 28, 30)"),
+        ("text", ".gb-acct-auth__note-text",
+         [u"No worries\u2014just sign up with the same email and we\u2019ll link "
+          u"your order history automatically."]),
+        ("css", ".gb-acct-auth__note-text", "font-size", "16px"),
+        ("css", ".gb-acct-auth__note-text", "color", "rgb(101, 101, 101)"),
+        ("nofit", ".gb-acct-auth"),
+    ],
+    # -- Task 14: Log in, phone (2284:34993) --
+    ("account-login.html", 390, None): [
+        ("vis", ".gb-acct-auth", True),
+        ("absent", ".gb-acct-nav"),
+        # 35002 / 35004: smaller, and the ink is $c-ink here, not $c-gray-850
+        ("css", ".gb-acct-auth__title", "font-size", "24px"),
+        ("css", ".gb-acct-auth__title", "line-height", "30px"),
+        ("css", ".gb-acct-auth__title", "letter-spacing", "-0.24px"),
+        ("css", ".gb-acct-auth__title", "color", "rgb(1, 19, 7)"),
+        ("css", ".gb-acct-auth__sub", "font-size", "16px"),
+        ("css", ".gb-acct-auth__sub", "line-height", "24px"),
+        ("css", ".gb-acct-auth__sub", "letter-spacing", "-0.32px"),
+        ("css", ".gb-acct-auth__sub", "color", "rgb(102, 102, 102)"),
+        # 34999: 64 top and bottom, 20 each side
+        ("css", ".gb-acct-auth", "padding-top", "64px"),
+        ("css", ".gb-acct-auth", "padding-bottom", "64px"),
+        ("css", ".gb-acct-auth__inner", "padding-left", "20px"),
+        # 35005: the phone board spaces the button, the alt line and the note
+        # 48 apart, not the desktop's 32
+        ("css", ".gb-acct-auth__inner", "row-gap", "48px"),
+        ("css", ".gb-acct-auth__form", "row-gap", "32px"),
+        ("css", ".gb-acct-auth__aside", "font-size", "14px"),
+        ("css", ".gb-acct-auth__aside", "line-height", "20px"),
+        ("css", ".gb-acct-auth__aside", "color", "rgb(128, 128, 128)"),
+        ("css", ".gb-acct-auth__alt", "font-size", "14px"),
+        ("css", ".gb-acct-auth__alt", "line-height", "20px"),
+        # 35016 stays 52 tall on the phone board, unlike .gb-btn--lg which the
+        # site drops to 44 below 768
+        ("css", ".gb-acct-auth__submit", "height", "52px"),
+        # 35018
+        ("css", ".gb-acct-auth__note", "padding-top", "16px"),
+        ("css", ".gb-acct-auth__note", "padding-left", "20px"),
+        ("css", ".gb-acct-auth__note-title", "font-size", "14px"),
+        ("css", ".gb-acct-auth__note-title", "font-weight", "400"),
+        ("css", ".gb-acct-auth__note-title", "color", "rgb(1, 19, 7)"),
+        ("css", ".gb-acct-auth__note-text", "font-size", "14px"),
+        ("css", ".gb-acct-auth__note-text", "color", "rgb(102, 102, 102)"),
+        ("nofit", ".gb-acct-auth"),
+    ],
+    # -- Task 14: Sign up, desktop (2284:35059) --
+    # The heading on this one board is Lexend 36/44; every other heading in the
+    # account set, this page's own phone board included, is PP Palma. Treated as
+    # a board slip and built to match Log in -- logged in SPEC section 8.
+    ("account-signup.html", 1440, None): [
+        ("vis", ".gb-acct-auth", True),
+        ("absent", ".gb-acct-nav"),
+        ("absent", ".gb-acct-header"),
+        ("vis", ".gb-header__cta", True),
+        ("css", ".gb-header__cta", "background-color", "rgb(0, 86, 53)"),
+        ("text", ".gb-acct-auth__title", ["Sign up"]),
+        ("css", ".gb-acct-auth__title", "font-size", "32px"),
+        ("css", ".gb-acct-auth__title", "font-weight", "800"),
+        ("text", ".gb-acct-auth__sub",
+         ["Sign up to edit, skip or manage your subscription"]),
+        ("css", ".gb-acct-auth__sub", "font-size", "18px"),
+        # 35116: two 224 columns, 32 apart
+        ("text", ".gb-acct-auth__form .gb-acct-field__label",
+         ["First name*", "Last name*", "Email*", "Password"]),
+        ("css", ".gb-acct-auth__row", "column-gap", "32px"),
+        ("css", ".gb-acct-auth__row .gb-acct-field", "width", "224px"),
+        # 35129: same slot as Log in's Forgot line but static text, no underline
+        ("text", ".gb-acct-auth__aside", ["Must be at least 8 characters"]),
+        ("css", ".gb-acct-auth__aside", "text-decoration-line", "none"),
+        ("text", ".gb-acct-auth__submit", ["Sign up"]),
+        ("css", ".gb-acct-auth__submit", "height", "52px"),
+        ("text", ".gb-acct-auth__alt", ["Already have an account? Log in"]),
+        ("css", ".gb-acct-auth__alt a", "color", "rgb(0, 86, 53)"),
+        ("nofit", ".gb-acct-auth"),
+    ],
+    # -- Task 14: Sign up, phone (2284:35023) --
+    ("account-signup.html", 390, None): [
+        ("vis", ".gb-acct-auth", True),
+        ("absent", ".gb-acct-nav"),
+        ("css", ".gb-acct-auth__title", "font-size", "24px"),
+        # 35038-35045: the two name fields stack, they do not stay side by side
+        ("css", ".gb-acct-auth__row .gb-acct-field", "width", "350px"),
+        ("css", ".gb-acct-auth__row", "row-gap", "24px"),
+        ("text", ".gb-acct-auth__aside", ["Must be at least 8 characters"]),
+        ("css", ".gb-acct-auth__aside", "font-size", "14px"),
+        ("nofit", ".gb-acct-auth"),
+    ],
 }
 
 CSS_GET = ("([s,p,pe])=>{const e=document.querySelector(s);"
@@ -801,10 +977,15 @@ def main():
     with sync_playwright() as p:
         b = p.chromium.launch(executable_path=str(CHROME))
         for (page_name, w, action), checks in GROUPS.items():
+            label = "%s@%d%s" % (page_name, w, " [%s]" % action if action else "")
+            # A page that does not exist has to read as red. file:// raises
+            # ERR_FILE_NOT_FOUND, which would abort the whole run instead.
+            if not (ROOT / page_name).exists():
+                print("RED  %-52s page does not exist" % label)
+                red += len(checks); continue
             pg = b.new_page(viewport={"width": w, "height": 900})
             pg.goto((ROOT / page_name).as_uri())
             pg.wait_for_timeout(400)
-            label = "%s@%d%s" % (page_name, w, " [%s]" % action if action else "")
             if action:
                 if action in (GOTO_DETAIL, DETAIL_PAUSED, DETAIL_CANCELLED,
                               DETAIL_DISCOUNT, DETAIL_LONGCODE):

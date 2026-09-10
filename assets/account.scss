@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260910-a11";
+$build-acct: "20260910-a12";
 
 // ==========================================================================
 // Variables
@@ -62,6 +62,7 @@ $c-gray-900:    #1a1a1a;
 $c-gray-850:    #1b1c1e;
 $c-gray-800:    #333333;
 $c-gray-700:    #4d4d4d;
+$c-gray-650:    #656565;   // 35189 / 35208 auth desktop only; the phone boards use #666666
 $c-gray-600:    #666666;
 $c-gray-500:    #737373;
 $c-gray-400:    #808080;   // 341:42573 stepper border / disabled checkout label
@@ -1892,6 +1893,272 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
   @include narrow { top: 176px; }
   @include tablet { top: fluid(176px, 187px); }
+}
+
+// ==========================================================================
+// Auth pages — 2284:35137 log in / 35059 sign up desktop,
+//              2284:34993 log in / 35023 sign up phone
+// ==========================================================================
+
+// Both pages carry the SITE header, not .gb-acct-header: the boards instance
+// Header Navigation Desktop/Closed, the same component the MVP pages use. A
+// logged-out visitor has no account menu to open.
+//
+// Board slips, built to the Log in board and logged in SPEC section 8:
+//   - 35110/35111 are Lexend 36/44 and 18/28-0; every other heading in the set,
+//     including this page's own phone board 35032, is PP Palma.
+//   - 35015 reads "Forgot you password?"; 35202 has the r.
+//   - 35034 drops "your" from the sub line 35111 carries.
+//   - the note is 472 wide against a 480 form on both desktop boards while the
+//     phone boards match at 350; built at 480.
+
+.gb-acct-auth {
+  display: flex;
+  flex-direction: column;
+  row-gap: 48px;
+  // customstyle paints body white; the boards are $c-cream and the note card on
+  // top of it would otherwise sit on the same ink as the page
+  background: $c-cream;
+  padding-block: 64px 96px;
+
+  @include tablet { padding-bottom: fluid(64px, 96px); }
+  @include narrow { padding-bottom: 64px; }
+}
+
+// 35187: 960 on the board, and the sub line is held to 768 inside it so the
+// wrap point is the board's. The phone board runs both to the full 350.
+.gb-acct-auth__head {
+  max-width: 960px;
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: 32px;
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+  text-align: center;
+
+  @include tablet { padding-inline: fluid($pad-x-mobile, 32px); }
+  @include narrow { padding-inline: $pad-x-mobile; }
+}
+
+.gb-acct-auth__title {
+  @include font($font-brand-stack, 32px, 800, 40px, -0.32px);
+  color: $c-gray-850;
+
+  @include tablet {
+    font-size: fluid(24px, 32px);
+    line-height: fluid(30px, 40px);
+    letter-spacing: fluid(-0.24px, -0.32px);
+  }
+
+  // 35002/35032 use $c-ink here, not the desktop's $c-gray-850
+  @include narrow {
+    @include font($font-brand-stack, 24px, 800, 30px, -0.24px);
+    color: $c-ink;
+  }
+}
+
+.gb-acct-auth__sub {
+  max-width: 768px;
+  margin-inline: auto;
+  @include font($font-brand-stack, 18px, 400, 28px, -0.36px);
+  color: $c-gray-650;
+
+  @include tablet {
+    font-size: fluid(16px, 18px);
+    line-height: fluid(24px, 28px);
+    letter-spacing: fluid(-0.32px, -0.36px);
+  }
+
+  @include narrow {
+    max-width: none;
+    @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+    color: $c-gray-600;
+  }
+}
+
+// 35190: 1280 wide with 32 of its own each side. The gap between the form, the
+// alt line and the note is the one place the two boards disagree on spacing --
+// 32 on 35190, 48 on 35005.
+.gb-acct-auth__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  row-gap: 32px;
+  max-width: 1280px;
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: 32px;
+
+  @include tablet {
+    row-gap: fluid(48px, 32px);
+    padding-inline: fluid($pad-x-mobile, 32px);
+  }
+
+  @include narrow { row-gap: 48px; padding-inline: $pad-x-mobile; }
+}
+
+// 35192 / 35006: fields, then the button, 32 apart on both boards.
+.gb-acct-auth__form,
+.gb-acct-auth__alt,
+.gb-acct-auth__note {
+  width: 480px;
+  max-width: 100%;
+
+  @include narrow { width: 100%; }
+}
+
+.gb-acct-auth__form {
+  display: flex;
+  flex-direction: column;
+  row-gap: 32px;
+}
+
+.gb-acct-auth__fields {
+  display: flex;
+  flex-direction: column;
+  row-gap: 24px;
+}
+
+// 35116: two equal columns 32 apart on the desktop board; 35038-35045 stack
+// them instead. Not a value tier -- it is which way the boxes sit -- so it
+// hangs off a layout threshold and carries no numbers of its own.
+.gb-acct-auth__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 32px;
+  row-gap: 24px;
+
+  @include narrow { grid-template-columns: minmax(0, 1fr); }
+}
+
+// 35197 / 35011: the password field and the line under it, 8 apart.
+.gb-acct-auth__stack {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+// 35202 is a link (underlined, and it goes somewhere); 35129 in the same slot
+// on sign-up is static help text. Same box, so one class with the underline
+// only where the element is an anchor.
+.gb-acct-auth__aside {
+  @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+  color: $c-gray-400;
+
+  @include tablet {
+    font-size: fluid(14px, 16px);
+    line-height: fluid(20px, 24px);
+    letter-spacing: fluid(-0.28px, -0.32px);
+  }
+
+  @include narrow {
+    @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  }
+}
+
+a.gb-acct-auth__aside {
+  text-decoration: underline;
+  transition: trans(opacity);
+
+  @include hover { opacity: 0.7; }
+}
+
+// 35203: the board's button is the site's large pill, but .gb-btn--lg drops to
+// 44 below 768 (client r133) and 35016 stays at 52 -- so this one is its own.
+.gb-acct-auth__submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  column-gap: 8px;
+  height: 52px;
+  padding-inline: 64px;
+  border: 1px solid $c-green;
+  border-radius: $r-pill;
+  background: $c-green;
+  @include font($font-brand-stack, 16px, 500, 28px, 0.48px);
+  color: $c-white;
+  cursor: pointer;
+
+  transition: trans(background-color, border-color, color);
+
+  @include hover {
+    background: $c-lime;
+    border-color: $c-lime;
+    color: $c-green-900;
+  }
+}
+
+// 35204 / 35131: only the trailing run is green and underlined.
+.gb-acct-auth__alt {
+  @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+  color: $c-gray-600;
+  text-align: center;
+
+  @include tablet {
+    font-size: fluid(14px, 16px);
+    line-height: fluid(20px, 24px);
+    letter-spacing: fluid(-0.28px, -0.32px);
+  }
+
+  @include narrow {
+    @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  }
+
+  a {
+    color: $c-green;
+    text-decoration: underline;
+
+    transition: trans(opacity);
+
+    @include hover { opacity: 0.7; }
+  }
+}
+
+// 35205 / 35018
+.gb-acct-auth__note {
+  display: flex;
+  flex-direction: column;
+  row-gap: 4px;
+  padding: 24px;
+  border-radius: $r-sm;
+  background: $c-sand;
+
+  @include tablet { padding: fluid(16px, 24px) fluid($pad-x-mobile, 24px); }
+  @include narrow { padding: 16px $pad-x-mobile; }
+}
+
+.gb-acct-auth__note-title {
+  @include font($font-brand-stack, 16px, 500, 24px, -0.32px);
+  color: $c-gray-850;
+
+  @include tablet {
+    font-size: fluid(14px, 16px);
+    line-height: fluid(20px, 24px);
+    letter-spacing: fluid(-0.28px, -0.32px);
+  }
+
+  // 35020/35056 drop to regular and to $c-ink
+  @include narrow {
+    @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+    color: $c-ink;
+  }
+}
+
+.gb-acct-auth__note-text {
+  @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+  color: $c-gray-650;
+
+  @include tablet {
+    font-size: fluid(14px, 16px);
+    line-height: fluid(20px, 24px);
+    letter-spacing: fluid(-0.28px, -0.32px);
+  }
+
+  @include narrow {
+    @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+    color: $c-gray-600;
+  }
 }
 
 // ---------------------------------------------------------------------------

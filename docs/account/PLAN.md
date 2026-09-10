@@ -1195,14 +1195,23 @@ var cancelFlow = {
 - 创建：`account-login.html`、`account-signup.html`
 - 修改：`assets/account.scss`（新增 Auth 分区，排在 Views 之后）、`tools/acctcheck.py`
 
-- [ ] **步骤 1：追加断言（先红）** —— 两页存在、`.gb-acct-nav` **不存在**
+- [x] **步骤 1：追加断言（先红）** —— 两页存在、`.gb-acct-nav` **不存在**
       （负向断言先验 `.gb-acct-auth` 存在）、`Shop now` 按钮存在且底色取自 `35137`
-- [ ] **步骤 2：跑判据确认红**
-- [ ] **步骤 3：写两页**，复用 Task 1 的 head/header/footer 骨架，
+      ⚠ 顺带给 `acctcheck.py` 加了「页面不存在 = 红」的守卫：`file://` 打不开的页面
+      会抛 `ERR_FILE_NOT_FOUND` 把整轮跑崩，那样「先红」根本证明不了任何事
+- [x] **步骤 2：跑判据确认红** —— 541 ok（既有基线不动）/ 119 red（新断言全红）
+- [x] **步骤 3：写两页**，~~复用 Task 1 的 head/header/footer 骨架~~ —— **改用 MVP 页的骨架**：
+      两页板上的 header instance 是 `Header Navigation Desktop/Closed`，与 11 个 MVP 页
+      同一个组件（Menu / logo / Shop now / 两个图标），**不是** account 那个（logo + 人形 +
+      汉堡）。所以 head / announcement / header / footer / cart 抽屉整套取自 `faq.html`，
+      只有 `<main>` 是新写的。footer CTA 两张桌面板都是 `visible=false`，跟着不做。
       表单结构与文案逐字取自节点（Log in 页底部那段
       「Ordered before but haven't set up an account?」整块也要）
-- [ ] **步骤 4：两页都加载 `account.css` + `main.js` + `account.js`**
-- [ ] **步骤 5：编译、跑判据确认绿、活性自检**
+- [x] **步骤 4：两页都加载 `account.css` + `main.js` + `account.js`**
+- [x] **步骤 5：编译、跑判据确认绿、活性自检** —— 660 ok / 0 red；
+      `rwd.py` 两页全绿、`acctvars` 54 ok、`assetpath` GREEN、`acctmodal` 1313/0/2（同基线）。
+      活性自检做了 11 处逐条突变（含往 login 页塞一个 `.gb-acct-nav` 验负向断言），
+      17 条红逐条可归因，无一处漏网
 - [ ] **步骤 6：提交** — `git commit -m "feat(account): 登录与注册两页"`
 
 ---
