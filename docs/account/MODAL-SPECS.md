@@ -111,3 +111,34 @@ board `2284:27792` 证明 **account 桌面与手机共用同一套字号阶梯**
   且键盘与读屏行为免费。要自定 listbox 需先给展开态的稿或同意照搬现站 `.gb-select`。
 - **纯文案体的 320 固定宽**照板实现，右侧留 30 空。若那其实是漏改，改成 350 即可。
 - 板上错字两处已登记 SPEC §8：`wan to skip`（`32775`）、`Restart subscoption`（`34192`）。
+
+## 七、卡片框 `Frame 1984078395`（r-a10 起）
+
+地址卡（`2284:32448`）与成功提示（`2284:32932`）是同一个框，只换填色：
+
+| 项 | 值 |
+|---|---|
+| 尺寸 | 350 宽，高抱内容 |
+| 内边距 | `16` 四周 |
+| 圆角 | **8** |
+| 描边 | 1px，`strokeAlign: INSIDE` |
+| 排布 | `HORIZONTAL` + `SPACE_BETWEEN` |
+| 地址态 | 白底 `#ffffff`，描边 `#cccccc` |
+| 成功态 | 底 `#f6feec`，描边 `#daf6b0` |
+
+⚠ **这个框的 `strokesIncludedInLayout` 是 `true`** —— 和头/脚的发丝线相反：
+`16 + 内容 + 16 + 1 + 1` 才等于板上的 178 / 78。所以这里要写**真 `border`**，
+不是 `box-shadow: inset`。头脚那两条仍必须用 inset，两处不能互抄。
+
+⚠ **`SPACE_BETWEEN` 会吞掉 `itemSpacing`**：地址卡写着 gap 24，实测两个孩子之间只剩
+9.8 —— Figma 的 SPACE_BETWEEN 根本不读 itemSpacing（头 `Account Section List` 的 g33
+同理）。把 24 当成真 gap 写进 CSS，文字列会被挤窄 12px 并折行。
+
+## 八、单行截断
+
+`2284:32458`（地址卡的 delivery instructions）是这批板里**唯一**带
+`textTruncation: ENDING` + `maxLines: 1` 的文本。判据：`absoluteRenderBounds` 的
+宽度（240.99）远小于同串在浏览器里的自然宽度（278.6），而其余五行两边差 <1px。
+不做截断，卡片就是 198 而不是 178。
+
+其余 TEXT 节点都没有 `maxLines` —— 加之前先查这两个字段，别一律 clamp。

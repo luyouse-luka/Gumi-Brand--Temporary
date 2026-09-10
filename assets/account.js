@@ -108,7 +108,11 @@
 
     _snapshot: function (fields) {
       var v = [];
-      for (var i = 0; i < fields.length; i++) v.push(fields[i].value);
+      for (var i = 0; i < fields.length; i++) {
+        var f = fields[i];
+        // A radio's value is a constant; what changes is which one is picked.
+        v.push(f.type === 'radio' || f.type === 'checkbox' ? (f.checked ? '1' : '0') : f.value);
+      }
       return v.join('\u0000');
     }
   };
@@ -222,6 +226,15 @@
           return;
         }
         if (e.target.closest('[data-acct-modal-close]')) { e.preventDefault(); self.close(); }
+      });
+      // Nothing here posts anywhere. A panel is a <form> so that Save runs the
+      // browser's own required/pattern checks first -- submit is the only event
+      // that fires after they pass, which is why the chain hangs off it and not
+      // off the button's click.
+      document.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var next = e.target.getAttribute('data-acct-modal-next');
+        if (next) self.open(next);
       });
       document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && self.isOpen()) { e.preventDefault(); self.close(); }

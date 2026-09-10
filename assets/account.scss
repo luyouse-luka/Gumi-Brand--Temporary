@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260910-a9";
+$build-acct: "20260910-a10";
 
 // ==========================================================================
 // Variables
@@ -83,6 +83,7 @@ $c-amber-100:   #ffefc3;   // account-only: paused badge fill
 // #f6feec (2284:34854 / 34804) -- not one of the site's lime steps, so it is
 // declared here and shows up in acctvars.py as an account-only token.
 $c-acct-menu-bg: #f6feec;
+$c-acct-radio:   #e9facf;   // account-only: picked address radio 2284:32450
 
 // Semantic aliases — components use these
 $color-text:        $c-ink;
@@ -2100,6 +2101,45 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   gap: 8px;
 }
 
+// 196:17634 again, but with a run of text inside the frame: the border moves off
+// the input and onto the box, or the prefix would sit outside it.
+.gb-acct-field__box {
+  display: flex;
+  align-items: center;
+  column-gap: 8px;
+  height: 44px;
+  padding: 10px 14px;
+  border: 1px solid $c-gray-300;
+  border-radius: $r-sm;
+  background: $c-white;
+
+  transition: trans(border-color);
+
+  &:focus-within { outline: 2px solid $c-blue; outline-offset: 1px; }
+}
+
+// 196:17794. The chevron beside it (196:17798) is visible=false on the board,
+// so this is a label, not a country picker.
+.gb-acct-field__prefix {
+  flex: 0 0 auto;
+  @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+  color: $c-gray-700;
+}
+
+.gb-acct-field__bare {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
+  color: $c-gray-600;
+
+  &::placeholder { color: $c-gray-600; opacity: 1; }
+
+  &:focus-visible { outline: none; }   // the ring is painted by the box
+}
+
 .gb-acct-field__input {
   width: 100%;
   height: 44px;
@@ -2111,6 +2151,9 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   color: $c-gray-600;
 
   transition: trans(border-color);
+
+  // the boards give a placeholder the same ink as a filled value
+  &::placeholder { color: $c-gray-600; opacity: 1; }
 
   &:focus-visible { outline: 2px solid $c-blue; outline-offset: 1px; }
 }
@@ -2127,6 +2170,20 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 }
 
 .gb-acct-field__input--icon { padding-right: 42px; }
+
+// 33117: the delivery box is 144 tall, its text starting at the same 10.
+.gb-acct-field__input--area {
+  height: 144px;
+  padding-block: 10px;
+  resize: none;   // the board draws no grabber
+}
+
+// A <select> paints the UA's own arrow on top of the board's chevron unless the
+// native one is turned off, so edit-frequency and State would each show two.
+select.gb-acct-field__input {
+  appearance: none;
+  cursor: pointer;
+}
 
 // 32778 / 32134: 40 tall, 32 each side, pill, and it hugs its label. The board
 // draws the same component green when live and #e6e6e6 when the form above it
@@ -2405,6 +2462,9 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
   transition: trans(border-color);
 
+  // the boards give a placeholder the same ink as a filled value
+  &::placeholder { color: $c-gray-600; opacity: 1; }
+
   &:focus-visible { outline: 2px solid $c-blue; outline-offset: 1px; }
 }
 
@@ -2485,3 +2545,155 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
   svg { width: 12px; height: 12px; }
 }
+
+// ---------------------------------------------------------------------------
+// Shipping — 32294 current address / 32940 the form sheet / 32779 success.
+//
+// ⚠ The two cards here are the one board frame with strokesIncludedInLayout
+// true: its 1px INSIDE stroke IS counted in the board's 178 and 78, unlike the
+// head and foot hairlines a few hundred lines up. So these take a real border
+// and border-box does the arithmetic.
+// ---------------------------------------------------------------------------
+.gb-acct-addr {
+  display: flex;
+  flex-direction: column;
+  row-gap: 20px;
+}
+
+// 32447: #101828 — the one label on this page that is not #666666.
+.gb-acct-addr__title {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-navy;
+}
+
+.gb-acct-addr__card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 16px;
+  border: 1px solid $c-gray-300;
+  border-radius: $r-sm;
+  background: $c-white;
+}
+
+.gb-acct-addr__pick {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+// 32450: a 16 circle, #e9facf inside a 0.8 green ring, with an 8.8 dot when it
+// is the picked one. The board only ever draws it picked -- one address, always
+// selected -- so the unpicked ring is ours (SPEC 待裁决 S).
+.gb-acct-addr__radio {
+  appearance: none;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 0;
+  border-radius: 8px;
+  background: $c-white;
+  box-shadow: inset 0 0 0 1px $c-gray-300;
+  cursor: pointer;
+
+  transition: trans(background-color, box-shadow);
+
+  &:checked {
+    background: $c-acct-radio
+      radial-gradient(circle at 50% 50%, $c-green 0 4.4px, transparent 4.4px);
+    box-shadow: inset 0 0 0 0.8px $c-green;
+  }
+
+  &:focus-visible { outline: 2px solid $c-blue; outline-offset: 2px; }
+}
+
+.gb-acct-addr__pick:hover .gb-acct-addr__radio:not(:checked) {
+  box-shadow: inset 0 0 0 1px $c-gray-500;
+}
+
+// 32451 is two nested groups: 4 inside the address block, 8 out to the delivery
+// line. Flattened into one gap the delivery line lands 4 too high.
+.gb-acct-addr__lines,
+.gb-acct-addr__group {
+  display: flex;
+  flex-direction: column;
+  // the truncating line's min-content width would otherwise become this
+  // column's automatic minimum and push the card wide instead of clipping
+  min-width: 0;
+}
+
+.gb-acct-addr__lines { row-gap: 8px; }
+.gb-acct-addr__group { row-gap: 4px; }
+
+.gb-acct-addr__line {
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-600;
+}
+
+// 32453 is the only dark line: a colour split, not a weight one.
+.gb-acct-addr__line--name { color: $c-ink; }
+
+// 32458 alone carries maxLines 1 / textTruncation ENDING: the board cuts the
+// delivery note at one line. Letting it wrap makes the card 198 instead of 178.
+.gb-acct-addr__line--note {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+// 33093: the field column, 20 between groups.
+.gb-acct-form {
+  display: flex;
+  flex-direction: column;
+  row-gap: 20px;
+}
+
+// 33094 / 33109: two fields abreast, 15 apart. The board's row is 351 against a
+// 350 content box (168 + 15 + 168), so the columns split what is really there
+// rather than hanging 1px past it — SPEC 待裁决 T.
+.gb-acct-form__row {
+  display: flex;
+  column-gap: 15px;
+
+  > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+// 32932: the address card's frame again, lime instead of white.
+.gb-acct-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid $c-lime-200;
+  border-radius: $r-sm;
+  background: $c-acct-menu-bg;
+}
+
+.gb-acct-note__icon {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+}
+
+.gb-acct-note__body {
+  display: flex;
+  flex-direction: column;
+  row-gap: 4px;
+}
+
+.gb-acct-note__title,
+.gb-acct-note__text {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+}
+
+.gb-acct-note__title { color: $c-ink; }
+.gb-acct-note__text { color: $c-gray-600; }

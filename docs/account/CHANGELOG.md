@@ -8,6 +8,94 @@
 
 ---
 
+## Task 12 — 配送地址弹窗与表单校验（`$build-acct` = `20260910-a10`）
+
+**设计源**：`2284:32294` 当前地址 / `32940`·`33161` 表单 / `32779` 成功。
+
+### 「两个表单变体」其实是一个面板
+
+`32940` 与 `33161` 逐节点相同，只差三行数据（`12 Charnwood Road / St Kilda / 3181`
+与 `20 Park Avenue / Richmond / 3121`）。所以只做一个 `shipping-form`，
+判据反过来利用这一点：**要改的值全部取自另一张板**，不自造测试串。
+
+⚠ PLAN 里说 `2284:33129` 是表单的滚动容器，**不对** —— 它浮在板外、比弹窗里那份
+少一个字段（686 vs 800），是旧草稿。真正的滚动容器是 `33092`。
+
+### 三处把卡片撑高的地方
+
+1. **这两张卡的描边要算进盒子**。`32448` / `32932` 是同一个框，
+   `strokesIncludedInLayout: true` —— `16 + 内容 + 16 + 1 + 1` 才等于板上的 178 / 78。
+   和头脚的发丝线正好相反（那两条 INSIDE 但不占高，必须写 `box-shadow: inset`）。
+   两处不能互抄，已写进 [MODAL-SPECS](MODAL-SPECS.md) §7。
+2. **`32458` 是这批板里唯一带 `textTruncation: ENDING` + `maxLines: 1` 的文本**。
+   判据是它的 `absoluteRenderBounds` 只有 240.99，而同一串在浏览器里自然宽 278.6 ——
+   其余五行两边差都 <1px，所以只有这一行是被截断的。不截断，卡片就是 198 而不是 178。
+   ⚠ 光加 `white-space: nowrap` 还不够：它会变成整列的**自动最小尺寸**，
+   卡片被撑宽而不是把字裁掉，得在两层 flex 上补 `min-width: 0`。
+3. **`SPACE_BETWEEN` 会吞掉 `itemSpacing`**。地址卡写着 gap 24，实测两个孩子之间只剩
+   9.8；把 24 当真 gap 写进 CSS，文字列窄 12px，那行照样折。
+
+### 表单
+
+- **校验交给浏览器**：`.gb-acct-modal__panel` 本身就是 `<form>`，
+  必填用 `required`、邮编用 `pattern="\d{4}"`。板上**没有错误态**，
+  自画红框/提示语等于自拟视觉；原生校验还免费带键盘与读屏。
+- **链到成功页挂在 `submit` 上，不是按钮的 `click`** —— 校验不过根本不会有 `submit`。
+  `e.preventDefault()`，不提交到任何后端。
+- **`+61` 是 29 宽的纯文字前缀，不是国家选择器**：它旁边的 chevron（`196:17798`）
+  在板上 `visible=false`。因为要待在描边里，电话这一格的边框从 input 移到了
+  `.gb-acct-field__box`，input 变透明无边。
+- **必填星号没有自己的颜色**：`33096` 的 Label 没有 `characterStyleOverrides`，
+  `*` 与标签同为 `#666666`。判据因此改成验「标签里没有第二个元素」。
+- **State 用原生 `<select>`**（同 `edit-frequency`：板上只有闭合态）。
+  候选项填了澳洲 8 个州的标准缩写，登记在 SPEC 待裁决 V。
+
+### 顺带修掉的两处旧账
+
+- **`<select>` 上没关原生箭头** —— `edit-frequency`（Task 9）一直画着两个 chevron：
+  板上的那个 + 浏览器自己的。加 `select.gb-acct-field__input { appearance: none }`，
+  并给两个 `<select>` 都补了断言。
+- **占位符用的是浏览器默认灰**。板上三处占位（`Discount Code` / `Company` /
+  `000 000 000` / `Delivery Instrctions`）全是 `#666666`，与真实值同色，补 `::placeholder`。
+- **`_snapshot` 读不出单选**：单选的 `value` 是常量，变的是 `checked`。
+  地址面板是第一个用单选的脏值门控，不改就永远醒不来。
+
+### 遗留
+
+- **桌面的成功提示折成两行**：面板宽锁 390（用户已定）而桌面内边距按卡片惯例是 24，
+  内容盒比手机窄 8px，`32937` 那句正好放不下（254 → 274）。记进 SPEC 待裁决 E。
+- 板上错字 `Delivery Instrctions`、同一地址两张板邮编 `3182`/`3181` 打架，已登记 SPEC §8。
+- `shipping-current` 只画了一个地址却有单选钮，Save 因此恒灰；未选中态无稿。待裁决 S / U。
+
+### 文件清单
+
+| 文件 | 改动 |
+|---|---|
+| `account.html` | `shipping-current` 填入地址卡与脚；新增 `shipping-form`（`<form>` 面板）与 `shipping-success`；`?v=` → `a10` |
+| `assets/account.scss` | 新增 `.gb-acct-addr` / `.gb-acct-form` / `.gb-acct-note` 三族与 `.gb-acct-field__box`·`__prefix`·`__bare`·`__input--area`；`select.gb-acct-field__input` 关原生箭头；两处 `::placeholder`；新增 `$c-acct-radio` |
+| `assets/account.css` | 编译产物（双写） |
+| `assets/account.js` | `modal.init` 加 `submit` 监听；`acctForm._snapshot` 认单选 |
+| `images/acct-note-ok.svg` | 新增（绿盘 + 白勾，双色，不走 currentColor 改写） |
+| `tools/acctmodal.py` | 新增 `check_shipping` 三段；主循环只枚举 detail 视图里的触发器，另加「任意触发器都要有面板」的全页扫描；`check_forms` 补 `<select>` 箭头断言 |
+| `docs/account/SPEC.md` | 待裁决 S/T/U/V；E 补桌面代价；§8 补两条板错 |
+| `docs/account/MODAL-SPECS.md` | §7 卡片框、§8 单行截断 |
+| `figma/account/cut-icons.py` | 追加 1 条 JOBS + `KEEP_STROKE`。⚠ 不入库 |
+
+### 判据
+
+```
+tools/acctmodal.py   1001 ok / 0 red / 2 aborted   （Task 11 收尾 834）
+tools/acctcheck.py    541 ok / 0 red    rwd 全绿   acctvars 54 ok   assetpath GREEN
+双写一致 IN SYNC      node --check OK
+活性自检 两轮 11 处突变 → 31 红：去掉单行截断 / 压平 4·8 两层 gap /
+  卡片描边改成 inset / submit 不再链 / _snapshot 只读 value /
+  `<select>` 放开原生箭头 / 两栏 gap 15→24 / 去掉 textarea 的 lenis /
+  提示图标 gap 12→16 / 去掉 suburb 的 required
+面板高度对板：394 / 254；抽屉在 390x840 视口 672
+```
+
+---
+
 ## Task 11 — 折扣码弹窗三态（`$build-acct` = `20260910-a9`）
 
 **设计源**：`2284:31488` 空 / `31648` 已填 / `31809` 已应用；

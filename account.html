@@ -10,7 +10,7 @@
 <link rel="icon" href="images/favicon.svg?v=20260909-r134" type="image/svg+xml">
 <link rel="apple-touch-icon" href="images/favicon-180.png?v=20260909-r134">
 <link rel="stylesheet" href="assets/customstyle.css?v=20260909-r134">
-<link rel="stylesheet" href="assets/account.css?v=20260910-a9">
+<link rel="stylesheet" href="assets/account.css?v=20260910-a10">
 <noscript><style>.wowo{opacity:1 !important}</style></noscript>
 </head>
 <body>
@@ -749,7 +749,113 @@
         <h2 class="gb-acct-modal__title" id="acct-modal-shipping-current">Edit Shipping Address</h2>
         <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <div class="gb-acct-modal__body" data-lenis-prevent><!-- 2284:32294 --></div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <div class="gb-acct-addr">
+          <p class="gb-acct-addr__title">Current Address</p>
+          <div class="gb-acct-addr__card">
+            <label class="gb-acct-addr__pick" for="acct-addr-1">
+              <input class="gb-acct-addr__radio" id="acct-addr-1" type="radio" name="acct-shipping" value="charnwood" checked data-acct-field>
+              <span class="gb-acct-addr__lines">
+                <span class="gb-acct-addr__group">
+                  <span class="gb-acct-addr__line gb-acct-addr__line--name">Susanna Rose</span>
+                  <span class="gb-acct-addr__line">10</span>
+                  <span class="gb-acct-addr__line">12 Charnwood Road</span>
+                  <span class="gb-acct-addr__line">St Kilda, Victoria, Australia</span>
+                  <span class="gb-acct-addr__line">3182</span>
+                </span>
+                <span class="gb-acct-addr__line gb-acct-addr__line--note">Delivery instructions: keep in a safe place</span>
+              </span>
+            </label>
+            <button class="gb-acct-link" type="button" data-acct-modal="shipping-form">Edit</button>
+          </div>
+        </div>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+        <button class="gb-acct-modal__save" type="button" data-acct-save disabled>Save</button>
+      </div>
+    </div>
+  </div>
+  <div class="gb-acct-modal gb-acct-modal--sheet" data-acct-modal-panel="shipping-form" role="dialog" aria-modal="true"
+       aria-labelledby="acct-modal-shipping-form" aria-hidden="true" hidden>
+    <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+    <form class="gb-acct-modal__panel" tabindex="-1" data-acct-modal-next="shipping-success">
+      <div class="gb-acct-modal__head">
+        <h2 class="gb-acct-modal__title" id="acct-modal-shipping-form">Edit Shipping Address</h2>
+        <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <div class="gb-acct-form">
+          <div class="gb-acct-form__row">
+          <div class="gb-acct-field">
+            <label class="gb-acct-field__label" for="acct-sh-first">First Name*</label>
+            <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-sh-first" name="first-name" type="text" value="Susanna" required autocomplete="given-name" data-acct-field></div>
+          </div>
+          <div class="gb-acct-field">
+            <label class="gb-acct-field__label" for="acct-sh-last">Last Name*</label>
+            <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-sh-last" name="last-name" type="text" value="Rose" required autocomplete="family-name" data-acct-field></div>
+          </div>
+          </div>
+          <div class="gb-acct-field">
+            <label class="gb-acct-field__label" for="acct-sh-phone">Phone number*</label>
+            <div class="gb-acct-field__box"><span class="gb-acct-field__prefix">+61</span><input class="gb-acct-field__bare" id="acct-sh-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="000 000 000" required data-acct-field></div>
+          </div>
+          <div class="gb-acct-field">
+            <label class="gb-acct-field__label" for="acct-sh-company">Company</label>
+            <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-sh-company" name="company" type="text" placeholder="Company" autocomplete="organization" data-acct-field></div>
+          </div>
+          <div class="gb-acct-field">
+            <label class="gb-acct-field__label" for="acct-sh-a1">Address Line 1*</label>
+            <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-sh-a1" name="address1" type="text" value="Unit 10" required autocomplete="address-line1" data-acct-field></div>
+          </div>
+          <div class="gb-acct-field">
+            <label class="gb-acct-field__label" for="acct-sh-a2">Address Line 2</label>
+            <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-sh-a2" name="address2" type="text" value="12 Charnwood Road" autocomplete="address-line2" data-acct-field></div>
+          </div>
+          <div class="gb-acct-field">
+            <label class="gb-acct-field__label" for="acct-sh-suburb">Suburb*</label>
+            <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-sh-suburb" name="suburb" type="text" value="St Kilda" required autocomplete="address-level2" data-acct-field></div>
+          </div>
+          <div class="gb-acct-form__row">
+            <div class="gb-acct-field">
+              <label class="gb-acct-field__label" for="acct-sh-state">State*</label>
+              <div class="gb-acct-field__control"><select class="gb-acct-field__input gb-acct-field__input--icon" id="acct-sh-state" name="state" autocomplete="address-level1" required data-acct-field><option>ACT</option><option>NSW</option><option>NT</option><option>QLD</option><option>SA</option><option>TAS</option><option selected>VIC</option><option>WA</option></select><svg class="gb-acct-field__icon" xmlns="http://www.w3.org/2000/svg" viewBox="341 404.5 10 5" fill="none" aria-hidden="true"><path d="M341 404.5L346 409.5L351 404.5" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+          <div class="gb-acct-field">
+            <label class="gb-acct-field__label" for="acct-sh-post">Postcode*</label>
+            <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-sh-post" name="postcode" type="text" value="3181" required inputmode="numeric" pattern="\d{4}" maxlength="4" autocomplete="postal-code" data-acct-field></div>
+          </div>
+          </div>
+          <div class="gb-acct-field">
+            <label class="gb-acct-field__label" for="acct-sh-note">Delivery Instrctions</label>
+            <div class="gb-acct-field__control"><textarea class="gb-acct-field__input gb-acct-field__input--area" id="acct-sh-note" name="delivery" placeholder="Delivery Instrctions" data-acct-field data-lenis-prevent></textarea></div>
+          </div>
+        </div>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-link" type="button" data-acct-modal="shipping-current">Go Back</button>
+        <button class="gb-acct-modal__save" type="submit" data-acct-save disabled>Save</button>
+      </div>
+    </form>
+  </div>
+  <div class="gb-acct-modal" data-acct-modal-panel="shipping-success" role="dialog" aria-modal="true"
+       aria-labelledby="acct-modal-shipping-success" aria-hidden="true" hidden>
+    <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+    <div class="gb-acct-modal__panel" tabindex="-1">
+      <div class="gb-acct-modal__head">
+        <h2 class="gb-acct-modal__title" id="acct-modal-shipping-success">Edit Shipping Address</h2>
+        <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="353 324 10 10" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="gb-acct-modal__body" data-lenis-prevent>
+        <div class="gb-acct-note"><svg class="gb-acct-note__icon" xmlns="http://www.w3.org/2000/svg" viewBox="37 394 20 20" fill="none" aria-hidden="true"><path d="M47.0003 412.366C51.6027 412.366 55.3337 408.635 55.3337 404.033C55.3337 399.43 51.6027 395.699 47.0003 395.699C42.398 395.699 38.667 399.43 38.667 404.033C38.667 408.635 42.398 412.366 47.0003 412.366Z" fill="#005635"/><path d="M43.25 404L45.75 406.5L50.75 401.5" stroke="#ffffff" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="gb-acct-note__body">
+            <p class="gb-acct-note__title">Success!</p>
+            <p class="gb-acct-note__text">Your shipping details have been updated.</p>
+          </div>
+        </div>
+      </div>
+      <div class="gb-acct-modal__foot">
+        <button class="gb-acct-link" type="button" data-acct-modal-close>Close</button>
+      </div>
     </div>
   </div>
   <div class="gb-acct-modal gb-acct-modal--sheet" data-acct-modal-panel="edit-product" role="dialog" aria-modal="true"
@@ -947,6 +1053,6 @@
 
   <script src="assets/lenis.min.js?v=20260909-r134"></script>
   <script src="assets/main.js?v=20260909-r134"></script>
-  <script src="assets/account.js?v=20260910-a9"></script>
+  <script src="assets/account.js?v=20260910-a10"></script>
 </body>
 </html>

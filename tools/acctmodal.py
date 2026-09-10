@@ -85,13 +85,30 @@ def run_width(b, w):
 
     reach_detail(pg, w)
 
+    # Only the triggers that sit in the detail view: this loop's anchor is "the
+    # button is on screen there", which a trigger living inside another panel
+    # (the shipping flow chains three) can never satisfy. Those are driven by
+    # check_shipping instead.
     names = pg.evaluate(
-        "()=>[...new Set([...document.querySelectorAll('[data-acct-modal]')]"
+        "()=>[...new Set([...document.querySelectorAll("
+        "\"[data-acct-view='detail'] [data-acct-modal]\")]"
         ".map(e=>e.getAttribute('data-acct-modal')))]")
     if not names:
         bad("%s no [data-acct-modal] triggers found -- wrong page or wrong view" % label)
         pg.close()
         return
+
+    # ...but a trigger anywhere on the page still has to point at a real panel,
+    # or an in-panel button is a dead end that the loop above no longer sees.
+    orphans = pg.evaluate(
+        "()=>[...new Set([...document.querySelectorAll('[data-acct-modal]')]"
+        ".map(e=>e.getAttribute('data-acct-modal')))]"
+        ".filter(n=>!document.querySelector("
+        "\".gb-acct-modal[data-acct-modal-panel='\"+n+\"']\"))")
+    if orphans:
+        bad("%s [data-acct-modal] with no panel: %s" % (label, ", ".join(sorted(orphans))))
+    else:
+        good(label)
 
     for name in names:
         trig = "[data-acct-view='detail'] [data-acct-modal='%s']" % name
@@ -342,6 +359,7 @@ def run_width(b, w):
     check_forms(pg, w, label)
     check_products(pg, w, label)
     check_discount(pg, w, label)
+    check_shipping(pg, w, label)
     pg.close()
 
 
@@ -445,6 +463,18 @@ def check_forms(pg, w, label):
                 good(tag)
             else:
                 bad("%s %s is false" % (tag, key))
+
+        sel_ap = pg.evaluate("""a=>{const s=document.querySelector(a[0]+' select.gb-acct-field__input');
+            return s?[getComputedStyle(s).appearance,
+                      !!s.parentElement.querySelector('.gb-acct-field__icon')]:null}""",
+                             [sel])
+        if sel_ap is None:
+            pass                                   # this panel has no <select>
+        elif sel_ap == ["none", True]:
+            good(tag)
+        else:
+            bad("%s <select> appearance=%s chevron=%s -- the board draws one "
+                "chevron, the UA's own has to be off" % (tag, sel_ap[0], sel_ap[1]))
 
         if got["saveH"] == 40:
             good(tag)
@@ -882,6 +912,619 @@ def check_discount(pg, w, label):
                 % (tag, off[0], off[1]))
         pg.keyboard.press("Escape")
         pg.wait_for_timeout(600)
+
+
+# ---------------------------------------------------------------------------
+# Task 12: the shipping flow -- current address (32294) -> form (32940/33161)
+# -> success (32779).
+#
+# 32940 and 33161 are the SAME panel with two data fills (Charnwood/3181 vs
+# Park Ave/3121), not two panels: the trees are identical node for node. So the
+# judge edits the one form using the other board's values, which keeps every
+# string it types sourced from a board.
+#
+# ⚠ The two cards here (address 32448, success 32932) are the one board frame
+# whose strokesIncludedInLayout is true: 16 padding + a real 1px border makes
+# the board's 178 / 78. Everywhere else on this page the INSIDE hairline must
+# NOT add box height, which is why the head and foot use inset box-shadow.
+# ---------------------------------------------------------------------------
+NAVY = "rgb(16, 24, 40)"          # #101828, the "Current Address" heading
+INK = "rgb(1, 19, 7)"             # #011307, the emphasised first line
+GREY6 = "rgb(102, 102, 102)"      # #666666
+GREY7 = "rgb(77, 77, 77)"         # #4d4d4d, the +61 prefix
+CCC = "rgb(204, 204, 204)"
+
+# 32940 label order, and whether the board marks it with a star.
+FORM_FIELDS = [
+    ("First Name*", True), ("Last Name*", True), ("Phone number*", True),
+    ("Company", False), ("Address Line 1*", True), ("Address Line 2", False),
+    ("Suburb*", True), ("State*", True), ("Postcode*", True),
+    # the board's own spelling -- registered in SPEC 8
+    ("Delivery Instrctions", False),
+]
+
+
+def _open(pg, name):
+    set_state(pg, BASE_STATE)
+    pg.evaluate("n=>window.gumiAcct.modal.open(n)", name)
+    pg.wait_for_timeout(450)
+
+
+def check_shipping(pg, w, label):
+    check_ship_current(pg, w, label)
+    check_ship_form(pg, w, label)
+    check_ship_success(pg, w, label)
+
+
+def check_ship_current(pg, w, label):
+    tag = "%s [shipping-current]" % label
+    sel = ".gb-acct-modal[data-acct-modal-panel='shipping-current']"
+    _open(pg, "shipping-current")
+
+    got = pg.evaluate(r"""a=>{const p=document.querySelector(a[0]);
+        if(!p)return null;
+        const q=s=>p.querySelector(s);
+        const cs=e=>e?getComputedStyle(e):null;
+        const r=e=>e?e.getBoundingClientRect():null;
+        const box=q('.gb-acct-modal__panel');
+        const title=q('.gb-acct-addr__title');
+        const card=q('.gb-acct-addr__card');
+        const radio=q('.gb-acct-addr__radio');
+        const lines=[...p.querySelectorAll('.gb-acct-addr__line')];
+        const edit=q('.gb-acct-addr__card [data-acct-modal]');
+        const cb=cs(card), tb=cs(title);
+        const lr=lines.map(e=>r(e));
+        return {h:Math.round(r(box).height),
+                headH:q('.gb-acct-modal__head')?
+                      Math.round(r(q('.gb-acct-modal__head')).height):null,
+                footH:q('.gb-acct-modal__foot')?
+                      Math.round(r(q('.gb-acct-modal__foot')).height):null,
+                title:title?title.textContent.trim():null,
+                titleColor:tb&&tb.color, titleSize:tb&&tb.fontSize,
+                cardH:card?Math.round(r(card).height):null,
+                cardPad:cb&&cb.paddingTop, cardBorder:cb&&cb.borderTopWidth,
+                cardBorderColor:cb&&cb.borderTopColor, cardR:cb&&cb.borderTopLeftRadius,
+                cardBg:cb&&cb.backgroundColor,
+                radioW:radio?Math.round(r(radio).width):null,
+                radioH:radio?Math.round(r(radio).height):null,
+                radioChecked:radio?radio.checked:null,
+                radioBg:radio?cs(radio).backgroundColor:null,
+                radioR:radio?cs(radio).borderTopLeftRadius:null,
+                lineCount:lines.length,
+                lineText:lines.map(e=>e.textContent.trim()),
+                lineColor:lines.map(e=>cs(e).color),
+                clipped:lines.length>5&&lines[5].scrollWidth>lines[5].clientWidth,
+                innerGap:lr.length>1?Math.round(lr[1].top-lr[0].bottom):null,
+                outerGap:lr.length>5?Math.round(lr[5].top-lr[4].bottom):null,
+                editTo:edit?edit.getAttribute('data-acct-modal'):null,
+                editColor:edit?cs(edit).color:null,
+                save:!!q('[data-acct-save]'),
+                saveDisabled:q('[data-acct-save]')?q('[data-acct-save]').disabled:null,
+                cancel:!!q('.gb-acct-modal__foot .gb-acct-link')}}""", [sel])
+    if got is None:
+        bad("%s panel missing" % tag)
+        return
+
+    if w <= 767:
+        if abs(got["h"] - 394) <= 2:
+            good(tag)
+        else:
+            bad("%s panel %spx tall, board 2284:32294 is 394" % (tag, got["h"]))
+    for key, want, why in (("headH", 64, "board head is 64"),
+                           ("footH", 72, "board foot is 72")):
+        if got[key] == want:
+            good(tag)
+        else:
+            bad("%s %s=%s want %s -- %s" % (tag, key, got[key], want, why))
+
+    if got["title"] == "Current Address":
+        good(tag)
+    else:
+        bad("%s heading %r, board 32447 says 'Current Address'" % (tag, got["title"]))
+    # 32447 is #101828 -- the one label on this page that is not #666666
+    if got["titleColor"] == NAVY and got["titleSize"] == "14px":
+        good(tag)
+    else:
+        bad("%s heading %s/%s, board 32447 is #101828 14px"
+            % (tag, got["titleColor"], got["titleSize"]))
+
+    if got["cardH"] == 178:
+        good(tag)
+    else:
+        bad("%s address card %spx tall, board 32448 is 178 (16 pad + 144 + 1px "
+            "border each side, strokesIncludedInLayout)" % (tag, got["cardH"]))
+    for key, want in (("cardPad", "16px"), ("cardBorder", "1px"),
+                      ("cardBorderColor", CCC), ("cardR", "8px"),
+                      ("cardBg", "rgb(255, 255, 255)")):
+        if got[key] == want:
+            good(tag)
+        else:
+            bad("%s card %s=%s want %s (board 32448)" % (tag, key, got[key], want))
+
+    for key, want in (("radioW", 16), ("radioH", 16), ("radioChecked", True),
+                      ("radioR", "8px"), ("radioBg", "rgb(233, 250, 207)")):
+        if got[key] == want:
+            good(tag)
+        else:
+            bad("%s radio %s=%s want %s (board 32450)" % (tag, key, got[key], want))
+
+    want_lines = ["Susanna Rose", "10", "12 Charnwood Road",
+                  "St Kilda, Victoria, Australia", "3182",
+                  "Delivery instructions: keep in a safe place"]
+    if got["lineText"] == want_lines:
+        good(tag)
+    else:
+        bad("%s address lines %r, board 32451 reads %r"
+            % (tag, got["lineText"], want_lines))
+    # 32453 is #011307, the four under it #666666: a colour split, not a weight one
+    if got["lineColor"][:1] == [INK] and set(got["lineColor"][1:]) == {GREY6}:
+        good(tag)
+    else:
+        bad("%s line colours %r, board is #011307 then #666666 throughout"
+            % (tag, got["lineColor"]))
+    # nested auto-layout: 4 inside the five-line group, 8 out to the instructions
+    if got["innerGap"] == 4:
+        good(tag)
+    else:
+        bad("%s gap between address lines %s, board 32452 is 4" % (tag, got["innerGap"]))
+    if got["outerGap"] == 8:
+        good(tag)
+    else:
+        bad("%s gap to the delivery line %s, board 32451 is 8 -- flattening the "
+            "two groups into one puts it 4 too high" % (tag, got["outerGap"]))
+
+    # 32458 is the one line with maxLines 1 / textTruncation ENDING. Letting it
+    # wrap is what puts the card at 198 instead of the board's 178, so the clamp
+    # has to be doing work rather than merely being declared.
+    if got["clipped"]:
+        good(tag)
+    else:
+        bad("%s the delivery line is not being clipped -- board 32458 truncates "
+            "it to one line" % tag)
+
+    # a radio's value never changes; only which one is picked does, so the dirty
+    # gate has to read checked-ness or Save can never wake up for an address swap
+    if pg.evaluate(r"""a=>{const p=document.querySelector(a[0]);
+        const f=p.querySelectorAll('[data-acct-field]');
+        const before=window.gumiAcct.form._snapshot(f);
+        const r=p.querySelector('.gb-acct-addr__radio');
+        r.checked=false;
+        const after=window.gumiAcct.form._snapshot(f);
+        r.checked=true;
+        return before!==after}""", [sel]):
+        good(tag)
+    else:
+        bad("%s _snapshot cannot tell a picked radio from an unpicked one" % tag)
+
+    if got["editTo"] == "shipping-form":
+        good(tag)
+    else:
+        bad("%s Edit opens %r, want shipping-form" % (tag, got["editTo"]))
+    if got["editColor"] == "rgb(3, 116, 165)":
+        good(tag)
+    else:
+        bad("%s Edit is %s, board 32459 is #0374a5" % (tag, got["editColor"]))
+
+    for key in ("save", "cancel"):
+        if got[key]:
+            good(tag)
+        else:
+            bad("%s foot has no %s -- board 32460 carries both" % (tag, key))
+    # 32462 ships #e6e6e6: one address means nothing to pick, so Save stays asleep
+    if got["saveDisabled"] is True:
+        good(tag)
+    else:
+        bad("%s Save disabled=%s, board 32462 draws it grey" % (tag, got["saveDisabled"]))
+
+    pg.keyboard.press("Escape")
+    pg.wait_for_timeout(600)
+
+
+def check_ship_form(pg, w, label):
+    tag = "%s [shipping-form]" % label
+    sel = ".gb-acct-modal[data-acct-modal-panel='shipping-form']"
+    _open(pg, "shipping-form")
+
+    got = pg.evaluate(r"""a=>{const p=document.querySelector(a[0]);
+        if(!p)return null;
+        const q=s=>p.querySelector(s);
+        const cs=e=>e?getComputedStyle(e):null;
+        const r=e=>e?e.getBoundingClientRect():null;
+        const box=q('.gb-acct-modal__panel');
+        const bodyEl=q('.gb-acct-modal__body');
+        const col=q('.gb-acct-form');
+        const rows=[...p.querySelectorAll('.gb-acct-form__row')];
+        const labels=[...p.querySelectorAll('.gb-acct-field__label')];
+        const ctrl=[...p.querySelectorAll('[data-acct-field]')];
+        const pre=q('.gb-acct-field__prefix');
+        const area=q('textarea[data-acct-field]');
+        const state=q('select[data-acct-field]');
+        const post=q('[data-acct-field][name="postcode"]');
+        const bb=cs(bodyEl);
+        const hd=q('.gb-acct-modal__head'), ft=q('.gb-acct-modal__foot');
+        return {sheet:p.classList.contains('gb-acct-modal--sheet'),
+                isForm:box.tagName.toLowerCase()==='form',
+                next:box.getAttribute('data-acct-modal-next'),
+                h:Math.round(r(box).height),
+                headH:hd?Math.round(r(hd).height):null,
+                footH:ft?Math.round(r(ft).height):null,
+                bodyPadY:bb&&bb.paddingTop, bodyPadX:bb&&bb.paddingLeft,
+                lenis:!!bodyEl&&bodyEl.hasAttribute('data-lenis-prevent'),
+                scrolls:!!bodyEl&&bodyEl.scrollHeight>bodyEl.clientHeight+1,
+                colGap:col?cs(col).rowGap:null,
+                rowCount:rows.length,
+                rowGap:rows.length?cs(rows[0]).columnGap:null,
+                rowKids:rows.length?rows[0].children.length:null,
+                labels:labels.map(e=>e.textContent.trim()),
+                labelKids:labels.map(e=>e.children.length),
+                labelColor:[...new Set(labels.map(e=>cs(e).color))],
+                required:ctrl.map(e=>e.required),
+                fieldH:[...new Set(ctrl.filter(e=>e.tagName!=='TEXTAREA')
+                        .map(e=>Math.round(r(e.closest('.gb-acct-field__box')||e).height)))],
+                prefix:pre?pre.textContent.trim():null,
+                prefixColor:pre?cs(pre).color:null,
+                prefixGap:pre?cs(pre.parentElement).columnGap:null,
+                areaH:area?Math.round(r(area).height):null,
+                areaLenis:area?area.hasAttribute('data-lenis-prevent'):null,
+                stateTag:state?state.tagName.toLowerCase():null,
+                stateVal:state?state.value:null,
+                stateAppearance:state?cs(state).appearance:null,
+                stateChevron:!!q('select[data-acct-field] ~ .gb-acct-field__icon'),
+                stateOpts:state?state.options.length:null,
+                postPattern:post?post.getAttribute('pattern'):null,
+                saveDisabled:q('[data-acct-save]')?q('[data-acct-save]').disabled:null,
+                saveType:q('[data-acct-save]')?q('[data-acct-save]').type:null,
+                backTo:q('.gb-acct-modal__foot [data-acct-modal]')
+                       ?q('.gb-acct-modal__foot [data-acct-modal]')
+                        .getAttribute('data-acct-modal'):null}}""", [sel])
+    if got is None:
+        bad("%s panel missing" % tag)
+        return
+
+    for key, why in (("sheet", "33087 is the 672 sheet, radius 12 12 0 0"),
+                     ("isForm", "Save must go through constraint validation"),
+                     ("lenis", "Lenis takes the wheel; the scroll area needs the attribute"),
+                     ("scrolls", "the board's 800 column inside a 528 body")):
+        if got[key]:
+            good(tag)
+        else:
+            bad("%s %s is false -- %s" % (tag, key, why))
+    if got["next"] == "shipping-success":
+        good(tag)
+    else:
+        bad("%s data-acct-modal-next=%r, want shipping-success" % (tag, got["next"]))
+
+    for key, want in (("headH", 64), ("footH", 80)):
+        if got[key] == want:
+            good(tag)
+        else:
+            bad("%s %s=%s want %s (board 33088/33126)" % (tag, key, got[key], want))
+    # the sheet's own body padding: 32 top and bottom, sides on the 24/20 ramp
+    if got["bodyPadY"] == "32px":
+        good(tag)
+    else:
+        bad("%s body padding-top %s, board 33092 is 32" % (tag, got["bodyPadY"]))
+    if got["bodyPadX"] == (PAD_PHONE if w <= 767 else PAD_DESK):
+        good(tag)
+    else:
+        bad("%s body gutter %s at %d" % (tag, got["bodyPadX"], w))
+
+    if got["colGap"] == "20px":
+        good(tag)
+    else:
+        bad("%s field column gap %s, board 33093 is 20" % (tag, got["colGap"]))
+    if got["rowCount"] == 2 and got["rowKids"] == 2:
+        good(tag)
+    else:
+        bad("%s %s two-up rows (first has %s children), board has 2 of 2"
+            % (tag, got["rowCount"], got["rowKids"]))
+    if got["rowGap"] == "15px":
+        good(tag)
+    else:
+        bad("%s two-up gap %s, board 33094 is 15" % (tag, got["rowGap"]))
+
+    want_labels = [f[0] for f in FORM_FIELDS]
+    if got["labels"] == want_labels:
+        good(tag)
+    else:
+        bad("%s labels %r, board 32940 reads %r" % (tag, got["labels"], want_labels))
+    # the star is part of the label's own run: no override in the node, so no
+    # separate element and no second colour
+    if got["labelKids"] and max(got["labelKids"]) == 0:
+        good(tag)
+    else:
+        bad("%s a label wraps the star in its own element; board 33096 has no "
+            "characterStyleOverrides, the * is the same ink" % tag)
+    if got["labelColor"] == [GREY6]:
+        good(tag)
+    else:
+        bad("%s label colours %r, board is #666666 throughout" % (tag, got["labelColor"]))
+
+    want_req = [f[1] for f in FORM_FIELDS]
+    if got["required"] == want_req:
+        good(tag)
+    else:
+        bad("%s required=%r, the board's stars say %r"
+            % (tag, got["required"], want_req))
+
+    if got["fieldH"] == [44]:
+        good(tag)
+    else:
+        bad("%s control heights %r, board's Input is 44" % (tag, got["fieldH"]))
+
+    if got["prefix"] == "+61":
+        good(tag)
+    else:
+        bad("%s phone prefix %r, board 196:17794 is '+61'" % (tag, got["prefix"]))
+    # 196:17798, the chevron beside it, is visible=false on the board: the prefix
+    # is a label, not a country picker
+    if got["prefixColor"] == GREY7:
+        good(tag)
+    else:
+        bad("%s prefix %s, board is #4d4d4d" % (tag, got["prefixColor"]))
+    if got["prefixGap"] == "8px":
+        good(tag)
+    else:
+        bad("%s prefix gap %s, board's Input is 8" % (tag, got["prefixGap"]))
+
+    if got["areaH"] == 144:
+        good(tag)
+    else:
+        bad("%s delivery box %spx tall, board 33117 is 144" % (tag, got["areaH"]))
+    if got["areaLenis"]:
+        good(tag)
+    else:
+        bad("%s the textarea has no data-lenis-prevent -- Lenis eats its wheel" % tag)
+
+    if got["stateTag"] == "select" and got["stateVal"] == "VIC":
+        good(tag)
+    else:
+        bad("%s State is <%s> value %r, board 33111 shows a chevron and VIC"
+            % (tag, got["stateTag"], got["stateVal"]))
+    # the board draws exactly one chevron: ours. The UA paints its own on top
+    # unless appearance is turned off, and nothing else here would notice.
+    if got["stateChevron"]:
+        good(tag)
+    else:
+        bad("%s no .gb-acct-field__icon beside State -- board 33111 draws one" % tag)
+    if got["stateAppearance"] == "none":
+        good(tag)
+    else:
+        bad("%s State computes appearance=%s: the UA arrow is still painted on "
+            "top of the board's chevron" % (tag, got["stateAppearance"]))
+    if got["stateOpts"] and got["stateOpts"] > 1:
+        good(tag)
+    else:
+        bad("%s State has %s options" % (tag, got["stateOpts"]))
+    if got["postPattern"]:
+        good(tag)
+    else:
+        bad("%s Postcode has no pattern -- step 3 asks for the format check" % tag)
+    if got["saveType"] == "submit":
+        good(tag)
+    else:
+        bad("%s Save is type=%s; only a submit runs the browser's own validation"
+            % (tag, got["saveType"]))
+    if got["saveDisabled"] is True:
+        good(tag)
+    else:
+        bad("%s Save starts %s, note 27446 gates it on a change"
+            % (tag, got["saveDisabled"]))
+    if got["backTo"] == "shipping-current":
+        good(tag)
+    else:
+        bad("%s Go Back opens %r, want shipping-current" % (tag, got["backTo"]))
+
+    # -- the sheet is the board's 672 in the board's own viewport
+    if w <= 767:
+        pg.set_viewport_size({"width": 390, "height": 840})
+        pg.wait_for_timeout(300)
+        sheet_h = pg.evaluate("a=>Math.round(document.querySelector(a[0]+"
+                              "' .gb-acct-modal__panel').getBoundingClientRect().height)",
+                              [sel])
+        if sheet_h == 672:
+            good(tag)
+        else:
+            bad("%s sheet %spx tall in a 840 viewport, board 33087 is 672"
+                % (tag, sheet_h))
+        pg.set_viewport_size({"width": w, "height": 900})
+        pg.wait_for_timeout(300)
+
+    # -- validation: nothing posts anywhere, but Save must not advance on a form
+    #    the board marks required. Every value typed here is 33161's, the second
+    #    data fill of this same panel.
+    suburb = sel + " [data-acct-field][name='suburb']"
+    post = sel + " [data-acct-field][name='postcode']"
+    if not pg.evaluate("s=>!!document.querySelector(s)", suburb):
+        bad("%s no [name=suburb] to test the required gate on" % tag)
+        pg.keyboard.press("Escape")
+        pg.wait_for_timeout(600)
+        return
+
+    pg.fill(suburb, "")
+    pg.wait_for_timeout(250)
+    if pg.evaluate("a=>document.querySelector(a[0]+' [data-acct-save]').disabled", [sel]) is False:
+        good(tag)
+    else:
+        bad("%s Save stayed asleep after the form was edited" % tag)
+    pg.click(sel + " [data-acct-save]", timeout=2000)
+    pg.wait_for_timeout(500)
+    st = pg.evaluate(r"""a=>({adv:!!document.querySelector(
+        ".gb-acct-modal[data-acct-modal-panel='shipping-success']").classList.contains('is-open'),
+        valid:document.querySelector(a[0]+' .gb-acct-modal__panel').checkValidity()})""", [sel])
+    if st["adv"] is False and st["valid"] is False:
+        good(tag)
+    else:
+        bad("%s empty Suburb: advanced=%s valid=%s, want no/False"
+            % (tag, st["adv"], st["valid"]))
+
+    pg.fill(suburb, "Richmond")
+    pg.fill(post, "31")
+    pg.wait_for_timeout(250)
+    pg.click(sel + " [data-acct-save]", timeout=2000)
+    pg.wait_for_timeout(500)
+    st = pg.evaluate(r"""a=>({adv:!!document.querySelector(
+        ".gb-acct-modal[data-acct-modal-panel='shipping-success']").classList.contains('is-open'),
+        valid:document.querySelector(a[0]+' .gb-acct-modal__panel').checkValidity()})""", [sel])
+    if st["adv"] is False and st["valid"] is False:
+        good(tag)
+    else:
+        bad("%s postcode '31': advanced=%s valid=%s, want no/False"
+            % (tag, st["adv"], st["valid"]))
+
+    # 33100 ships showing its placeholder: Phone is required and empty on the
+    # board, so the form as delivered cannot pass. Proving that, then filling it,
+    # is what makes the required list above more than a set of attributes.
+    if pg.evaluate("a=>document.querySelector(a[0]+' [data-acct-field][name=\"phone\"]').value",
+                   [sel]) == "":
+        good(tag)
+    else:
+        bad("%s Phone ships with a value; board 33100 shows its placeholder" % tag)
+    pg.fill(sel + " [data-acct-field][name='phone']", "000 000 000")
+    pg.fill(post, "3121")
+    pg.wait_for_timeout(250)
+    pg.click(sel + " [data-acct-save]", timeout=2000)
+    pg.wait_for_timeout(600)
+    done = pg.evaluate(r"""a=>({adv:!!document.querySelector(
+        ".gb-acct-modal[data-acct-modal-panel='shipping-success']").classList.contains('is-open'),
+        gone:document.querySelector(a[0]).hidden,
+        locked:document.documentElement.classList.contains('is-modal-open')})""", [sel])
+    for key, want, why in (("adv", True, "a valid form must reach 32779"),
+                           ("gone", True, "the form must not stay up behind it"),
+                           ("locked", True, "chaining panels must not drop the lock")):
+        if done[key] is want:
+            good(tag)
+        else:
+            bad("%s after a valid Save %s=%s want %s -- %s"
+                % (tag, key, done[key], want, why))
+    pg.keyboard.press("Escape")
+    pg.wait_for_timeout(600)
+
+    # -- and the two links that walk the flow backwards
+    _open(pg, "shipping-current")
+    pg.click(".gb-acct-modal[data-acct-modal-panel='shipping-current'] "
+             ".gb-acct-addr__card [data-acct-modal]", timeout=2000)
+    pg.wait_for_timeout(600)
+    if pg.evaluate("s=>document.querySelector(s).classList.contains('is-open')", sel):
+        good(tag)
+    else:
+        bad("%s Edit on the address card did not open the form" % tag)
+    pg.click(sel + " .gb-acct-modal__foot [data-acct-modal]", timeout=2000)
+    pg.wait_for_timeout(600)
+    back = pg.evaluate("()=>{const e=document.querySelector('.gb-acct-modal.is-open');"
+                       "return e?e.getAttribute('data-acct-modal-panel'):null}")
+    if back == "shipping-current":
+        good(tag)
+    else:
+        bad("%s Go Back landed on %r, want shipping-current" % (tag, back))
+    pg.keyboard.press("Escape")
+    pg.wait_for_timeout(600)
+
+
+def check_ship_success(pg, w, label):
+    tag = "%s [shipping-success]" % label
+    sel = ".gb-acct-modal[data-acct-modal-panel='shipping-success']"
+    _open(pg, "shipping-success")
+
+    got = pg.evaluate(r"""a=>{const p=document.querySelector(a[0]);
+        if(!p)return null;
+        const q=s=>p.querySelector(s);
+        const cs=e=>e?getComputedStyle(e):null;
+        const r=e=>e?e.getBoundingClientRect():null;
+        const box=q('.gb-acct-modal__panel');
+        const note=q('.gb-acct-note');
+        const icon=q('.gb-acct-note__icon');
+        const title=q('.gb-acct-note__title');
+        const text=q('.gb-acct-note__text');
+        const nb=cs(note);
+        return {h:Math.round(r(box).height),
+                headH:q('.gb-acct-modal__head')?
+                      Math.round(r(q('.gb-acct-modal__head')).height):null,
+                footH:q('.gb-acct-modal__foot')?
+                      Math.round(r(q('.gb-acct-modal__foot')).height):null,
+                noteH:note?Math.round(r(note).height):null,
+                noteBg:nb&&nb.backgroundColor, noteBorder:nb&&nb.borderTopColor,
+                noteWidth:nb&&nb.borderTopWidth, noteR:nb&&nb.borderTopLeftRadius,
+                notePad:nb&&nb.paddingTop,
+                iconW:icon?Math.round(r(icon).width):null,
+                iconGap:(icon&&title)?Math.round(r(title.parentElement).left-r(icon).right):null,
+                title:title?title.textContent.trim():null,
+                titleColor:title?cs(title).color:null,
+                text:text?text.textContent.trim():null,
+                textColor:text?cs(text).color:null,
+                textGap:(title&&text)?Math.round(r(text).top-r(title).bottom):null,
+                save:!!q('[data-acct-save]'),
+                close:q('.gb-acct-modal__foot .gb-acct-link')
+                      ?q('.gb-acct-modal__foot .gb-acct-link').textContent.trim():null}}""",
+                      [sel])
+    if got is None:
+        bad("%s panel missing" % tag)
+        return
+
+    if w <= 767:
+        if abs(got["h"] - 254) <= 2:
+            good(tag)
+        else:
+            bad("%s panel %spx tall, board 2284:32779 is 254" % (tag, got["h"]))
+    for key, want in (("headH", 64), ("footH", 72)):
+        if got[key] == want:
+            good(tag)
+        else:
+            bad("%s %s=%s want %s" % (tag, key, got[key], want))
+    # Phone only, like every other board height in this file. At 1440 the panel
+    # keeps the board's 390 while the gutters grow to 24, so the note's content
+    # box loses 8px and 32937 takes two lines -- the cost of 待裁决 E.
+    if w <= 767:
+        if got["noteH"] == 78:
+            good(tag)
+        else:
+            bad("%s note %spx tall, board 32932 is 78" % (tag, got["noteH"]))
+    elif got["noteH"] >= 78:
+        good(tag)
+    else:
+        bad("%s note %spx tall at %d -- shorter than the board's own 78"
+            % (tag, got["noteH"], w))
+    for key, want in (("noteBg", "rgb(246, 254, 236)"),
+                      ("noteBorder", "rgb(218, 246, 176)"),
+                      ("noteWidth", "1px"), ("noteR", "8px"), ("notePad", "16px")):
+        if got[key] == want:
+            good(tag)
+        else:
+            bad("%s note %s=%s want %s (board 32932)" % (tag, key, got[key], want))
+    if got["iconW"] == 20:
+        good(tag)
+    else:
+        bad("%s tick slot %spx, board 32934 is 20" % (tag, got["iconW"]))
+    if got["iconGap"] == 12:
+        good(tag)
+    else:
+        bad("%s icon-to-text gap %s, board 32933 is 12" % (tag, got["iconGap"]))
+    if got["title"] == "Success!" and got["titleColor"] == INK:
+        good(tag)
+    else:
+        bad("%s title %r %s, board 32936 is 'Success!' #011307"
+            % (tag, got["title"], got["titleColor"]))
+    if (got["text"] == "Your shipping details have been updated."
+            and got["textColor"] == GREY6):
+        good(tag)
+    else:
+        bad("%s body %r %s, board 32937 is #666666" % (tag, got["text"], got["textColor"]))
+    if got["textGap"] == 4:
+        good(tag)
+    else:
+        bad("%s title-to-text gap %s, board 32935 is 4" % (tag, got["textGap"]))
+    # 32938 carries Close alone -- the fixed 72 foot with nothing in it but a link
+    if got["save"] is False:
+        good(tag)
+    else:
+        bad("%s has a [data-acct-save]; board 32938 is Close only" % tag)
+    if got["close"] == "Close":
+        good(tag)
+    else:
+        bad("%s foot link reads %r, board says 'Close'" % (tag, got["close"]))
+
+    pg.keyboard.press("Escape")
+    pg.wait_for_timeout(600)
 
 
 def main():

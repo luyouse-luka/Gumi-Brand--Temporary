@@ -164,7 +164,7 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | B | **评论与稿矛盾** | 评论 `2284:27077`：「原来的 contact preference 以及 refer a friend 去除了」，但两处稿上仍画着 |
 | C | **~~六项~~两项只有导航条目、没有页面稿** | 原列 Order History / My Details / Change Password / Refer a Friend / Help / Contact Preferences。**r-a5 逐节点比对推翻了一半**：Order History（`2284:27202`）/ My Details（`27081`·`27116`）/ Change Password（`27151`）/ Help（`27170`）**其实都有 390 手机稿**，另外还多出一个导航里没有的 **Order Detail**（`27304`）。真正无稿的只剩 **Refer a Friend** 与 **Contact Preferences**。⚠ 这五个页面**不在 PLAN 的 15 个 Task 里**，做不做、要不要补桌面稿，需拍板。比对见 `DETAIL-STATES.md` |
 | D | **左侧导航图标未设计** | 便签 `27602`：灰圆是占位 |
-| E | **21 类弹窗的桌面稿全缺** | 已定按决策 3 做居中卡片，具体宽度/内边距需给值。**r-a6 起面板暂用板上的 390 居中**（`--acct-modal-w`，源数据里的值、非自拟），给了宽度只改这一个变量。手机稿本身**有两种形态**：≤394 的居中卡（r12）与 672 的贴底抽屉（r12/12/0/0，内含 528 的滚动区），桌面是否也分两种一并回答 |
+| E | **21 类弹窗的桌面稿全缺** | 已定按决策 3 做居中卡片，具体宽度/内边距需给值。**r-a6 起面板暂用板上的 390 居中**（`--acct-modal-w`，源数据里的值、非自拟），给了宽度只改这一个变量。手机稿本身**有两种形态**：≤394 的居中卡（r12）与 672 的贴底抽屉（r12/12/0/0，内含 528 的滚动区），桌面是否也分两种一并回答。**r-a10 记一笔代价**：面板宽锁 390 而桌面内边距按卡片惯例升到 24，内容盒比手机窄 8px —— `shipping-success` 的 `Your shipping details have been updated.` 在桌面折成两行（面板 254→274）。给桌面一个更宽的面板即可消掉 |
 | F | **footer 内容差异** | 稿：两栏平铺 13 条链接 + Snapchat + `Subscribe now`；现站：三栏 + FB/IG/TikTok + `Subscribe`。且 Influencers / Press Inquiries / Careers 的目标页可能不存在 |
 | G | **header 差异** | 稿：logo 左 + 人形 + 汉堡、浅绿底；Log in 稿另有 `Shop now` 按钮。已定单独覆盖，但需确认这是最终态 |
 | H | **Add items 是否开启** | 便签 `30905`：「can be turned off for now until other items get added」，且「Edit 跳购物车还是 PDP？」设计方自己也没定 |
@@ -177,6 +177,10 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | O | **`2284:27081` 与 `27116` 完全一样** | 两张 My Details 手机稿**文本逐字相同、高度同为 2206**。是复制未删，还是有肉眼级差异（如某个 input 的 focus 态）？属上面 C 那批页面，一并回答 |
 | P | **PAUSED 的续订日期两处稿不一致** | 详情稿 `28627`/`28774` 写 `19 Jul 2026`（与 active 相同），列表稿 `28315`/`34056` 写 `17 Aug 2026`。便签 `34038` 说暂停态显示的是「暂停到期日」，**站列表那边**。已各按各自的稿实现（详情 19 Jul / 列表 17 Aug），**未擅自统一**，需给出哪个对 |
 | Q | **`28774` 的折扣码链接文案疑似漏改** | 它明明显示着一段码，链接却写 `Add a discount code`；同样有码的 `28478` 写的是 `Edit discount code`，便签 `30921` 也站 Edit 这边。**已按 Edit 实现**，判为 `28774` 漏改，需确认 |
+| S | **地址单选钮的未选中态无稿** | `2284:32450` 板上只画了选中态（#e9facf 填充 + 0.8 绿环 + 8.8 圆点），因为 `shipping-current` 只有一个地址且恒选中。未选中态用了字段描边同色的 1px 灰环，是自拟的，需确认 |
+| T | **表单两栏行比容器宽 1px** | `2284:33094`/`33109` 是 `168 + 15 + 168 = 351`，而体的内容盒只有 `390-20-20 = 350`。已按 `1fr / 15 / 1fr` 实现（每栏 167.5），需确认 168 是不是笔误 |
+| U | **`shipping-current` 只画了一个地址，却有单选钮** | 有单选就意味着可以有多个，但板上没有第二张卡、没有「新增地址」入口、`Save` 也是灰的。是「以后支持多地址」的预留，还是这一版就只有一个？影响 Save 的语义 |
+| V | **State 下拉的候选项只有 VIC** | `2284:33111` 闭合态显示 `VIC`，展开态无稿。已填澳洲 8 个州的标准缩写（ACT/NSW/NT/QLD/SA/TAS/VIC/WA）—— 是标准枚举不是自拟文案，但排序与是否用全称需确认 |
 | R | **Detail 的四个状态全无桌面稿** | PAUSED / PAUSED+超长码 / CANCELLED / 重启后，都只有 390。桌面沿用基准态 `27792` 的字号阶梯，只有结构与文案随状态走。与 M 同类 |
 
 ## 8. 稿件自身的错误（不是我们做错）
@@ -204,6 +208,10 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 - ⚠ **桌面 PAUSED 卡的续订日期没跟着改**：便签 `28321` 说暂停态显示的是「暂停到期日」，
   手机 `28315` / `34056` 写 `17 Aug 2026`，桌面 `28109` 还留着 active 的 `19 Jul 2026`。
   **按手机稿实现**。
+- `33116`/`33119` 地址表单的最后一个字段拼成「Delivery **Instrctions**」（应为 `Instructions`），
+  标签与占位两处都错。**已按稿照抄**，上线前需设计方改
+- ⚠ **同一个地址在两张板上邮编不一样**：`shipping-current`（`32457`）写 `3182`，
+  表单 `shipping-form`（`32940`）写 `3181`，其余各行相同。**已各按各自的板实现**，需给出哪个对
 - `34192` 标题拼成「Restart **subscoption**」
 - `32775` Skip 弹窗文案拼成「Are you sure you **wan** to skip…」（应为 `want`）。**已按稿照抄**
 - `34079` CANCELLED 的说明文案拼成「You will be **bale** to make changes…」（应为 `able`）。**已按稿照抄**，上线前需设计方改
