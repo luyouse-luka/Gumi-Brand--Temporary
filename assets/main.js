@@ -2068,6 +2068,7 @@
     init: function () {
       var self = this;
       this.guardInitialFocus();
+      this.watchSplit();
       // Attribute callbacks only exist once the element is upgraded, and the
       // theme's own setup should land first -- whenDefined resolves right away
       // if it already is, so the frame is what actually orders us after it.
@@ -2077,6 +2078,34 @@
       if (window.customElements && customElements.whenDefined) {
         customElements.whenDefined("theme-drawer").then(run, run);
       } else { run(); }
+    },
+
+    /* resync() above samples ONCE, so it only ever catches a drawer that is
+       already open by the time we run. The drawer can also be opened later and
+       from outside the component: /cart is a redirect to /#open-cart, and
+       gb-cart-scripts' handler for that hash does
+
+         if (typeof drawer.showDialog === 'function') { drawer.showDialog(); }
+         else { drawer.querySelector('dialog').showModal(); }   // always exists
+
+       so whenever <theme-drawer> has not upgraded yet it takes the second branch,
+       opens the native dialog behind the component's back and never retries. The
+       panel is then visibly open while the component still reads closed, and
+       on:click="#cart-drawer/close" no-ops on BOTH the close button and the
+       overlay -- only Escape works, which is the signature of the split.
+
+       ⚠ Watch the attribute, do not sample it: which branch that handler takes is
+       a race against custom-element upgrade, so the split appears on some loads
+       and not others. subtree covers a dialog swapped in later (the empty-cart
+       template is injected at runtime). resync() is idempotent, so the write we
+       trigger here settles on the next callback instead of looping. */
+    watchSplit: function () {
+      var host = document.getElementById("cart-drawer");
+      if (!host || !window.MutationObserver) { return; }
+      var self = this;
+      new MutationObserver(function () { self.resync(); }).observe(host, {
+        attributes: true, attributeFilter: ["open"], subtree: true
+      });
     },
 
     /* The drawer is Horizon's <dialog>, so the [role=dialog][tabindex=-1] rule

@@ -109,6 +109,126 @@
 
 </details>
 
+## 第一三六轮（2026-09-10）— 从 `/cart` 进来的抽屉关不掉：组件与内层 dialog 状态分裂（`$build` = `20260910-r136`）
+
+需求方：「通过 `https://gumi.com.au/cart` 进入页面，此时购物车是展开的，
+点击空白处和关闭的按钮时无法关闭弹窗」。
+
+### 不是第一三五轮引入的
+
+先排除了这一点再动手：线上首页实测 `window.gumi.cartDrawer` 存在、
+`guardInitialFocus` / `resync` 两个方法都在、无我方 pageerror ——
+模块 init 没有抛异常（它被 try/catch 包着，抛了就会连 `resync` 一起吞掉，症状恰好相同）。
+
+### 真因：`/cart` 是重定向页，抽屉由 hash 在首页打开，而那条路径会绕过组件
+
+`templates/cart.liquid` 只有 10 行，是个重定向壳：
+
+```liquid
+{% layout none %}
+<meta http-equiv="refresh" content="0;url=/#open-cart">
+<script>location.replace('/#open-cart');</script>
+```
+
+（`snippets/gb-cart-drawer.liquid` 顶上那句 `template.name != 'cart'` 也印证了这点：
+抽屉在 `/cart` 上本来就不渲染。）落地页其实是**首页**，抽屉由
+`snippets/gb-cart-scripts.liquid` 的 `openCartIfHash()` 打开：
+
+```js
+var tryOpen = function () {
+  if (typeof drawer.showDialog === 'function') { drawer.showDialog(); return true; }
+  var d = drawer.querySelector('dialog');
+  if (d && typeof d.showModal === 'function') { d.showModal(); return true; }
+  return false;
+};
+if (!tryOpen()) setTimeout(tryOpen, 100);
+```
+
+`<theme-drawer>` 还没 upgrade 时 `showDialog` 不是函数，于是**立刻降级到原生
+`d.showModal()`** —— 而原生方法永远存在，所以 `return true`，那句 100ms 重试永远用不上。
+结果 `<dialog>` 开着而 `<theme-drawer>` 仍读作关闭，
+`on:click="#cart-drawer/close"` 的命令发给组件后被它自己的守卫挡掉：
+**close 按钮和遮罩双双 no-op，只有 Escape 有效**
+（`<dialog>` 的原生关闭绕过组件）。这正是 [[custom-element-open-attr-vs-inner-dialog]] 的指纹。
+
+⚠ **走哪条分支是一场与 custom element upgrade 的竞态** —— 所以有的加载会坏、有的不会。
+第一次线上探针（桌面、空车、网络快）走的是 `showDialog()` 快路径，**关得掉**，
+一度看起来复现不了；在首页手工制造分裂后，close 无效 / 遮罩无效 / Escape 有效三条同时成立。
+
+### 改法：`resync()` 从一次性采样改成持续观察
+
+`cartDrawer.resync()`（r117 就有）本来就是补这个状态的，但它只在
+`whenDefined` + 一帧之后**采样一次**，抓不到之后才发生的打开。新增 `watchSplit()`：
+
+```js
+new MutationObserver(function () { self.resync(); }).observe(host, {
+  attributes: true, attributeFilter: ["open"], subtree: true
+});
+```
+
+- **在 `init` 里直接调，不等 `whenDefined`** —— observer 只依赖 dialog 元素存在，
+  与组件升不升级无关；组件万一永远没 upgrade，这也是唯一还能补状态的时机。
+- **`subtree: true`** —— 空车那个 `<template>` 是运行时注入的，dialog 可能是后来才换进来的。
+- **`resync()` 本来就幂等**（`host.hasAttribute("open")` 就 return），
+  所以我们自己那次写入会在下一个回调里自然收敛，不会自激。
+
+### 文件清单
+
+```
+改  assets/main.js            cartDrawer 新增 watchSplit()，init 里直接调
+改  assets/customstyle.scss   仅 $build r135→r136（本轮没有样式改动，
+                              但 main.js 的 ?v= 由 $build 驱动，不升就破不了缓存）
+改  assets/customstyle.css    重新编译（0 条 Sass 警告）
+改  *.html (12)               ?v= r135 → r136
+新  tools/cartsplit.py        分裂判据（线上专用，自带反向）
+新  tools/r136push.py         三方对比与推送清单
+改名 tools/r135live.py → tools/inkringlive.py   见下「判据自身的两处修正」
+```
+
+### 验证
+
+| 判据 | 结果 |
+|---|---|
+| `tools/cartsplit.py --password 1234` | **推送前 3 红 / 推送后 5 全绿**（同一判据、同一环境，唯一变量是这次推送） |
+| 端到端走真实 `/cart` | 1440 与 390 两档：落地展开 → 点 close **关掉了**，且 close 无焦点环 |
+| `tools/inkringlive.py` | **9 / 0**（r135 两条修复仍在） |
+| 回归 `refocusring` / `cartfocus` / `promotitle` | 18-0 / 5-0 / 12-0 |
+| 三方对比 | ours 3 / theirs 0 / **CONFLICT 0** |
+| 回读逐字节 | 3 个一致，清单外 **0**，624 → 624 |
+
+新基线 **`baseline-20260910-r136`**（624 文件）。
+
+### 判据自身的两处修正（都是本项目已经写下来的规矩，我又踩了一次）
+
+1. **`r135live.py` 把 `$build` 写死成 `'r135' in build`** —— 推完 r136 当场变红，
+   而站点没有任何问题。改成解析 `r(\d+)` 后用 **`>= 135`** 比较。
+2. **判据文件名带轮次号** —— 一并改名 `inkringlive.py`（按模块命名）。
+   两条都是既有规矩：「单轮判据别写死 `$build`（用「≥」）」「判据文件名按模块命名别用轮次号」。
+
+### ⚠ 不要报成 bug
+
+1. **`resync()` 只加 `open`、从不移除，是对的** —— 关闭由组件或 `<dialog>` 原生路径负责，
+   我们只补它漏掉的那一半。观察到 `dialog.open === false` 时 `resync()` 直接 return。
+2. **端到端实测里，关闭后 `theme-drawer` 的 `open` 属性仍是 `true`** ——
+   那是 Horizon 自己的行为，视觉已经关闭（`visible: false`）、功能正常。
+   **不要"顺手"去清它**：那是对方组件的状态，我们只在检测到分裂时补写。
+3. **`cartsplit.py` 只能线上跑** —— 静态站的购物车是我们自己的 modal，
+   没有 `<theme-drawer>`、没有 `<dialog>`，没有可分裂的东西。结构缺失时它 **ABORT 而不是通过**。
+4. **判据没有导航到 `/cart`** —— 那是 Cloudflare 风险路径，而且它只是个重定向壳、
+   本来就没有购物车 UI。分裂在首页复现，用的是 `layout/theme.liquid` 渲染的同一个抽屉。
+5. **本轮 `customstyle.scss` 只有 `$build` 一行变化，不是漏推样式** ——
+   升它是为了给 `main.js` 的 `?v=` 破缓存。
+
+### 遗留
+
+- **真正的修复应该在对方的 `gb-cart-scripts.liquid` 里**：`tryOpen()` 的降级分支不该在
+  组件未 upgrade 时立刻 `return true`，而应等 `customElements.whenDefined('theme-drawer')`。
+  我们这条是**我方兜底**，两者不冲突，但对方那条一天不改，任何绕过组件的打开都还会分裂。
+  **建议提给对方**，已登记 `docs/LIVE-BACKLOG.md`。
+- 需求方上一轮的**第 3 条仍然没有内容**，等补。
+
+---
+
 ## 第一三五轮（2026-09-10）— 需求方两条：cart 打开时的焦点环 / promo 标题描边吃掉上一行（`$build` = `20260909-r135`）
 
 需求方给了三条，**第 3 条只有编号没有内容**（消息截断），本轮只做前两条。
@@ -178,7 +298,7 @@ keydown 先 disarm，**环照画**（键盘用户必须知道焦点在哪）。
 新  tools/cartfocus.py        cart 焦点环判据（含 --strip 反向）
 新  tools/promotitle.py       promo 标题描边判据（A/B 内建）
 新  tools/r135push.py         三方对比与推送清单
-新  tools/r135live.py         线上回读（不碰 /cart）
+新  tools/inkringlive.py         线上回读（不碰 /cart）
 ```
 
 ### 验证
@@ -187,7 +307,7 @@ keydown 先 disarm，**环照画**（键盘用户必须知道焦点在哪）。
 |---|---|
 | `tools/cartfocus.py` | **5 / 0**；`--strip`（基线 main.js）case 1、2 **转红**，a11y 那条仍绿 |
 | `tools/promotitle.py` | **12 / 0**；摘掉 `inkSplit` 调用复跑 **7 红** |
-| `tools/r135live.py --password 1234` | **9 / 0**，线上 `--build` = `20260909-r135` |
+| `tools/inkringlive.py --password 1234` | **9 / 0**，线上 `--build` = `20260909-r135` |
 | 回归 `refocusring` | **18 / 0**（直接守 `returnFocus`，本轮动了它的内部结构） |
 | 回归 `rwd` / `scrolllock` / `drawernav` / `menutab` | 全绿 / 36-0 / 39-0 / 58-0 |
 | 三方对比 | ours 3 / theirs 0 / **CONFLICT 0** |

@@ -5,6 +5,39 @@
 > （`templates/*.json`、`sections/footer-group.json`、`config/settings_data.json`）。
 > 推它们会覆盖对方在后台调过的一切。剩下的落在这里。
 
+## 〇之前、提给对方：`gb-cart-scripts.liquid` 的降级打开会让抽屉关不掉（r136，2026-09-10）
+
+**这一条我们已经在 `main.js` 里兜住了**（`cartDrawer.watchSplit()`），登记在此是因为
+**根子在对方的文件里**，不改的话任何绕过组件的打开都还会分裂一次。
+
+`snippets/gb-cart-scripts.liquid` 的 `openCartIfHash()`：
+
+```js
+if (typeof drawer.showDialog === 'function') { drawer.showDialog(); return true; }
+var d = drawer.querySelector('dialog');
+if (d && typeof d.showModal === 'function') { d.showModal(); return true; }   // ← 问题在这
+```
+
+`<theme-drawer>` 还没 upgrade 时 `showDialog` 不是函数，于是立刻走第二条、
+用原生 `showModal()` 把 dialog 开了 —— 而原生方法永远存在，所以 `return true`，
+下面那句 `setTimeout(tryOpen, 100)` 永远用不上。结果 `<dialog>` 开着而组件读作关闭，
+`on:click="#cart-drawer/close"` 在 close 按钮和遮罩上双双 no-op，只有 Escape 能关。
+
+**建议改法**（等组件就绪再决定走哪条）：
+
+```js
+var open = function () {
+  var d = drawer.querySelector('dialog');
+  if (typeof drawer.showDialog === 'function') { drawer.showDialog(); }
+  else if (d && d.showModal) { d.showModal(); drawer.setAttribute('open', ''); }
+};
+if (window.customElements && customElements.whenDefined) {
+  customElements.whenDefined('theme-drawer').then(open, open);
+} else { open(); }
+```
+
+关键是**降级分支要把 `open` 属性一起设上**，让组件与 dialog 两半同步。
+
 ## 〇、⚠⚠ 手机菜单现在就缺三项 —— 后台补齐即恢复（r94 已推 liquid，2026-09-08）
 
 `sections/gb-header.liquid` 从「一个菜单 + 用 `.gb-header__links-item--mobile` 隐藏桌面项」
@@ -30,6 +63,44 @@ Mobile menu 至今仍是 Shop / Learn more / Get in Touch 三项 —— 线上�
 How Gumi Works / Science / Reviews**（1440 桌面端不受影响，仍是三项 Desktop menu）。
 补齐上表六项即刻恢复，无需再推任何文件。
 
+## 〇之四、⚠ 36 张 reel 卡等 9:16 竖版素材（r126）
+
+r125 把三页 30 张卡的视频按需求方指示填成了与首页相同的 `video-07.mp4`（首页 6 张本来就是它），
+**但那是 1276×720 的横版**，而 reel 卡片是 304×540 的竖版 —— `contain` 之下视频只占卡片
+高度的 **32%**，上下各留约 184px 深色。
+
+**要做的**：客户提供 **9:16 竖版**素材（建议 1080×1920），在主题编辑器逐张替换。
+r126 已把这个要求写进后台 schema：区块顶部有一条说明，`Video` / `Or a hosted video URL` /
+`Poster` 三个字段的名字后面都带「— portrait 9:16」。
+
+⚠ **上传 hosted URL（YouTube/Vimeo）时要一并给 Poster**，且 poster 也要 9:16 —— 上传的 mp4
+会自动取首帧，hosted 链接不会。
+
+⚠ **判据不会因为这条转红** —— 它是素材不是代码。代码侧的取舍（要不要改成 `cover`）
+在 `docs/PROJECT-STATUS.md`「第一二六轮新开的」，**未动，等拍板**。
+
+## 〇之三、⚠⚠ 三个页面的 30 张 reel 卡没有视频，点了不动（r123 起暴露）
+
+r123 把 reel 从「点开弹窗」改成「就地播放」。没有填视频的卡片**点击完全没有反应**
+（在此之前是打开一个空弹窗，同样没用，只是看起来像在做事）。
+
+| 页面 | reel 卡 | 已填视频 |
+|---|---|---|
+| 首页 `templates/index.json` | 6 | **6** ✅ |
+| 产品页 `templates/product.json` | 10 | **0** ❌ |
+| Our Story `templates/page.our-story.json` | 10 | **0** ❌ |
+| How Gumi Works `templates/page.how-gumi-works.json` | 10 | **0** ❌ |
+
+**怎么填**：主题编辑器 → 对应页面 → Customer Reviews（`gb-reviews`）→ 每个 Reel 区块 →
+**Video**（上传 Files 里的 mp4）或 **Or a hosted video URL**（YouTube / Vimeo，纯文本不是链接字段）。
+填了 hosted URL 的还要给 **Poster**，上传的 mp4 会自动取首帧。
+
+⚠ **首页那 6 张现在全指向同一个文件** `shopify://files/videos/video-07.mp4` ——
+能播，但 6 张卡放的是同一段视频。客户给到真素材后要逐张换掉。
+
+⚠ **判据不会因为这条转红** —— `tools/reelplay.py` 把它单列成 backlog 汇总，
+因为这是内容不是代码。跑完看输出末尾的 “theme-editor backlog” 一段。
+
 ## 〇之二、promo 绿卡的 Arc text 请在后台清空（r91）
 
 `templates/product.json` → `promo` → 第一张卡（`variant: green`）的 **Arc text** 现在是
@@ -43,6 +114,50 @@ r91 的 CSS 已经 `display: none` 挡住它，功能上没问题。**更干净�
 这一条降级成「后台数据整洁度」，不再是视觉问题。
 
 ## 一、现在就能在后台做完的（不需要我们再改代码）
+
+### 0 之二、主题字体设置全都还是 Inter（r119 查到的根因）⚠ 决定要不要全站统一
+
+后台 **Online Store → 主题 → Typography** 的字体没有指向 PP Palma —— 它是自定义字重文件，
+Shopify 的字体选择器里选不到，所以主题的 **15 个字体族变量全是 `Inter, sans-serif`**：
+
+```
+--font-body--family        --font-heading--family     --font-paragraph--family
+--font-subheading--family  --font-accent--family      --font-h1..h6--family
+--button-font-family-primary / -secondary
+--cart-primary-font-family / --cart-secondary-font-family
+```
+
+后果：**靠继承拿字体的元素**（`body` 被我们写死了品牌栈）看着正常，
+**点名字体变量的 Horizon 原生组件**一律退回 Inter —— 价格、`Sale` 角标、
+skip link、`Filter` 按钮都属于后者。
+
+- **r119 已修 `/collections/all`**：在 `#MainContent[data-template^="collection"]` 上
+  整组重声明这 15 个变量。
+- **仍是 Inter 的地方**：`/404` 的商品列表（价格 + 角标；标题与按钮 r107 已单独写死）、
+  `<body>` 顶部的全站 skip link，以及将来任何跑 Horizon 原生组件的模板。
+- ⚠ **后台改不了这一条** —— Typography 选不到自定义字体。真正的两条路：
+  ① 需求方拍板「全站统一」，我们把这 15 个变量提到 `:root`/`body` 一层（一条改动、影响全站，
+  需要一轮完整回归）；② 维持现状，逐模板钩子覆盖（每加一个 Horizon 模板就要补一次）。
+  **等需求方选。**
+
+### 0. Contact 两处链接指错页（r117 需求方提出）⚠ 代码里改不了
+
+需求方要求 Contact 指向 **`/pages/contact`**，线上两处现在都指向 `/pages/get-in-touch?type=contact`。
+**两处都是后台数据，主题文件里没有可改的地方**：
+
+| 位置 | 数据在哪 | 怎么改 |
+|---|---|---|
+| header 菜单 | `section.settings.desktop_menu` / `mobile_menu` = Shopify **导航菜单** | 后台 → 网店 → 导航 → 改那一项的网址 |
+| footer 链接区 | `sections/footer-group.json` 的 `link_4_url` | 主题编辑器 → Footer → 第 4 条链接 |
+
+⚠ `sections/gb-footer.liquid` 里那个 `"link_4_url": "/pages/get-in-touch?type=contact"` 只是
+**schema 的 default**，`footer-group.json` 里已有存值，**改 default 不生效**，别去推它。
+要我们代推只能推 `footer-group.json`（红线，需逐次授权）。
+
+⚠ 顺带：静态站两处写的是 `get-in-touch.html?type=contact`，静态站**没有 contact.html**。
+改线上之前先确认 `/pages/contact` 是不是真要用的那一页 —— 当初「预填咨询类型」那套
+（`?type=contact` 传参 → `enquiryPrefill` 读取）是照搬 Funky 站点的做法，换页会让这条链路失效。
+
 
 ### 1. 首页评价区标题少了换行 ⚠ 这是线上的真 bug
 

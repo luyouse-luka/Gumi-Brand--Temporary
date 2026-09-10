@@ -6,12 +6,48 @@
 > **更早轮次的状态段**（第七十三～一二三轮）在 [archive/HANDOFF-STATUS-r73-r123.md](archive/HANDOFF-STATUS-r73-r123.md)；其中的「不要报成 bug」已原文沉淀进下面第一节的 `### 4`。
 > **推送记录**（推了什么 / 验了没 / 基线滚到哪）在 [PUSH-LOG.md](PUSH-LOG.md)。
 >
+> 状态：**第一三六轮（2026-09-10）—— 从 `/cart` 进来的抽屉关不掉（组件与内层 dialog 状态分裂），`$build` = `20260910-r136`，已推 live**。
+> 只推 `assets/customstyle.scss` + `.css` + `main.js`（scss 只动了 `$build`，为的是给 `main.js` 破缓存）。
+> 新基线 **`baseline-20260910-r136`**（624 文件）。三方对比 ours 3 / theirs 0 / CONFLICT 0。
+>
+> 判据：`tools/cartsplit.py --password 1234` **推送前 3 红 / 推送后 5 全绿**；
+> 端到端走真实 `/cart`，1440 与 390 两档都是「落地展开 → 点 close 关掉了」；
+> `tools/inkringlive.py` **9/0**；回归 `refocusring` 18/0 / `cartfocus` 5/0 / `promotitle` 12/0；
+> 回读 3 个逐字节一致 + 621 个清单外 0。
+>
+> ⚠ **不要报成 bug**（第一三六轮）：
+> 1. **`/cart` 不是购物车页，是 10 行的重定向壳** —— `templates/cart.liquid` 跳到
+>    `/#open-cart`，抽屉其实是在**首页**由 `gb-cart-scripts.liquid` 的 hash 处理器打开的。
+>    `gb-cart-drawer.liquid` 顶上的 `template.name != 'cart'` 就是这个意思。
+>    **别去 `/cart` 找购物车 UI，那里没有。**
+> 2. **`cartDrawer.resync()` 只加 `open` 属性、从不移除，是对的** ——
+>    关闭归组件与 `<dialog>` 原生路径管，我们只补它漏掉的那一半；
+>    看到 `dialog.open === false` 就直接 return。
+> 3. **关闭之后 `theme-drawer` 的 `open` 属性仍然是 `true`** —— Horizon 自己的行为，
+>    视觉已关、功能正常。**别顺手去清**，那是对方组件的状态。
+> 4. **`cartsplit.py` 只能线上跑，本地结构缺失时 ABORT 不是通过** ——
+>    静态站的购物车是我们自己的 modal，没有 `<theme-drawer>`/`<dialog>`，无从分裂。
+> 5. **判据不导航 `/cart`** —— Cloudflare 风险路径，且那里本来就没有 UI。
+>    分裂在首页复现，用的是 `layout/theme.liquid` 渲染的同一个抽屉。
+> 6. **本轮 scss 只有 `$build` 一行变化，不是漏推样式**。
+> 7. **`tools/r135live.py` 已改名 `tools/inkringlive.py`** —— 它把 `$build` 写死成
+>    `'r135' in build`，推完 r136 当场变红而站点无恙。现在用 `>= 135` 比较。
+>    **既有规矩：单轮判据别写死 `$build`，判据文件名别带轮次号。**
+>
+> ⚠ **真正的修复在对方那边**：`gb-cart-scripts.liquid` 的 `tryOpen()` 在组件未 upgrade 时
+> 立刻降级到原生 `showModal()` 并 `return true`，那句 100ms 重试永远用不上。
+> 我们这条是**兜底**，对方那条不改，任何绕过组件的打开都还会分裂。已登记 `LIVE-BACKLOG.md`。
+>
+> ⚠ **需求方第 3 条仍然没有内容**（上一轮消息截断），等补。
+
+---
+
 > 状态：**第一三五轮（2026-09-10）—— cart 打开时的焦点环 / promo 标题描边吃掉上一行，`$build` = `20260909-r135`，已推 live**。
 > 只推 `assets/customstyle.scss` + `.css` + `main.js`（**没有 liquid**）。
 > 新基线 **`baseline-20260909-r135`**（624 文件）。三方对比 ours 3 / theirs 0 / CONFLICT 0。
 >
 > 判据：`tools/cartfocus.py` **5/0**（`--strip` 转红 2 条）、`tools/promotitle.py` **12/0**
-> （摘掉 `inkSplit` 复跑 7 红）、`tools/r135live.py --password 1234` **9/0**；
+> （摘掉 `inkSplit` 复跑 7 红）、`tools/inkringlive.py --password 1234` **9/0**；
 > 回归 `refocusring` 18/0 / `rwd` 全绿 / `scrolllock` 36/0 / `drawernav` 39/0 / `menutab` 58/0；
 > 回读 3 个逐字节一致 + 621 个清单外 0。
 >

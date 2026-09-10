@@ -899,11 +899,26 @@ shopify theme push --store je1ka9-er.myshopify.com --theme 180348977399 --path w
 
 三方对比 `ours` **3** / `theirs` **0** / `CONFLICT` **0**。**本轮没有 liquid。**
 判据：`cartfocus.py` **5/0**（`--strip` 转红 2 条）、`promotitle.py` **12/0**（摘掉 `inkSplit`
-复跑 7 红）、`r135live.py --password 1234` **9/0**；回归 `refocusring` 18/0 / `rwd` 全绿 /
+复跑 7 红）、`inkringlive.py --password 1234` **9/0**；回归 `refocusring` 18/0 / `rwd` 全绿 /
 `scrolllock` 36/0 / `drawernav` 39/0 / `menutab` 58/0。顺手清掉 `baseline-20260909-r133`。
 
 ⚠ **线上回读没有碰 `/cart`** —— 那条路径挂着 Cloudflare 托管挑战，一碰会污染整个会话
-（连首页一起挂住）。`r135live.py` 改为在**首页**注入一个带 `.gb-cart__close` 类的
+（连首页一起挂住）。`inkringlive.py` 改为在**首页**注入一个带 `.gb-cart__close` 类的
 夹具 `<dialog>` 并无手势 `showModal()`，与 `/cart` 落地页同形：同一份线上 main.js、
 同一份线上样式表、同一套 `:focus-visible` 判定。真实抽屉的 dialog 也没开
 （Horizon 打开时可能去取 cart section，那同样会碰 `/cart`）。
+
+| 轮次 | 推了什么 | 文件数 | 回读 | 基线 |
+|---|---|---|---|---|
+| **第一三六轮** | `assets/customstyle.css` / `.scss` / `main.js` | 3 | 3 ok / 0 red | 624 → **`baseline-20260910-r136`** |
+
+三方对比 `ours` **3** / `theirs` **0** / `CONFLICT` **0**。**本轮没有 liquid。**
+`customstyle.scss` 本轮**只动了 `$build`** —— 样式零改动，升它是为了给 `main.js` 的 `?v=` 破缓存。
+判据：`cartsplit.py --password 1234` **推送前 3 红 / 推送后 5 全绿**（同一判据、同一线上环境，
+唯一变量是这次推送，这就是它的反向验证）；端到端走真实 `/cart`，1440 与 390 两档
+「落地展开 → 点 close 关掉了」；`inkringlive.py` **9/0**；回归 `refocusring` 18/0 /
+`cartfocus` 5/0 / `promotitle` 12/0。顺手清掉 `baseline-20260909-r134`。
+
+⚠ **`tools/r135live.py` 改名为 `tools/inkringlive.py`** —— 原判据把 `$build` 写死成
+`'r135' in build`，推完 r136 当场变红而站点无恙。改用 `>= 135` 比较。
+**单轮判据别写死 `$build`、判据文件名别带轮次号**，这两条项目里早就写着，本轮又踩了一次。

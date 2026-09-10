@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-"""Live read-back for r135: the promo title's halo layer and the cart focus ring.
+"""Live read-back: the promo title's halo layer and the cart drawer's focus ring.
 
-  python3 tools/r135live.py --password 1234
+  python3 tools/inkringlive.py --password 1234
+
+Covers the two r135 fixes; kept as a regression judge, so it is named after the
+modules rather than the round (a round-numbered judge gets clobbered by a parallel
+session, and its build assertion goes stale the moment the next round ships).
 
 ⚠ Never navigates to /cart. That path carries a Cloudflare managed challenge on
 this store and touching it poisons the whole browsing session, homepage included
@@ -13,6 +17,7 @@ same live main.js, same live stylesheet, same :focus-visible heuristic.
 
 ⚠ One context, one navigation, both checks.
 """
+import re
 import sys
 
 from playwright.sync_api import sync_playwright
@@ -104,7 +109,11 @@ with sync_playwright() as p:
 
     build = pg.evaluate(
         "() => getComputedStyle(document.documentElement).getPropertyValue('--build').trim()")
-    check('the pushed build is serving', 'r135' in build, build or '(empty)')
+    # ⚠ Compare with >=, never ==: pinning the round makes this judge go red on the
+    # next push for no reason (it did, one round after it was written).
+    m = re.search(r'r(\d+)', build or '')
+    check('a build at or past r135 is serving', bool(m) and int(m.group(1)) >= 135,
+          build or '(empty)')
 
     pg.wait_for_timeout(1200)
 
