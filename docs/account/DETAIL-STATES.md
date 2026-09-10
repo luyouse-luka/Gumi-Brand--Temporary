@@ -27,7 +27,12 @@ Change Password / Refer a Friend / Help / Contact Preferences」。
 
 仍然没有稿的只剩 **Refer a Friend** 与 **Contact Preferences** 两项。
 
-这五个页面**不在 PLAN 的 15 个 Task 里**，属于范围变化，等用户拍板再做，本轮不动。
+~~这五个页面**不在 PLAN 的 15 个 Task 里**，属于范围变化，等用户拍板再做，本轮不动。~~
+
+**2026-09-10 已拍板做了**：用户定「C 需要补桌面稿，如果只有手机稿也需补桌面稿，
+风格与其他桌面稿类似」。五个页面全部作为 `account.html` 的新视图落地（PLAN Task 16-21），
+桌面按 SPEC §5 的外推规则做。**Refer a Friend 与 Contact Preferences 仍未做** ——
+那两项连手机稿都没有。
 
 ## 二、Detail 真正的状态（全部只有 390 手机稿，无桌面稿）
 

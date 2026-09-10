@@ -8,6 +8,81 @@
 
 ---
 
+## Task 16-22 — 账户区其余五页（决策 C 拍板，`$build-acct` = `20260910-a13` → `a17`）
+
+用户 2026-09-10 定了待裁决 C：「C 需要补桌面稿，如果只有手机稿也需补桌面稿，
+风格与其他桌面稿类似」。`DETAIL-STATES.md` 早就查清了这批到底是什么 ——
+六个「未标注 frame」里五个是**账户区其他栏目的手机稿**，不是订阅详情的状态。
+
+### 做了什么
+
+`account.html` 从三视图变成**八视图**，`[data-acct-view]` 不变、hash 路由不变。
+`account.js` 的 `Router.show()` 本来就是遍历实现，**新增视图零 JS 改动**。
+
+| 视图 | 源 | 内容 |
+|---|---|---|
+| `orders` | `2284:27202` | 五张订单卡（三种状态）+ `Page 1 of 10` 分页 |
+| `order` | `2284:27304` | 订单头 + 四条商品行 + Order Summary + 收发/支付信息 + Download Invoice |
+| `details` | `2284:27081` | 三张卡的表单：Email / 姓名 / 电话 + 脏值门控的 Save |
+| `password` | `2284:27151` | 一张卡：一句说明 + 一个按钮 |
+| `help` | `2284:27170` | 七行手风琴 + 沙色联系卡 |
+
+**Refer a Friend 与 Contact Preferences 没做** —— 这两项连手机稿都没有，
+做了就是自造内容（全局铁律 3）。三处导航里保持 `aria-disabled`。
+
+### 桌面外推规则（做之前先量出来的）
+
+五张稿全是 390，桌面无稿。把三张桌面稿与各自的手机稿逐档比对，结论是
+**只有页面标题一档变**：手机 `20/24 w800 ls-0.2` → 桌面 `24/30 w800 ls-0.24`，
+而 `16/24` / `14/20` / `12/18` 三档两端完全相同。`.gb-acct-intro__title` 早已实现这条，
+两栏 shell 也现成 —— 所以「补桌面稿」实际上不需要新写任何断点逻辑。
+
+### 踩到的四件事
+
+1. **类名撞车**：My Details 的表单块本来叫 `.gb-acct-form`，而 3034 行早有一个同名块
+   （地址弹窗的字段列，row-gap 20）。后者在源码里更靠后，直接把新定义盖掉，
+   判据当场报 `row-gap want 32px, got 20px`。改名 `.gb-acct-profile`。
+   同理 `.gb-acct-order` 被 Overview 占着，订单列表那块叫 `.gb-acct-hist`。
+   **新建 BEM 块前先 grep 类名**（全局铁律 4）。
+2. **分页高度不是 padding 撑的**：板上 `layoutSizingVertical=FIXED`、`clipsContent=false`，
+   45 是锁死的，36 的按钮居中在 45-1=44 的内容区里。照 `padding: 12px 16px` 写会得到 61。
+3. **规划时按截图猜错两处**，取数后推翻：First/Last name 在手机稿是**上下堆叠**不是两栏；
+   `Opt in to order updates…` 是**一行说明文字**不是 checkbox。都登记成决策 AC / AD。
+4. **订单三态没有任何视觉区分**：`Shipped` / `Delivered` / `Cancelled` 全是 `#1a1a1a`，
+   本来打算做的 `data-acct-order-state` 用不上了。登记成待裁决 AE。
+
+### 判据
+
+`acctcheck.py` **660 → 835 ok / 0 red**（+175）。新增 `tools/acctview.py`（24 ok）
+专管路由：八个 hash 各自只点亮一个视图、未知 hash 回落 overview、三处导航的可达集合一致。
+
+活性自检做了三次，都不是走过场：
+- `acctbp.py` 造一处 mobile/narrow 重叠 + 一处布局阈值带数值 → **2 red**，恢复后 0；
+- `acctview.py` 把 `password` 改名 `passwordX` → **6 red**，涵盖三类断言；
+- 门控与单开各配一条交互断言（`DETAILS_DIRTY` / `HELP_OPEN2`）——
+  只验初始态的话，「永远灰的 Save」和「只会展开、从不收起前一行的手风琴」都会全绿。
+
+`accthover.py` 30 → 33、`acctbp.py` 1842 → 2168、`acctmodal.py` / `acctvars.py` /
+`acctmotion.py` / `assetpath.py` / `rwd.py` 基线不变。
+
+### 文件
+
+- 修改：`account.html`、`account-login.html`、`account-signup.html`（只有 `?v=`）、
+  `assets/account.scss` / `.css` / `.js`、`tools/acctcheck.py`、
+  `docs/account/{PLAN,SPEC,DETAIL-STATES,HANDOFF,CHANGELOG}.md`
+- 新增：`tools/acctview.py`
+
+### 遗留
+
+- **决策 AC / AD / AE 三条新的待裁决**（姓名两栏是外推的 / opt-in 没有勾选框 /
+  订单三态无区分），全部已按暂定方案实现、一处可改。
+- **Help 的手风琴文案全是占位**（`Accordion Open` / `Text here`），已进 SPEC §8b。
+- **`Download Invoice` 照稿做了**，但便签 `27444` 说「Only do if very very very cheap」
+  —— 待裁决 I 仍未回。
+- **Refer a Friend / Contact Preferences 等稿**。
+
+---
+
 ## Task 15 — 收尾：三条新判据、一处真漏、一条久挂的 abort（`$build-acct` = `20260910-a12`）
 
 样式只动了一行（补一条 transition），其余全是**判据**：把 PLAN 里三条靠 `grep` 数数的

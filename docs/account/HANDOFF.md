@@ -31,15 +31,24 @@
 
 ## 2. 三个页面各是什么
 
-- **`account.html`** —— 单页三视图，`[data-acct-view]` 切换：
+- **`account.html`** —— 单页**八视图**，`[data-acct-view]` 切换、hash 驱动：
   `overview`（Hi Susanna + 当前订单卡 + Refer a friend）/ `subscriptions`（三张订阅卡）/
-  `detail`（订阅详情 + 19 类弹窗的入口）。**三个视图都在 DOM 里，只有一个不带 `hidden`**。
+  `detail`（订阅详情 + 19 类弹窗的入口）/ `orders`（Order History）/ `order`（Order Detail）/
+  `details`（My Details 表单）/ `password`（Change Password）/ `help`（手风琴 + 联系卡）。
+  **八个视图都在 DOM 里，任何时刻只有一个不带 `hidden`** —— `tools/acctview.py` 锁这条。
+  后五个是决策 C（2026-09-10）加的，**只有 390 手机稿，桌面按 SPEC §5 的外推规则做**。
 - **`account-login.html`** / **`account-signup.html`** —— 未登录态两页。
   它们用的是**站点 header**（`.gb-header`，Menu / logo / Shop now / 两个图标），
   不是 account header，骨架整套取自 `faq.html`，只有 `<main class="gb-acct-auth">` 是自己的。
 
 **桌面与手机是两套并存、不是一套折叠**：桌面左侧竖导航 9 项，手机是页内列表卡 6 项 +
 右上角下拉面板 4 项，767 互斥切换。
+
+⚠ **导航要改就得同时改三处**（桌面竖导航 / 手机页内列表卡 / 手机汉堡面板），
+少改一处手机就进不去那一页。`acctview.py` 会比对三处的可达集合。
+
+⚠ **`Refer a Friend` 与 `Contact Preferences` 是有意留成不可点的** ——
+这两项连手机稿都没有，做了就是自造内容。别看着别人都活了就顺手把它们也接上。
 
 ---
 
@@ -64,12 +73,13 @@ grep -rn '20260910-a12' assets/account.scss account*.html
 
 | 判据 | 基线 | 说明 |
 |---|---|---|
-| `python3 tools/acctcheck.py` | **660 ok / 0 red** | 结构与数值，按 (页面, 宽度, 动作) 分组 |
+| `python3 tools/acctcheck.py` | **835 ok / 0 red** | 结构与数值，按 (页面, 宽度, 动作) 分组 |
 | `python3 tools/acctmodal.py` | **1314 ok / 0 red / 1 aborted** | 19 类弹窗，**约 4 分钟，后台跑** |
+| `python3 tools/acctview.py` | **24 ok / 0 red** | 八视图互斥、hash 路由、三处导航的可达集合一致 |
 | `python3 tools/acctvars.py` | 54 ok / 0 red | 变量副本没漂移 |
 | `python3 tools/assetpath.py` | GREEN | scss 里的 `url()` 必须是 `assets/` 内裸文件名 |
-| `python3 tools/acctbp.py` | 1842 declarations / 0 red | 断点值档互斥、阈值不带数值 |
-| `python3 tools/accthover.py` | 30 hover properties / 0 red | 每个 hover 属性都有对应过渡 |
+| `python3 tools/acctbp.py` | 2168 declarations / 0 red | 断点值档互斥、阈值不带数值 |
+| `python3 tools/accthover.py` | 33 hover properties / 0 red | 每个 hover 属性都有对应过渡 |
 | `python3 tools/acctmotion.py` | 12 ok / 0 red | reduced-motion 真的覆盖到了 |
 | `python3 tools/rwd.py account.html` | 全绿 | 14 档溢出扫描，三个页面各跑一次 |
 
@@ -139,6 +149,20 @@ grep -rn '20260910-a12' assets/account.scss account*.html
 
 ### 5c. 有意的实现取舍
 
+- **Order History 的两个翻页箭头都是 `disabled`** —— 静态站只有一页可翻。
+  左箭头在第 1 页本来就该禁用；右箭头是没有第 2 页可去。接后端时才有真分页。
+- **Help 的手风琴展开/收起没有高度动画** —— 用 `[hidden]` 切换，display 不能过渡。
+  板上也没画过渡。图标的 +/− 是有过渡的（`scaleY`）。
+- **`27116` 没有单独实现** —— 它与 `27081` 逐字相同、同高 2206（待裁决 O）。
+  不是漏了一页。
+- **My Details 的姓名两栏是外推的** —— 手机稿上 First/Last name 是上下堆叠，
+  桌面无稿。按 Sign up 桌面板 `35059` 做成两栏、≤767 塌回堆叠（决策 AC）。
+- **`Opt in to order updates via text message` 是一行说明文字、不是 checkbox** ——
+  板上就没画勾选框（决策 AD）。
+- **订单状态 `Shipped` / `Delivered` / `Cancelled` 三者同色** —— 板上全是 `#1a1a1a`，
+  没有徽章也没有色块（决策 AE）。订阅那边的三态才有徽章，别照着改。
+- **`Download Invoice` 按钮做出来了** —— 便签 `27444` 说「Only do if very very very
+  cheap. Otherwise, remove.」这是**待裁决 I**，照稿实现、等回话，不是自作主张。
 - **桌面两栏 gutter 是 244 / 352 不对称** —— 三个桌面稿完全一致，判定为有意，没改成居中。
   内容列用 `minmax(0,1fr)` 而不是稿上的固定 571：**照抄则 768 档横向溢出 864 > 768**（实测）。
 - **弹窗滚动锁复用站内的 `is-modal-open`，没有另起一套**。自己写一套（html+body 都
@@ -220,6 +244,7 @@ grep -rn '20260910-a12' assets/account.scss account*.html
 grep -c '^- \[x\]' docs/account/PLAN.md      # 进度
 python3 tools/acctcheck.py                    # 1 分钟，拿基线
 python3 tools/acctmodal.py &                  # 4 分钟，后台
+python3 tools/acctview.py                     # 八视图互斥与三处导航一致
 ```
 
 跑出来的数字对不上第 4 节的基线，先查是不是忘了编译 scss，再查是不是另一个会话

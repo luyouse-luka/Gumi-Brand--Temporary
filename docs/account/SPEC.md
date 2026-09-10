@@ -69,13 +69,28 @@ account 页**同时加载** `main.js` 与 `account.js`，两者不互相调用�
 
 ## 5. 视图与页面
 
-### account.html 的三个视图
+### account.html 的八个视图
+
+前三个有桌面稿；**后五个只有 390 手机稿，桌面按外推规则做**（决策 C，2026-09-10 拍板）。
 
 | 视图 | 桌面源 | 手机源 |
 |---|---|---|
-| Account Overview | `2284:27678` | `2284:27604`（整页）+ `27450`/`27499`/`27548`（三种订单状态弹层） |
-| My Subscriptions（列表） | `2284:28000`（同屏三态） | `2284:28305`（同屏三态）、`34046`（Cancelled + Paused 两态） |
-| Subscription Detail | `2284:27792`（ACTIVE） | 见下表 11 个变体 |
+| `overview` Account Overview | `2284:27678` | `2284:27604`（整页）+ `27450`/`27499`/`27548`（三种订单状态弹层） |
+| `subscriptions` My Subscriptions（列表） | `2284:28000`（同屏三态） | `2284:28305`（同屏三态）、`34046`（Cancelled + Paused 两态） |
+| `detail` Subscription Detail | `2284:27792`（ACTIVE） | 见下表 11 个变体 |
+| `orders` Order History | **无稿，外推** | `2284:27202` |
+| `order` Order Detail | **无稿，外推** | `2284:27304` |
+| `details` My Details | **无稿，外推** | `2284:27081`（`27116` 逐字相同，只做一个） |
+| `password` Change Password | **无稿，外推** | `2284:27151` |
+| `help` Help | **无稿，外推** | `2284:27170` |
+
+**桌面外推规则**（`27792` vs `28330` 等三对逐档比对得出，别重新推导）：
+**只有页面标题一档变** —— 手机 `20/24 w800 ls-0.2` → 桌面 `24/30 w800 ls-0.24`
+（`.gb-acct-intro__title` 已实现）。`16/24`、`14/20`、`12/18` 三档两端完全相同，
+版心与两栏 shell 沿用 `.gb-acct__inner`。
+
+⚠ **Refer a Friend 与 Contact Preferences 仍然没有页面** —— 这两项连手机稿都没有，
+做了就是自造内容。三处导航里它们保持 `aria-disabled`，由 `tools/acctview.py` 锁住。
 
 **Subscription Detail 的 11 个手机变体**（状态判读见 `figma/account/PAGES.txt`）：
 
@@ -162,7 +177,7 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | A | **导航条目四个版本互不一致** | 桌面 `27678` 无 Contact Preferences；桌面 `27792`/`28000` 有；手机页内列表 `27604` 无 Account Overview 也无 Contact Preferences；手机汉堡 `34757` 只有 4 条（Account / My Subscriptions / My Details / Log Out）。**r-a3 查清了规律**：差异跟着页面走 —— Overview 页 8 项，Subscriptions / Detail 页 9 项。是有意还是漏画，需设计方回答。**已暂按 9 项实现**（PLAN Task 3 定的，一处可改） |
 | A2 | **桌面两栏在 1440 以下如何收敛无稿** | 三个桌面稿一致地画 nav 241 + gap 32 + 内容 **固定 571**，左右 gutter **244 / 352**（不对称，但三稿完全相同，故判定为有意）。合计 1440 恰好铺满，**照抄则 768 档横向溢出 864 > 768**（`rwd.py` 实测）。已暂用「nav 241 固定 + 内容 `minmax(0,1fr)`，gutter 从 244/352 用 `fluid()` 收到 20」，1440 与稿逐值一致 |
 | B | **评论与稿矛盾** | 评论 `2284:27077`：「原来的 contact preference 以及 refer a friend 去除了」，但两处稿上仍画着 |
-| C | **~~六项~~两项只有导航条目、没有页面稿** | 原列 Order History / My Details / Change Password / Refer a Friend / Help / Contact Preferences。**r-a5 逐节点比对推翻了一半**：Order History（`2284:27202`）/ My Details（`27081`·`27116`）/ Change Password（`27151`）/ Help（`27170`）**其实都有 390 手机稿**，另外还多出一个导航里没有的 **Order Detail**（`27304`）。真正无稿的只剩 **Refer a Friend** 与 **Contact Preferences**。⚠ 这五个页面**不在 PLAN 的 15 个 Task 里**，做不做、要不要补桌面稿，需拍板。比对见 `DETAIL-STATES.md` |
+| ~~C~~ **已拍板** | **~~六项~~两项只有导航条目、没有页面稿** —— 2026-09-10 用户定：五个有手机稿的**都做，且桌面由我们外推**（Task 16-22 已完成）；无稿的两项不做 | 原列 Order History / My Details / Change Password / Refer a Friend / Help / Contact Preferences。**r-a5 逐节点比对推翻了一半**：Order History（`2284:27202`）/ My Details（`27081`·`27116`）/ Change Password（`27151`）/ Help（`27170`）**其实都有 390 手机稿**，另外还多出一个导航里没有的 **Order Detail**（`27304`）。真正无稿的只剩 **Refer a Friend** 与 **Contact Preferences**。⚠ 这五个页面**不在 PLAN 的 15 个 Task 里**，做不做、要不要补桌面稿，需拍板。比对见 `DETAIL-STATES.md` |
 | D | **左侧导航图标未设计** | 便签 `27602`：灰圆是占位 |
 | E | **21 类弹窗的桌面稿全缺** | 已定按决策 3 做居中卡片，具体宽度/内边距需给值。**r-a6 起面板暂用板上的 390 居中**（`--acct-modal-w`，源数据里的值、非自拟），给了宽度只改这一个变量。手机稿本身**有两种形态**：≤394 的居中卡（r12）与 672 的贴底抽屉（r12/12/0/0，内含 528 的滚动区），桌面是否也分两种一并回答。**r-a10 记一笔代价**：面板宽锁 390 而桌面内边距按卡片惯例升到 24，内容盒比手机窄 8px —— `shipping-success` 的 `Your shipping details have been updated.` 在桌面折成两行（面板 254→274）。给桌面一个更宽的面板即可消掉 |
 | F | **footer 内容差异** | 稿：两栏平铺 13 条链接 + Snapchat + `Subscribe now`；现站：三栏 + FB/IG/TikTok + `Subscribe`。且 Influencers / Press Inquiries / Careers 的目标页可能不存在 |

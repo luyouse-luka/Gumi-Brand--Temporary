@@ -13,7 +13,8 @@
 视图切换、汉堡、19 类弹窗）。桌面左侧竖导航，手机换成页内列表卡 + 右上角下拉面板。
 
 **技术栈：** Dart Sass 1.77.8（`npx sass@1.77.8`）、原生 JS（无框架、无 jQuery）、
-Playwright（判据脚本，chromium 在 `~/.cache/ms-playwright/chromium-1217/chrome-linux64/chrome`）
+Playwright（判据脚本；⚠ **chromium 版本号会变，别写死路径** —— 判据一律扫
+`~/.cache/ms-playwright/chromium-*/chrome-linux64/chrome` 取最新，见 HANDOFF §7）
 
 **Spec：** `docs/account/SPEC.md`
 
@@ -1586,7 +1587,11 @@ cheap. Otherwise, remove.」**照稿做出来**（这是还原不是决策），
 
 **文件**：`tools/acct*.py`、`docs/account/{SPEC,CHANGELOG,HANDOFF,PLAN}.md`、三个页面
 
-- [ ] **步骤 1：全量判据**（基线见 `HANDOFF.md` §4，数字只应涨不应跌）
+- [x] **步骤 1：全量判据**（基线见 `HANDOFF.md` §4，数字只应涨不应跌）—— 全绿：
+      `acctcheck` **835**（660→）· `acctmodal` **1314 / 1 aborted**（不变）·
+      `acctview` **24**（新）· `acctvars` 54 · `assetpath` GREEN ·
+      `acctbp` **2168**（1842→）· `accthover` **33**（30→）· `acctmotion` 12 ·
+      `rwd` **三页 × 14 档全绿**。
 
 ```bash
 python3 tools/acctcheck.py          # ~1 min
@@ -1600,18 +1605,22 @@ for w in 360 390 414 480 576 768 834 991 1024 1200 1280 1366 1440 1920; do
 ⚠ chromium 现在是 **1208**，`acctcheck.py` / `acctmodal.py` 已改成扫 `chromium-*`
 取最新；PLAN 头部写的 `chromium-1217` 是过时的，靠一条软链撑着（HANDOFF §7）。
 
-- [ ] **步骤 2：`acctbp.py` 突变自检** —— 新增五个视图后必须再造一次假重叠，
-      确认判据还有活性（0 red 本身不证明什么）
-- [ ] **步骤 3：八视图互斥自检** —— 断言任意时刻只有一个 `[data-acct-view]` 不带 `hidden`，
-      且八个 hash 都能命中（未知 hash 回落 overview）
-- [ ] **步骤 4：更新四份文档**
+- [x] **步骤 2：`acctbp.py` 突变自检** —— 造了两处假故障：`.gb-acct-sect` 上让
+      `mobile`(0-575) 与 `narrow`(0-767) 同时给 `font-size`、`.gb-acct-items` 在
+      布局阈值 `stack` 里塞一个 `row-gap` → **2 red**，两类各抓到一条；恢复后 0 red。
+- [x] **步骤 3：八视图互斥自检** —— 落成新判据 **`tools/acctview.py`**（24 ok / 0 red）：
+      八个 hash 各自只点亮一个视图、未知 hash 回落 `overview`、三处导航的可达集合与
+      「仍然不可点的两项」都锁住。
+      活性自检：把 `password` 改名 `passwordX` → **6 red**，涵盖 DOM 清单 / hash 命中 /
+      导航可达三类断言；恢复后 24 ok。
+- [x] **步骤 4：更新四份文档**
   - `SPEC.md`：§5 视图表从 3 行扩到 8 行；§7 决策 C **标记为已拍板**（2026-09-10，
     做五页 + 桌面外推，Refer a Friend / Contact Preferences 仍无稿）；§8 / §8b 追加
   - `DETAIL-STATES.md`：第一节末尾那句「等用户拍板再做，本轮不动」改成已做
   - `CHANGELOG.md`：Task 16-22 归并成一条
   - `HANDOFF.md`：§2 页面表、§5「不要报成 bug」补分页禁用 / Help 占位文案 /
     `27116` 未单独实现三条
-- [ ] **步骤 5：提交** — `git commit -m "docs(account): 五个新视图的回归与文档"`
+- [x] **步骤 5：提交** — `git commit -m "docs(account): 五个新视图的回归与文档"`
 
 ---
 ## 阻塞项
