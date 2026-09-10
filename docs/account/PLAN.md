@@ -1516,20 +1516,30 @@ Order Detail **不进导航** —— 它的入口是 Order History 卡上的 `Vi
 5 张 `Order Card`（350×230：`Order Details` 156 + `Order Button Container` 72）→
 `Pagination` 350×45（左箭头 36×36 + `Page 1 of 10` + 右箭头 36×36）。
 
-**状态**：卡上的 `Status:` 有三种值 —— `Shipped` / `Delivered` / `Cancelled`，
-配色从节点取，用 `data-acct-order-state` 区分，**不复制三份 DOM**。
+**状态**：⚠ **规划时以为三态有配色，取数后推翻** —— 板上 `Shipped` / `Delivered` /
+`Cancelled` **全是 `#1a1a1a`**，与旁边 `Date:` / `Total:` 的值同一个样式，
+没有色块也没有徽章。所以不需要 `data-acct-order-state`，三张卡就是纯文本差异。
+已登记待裁决 **AE**（订单状态该不该像订阅那样有徽章）。
 
 ⚠ **分页是静态展示**，静态站没有第 2 页。两个箭头做成 `disabled`（左箭头在第 1 页
 本来就该禁用），并在 HANDOFF「不要报成 bug」里记一笔。
 
 **文件**：修改 `account.html`、`assets/account.scss`、`tools/acctcheck.py`
 
-- [ ] **步骤 1：取数值**（卡片 radius / padding / 行间距 / Status 三色 / 按钮）
-- [ ] **步骤 2：追加断言（先红）**，含三种 Status 各自的颜色与卡片计数 5
-- [ ] **步骤 3：跑判据确认红**
-- [ ] **步骤 4：实现**，`View Order` 带 `data-acct-goto="order"`
-- [ ] **步骤 5：编译、跑判据确认绿、`rwd.py`**
-- [ ] **步骤 6：提交** — `git commit -m "feat(account): Order History 视图"`
+- [x] **步骤 1：取数值**（卡片 radius / padding / 行间距 / Status 三色 / 按钮）
+- [x] **步骤 2：追加断言（先红）**，含三种 Status 各自的颜色与卡片计数 5
+- [x] **步骤 3：跑判据确认红**
+- [x] **步骤 4：实现**，`View Order` 带 `data-acct-goto="order"`。
+      ⚠ **`.gb-acct-order` 已被 Overview 占用**，列表这块用 `.gb-acct-hist`；
+      同时把 Task 18 的 `.gb-acct-profile__cards` 提成通用的 `.gb-acct-cards`
+      （两处都是 gap 24 的卡列，一处定义才能一条 grep 找齐）。
+      ⚠ **分页高度锁 45 不是 padding 撑出来的**：板上 `layoutSizingVertical=FIXED`、
+      `clipsContent=false`，36 的按钮居中在 45-1=44 的内容区里。
+      照 `padding: 12px 16px` 写会得到 61（判据当场报），要写 `height: 45px`。
+- [x] **步骤 5：编译、跑判据确认绿** —— `771 → 795 ok / 0 red`（+24）。
+      `accthover.py` **33** hover、`acctbp.py` 2030 decl、`acctmotion.py` 12 ok、
+      `acctvars.py` 54 ok，全 0 red；`rwd.py` 五档全绿。版本号 `20260910-a16`。
+- [x] **步骤 6：提交** — `git commit -m "feat(account): Order History 视图"`
 
 ---
 ## Task 21：Order Detail 视图

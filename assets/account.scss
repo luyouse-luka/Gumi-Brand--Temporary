@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260910-a15";
+$build-acct: "20260910-a16";
 
 // ==========================================================================
 // Variables
@@ -73,6 +73,7 @@ $c-gray-150:    #e6e6e6;   // 341:42573 cart line rule / disabled checkout fill
 $c-gray-100:    #eeeeee;
 $c-gray-050:    #f3f3f3;   // 326:83143 table header / zebra fill
 $c-navy:        #101828;
+$c-slate-200:   #eaecf0;   // 27202 pagination rule only
 
 $c-ink-05:      rgba(1, 19, 7, 0.05);
 
@@ -1976,15 +1977,15 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   color: $c-gray-600;
 }
 
-// 2284:27081. Cards at 24, then Save, then the closing line -- the column
-// itself is 32.
+// 27081 stacks its three cards at 24; 27202 stacks its five order cards at
+// the same 24.
 .gb-acct-profile {
   display: flex;
   flex-direction: column;
   row-gap: 32px;
 }
 
-.gb-acct-profile__cards {
+.gb-acct-cards {
   display: flex;
   flex-direction: column;
   row-gap: 24px;
@@ -2022,6 +2023,76 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   display: flex;
   flex-direction: column;
   row-gap: 32px;
+}
+
+// 2284:27202. Label and value share a line 4 apart; the three lines are 8 apart.
+.gb-acct-hist {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.gb-acct-hist__row {
+  display: flex;
+  column-gap: 4px;
+  margin: 0;
+}
+
+.gb-acct-hist__label {
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-600;
+}
+
+// Shipped, Delivered and Cancelled are all #1a1a1a on the board -- nothing in
+// the design tells the three apart (SPEC 待裁决 AE).
+.gb-acct-hist__value {
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-900;
+}
+
+// The rule is on top only: individualStrokeWeights is 1/0/0/0 and strokeAlign is
+// OUTSIDE. Height is locked at 45 on the board (layoutSizingVertical FIXED), and
+// the 36 buttons centre inside the 44 that leaves -- the board's 12 padding is
+// what the label needs, not the buttons.
+.gb-acct-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 8px;
+  height: 45px;
+  padding-inline: 16px;
+  border-top: 1px solid $c-slate-200;
+}
+
+.gb-acct-pager__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+  border: 0;
+  border-radius: $r-sm;
+  background: none;
+  color: $c-gray-400;
+
+  transition: trans(background-color);
+
+  // Both arrows ship disabled -- a static page has no second page to reach.
+  &:not(:disabled) {
+    cursor: pointer;
+    @include hover { background: $c-gray-050; }
+  }
+}
+
+.gb-acct-pager__arrow {
+  width: 20px;
+  height: 20px;
+}
+
+.gb-acct-pager__label {
+  @include font($font-brand-stack, 14px, 400, 20px, 0);
+  color: $c-gray-700;
 }
 
 // 2284:27170. Rows are 16 apart and every row but the first carries a 1px rule

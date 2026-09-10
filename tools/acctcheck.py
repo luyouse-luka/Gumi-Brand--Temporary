@@ -824,11 +824,50 @@ GROUPS = {
         ("css", OH + ".gb-acct-intro__title", "font-size", "24px"),
         ("css", OH + ".gb-acct-intro__title", "line-height", "30px"),
         ("vis", ".gb-acct-nav__link[data-acct-goto='orders'].is-current", True),
+        # -- Task 20 --
+        # Five cards. Three carry different statuses and the last two repeat the
+        # second verbatim -- the board's own duplication, SPEC 8.
+        ("text", OH + ".gb-acct-card__title",
+         ["Order #12345679", "Order #12345680", "Order #12345681",
+          "Order #12345680", "Order #12345680"]),
+        ("text", OH + ".gb-acct-hist__value",
+         ["Aug 14, 2026", "Shipped", "$89.99",
+          "Aug 15, 2026", "Delivered", "$45.00",
+          "Aug 16, 2026", "Cancelled", "$0.00",
+          "Aug 15, 2026", "Delivered", "$45.00",
+          "Aug 15, 2026", "Delivered", "$45.00"]),
+        # every status is #1a1a1a on the board -- no colour tells them apart
+        ("css", OH + ".gb-acct-hist__value", "color", "rgb(26, 26, 26)"),
+        ("css", OH + ".gb-acct-hist__label", "color", "rgb(102, 102, 102)"),
+        ("css", OH + ".gb-acct-hist__row", "column-gap", "4px"),
+        ("css", OH + ".gb-acct-hist", "row-gap", "8px"),
+        ("css", OH + ".gb-acct-cards", "row-gap", "24px"),
+        ("css", OH + ".gb-acct-stack", "row-gap", "32px"),
+        ("text", OH + ".gb-acct-btn",
+         ["View Order", "View Order", "View Order", "View Order", "View Order"]),
+        # 45 = a 1px rule on top + 12 + 20 + 12. The board draws top only
+        # (individualStrokeWeights right/bottom/left are 0).
+        ("css", OH + ".gb-acct-pager", "height", "45px"),
+        ("css", OH + ".gb-acct-pager", "border-top-width", "1px"),
+        ("css", OH + ".gb-acct-pager", "border-top-color", "rgb(234, 236, 240)"),
+        ("css", OH + ".gb-acct-pager", "border-bottom-width", "0px"),
+        ("css", OH + ".gb-acct-pager", "padding-left", "16px"),
+        ("text", OH + ".gb-acct-pager__label", ["Page 1 of 10"]),
+        # the board's letterSpacing is 0, which computes as normal, not 0px
+        ("css", OH + ".gb-acct-pager__label", "letter-spacing", "normal"),
+        ("css", OH + ".gb-acct-pager__label", "color", "rgb(77, 77, 77)"),
+        ("css", OH + ".gb-acct-pager__btn", "width", "36px"),
+        ("css", OH + ".gb-acct-pager__btn", "height", "36px"),
+        ("css", OH + ".gb-acct-pager__btn", "border-radius", "8px"),
+        ("nofit", OH + ".gb-acct-stack"),
     ],
     ("account.html", 390, GOTO_ORDERS): [
         ("css", OH + ".gb-acct-intro__title", "font-size", "20px"),
         ("css", OH + ".gb-acct-intro__title", "line-height", "24px"),
         ("vis", OH + ".gb-acct-intro__back", True),
+        ("css", OH + ".gb-acct-card", "width", "350px"),
+        ("css", OH + ".gb-acct-card", "height", "230px"),
+        ("nofit", OH + ".gb-acct-stack"),
     ],
     # -- Task 18: My Details (2284:27081; 27116 is the same board, decision O) --
     # Three cards at gap 24, then Save, then the note -- the outer column is
@@ -840,7 +879,7 @@ GROUPS = {
         ("css", MD + ".gb-acct-intro__title", "font-size", "24px"),
         ("vis", ".gb-acct-nav__link[data-acct-goto='details'].is-current", True),
         ("css", MD + ".gb-acct-profile", "row-gap", "32px"),
-        ("css", MD + ".gb-acct-profile__cards", "row-gap", "24px"),
+        ("css", MD + ".gb-acct-cards", "row-gap", "24px"),
         ("text", MD + ".gb-acct-card__title", ["Email", "Your name", "Phone number"]),
         # the board labels the phone field "Email*" -- copy-paste slip, SPEC 8
         ("text", MD + ".gb-acct-field__label",
