@@ -16,7 +16,7 @@
 | 页面 | `account.html` · `account-login.html` · `account-signup.html` | `index.html` 等 11 页 |
 | 样式 | `assets/account.scss` → `.css`（**自带一份变量副本**） | `assets/customstyle.scss` → `.css` |
 | 脚本 | `assets/account.js`（自包含 IIFE，不调 `window.gumi`） | `assets/main.js`（`window.gumi`） |
-| 版本号 | **`$build-acct`**，当前 `20260910-a12` | `$build`，当前 `r138` |
+| 版本号 | **`$build-acct`**，当前 `20260911-a19` | `$build`，当前 `r138` |
 | 判据 | `tools/acct*.py` | `tools/r*check.py` 等 |
 | 文档 | `docs/account/` | `docs/PROJECT-STATUS.md` 等 |
 
@@ -59,7 +59,7 @@
 npx sass@1.77.8 --no-source-map assets/account.scss assets/account.css
 
 # 改完必须一起 bump：源码里的 $build-acct + 三个页面各两处 ?v=
-grep -rn '20260910-a12' assets/account.scss account*.html
+grep -rn '20260911-a19' assets/account.scss account*.html
 ```
 
 ⚠ **改了 scss 一定要重编译**。判据读的是 `account.css`，忘了编译会得到「改了没生效」
@@ -73,12 +73,13 @@ grep -rn '20260910-a12' assets/account.scss account*.html
 
 | 判据 | 基线 | 说明 |
 |---|---|---|
-| `python3 tools/acctcheck.py` | **835 ok / 0 red** | 结构与数值，按 (页面, 宽度, 动作) 分组 |
+| `python3 tools/acctcheck.py` | **845 ok / 0 red** | 结构与数值，按 (页面, 宽度, 动作) 分组 |
 | `python3 tools/acctmodal.py` | **1314 ok / 0 red / 1 aborted** | 19 类弹窗，**约 4 分钟，后台跑** |
 | `python3 tools/acctview.py` | **24 ok / 0 red** | 八视图互斥、hash 路由、三处导航的可达集合一致 |
 | `python3 tools/acctvars.py` | 54 ok / 0 red | 变量副本没漂移 |
 | `python3 tools/assetpath.py` | GREEN | scss 里的 `url()` 必须是 `assets/` 内裸文件名 |
-| `python3 tools/acctbp.py` | 2168 declarations / 0 red | 断点值档互斥、阈值不带数值 |
+| `python3 tools/acctbp.py` | 2172 declarations / 0 red | 断点值档互斥、阈值不带数值 |
+| `python3 tools/acctdiff.py` | **647 paired / 168 differ / 50 unmatched** | 稿 TEXT 节点 vs 页面的字号·行高·字距·字重·颜色。**168 里 160 是 footer**（SPEC F，主站线），差异数不为 0 是预期 |
 | `python3 tools/accthover.py` | 33 hover properties / 0 red | 每个 hover 属性都有对应过渡 |
 | `python3 tools/acctmotion.py` | 12 ok / 0 red | reduced-motion 真的覆盖到了 |
 | `python3 tools/rwd.py account.html` | 全绿 | 14 档溢出扫描，三个页面各跑一次 |
@@ -105,6 +106,11 @@ grep -rn '20260910-a12' assets/account.scss account*.html
   Task 10 就这样漏过 10 条。
 - ⚠ **探针往被测元素里塞东西，收尾只能移除自己塞的那块**，不能 `innerHTML=''`
   或整体还原：前者抹掉真内容，后者重建节点让 JS 捕获的引用失效。
+- ⚠ **`acctdiff.py` 的四个坑**（会假绿或假红）：`<input>` 的文字在 `.value`/`@placeholder`
+  不在子节点；Figma 把一句拆成两个 TEXT 而 DOM 是一个元素（两个名字都要进索引）；
+  桌面板的假舞台是 Figma 的 Safari 组件、手机板是 `Chrome browser`，名字不同要分别剔；
+  **同串文字多次出现时两边都要按 y 排序**，否则两栏布局会把页面标题配到导航项上，
+  报出一对 `24->14` / `14->24` 的假差异。
 - ⚠ **判据里任何"点开弹窗"的分支，末尾都要按 Escape 关掉**。`modal.open()` 不会
   把一个开着的面板换成另一个，后面的检查会全量测到 `0px`。这个 bug 在
   `acctmodal.py` 里藏了很久，因为那条分支一直在 abort、从没执行过。
@@ -147,6 +153,14 @@ grep -rn '20260910-a12' assets/account.scss account*.html
 | 桌面 PAUSED 卡日期还是 `19 Jul 2026` | 按手机稿 `17 Aug 2026` | 便签 `28321` |
 | 同一地址两张板邮编 `3182` / `3181` | 各按各自的板 | 需设计方给出哪个对 |
 
+- **`acctdiff.py` 报的 168 条差异里 160 条是 footer** —— 稿上的 footer 是另一个组件
+  （两栏平铺、多 `Homepage`/`PDP`/`Influencers`、按钮写 `Subscribe now`、链接 16/24/600/0），
+  现站是三栏。SPEC 决策 2 与待裁决 F 已登记，`customstyle.scss` 的 `.gb-footer__link`
+  注释也写着 pending。**改它等于改 MVP 11 页**，等设计方回话再动。
+- **字距 0 是按钮与徽章的正确值，不是漏填** —— 稿上 `ACTIVE` / `Save` / `View Order`
+  这类的 `letterSpacing` 就是 0，正文才是 -0.02em。`.gb-acct-order__cta` 写 `0`、
+  `.gb-acct-btn` 写 `-0.32`，各自对应它们所在的板，别统一。
+
 ### 5c. 有意的实现取舍
 
 - **Order History 的两个翻页箭头都是 `disabled`** —— 静态站只有一页可翻。
@@ -164,6 +178,10 @@ grep -rn '20260910-a12' assets/account.scss account*.html
 - **`Download Invoice` 按钮做出来了** —— 便签 `27444` 说「Only do if very very very
   cheap. Otherwise, remove.」这是**待裁决 I**，照稿实现、等回话，不是自作主张。
 - **桌面两栏 gutter 是 244 / 352 不对称** —— 三个桌面稿完全一致，判定为有意，没改成居中。
+  ⚠ **Task 23 起这两个数不再是 `__inner` 自己的 padding**：改成了 `max-width: 952px`
+  居中 + `padding-right: 108px`，套在 `.gb-acct` 的 `--pad-x`（80/20）里，
+  1440 档算出来仍是 244 / 352，但 1440 以上会锁住而不是继续撑开。
+  看到 `padding-left: 0` **不是 gutter 丢了**，判据改用 `rect` 量几何。
   内容列用 `minmax(0,1fr)` 而不是稿上的固定 571：**照抄则 768 档横向溢出 864 > 768**（实测）。
 - **弹窗滚动锁复用站内的 `is-modal-open`，没有另起一套**。自己写一套（html+body 都
   `overflow:hidden` + 两边都补 `padding-right`）实测坏两处：`.gb-acct-header` 是

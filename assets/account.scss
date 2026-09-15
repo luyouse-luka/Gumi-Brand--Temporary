@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260910-a17";
+$build-acct: "20260911-a19";
 
 // ==========================================================================
 // Variables
@@ -397,6 +397,9 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 .gb-acct {
   position: relative;
   min-height: 40vh;
+  // Site gutters, same --pad-x as .gb-header__bar. The band and the wave below
+  // are absolute, so they resolve against the padding box and stay full-bleed.
+  padding-inline: var(--pad-x);
   // 2284:27604 / 27678 board fill. customstyle gives body plain white, and the
   // white list-card groups vanish against it.
   background: $c-cream;
@@ -460,17 +463,15 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 }
 
 .gb-acct-header__bar {
+  // Same container as the site's .gb-header__bar: capped at 1280 + gutters.
+  @include container;
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: $h-header;
-  padding-inline: $pad-x-desktop;
 
-  @include narrow { height: $h-header-mobile; padding-inline: $pad-x-mobile; }
-  @include tablet {
-    height: fluid($h-header-mobile, $h-header);
-    padding-inline: fluid($pad-x-mobile, $pad-x-desktop);
-  }
+  @include narrow { height: $h-header-mobile; }
+  @include tablet { height: fluid($h-header-mobile, $h-header); }
 }
 
 .gb-acct-header__logo {
@@ -571,20 +572,25 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 // Account shell — two columns, 2284:27842
 // ==========================================================================
 
-// The 244/352 gutters are asymmetric but identical on all three desktop boards
-// (27678 / 27792 / 28000), so they are intended, not a stray frame. The content
-// column is 1fr rather than the board's fixed 571 so that 1281-1439 pinches the
-// content instead of overflowing the viewport.
+// 952 centred inside the shell's --pad-x reproduces the boards' asymmetric
+// 244/352 gutters at 1440 (80 + (1280-952)/2 = 244, and 244 + 108 = 352) and
+// holds them past 1440 instead of letting the content keep growing. The 244/352
+// are identical on all three desktop boards (27678 / 27792 / 28000), so they are
+// intended. The content column is 1fr rather than the board's fixed 571 so that
+// 768 pinches the content instead of overflowing the viewport.
 .gb-acct__inner {
   position: relative;   // keeps the content above .gb-acct::before
   display: grid;
   grid-template-columns: 241px minmax(0, 1fr);
   column-gap: 32px;
-  padding: 48px 352px 144px 244px;
+  max-width: 952px;
+  margin-inline: auto;
+  padding: 48px 108px 144px 0;
 
   @include tablet {
-    padding: fluid(0px, 48px) fluid($pad-x-mobile, 352px)
-             fluid(48px, 144px) fluid($pad-x-mobile, 244px);
+    padding-top: fluid(0px, 48px);
+    padding-right: fluid(0px, 108px);
+    padding-bottom: fluid(48px, 144px);
   }
 
   @include narrow {
@@ -592,7 +598,7 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
     // 8 is the Account Header's own padding-top (27610 / 28312). The rest of the
     // lead-in belongs to the view: 27604 hides the back button and starts its
     // greeting 40 down, 28305 shows the button and starts 8 down.
-    padding: 8px $pad-x-mobile 48px;
+    padding: 8px 0 48px;
   }
 }
 
@@ -1841,7 +1847,9 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
 .gb-acct-schedule__title {
   margin: 0;
-  @include font($font-brand-stack, 14px, 500, 20px);
+  // 0, not the 14px tier's -0.28: the board sets none here (27792 / 28330) and
+  // without it the value is inherited from the card.
+  @include font($font-brand-stack, 14px, 500, 20px, 0);
   color: $c-gray-900;
 }
 
@@ -2547,6 +2555,13 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   @include narrow {
     @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
   }
+}
+
+// 35129 is #656565 on the desktop board, the same secondary grey as the other
+// desktop auth text (SPEC AB); its phone board draws #808080, which the base
+// rule already gives. Log in's aside is #808080 on both boards.
+.gb-acct-auth__aside--hint {
+  @include panel-wide { color: $c-gray-650; }
 }
 
 a.gb-acct-auth__aside {

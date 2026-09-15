@@ -74,6 +74,10 @@ A = ".gb-acct-detail[data-acct-discount='applied'] "
 #   ("absent", selector)        element must not render at all
 #   ("nofit", selector)         element's content must not overflow its own box,
 #                               and the page must not scroll sideways
+#   ("rect", selector, edge, px) distance from the viewport edge ("left"/"right")
+#                               or the box's own "width", +/-1. Use this when the
+#                               number to hold is where the ink lands, not which
+#                               property puts it there.
 GROUPS = {
     # -- Task 2: desktop header, closed (2284:34627) --
     ("account.html", 1440, None): [
@@ -127,12 +131,19 @@ GROUPS = {
         ("text", ".gb-acct-nav__link[aria-disabled='true']",
          ["Refer a Friend", "Contact Preferences"]),
         # Two-column shell (2284:27842). The asymmetric 244/352 gutters are
-        # identical on all three desktop boards, so they are intended.
+        # identical on all three desktop boards, so they are intended. They are
+        # produced by 952 centred inside the shell's --pad-x, so assert where the
+        # columns land -- the padding alone no longer carries the number.
         ("css", ".gb-acct__inner", "column-gap", "32px"),
+        ("css", ".gb-acct__inner", "max-width", "952px"),
         ("css", ".gb-acct__inner", "padding-top", "48px"),
-        ("css", ".gb-acct__inner", "padding-left", "244px"),
-        ("css", ".gb-acct__inner", "padding-right", "352px"),
+        ("css", ".gb-acct__inner", "padding-right", "108px"),
         ("css", ".gb-acct__inner", "padding-bottom", "144px"),
+        ("rect", ".gb-acct-nav", "left", 244),
+        ("rect", ".gb-acct__views", "right", 352),
+        # The band and the wave cancel the shell padding and stay full-bleed.
+        ("rect", ".gb-acct__wave", "left", 0),
+        ("rect", ".gb-acct__wave", "right", 0),
         # default view
         ("shown", "[data-acct-view='overview']", True),
         ("shown", "[data-acct-view='subscriptions']", False),
@@ -421,6 +432,11 @@ GROUPS = {
         ("css", ".gb-acct-hello", "background-color", "rgba(0, 0, 0, 0)"),
         ("css", ".gb-acct-hello", "padding-left", "0px"),
         ("css", ".gb-acct__inner", "padding-top", "8px"),
+        # Phone gutters come from the shell now, not from __inner's own padding.
+        ("rect", ".gb-acct__views", "left", 20),
+        ("rect", ".gb-acct__views", "right", 20),
+        ("rect", ".gb-acct__wave", "left", 0),
+        ("rect", ".gb-acct__wave", "right", 0),
         ("css", ".gb-acct-ov", "padding-top", "32px"),
         ("css", ".gb-acct-hello__title", "font-size", "20px"),
         ("css", ".gb-acct-hello__title", "line-height", "24px"),
@@ -497,6 +513,9 @@ GROUPS = {
         ("shown", "[data-acct-view='detail']", True),
         ("shown", "[data-acct-view='subscriptions']", False),
         ("css", ".gb-acct-detail", "row-gap", "16px"),
+        # 27792 sets no tracking on this one, so it must not inherit the card's
+        # -0.32 the way it did before r/Task 24. Not the 14px tier's -0.28 either.
+        ("css", D + ".gb-acct-schedule__title", "letter-spacing", "normal"),
 
         # 27860: same lime card as the list page, but the back button shows on
         # desktop too and the subtitle is replaced by a pencil
@@ -881,6 +900,11 @@ GROUPS = {
         ("css", MD + ".gb-acct-profile", "row-gap", "32px"),
         ("css", MD + ".gb-acct-cards", "row-gap", "24px"),
         ("text", MD + ".gb-acct-card__title", ["Email", "Your name", "Phone number"]),
+        # 27081 writes two sentences; the second one was missing until Task 24.
+        ("text", MD + ".gb-acct-card__note",
+         ["You will receive a confirmation email where we will ask you to verify "
+          "your new email address. All emails from us will be sent to your new address.",
+          "Opt in to order updates via text message"]),
         # the board labels the phone field "Email*" -- copy-paste slip, SPEC 8
         ("text", MD + ".gb-acct-field__label",
          ["Email*", "First name*", "Last name*", "Phone number*"]),
@@ -1421,6 +1445,20 @@ def main():
                         ok += 1
                     else:
                         print("RED  %-52s overflow self=%s page=%s" % (tag, got[0], got[1])); red += 1
+                elif kind == "rect":
+                    edge, want = chk[2], chk[3]
+                    got = pg.evaluate(
+                        "([s,e])=>{const el=document.querySelector(s);if(!el)return null;"
+                        "const r=el.getBoundingClientRect();"
+                        "return e==='right'?innerWidth-r.right:e==='left'?r.left:r.width}",
+                        [sel, edge])
+                    tag = "%s rect(%s).%s" % (label, sel, edge)
+                    if got is None:
+                        print("RED  %-52s element not found" % tag); red += 1
+                    elif abs(got - want) <= 1:
+                        ok += 1
+                    else:
+                        print("RED  %-52s want %s, got %s" % (tag, want, round(got, 1))); red += 1
                 elif kind == "absent":
                     got = pg.evaluate(VIS_GET, sel)
                     tag = "%s absent(%s)" % (label, sel)

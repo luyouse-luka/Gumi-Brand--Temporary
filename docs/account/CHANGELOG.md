@@ -8,6 +8,176 @@
 
 ---
 
+## Task 24 — 全量文本对照扫描（`$build-acct` = `a18` → `20260911-a19`）
+
+`account修改任务文档.txt` 第三条：「需对照设计，有些细节部分没有还原设计」。
+用户明确要求**再扫一遍**，不是套 §5 的桌面外推规则。
+
+### 新判据 `tools/acctdiff.py`
+
+把 15 张整页板的每个 TEXT 节点与页面上渲染同一串文字的元素配对，比
+**font-size / line-height / letter-spacing / font-weight / colour**。只管文本 token，
+几何仍归 `acctcheck.py`。弹窗的 41 张板不在内 —— `acctmodal.py` 的 1314 条已经盖住了。
+
+```bash
+python3 tools/acctdiff.py          # 15 张板
+python3 tools/acctdiff.py help -u  # 只扫 help，并列出配不上的板文本
+```
+
+写这个判据时踩的四件事，都会让它**假绿或假红**：
+
+1. **`<input>` 的文字不在子节点里** —— 填了值的在 `.value`、空的在 `@placeholder`。
+   只读文本节点会把 My Details 四个预填字段全报成「实现里没有」。
+2. **Figma 把一句话拆成两个 TEXT，DOM 里却是一个元素** —— `To find more info
+   <a>visit FAQ page</a>`。只用 `innerText` 配不上前半句，现在两个名字都进索引。
+3. **稿上的假舞台要按祖先名剔除** —— 手机板是 `Chrome browser` 实例，桌面板换成了
+   Figma 的 Safari 组件，名字完全不同。
+4. **同一串文字出现多次时按 y 排序配对**，两边都排。不排的话两栏布局里
+   「My Subscriptions」会把 24/30 的页面标题配到 14/20 的导航项上，报出一对
+   `24->14` 和 `14->24` 的假差异。
+
+### 扫出来什么
+
+647 配对 / 168 差异 / 50 板文本未配上。**其中 160 差异 + 36 未配是 footer** ——
+稿上的 footer 是另一个组件（两栏平铺、多 `Homepage`/`PDP`/`Influencers` 三条链接、
+按钮写 `Subscribe now`、链接 16/24/600/0），与现站三栏 footer 不是一回事。
+这件事 SPEC 决策 2 与待裁决 F 早就登记了，`customstyle.scss` 的 `.gb-footer__link`
+注释也写着「pending the designer's call」—— **不是 account 线的事，没动**。
+
+剩下 8 条非 footer 差异，6 条是 §5 已裁决的（`Refer a Friend` 的 `aria-disabled` 灰
+×4、`Sign up` 标题那处唯一的 Lexend）。
+
+### 修了三处（都是「还原」不是「决策」）
+
+| 处 | 稿 | 原实现 |
+|---|---|---|
+| `.gb-acct-schedule__title`（Renewal Schedule） | 14/20 w500 **`ls=0`** | `@include font` 漏传第 5 参数，继承了卡片的 `-0.32` |
+| My Details 第一张卡的说明 | 两句 | 只有第一句，少 `All emails from us will be sent to your new address.` |
+| `Must be at least 8 characters` | 桌面 `#656565` | `#808080`（`.gb-acct-auth__aside` 的基色，login 两档确实是这个） |
+
+第三处按 SPEC **AB 既定的「各按各自的板」**办，新加 `.gb-acct-auth__aside--hint`，
+只在 `panel-wide` 生效；它的手机板本来就是 `#808080`，基类不动。
+
+⚠ **字距不是一刀切**：稿上按钮与徽章的 `letterSpacing` 是 0（`ACTIVE` ×39、`Save` ×11、
+`View Order` ×6…），正文才是 -0.02em。实现原本就分得对 ——
+`.gb-acct-order__cta` 写 `0`、`.gb-acct-btn` 写 `-0.32`，各自对应它们所在的板。
+**只有 `schedule__title` 漏了**，别顺手把按钮那批也改了。
+
+### 新登记待裁决 AF / AG / AH，并订正 AB
+
+- **AB 的清单本来就不全**：`#656565` 说是三处，扫出来是**五处** ——
+  漏了 `35111`(signup 副标题) 与 `35129`(`Must be at least`)。已订正。
+- **AF** signup 桌面副标题 `ls=0`，同角色另外三处都有字距 → 判为稿的疏漏，按体系 -0.36
+- **AG** `My Subscription` 三行 `#1a1a1a`/`#101828`/`#101828` → 统一 `#1a1a1a`
+- **AH** signup 的 Email 框占位写 `Email`，同板其他字段与 login 两档都是 `Your …` → 统一 `Your email`
+
+### 判据
+
+| 判据 | 结果 |
+|---|---|
+| `acctdiff.py` | 647 paired / 168 differ（**160 为 footer，SPEC F**）/ 50 unmatched |
+| `acctcheck.py` | **845 ok / 0 red**（+2：schedule 字距、My Details 两句文案） |
+| `acctbp.py` / `acctvars.py` / `accthover.py` | 2172 decl · 54 ok · 33 hover / 0 red |
+| `acctview.py` · `rwd.py` × 三页 | 24 ok / 0 red · 全绿 |
+
+### 文件清单
+
+- `tools/acctdiff.py` — 新增
+- `tools/acctcheck.py` — 两条断言锁住本轮修复
+- `assets/account.scss` — `schedule__title` 字距；`.gb-acct-auth__aside--hint`；`$build-acct`
+- `assets/account.css` — 重编译产物
+- `account.html` — 补第二句；`?v=` ×2
+- `account-signup.html` — hint 修饰类；`?v=` ×2
+- `account-login.html` — `?v=` ×2
+- `docs/account/SPEC.md` — 订正 AB，新增 AF / AG / AH
+
+### 遗留
+
+- **这一轮只扫了文本 token**。间距 / 尺寸 / 圆角 / 阴影 / 图标 / 图片仍只有
+  `acctcheck.py` 那 845 条逐板写死的断言覆盖，没有全自动比对。要同等程度地扫几何，
+  得把 AutoLayout 的 `itemSpacing` / `padding*` 与 computed 值配对，是另一轮的量。
+- footer 那 160 条**等设计方回 SPEC F**；回话前动它就会改到 MVP 11 页。
+
+---
+
+## Task 23 — 外壳版心化 + 波浪朝向（`$build-acct` = `a17` → `20260911-a18`）
+
+需求来自仓库根的 `account修改任务文档.txt`（2026-09-11）。三条里做了前两条，
+第三条「对照设计补细节」待需求方给范围。
+
+### 做了什么
+
+**1. `.gb-acct__wave` 的弧朝反了** —— `account.html` 那个波浪只写了
+`gb-scallop gb-scallop--mint-to-cream`，缺 `gb-scallop--down`，渲染成 cream 向上凸。
+稿（`2284:27678`，截图逐像素查过）是 **lime 向下凸进 cream**。补一个类即可，
+颜色对不用动：`--wave-under` 在 `.gb-scallop` 基类就默认成 `var(--wave-fg)` = cream。
+
+⚠ `account-login/signup` 的两个 `gb-scallop--to-green` **没动** —— 那是站点 footer 的波浪，
+全站 14 处同写法，改了就跟 MVP 11 页不一致。
+
+**2. 外壳从绝对 padding 换成版心** —— `.gb-acct__inner` 原本是
+`padding: 48px 352px 144px 244px`，1440 以上内容会一直跟着视口撑开。
+改成 `max-width: 952px` + `margin-inline: auto` + `padding-right: 108px`，
+外层 `.gb-acct` 补 `padding-inline: var(--pad-x)`（站点同款 80/20）。
+
+1440 档与改前**逐像素等价**，差别只在 1440 以上会锁住：
+
+| | 改前 | 改后 |
+|---|---|---|
+| 内容左缘距视口 | 244 | 80 + (1280−952)/2 = **244** |
+| 内容右缘距视口 | 352 | 244 + 108 = **352** |
+| 内容列净宽 | 1440−244−352 = 844 | 952 − 108 = **844** |
+| >1440 | 无限撑开 | 锁 952 居中 |
+
+`@include tablet` 只剩上下与 `padding-right: fluid(0px, 108px)`，左右由 max-width 接管；
+`@include narrow` 的左右 20 改由 `.gb-acct` 提供，`__inner` 自己归 0。
+
+**3. `.gb-acct-header__bar` 换成 `@include container`** —— 与站点 `.gb-header__bar` 同写法，
+>1440 时锁 1280 + gutters。原来是写死的 `padding-inline: $pad-x-desktop` 三档，没有上限。
+
+### 踩到的一件事
+
+给 `.gb-acct` 加了 `padding-inline` 之后，顺手给 `::before`（lime 带）和 `__wave`
+补了 `calc(var(--pad-x) * -1)` 想保住满幅 —— **错的**。绝对定位子元素的包含块是
+**padding box**，本来就是全宽 1440，`left: 0` 已经贴视口。补偿反而让波浪反向溢出 80px，
+判据当场 19 红：4 条是 `rect` 直接量到 `-80` / `-20`，另外 15 条是
+`nofit` 报 `page=80` —— 同一个根因的两种表现。撤掉补偿即全绿。
+
+### 判据
+
+`acctcheck.py` 新增 **`("rect", sel, edge, px)`** 断言：量元素到视口左/右的距离
+（或自身宽度），±1 容差。加它的原因是这次改动**换了产生 244/352 的机制** ——
+再断言 `padding-left: 244px` 就绑死在旧实现上，而需求要守的是「ink 落在哪」。
+1440 档验 `.gb-acct-nav` 左缘 244 / `.gb-acct__views` 右缘 352，
+390 档验内容左右 20、波浪满幅 0/0。
+
+| 判据 | 结果 |
+|---|---|
+| `acctcheck.py` | **843 ok / 0 red**（基线 835 + 新增 8 条 rect） |
+| `acctbp.py` | 2170 declarations / 0 red |
+| `acctview.py` | 24 ok / 0 red |
+| `acctvars.py` / `assetpath.py` | 54 ok · GREEN |
+| `accthover.py` / `acctmotion.py` | 33 hover · 12 ok / 0 red |
+| `rwd.py` × 三页 × 14 档 | 全绿 |
+
+### 文件清单
+
+- `account.html` — 波浪加 `--down`；`?v=` ×2
+- `account-login.html` / `account-signup.html` — `?v=` ×2 各
+- `assets/account.scss` — `$build-acct`；`.gb-acct` 加 `padding-inline`；
+  `.gb-acct__inner` 版心化；`.gb-acct-header__bar` 换 `@include container`
+- `assets/account.css` — 重编译产物
+- `tools/acctcheck.py` — 新增 `rect` 断言类型 + 两组几何断言
+
+### 遗留
+
+- **第三条需求「对照设计补细节」没做** —— 需要需求方指明页面范围。
+  既有的桌面外推结论在 `SPEC.md` §5（只有页面标题一档变），若要逐页重扫是另一轮的量。
+- `account.html` 的**主站**资源版本号仍停在 `?v=20260909-r134`（6 处），
+  两个 auth 页已是 `r138`。主站线的批量替换不含这三个文件，仍需 account 线自己跟。
+
+---
+
 ## Task 16-22 — 账户区其余五页（决策 C 拍板，`$build-acct` = `20260910-a13` → `a17`）
 
 用户 2026-09-10 定了待裁决 C：「C 需要补桌面稿，如果只有手机稿也需补桌面稿，
