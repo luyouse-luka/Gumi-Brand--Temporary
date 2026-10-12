@@ -188,9 +188,10 @@ def grade(tag, res, desktop):
               [['5', '100x20', 5, '1'], ['4.5', '100x20', 5, '0.3'],
                ['4.5', '100x20', 5, '0.3'], ['4.5', '100x20', 5, '0.3'],
                ['4.5', '100x20', 5, '0.3']])
-        # r90: 64 box, grey still behind, bear actually decodes, contained.
+        # r90: 64 box, bear actually decodes, contained. r120 took the grey ground
+        # away (client dropped every placeholder ground) -- transparent is the pass.
         check(p('attachment'), d['attach'],
-              ['64x64', 'rgb(213, 212, 212)', True, 'contain', True])
+              ['64x64', 'rgba(0, 0, 0, 0)', True, 'contain', True])
         check(p('avatar 48 ring'), d['avatar'][:2], ['48x48', '50%'])
         # Chromium quantises lengths to 1/64px, so assert the band, not 39.27.
         try:

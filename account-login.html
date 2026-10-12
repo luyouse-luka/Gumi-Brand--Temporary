@@ -10,7 +10,7 @@
 <link rel="icon" href="images/favicon.svg?v=20260910-r138" type="image/svg+xml">
 <link rel="apple-touch-icon" href="images/favicon-180.png?v=20260910-r138">
 <link rel="stylesheet" href="assets/customstyle.css?v=20260910-r138">
-<link rel="stylesheet" href="assets/account.css?v=20260911-a19">
+<link rel="stylesheet" href="assets/account.css?v=20261009-a73">
 <noscript><style>.wowo{opacity:1 !important}</style></noscript>
 </head>
 <body>
@@ -23,6 +23,7 @@
     </div>
   </div>
 
+  <!-- Site header, not the account one: a signed-out visitor has no account menu to open. -->
   <header class="gb-header" id="site-header">
     <div class="gb-header__bar">
       <button class="gb-header__toggle" type="button" aria-expanded="false" aria-controls="site-menu">
@@ -123,8 +124,8 @@
     </div>
   </header>
 
-  <!-- 2284:35137 desktop / 2284:34993 phone -->
-  <main class="gb-acct-auth">
+  <!-- Log in. Both views ship in this page; account.js leaves one without [hidden]. -->
+  <main class="gb-acct-auth" data-acct-view="login">
     <div class="gb-acct-auth__head">
       <h1 class="gb-acct-auth__title">Log in</h1>
       <p class="gb-acct-auth__sub">Log in to manage your subscription</p>
@@ -149,7 +150,51 @@
         <button class="gb-acct-auth__submit" type="submit">Log in</button>
       </form>
 
-      <p class="gb-acct-auth__alt">Don&rsquo;t have an account? <a href="account-signup.html">Sign up</a></p>
+      <p class="gb-acct-auth__alt">Don&rsquo;t have an account? <a href="#signup" data-acct-goto="signup">Sign up</a></p>
+
+      <aside class="gb-acct-auth__note">
+        <p class="gb-acct-auth__note-title">Ordered before but haven&rsquo;t set up an account?</p>
+        <p class="gb-acct-auth__note-text">No worries&mdash;just sign up with the same email and we&rsquo;ll link your order history automatically.</p>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Sign up. Reached from the alt link below the log-in form, or by #signup. -->
+  <main class="gb-acct-auth" data-acct-view="signup" hidden>
+    <div class="gb-acct-auth__head">
+      <h1 class="gb-acct-auth__title">Sign up</h1>
+      <p class="gb-acct-auth__sub">Sign up to edit, skip or manage your subscription</p>
+    </div>
+
+    <div class="gb-acct-auth__inner">
+      <form class="gb-acct-auth__form" action="#" method="post">
+        <div class="gb-acct-auth__fields">
+          <div class="gb-acct-auth__row">
+            <div class="gb-acct-field">
+              <label class="gb-acct-field__label" for="acct-signup-first">First name*</label>
+              <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-signup-first" name="first-name" type="text" placeholder="First name" required autocomplete="given-name"></div>
+            </div>
+            <div class="gb-acct-field">
+              <label class="gb-acct-field__label" for="acct-signup-last">Last name*</label>
+              <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-signup-last" name="last-name" type="text" placeholder="Last name" required autocomplete="family-name"></div>
+            </div>
+          </div>
+          <div class="gb-acct-field">
+            <label class="gb-acct-field__label" for="acct-signup-email">Email*</label>
+            <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-signup-email" name="email" type="email" placeholder="Your email" required autocomplete="email"></div>
+          </div>
+          <div class="gb-acct-auth__stack">
+            <div class="gb-acct-field">
+              <label class="gb-acct-field__label" for="acct-signup-password">Password</label>
+              <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-signup-password" name="password" type="password" placeholder="Your password" required minlength="8" autocomplete="new-password"></div>
+            </div>
+            <p class="gb-acct-auth__aside gb-acct-auth__aside--hint">Must be at least 8 characters</p>
+          </div>
+        </div>
+        <button class="gb-acct-auth__submit" type="submit">Sign up</button>
+      </form>
+
+      <p class="gb-acct-auth__alt">Already have an account? <a href="#login" data-acct-goto="login">Log in</a></p>
 
       <aside class="gb-acct-auth__note">
         <p class="gb-acct-auth__note-title">Ordered before but haven&rsquo;t set up an account?</p>
@@ -386,6 +431,6 @@
 
   <script src="assets/lenis.min.js?v=20260910-r138"></script>
   <script src="assets/main.js?v=20260910-r138"></script>
-  <script src="assets/account.js?v=20260911-a19"></script>
+  <script src="assets/account.js?v=20261009-a73"></script>
 </body>
 </html>

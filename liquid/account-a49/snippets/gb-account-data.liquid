@@ -1,0 +1,1839 @@
+{%- doc -%}
+  Account portal data layer. Fetches from the Cloudflare Worker at
+  /apps/account/* and populates the DOM. Frontend account.js handles UI
+  choreography (tab switching, modal open/close, dirty checking) — this
+  script only owns data.
+
+  v1: fetch subscription list on page load, render into
+  [data-acct-view="subscriptions"] .gb-acct-subs__list.
+  v2: on "Manage Subscription" click, populate [data-acct-view="detail"] from
+  the cached contract (Worker merges full detail into the list response).
+  v3: modal submit hooks — prefill on open, POST on save, refetch on success.
+{%- enddoc -%}
+
+<script>
+  (function () {
+    if (window.__gbAcctDataBound) return; window.__gbAcctDataBound = true;
+
+    var CUSTOMER_EMAIL = {{ customer.email | json }};
+
+    // Products available in the "Add Items" modal. Sourced from the section's
+    // configured collection (Theme Editor → Account portal → Add-items
+    // collection). Empty array if the merchant hasn't picked one yet.
+    var ADD_PRODUCTS = [
+      {%- assign _col = collections[settings.add_items_collection] -%}
+      {%- if _col != blank -%}
+        {%- for prod in _col.products -%}
+          {%- unless forloop.first -%},{%- endunless -%}
+          {
+            "id": {{ prod.id | json }},
+            "title": {{ prod.title | json }},
+            "handle": {{ prod.handle | json }},
+            "image": {{ prod.featured_image | img_url: '400x' | json }},
+            "options": [{%- for o in prod.options_with_values -%}{%- unless forloop.first -%},{%- endunless -%}{
+              "name": {{ o.name | json }},
+              "values": [{%- for v in o.values -%}{%- unless forloop.first -%},{%- endunless -%}{{ v | json }}{%- endfor -%}]
+            }{%- endfor -%}],
+            "variants": [{%- for v in prod.variants -%}{%- unless forloop.first -%},{%- endunless -%}{
+              "id": {{ v.id | json }},
+              "title": {{ v.title | json }},
+              "price": {{ v.price | json }},
+              "compare_at_price": {{ v.compare_at_price | json }},
+              "option1": {{ v.option1 | json }},
+              "option2": {{ v.option2 | json }},
+              "option3": {{ v.option3 | json }},
+              "available": {{ v.available | json }},
+              "image": {{ v.image | img_url: '400x' | json }}
+            }{%- endfor -%}]
+          }
+        {%- endfor -%}
+      {%- endif -%}
+    ];
+
+    // Full customer orders inlined from Liquid — covers both overview's
+    // current-order card and the #order detail view.
+    var CUSTOMER_ORDERS = [
+      {%- for o in customer.orders limit: 20 -%}
+        {%- unless forloop.first -%},{%- endunless -%}
+        {
+          "id": {{ o.id | json }},
+          "name": {{ o.name | json }},
+          "created_at": {{ o.created_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }},
+          "fulfillment_status": {{ o.fulfillment_status | json }},
+          "fulfillment_status_label": {{ o.fulfillment_status_label | json }},
+          "financial_status": {{ o.financial_status | json }},
+          "financial_status_label": {{ o.financial_status_label | json }},
+          "cancelled_at": {{ o.cancelled_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }},
+          "url": {{ o.customer_url | json }},
+          "order_status_url": {{ o.order_status_url | json }},
+          "subtotal_price": {{ o.subtotal_price | json }},
+          "total_price": {{ o.total_price | json }},
+          "total_discounts": {{ o.total_discounts | json }},
+          "shipping_price": {{ o.shipping_price | json }},
+          "currency": {{ o.currency | json }},
+          "shipping_method": {%- if o.shipping_methods.first -%}{
+            "title": {{ o.shipping_methods.first.title | json }},
+            "price": {{ o.shipping_methods.first.price | json }}
+          }{%- else -%}null{%- endif -%},
+          "shipping_address": {%- if o.shipping_address -%}{
+            "name": {{ o.shipping_address.name | json }},
+            "address1": {{ o.shipping_address.address1 | json }},
+            "address2": {{ o.shipping_address.address2 | json }},
+            "city": {{ o.shipping_address.city | json }},
+            "province_code": {{ o.shipping_address.province_code | json }},
+            "province": {{ o.shipping_address.province | json }},
+            "zip": {{ o.shipping_address.zip | json }},
+            "country": {{ o.shipping_address.country | json }}
+          }{%- else -%}null{%- endif -%},
+          "billing_address": {%- if o.billing_address -%}{
+            "name": {{ o.billing_address.name | json }},
+            "address1": {{ o.billing_address.address1 | json }},
+            "address2": {{ o.billing_address.address2 | json }},
+            "city": {{ o.billing_address.city | json }},
+            "province_code": {{ o.billing_address.province_code | json }},
+            "province": {{ o.billing_address.province | json }},
+            "zip": {{ o.billing_address.zip | json }},
+            "country": {{ o.billing_address.country | json }}
+          }{%- else -%}null{%- endif -%},
+          "line_items": [
+            {%- for li in o.line_items -%}
+              {%- unless forloop.first -%},{%- endunless -%}
+              {
+                "title": {{ li.title | json }},
+                "product_title": {{ li.product.title | json }},
+                "variant_title": {{ li.variant.title | json }},
+                "quantity": {{ li.quantity | json }},
+                "price": {{ li.price | json }},
+                "compare_at_price": {{ li.variant.compare_at_price | json }},
+                "final_price": {{ li.final_price | json }},
+                "image": {{ li.image | img_url: '200x' | json }},
+                "is_subscription": {%- if li.selling_plan_allocation -%}true{%- else -%}false{%- endif -%}
+              }
+            {%- endfor -%}
+          ]
+        }
+      {%- endfor -%}
+    ];
+    // Money is in minor units (cents) via Liquid | json on money fields.
+    function moneyCents(cents, currency) {
+      var n = (cents == null ? 0 : Number(cents)) / 100;
+      var sym = { AUD: '$', USD: '$', NZD: '$', GBP: '£', EUR: '€' }[currency || 'AUD'] || '$';
+      return sym + n.toFixed(2);
+    }
+
+    var subsView = document.querySelector('[data-acct-view="subscriptions"]');
+    var subsList = subsView && subsView.querySelector('.gb-acct-subs__list');
+    var subsTpl = subsView && subsView.querySelector('template[data-acct-sub-template]');
+    if (!subsList || !subsTpl) return;
+    var tplCard = subsTpl.content.querySelector('.gb-acct-sub');
+    if (!tplCard) return;
+    var cardHtml = tplCard.outerHTML;
+
+    // Loading state: keep the card shell visible, replace the body with a
+    // single "Loading…" line. Design intent — no fake values flashing.
+    var LOADING_CARD_HTML =
+      '<article class="gb-acct-sub" data-acct-loading>' +
+        '<div class="gb-acct-sub__body">' +
+          '<p class="gb-acct-empty">Loading…</p>' +
+        '</div>' +
+      '</article>';
+    subsList.innerHTML = LOADING_CARD_HTML;
+
+    function api(path, opts) {
+      return fetch('/apps/account' + path, Object.assign({ credentials: 'same-origin' }, opts || {}))
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); });
+    }
+
+    // Strip Shopify gid:// prefix; Appstle exposes ids as numeric strings inside gids.
+    function idOf(gid) { return typeof gid === 'string' ? gid.replace(/^gid:\/\/shopify\/\w+\//, '') : gid; }
+
+    function money(amount, code) {
+      var n = parseFloat(amount || 0);
+      var sym = { AUD: '$', USD: '$', NZD: '$', GBP: '£', EUR: '€' }[code || 'AUD'] || '$';
+      return sym + n.toFixed(2);
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function shortAddress(addr) {
+      if (!addr) return '';
+      var parts = [];
+      if (addr.address1) parts.push(addr.address1);
+      if (addr.provinceCode) parts.push(addr.provinceCode);
+      if (addr.zip) parts.push(addr.zip);
+      return parts.join(', ');
+    }
+
+    // Sum line totals from a contract's lines.nodes.
+    function contractTotal(contract) {
+      var nodes = (contract.lines && contract.lines.nodes) || [];
+      var sum = 0;
+      var currency = 'AUD';
+      nodes.forEach(function (n) {
+        var price = n.lineDiscountedPrice || n.currentPrice;
+        if (price) { sum += parseFloat(price.amount || 0); currency = price.currencyCode || currency; }
+      });
+      var delivery = contract.deliveryPrice ? parseFloat(contract.deliveryPrice.amount || 0) : 0;
+      return money(sum + delivery, currency);
+    }
+
+    function firstProduct(contract) {
+      var nodes = (contract.lines && contract.lines.nodes) || [];
+      return nodes[0] || null;
+    }
+
+    function moreCount(contract) {
+      var nodes = (contract.lines && contract.lines.nodes) || [];
+      return Math.max(0, nodes.length - 1);
+    }
+
+    // Render one subscription card by cloning the template HTML and filling in.
+    function renderCard(contract) {
+      var wrap = document.createElement('div');
+      wrap.innerHTML = cardHtml;
+      var card = wrap.firstElementChild;
+
+      var status = String(contract.status || '').toLowerCase();  // ACTIVE|PAUSED|CANCELLED
+      card.setAttribute('data-acct-sub-state', status);
+      card.setAttribute('data-sub-id', idOf(contract.id));
+
+      // Subscription name (customAttribute _subscription_name or fallback)
+      var titleEl = card.querySelector('.gb-acct-sub__title');
+      if (titleEl) titleEl.textContent = subscriptionName(contract);
+
+      // Status pill text (last <span> child of .gb-acct-pill)
+      var pill = card.querySelector('.gb-acct-pill');
+      if (pill) {
+        // Keep the dot, replace the trailing text node
+        var dot = pill.querySelector('.gb-acct-pill__dot');
+        pill.textContent = '';
+        if (dot) pill.appendChild(dot);
+        pill.appendChild(document.createTextNode(status.charAt(0).toUpperCase() + status.slice(1)));
+      }
+
+      // Next renewal date
+      var renewalValue = card.querySelector('[data-acct-sub-renewal] .gb-acct-sub__meta-value');
+      if (renewalValue) renewalValue.textContent = formatDate(contract.nextBillingDate);
+
+      // Shipping address short form
+      var shipValue = card.querySelector('[data-acct-sub-shipping] .gb-acct-sub__meta-value');
+      var addr = contract.deliveryMethod && contract.deliveryMethod.address;
+      if (shipValue) shipValue.textContent = shortAddress(addr);
+
+      // Primary product (thumb + name + qty)
+      var p = firstProduct(contract);
+      var thumb = card.querySelector('.gb-acct-sub__thumb');
+      if (thumb && p) {
+        if (p.variantImage && p.variantImage.url) thumb.setAttribute('src', p.variantImage.url);
+        else thumb.removeAttribute('src');
+      }
+      var pname = card.querySelector('.gb-acct-sub__product-name');
+      if (pname && p) pname.textContent = p.title || '';
+      var pqty = card.querySelector('.gb-acct-sub__product-qty');
+      if (pqty && p) pqty.textContent = 'Quantity: ' + (p.quantity || 1);
+
+      // "+N More Products" — hide if only one line
+      var more = card.querySelector('.gb-acct-sub__more');
+      var mc = moreCount(contract);
+      if (more) {
+        if (mc > 0) more.textContent = '+' + mc + ' More Product' + (mc > 1 ? 's' : '');
+        else more.remove();
+      }
+
+      // Total
+      var totalRow = card.querySelector('.gb-acct-sub__total');
+      if (totalRow) {
+        var spans = totalRow.querySelectorAll('span');
+        if (spans.length >= 2) spans[1].textContent = contractTotal(contract);
+      }
+
+      // CTA button — attach sub id so detail view knows what to fetch
+      var cta = card.querySelector('.gb-acct-sub__cta');
+      if (cta) {
+        cta.setAttribute('data-sub-id', idOf(contract.id));
+        if (status === 'cancelled') cta.textContent = 'Re-Activate Subscription';
+        else cta.textContent = 'Manage Subscription';
+      }
+
+      return card;
+    }
+
+    function renderList(contracts) {
+      subsList.innerHTML = '';
+      if (!contracts || !contracts.length) {
+        subsList.innerHTML = '<p class="gb-acct-empty">You have no subscriptions yet.</p>';
+        return;
+      }
+      contracts.forEach(function (c) {
+        contractCache[idOf(c.id)] = c;
+        subsList.appendChild(renderCard(c));
+      });
+    }
+
+    // ────────── Detail view ──────────
+
+    var contractCache = Object.create(null);  // id → contract
+
+    var detailView = document.querySelector('[data-acct-view="detail"]');
+    var detailRoot = detailView && detailView.querySelector('.gb-acct-detail');
+    var detailBody = detailRoot && detailRoot.querySelector('.gb-acct-detail__body');
+
+    // Capture the full detail body markup (structure + <template> children)
+    // BEFORE we swap in the loading state. renderDetail() restores it so
+    // selectors keep working.
+    var detailBodyHtml = detailBody && detailBody.innerHTML;
+
+    // Product row + schedule day pre-rendered as <template>; read their HTML
+    // once from the captured markup so renderDetail can clone freely.
+    function extractTpl(html, attr) {
+      if (!html) return '';
+      var wrap = document.createElement('div');
+      wrap.innerHTML = html;
+      var tpl = wrap.querySelector('template[' + attr + ']');
+      return tpl && tpl.content.firstElementChild ? tpl.content.firstElementChild.outerHTML : '';
+    }
+    var productTplHtml = extractTpl(detailBodyHtml, 'data-acct-product-template');
+    var scheduleDayTplHtml = extractTpl(detailBodyHtml, 'data-acct-schedule-day-template');
+
+    var DETAIL_LOADING_HTML =
+      '<article class="gb-acct-sub" data-acct-loading>' +
+        '<div class="gb-acct-sub__body">' +
+          '<p class="gb-acct-empty">Loading…</p>' +
+        '</div>' +
+      '</article>';
+
+    // Swap in loading state on boot so the design's blanked structure doesn't
+    // flash on ?sub=X#detail direct load.
+    if (detailBody) detailBody.innerHTML = DETAIL_LOADING_HTML;
+
+    function frequencyLabel(policy) {
+      if (!policy) return '';
+      var n = policy.intervalCount || 1;
+      var unit = String(policy.interval || 'WEEK').toLowerCase();
+      var plural = { day: 'days', week: 'weeks', month: 'months', year: 'years' }[unit] || unit + 's';
+      var singular = { day: 'day', week: 'week', month: 'month', year: 'year' }[unit] || unit;
+      return 'Ships every ' + n + ' ' + (n === 1 ? singular : plural);
+    }
+
+    // Compute next N renewal dates given the delivery policy.
+    function upcomingDates(startIso, policy, count) {
+      var out = [];
+      if (!startIso || !policy) return out;
+      var unit = String(policy.interval || 'WEEK').toUpperCase();
+      var step = policy.intervalCount || 1;
+      var base = new Date(startIso);
+      if (isNaN(base.getTime())) return out;
+      for (var i = 0; i < count; i++) {
+        var d = new Date(base.getTime());
+        if (unit === 'DAY') d.setDate(base.getDate() + step * i);
+        else if (unit === 'WEEK') d.setDate(base.getDate() + step * 7 * i);
+        else if (unit === 'MONTH') d.setMonth(base.getMonth() + step * i);
+        else if (unit === 'YEAR') d.setFullYear(base.getFullYear() + step * i);
+        out.push(d);
+      }
+      return out;
+    }
+
+    function formatShort(d) {
+      return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+    }
+
+    // Discount extraction — Appstle exposes applied discount codes in a few
+    // shapes across endpoints; try the common ones.
+    function activeDiscount(contract) {
+      var codes = contract.discountCodes || contract.appliedDiscounts || contract.discounts || [];
+      if (!codes || !codes.length) return null;
+      var d = codes[0];
+      var code = d.code || d.discountCode || d.title || '';
+      var amount = d.amount || (d.value && d.value.amount) || d.discountAmount || 0;
+      var currency = (d.value && d.value.currencyCode) || d.currencyCode || 'AUD';
+      return { code: code, amount: parseFloat(amount || 0), currency: currency };
+    }
+
+    function paymentLabel(pm) {
+      if (!pm) return '';
+      var inst = pm.instrument || pm.paymentInstrument || pm;
+      var brand = inst.brand || inst.type || '';
+      var last4 = inst.lastDigits || inst.last4 || '';
+      var email = inst.paypalAccountEmail || inst.email || '';
+      if (email) return 'PayPal\n(' + email + ')';
+      if (brand && last4) return brand + ' •••• ' + last4;
+      return brand || 'Card on file';
+    }
+
+    // Cancel deadline: 1 day before nextBillingDate, at 6:59 AM.
+    function cancelDeadline(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      d.setDate(d.getDate() - 1);
+      var dayMonth = d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+      return 'You can make changes to your next subscription up until ' + dayMonth + ', 6:59 AM';
+    }
+
+    function subtotal(contract) {
+      var nodes = (contract.lines && contract.lines.nodes) || [];
+      var sum = 0, currency = 'AUD';
+      nodes.forEach(function (n) {
+        var price = n.currentPrice || n.lineDiscountedPrice;
+        if (price) { sum += parseFloat(price.amount || 0) * (n.quantity || 1); currency = price.currencyCode || currency; }
+      });
+      return { amount: sum, currency: currency };
+    }
+
+    function setText(sel, text) {
+      var el = detailRoot.querySelector(sel);
+      if (el) el.textContent = text;
+    }
+
+    function renderProductRow(line) {
+      var wrap = document.createElement('div');
+      wrap.innerHTML = productTplHtml;
+      var row = wrap.firstElementChild;
+      row.classList.remove('gb-acct-product--oos');
+
+      // Line metadata for edit-product prefill.
+      row.setAttribute('data-acct-line-id', idOf(line.id || ''));
+      row.setAttribute('data-acct-line-variant-id', idOf(line.variantId || ''));
+      row.setAttribute('data-acct-line-product-id', idOf(line.productId || ''));
+      row.setAttribute('data-acct-line-qty', line.quantity || 1);
+
+      var thumb = row.querySelector('.gb-acct-product__thumb');
+      if (thumb && line.variantImage && line.variantImage.url) {
+        thumb.style.backgroundImage = 'url(' + line.variantImage.url + ')';
+        thumb.style.backgroundSize = 'cover';
+        thumb.style.backgroundPosition = 'center';
+      }
+
+      var qty = row.querySelector('.gb-acct-product__qty');
+      if (qty) qty.textContent = line.quantity || 1;
+
+      var label = row.querySelector('.gb-acct-product__label');
+      if (label) label.textContent = line.title || '';
+
+      var flavour = row.querySelector('.gb-acct-product__flavour');
+      if (flavour) flavour.textContent = line.variantTitle || '';
+
+      // Price: show was/now if discounted, else just now.
+      var priceEl = row.querySelector('.gb-acct-product__price');
+      if (priceEl) {
+        var current = line.currentPrice || line.lineDiscountedPrice;
+        var original = line.lineDiscountedPrice ? line.currentPrice : null;
+        priceEl.innerHTML = '';
+        if (original && parseFloat(original.amount) > parseFloat(current.amount)) {
+          var was = document.createElement('s');
+          was.className = 'gb-acct-product__was';
+          was.textContent = money(original.amount, original.currencyCode);
+          priceEl.appendChild(was);
+        }
+        var now = document.createElement('span');
+        now.className = 'gb-acct-product__now';
+        now.textContent = current ? money(current.amount, current.currencyCode) : '';
+        priceEl.appendChild(now);
+      }
+
+      return row;
+    }
+
+    function renderDetail(contract) {
+      if (!detailRoot) return;
+      // Restore the full structure (removes the loading card, brings back
+      // rows / summary / schedule / templates).
+      if (detailBody && detailBodyHtml != null) detailBody.innerHTML = detailBodyHtml;
+      var status = String(contract.status || '').toLowerCase();
+      detailRoot.setAttribute('data-acct-sub-state', status);
+      detailRoot.setAttribute('data-sub-id', idOf(contract.id));
+
+      // Subscription name — intro title and body title both.
+      var subName = subscriptionName(contract);
+      var introTitle = detailRoot.querySelector('.gb-acct-intro__title');
+      if (introTitle) introTitle.textContent = subName;
+      var bodyTitle = detailRoot.querySelector('.gb-acct-sub__title');
+      if (bodyTitle) bodyTitle.textContent = subName;
+
+      // Next renewal date
+      var dateEl = detailRoot.querySelector('.gb-acct-row--renewal .gb-acct-row__date');
+      if (dateEl) dateEl.textContent = formatDate(contract.nextBillingDate);
+
+      // Frequency
+      var freqRow = detailRoot.querySelectorAll('.gb-acct-row')[1];
+      var freqValue = freqRow && freqRow.querySelector('.gb-acct-row__value');
+      if (freqValue) freqValue.textContent = frequencyLabel(contract.deliveryPolicy || (contract.billingPolicy));
+
+      // Products — remove any existing rows (from a prior render) and rebuild
+      // from the <template>. Insert before .gb-acct-detail__add.
+      if (productTplHtml) {
+        var existing = detailRoot.querySelectorAll('.gb-acct-product');
+        for (var i = 0; i < existing.length; i++) existing[i].remove();
+        var addWrap = detailRoot.querySelector('.gb-acct-detail__add');
+        var lines = (contract.lines && contract.lines.nodes) || [];
+        lines.forEach(function (line) {
+          var row = renderProductRow(line);
+          if (addWrap) addWrap.parentNode.insertBefore(row, addWrap);
+          else detailRoot.appendChild(row);
+        });
+      }
+
+      // Cancel deadline
+      var deadline = detailRoot.querySelector('.gb-acct-detail__deadline');
+      if (deadline) deadline.textContent = cancelDeadline(contract.nextBillingDate);
+
+      // Summary
+      var sub = subtotal(contract);
+      var summary = detailRoot.querySelector('.gb-acct-summary');
+      if (summary) {
+        var rows = summary.querySelectorAll('.gb-acct-summary__row');
+        // Subtotal
+        if (rows[0]) rows[0].querySelectorAll('span')[1].textContent = money(sub.amount, sub.currency);
+        // Shipping
+        var shippingRow = summary.querySelector('.gb-acct-summary__row:not(.gb-acct-summary__row--discount) + .gb-acct-summary__row, .gb-acct-summary__row:last-of-type');
+        // Better: find the "Shipping" label
+        var shipRow = null;
+        rows.forEach(function (r) {
+          var l = r.querySelector('span');
+          if (l && /shipping/i.test(l.textContent)) shipRow = r;
+        });
+        if (shipRow) {
+          var deliv = contract.deliveryPrice ? parseFloat(contract.deliveryPrice.amount || 0) : 0;
+          shipRow.querySelectorAll('span')[1].textContent = deliv > 0 ? money(deliv, (contract.deliveryPrice && contract.deliveryPrice.currencyCode) || sub.currency) : 'FREE';
+        }
+      }
+
+      // Discount
+      var disc = activeDiscount(contract);
+      detailRoot.setAttribute('data-acct-discount', disc ? 'applied' : 'none');
+      if (disc) {
+        var codeEl = detailRoot.querySelector('.gb-acct-summary__code');
+        if (codeEl) codeEl.textContent = disc.code;
+        var tagEl = detailRoot.querySelector('.gb-acct-summary__discount .gb-acct-tag');
+        if (tagEl) tagEl.textContent = '-' + money(disc.amount, disc.currency);
+      }
+
+      // Total
+      var totalEl = detailRoot.querySelector('.gb-acct-summary__total');
+      if (totalEl) {
+        var delivery = contract.deliveryPrice ? parseFloat(contract.deliveryPrice.amount || 0) : 0;
+        var discAmt = disc ? disc.amount : 0;
+        var total = sub.amount + delivery - discAmt;
+        totalEl.querySelectorAll('span')[1].textContent = money(total, sub.currency);
+      }
+
+      // Shipping row (find by label text since selector is ambiguous)
+      var rowEls = detailRoot.querySelectorAll('.gb-acct-row');
+      rowEls.forEach(function (r) {
+        var lbl = r.querySelector('.gb-acct-row__label');
+        if (!lbl) return;
+        if (/shipping/i.test(lbl.textContent) && !r.classList.contains('gb-acct-row--renewal')) {
+          var v = r.querySelector('.gb-acct-row__value');
+          if (v) v.textContent = shortAddress(contract.deliveryMethod && contract.deliveryMethod.address);
+        }
+        if (/payment method/i.test(lbl.textContent)) {
+          var v2 = r.querySelector('.gb-acct-row__value');
+          if (v2) {
+            var text = paymentLabel(contract.paymentMethod);
+            v2.innerHTML = text.split('\n').map(function (s) { return s.replace(/</g, '&lt;'); }).join('<br>');
+          }
+        }
+      });
+
+      // Renewal schedule days
+      var daysWrap = detailRoot.querySelector('.gb-acct-schedule__days');
+      if (daysWrap && scheduleDayTplHtml) {
+        daysWrap.innerHTML = '';
+        var dates = upcomingDates(contract.nextBillingDate, contract.deliveryPolicy, 4);
+        dates.forEach(function (d) {
+          var w = document.createElement('div');
+          w.innerHTML = scheduleDayTplHtml;
+          var el = w.firstElementChild;
+          el.textContent = formatShort(d);
+          daysWrap.appendChild(el);
+        });
+      }
+    }
+
+    // Persist current sub id as ?sub=<id> so refresh / share restores detail.
+    function setSubParam(id) {
+      var url = new URL(window.location.href);
+      if (id) { url.searchParams.set('sub', id); url.searchParams.delete('order'); }
+      else url.searchParams.delete('sub');
+      history.replaceState(null, '', url.toString());
+    }
+
+    function currentSubParam() {
+      return new URL(window.location.href).searchParams.get('sub');
+    }
+
+    // Delegate: any click on a card CTA carrying data-sub-id renders detail
+    // before the frontend switches tabs.
+    document.addEventListener('click', function (e) {
+      if (!e.target || !e.target.closest) return;
+      var btn = e.target.closest('.gb-acct-sub__cta[data-sub-id]');
+      if (btn) {
+        var id = btn.getAttribute('data-sub-id');
+        var contract = contractCache[id];
+        if (contract) { renderDetail(contract); setSubParam(id); }
+        return;
+      }
+      // Leaving detail / order view — drop the corresponding ?sub / ?order.
+      var back = e.target.closest('[data-acct-goto]');
+      if (back) {
+        var goto = back.getAttribute('data-acct-goto');
+        if (goto !== 'detail') {
+          var url = new URL(window.location.href);
+          url.searchParams.delete('sub');
+          history.replaceState(null, '', url.toString());
+        }
+        if (goto !== 'order') {
+          var url2 = new URL(window.location.href);
+          url2.searchParams.delete('order');
+          history.replaceState(null, '', url2.toString());
+        }
+      }
+    }, true);
+
+    // ────────── Modal wiring (v3) ──────────
+    //
+    // Frontend owns modal open/close choreography. We prefill inputs on the
+    // capture phase of the trigger click (before frontend opens it) and
+    // intercept save clicks on the capture phase of the panel's save button
+    // (before frontend runs its close handler). Save is fire-and-forget from
+    // the UI's perspective — modal closes immediately, we refetch in the
+    // background and rerender detail when the fresh contract lands.
+
+    // Which contract is currently open in the detail view.
+    function currentContract() {
+      var id = detailRoot && detailRoot.getAttribute('data-sub-id');
+      return id ? contractCache[id] : null;
+    }
+
+    function toDDMMYYYY(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      var dd = String(d.getDate()).padStart(2, '0');
+      var mm = String(d.getMonth() + 1).padStart(2, '0');
+      return dd + '/' + mm + '/' + d.getFullYear();
+    }
+
+    function parseDDMMYYYY(s) {
+      var m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(s || '').trim());
+      if (!m) return null;
+      return m[3] + '-' + m[2] + '-' + m[1];  // YYYY-MM-DD
+    }
+
+    // Helpers used across modals -------------------------------------------
+
+    function setDateInput(input, iso) {
+      if (!input || !iso) return;
+      input.value = toDDMMYYYY(iso);
+      if (input._flatpickr) { try { input._flatpickr.setDate(iso, false); } catch (e) {} }
+    }
+
+    function localDateToISO(date) {
+      var yyyy = date.getFullYear();
+      var mm = String(date.getMonth() + 1).padStart(2, '0');
+      var dd = String(date.getDate()).padStart(2, '0');
+      return yyyy + '-' + mm + '-' + dd;
+    }
+
+    function readDateInput(input) {
+      if (!input) return null;
+      // flatpickr selectedDates are local calendar dates. Avoid toISOString(),
+      // which converts local midnight to the previous UTC date in UTC+ zones.
+      if (input._flatpickr && input._flatpickr.selectedDates && input._flatpickr.selectedDates[0]) {
+        return localDateToISO(input._flatpickr.selectedDates[0]);
+      }
+      return parseDDMMYYYY(input.value);
+    }
+
+    function addInterval(iso, policy) {
+      if (!iso || !policy) return iso;
+      var d = new Date(iso);
+      var step = policy.intervalCount || 1;
+      var unit = String(policy.interval || 'WEEK').toUpperCase();
+      if (unit === 'DAY') d.setDate(d.getDate() + step);
+      else if (unit === 'WEEK') d.setDate(d.getDate() + step * 7);
+      else if (unit === 'MONTH') d.setMonth(d.getMonth() + step);
+      else if (unit === 'YEAR') d.setFullYear(d.getFullYear() + step);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function longDate(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    // Selling plans cache (fetched once on first edit-frequency open).
+    var sellingPlansCache = null;
+    function ensureSellingPlans() {
+      if (sellingPlansCache) return Promise.resolve(sellingPlansCache);
+      return api('/selling-plans').then(function (res) {
+        if (res.ok && res.j.ok) sellingPlansCache = res.j.sellingPlans || res.j.data || [];
+        else sellingPlansCache = [];
+        return sellingPlansCache;
+      });
+    }
+
+    // ────────── Add / Edit product helpers ──────────
+
+    // Snapshot the first product card in add-product modal at boot as our
+    // template; the container is emptied so no design copy flashes.
+    var addProdPanel = document.querySelector('[data-acct-modal-panel="add-product"]');
+    var addProdGrid = addProdPanel && addProdPanel.querySelector('.gb-acct-prod-grid');
+    var addProdCardTplHtml = '';
+    if (addProdGrid) {
+      var firstProd = addProdGrid.querySelector('.gb-acct-prod');
+      if (firstProd) addProdCardTplHtml = firstProd.outerHTML;
+      addProdGrid.innerHTML = '';
+    }
+
+    function moneyPrice(price) {
+      // Storefront prices are cents in Shopify Liquid `variant.price | json`.
+      return moneyCents(price, 'AUD');
+    }
+
+    function productAlreadyInContract(product, contract) {
+      var lines = (contract.lines && contract.lines.nodes) || [];
+      var productGid = 'gid://shopify/Product/' + product.id;
+      return lines.some(function (li) {
+        // Try match on product id (gid form) OR on variant id.
+        if (li.productId && String(li.productId) === productGid) return true;
+        if (li.variantId) {
+          return (product.variants || []).some(function (v) {
+            return String(li.variantId).indexOf(String(v.id)) >= 0;
+          });
+        }
+        return false;
+      });
+    }
+
+    // Given a product and its options, return the matching variant given
+    // currently-selected option values (from the card's <select> elements).
+    function findVariant(product, chosen) {
+      return (product.variants || []).find(function (v) {
+        if (chosen.length >= 1 && v.option1 !== chosen[0]) return false;
+        if (chosen.length >= 2 && v.option2 !== chosen[1]) return false;
+        if (chosen.length >= 3 && v.option3 !== chosen[2]) return false;
+        return true;
+      }) || product.variants[0];
+    }
+
+    function renderAddProductCard(product) {
+      var wrap = document.createElement('div');
+      wrap.innerHTML = addProdCardTplHtml;
+      var card = wrap.firstElementChild;
+      card.setAttribute('data-product-id', product.id);
+
+      var thumb = card.querySelector('.gb-acct-prod__thumb');
+      if (thumb && product.image) thumb.setAttribute('src', product.image);
+      var name = card.querySelector('.gb-acct-prod__name');
+      if (name) name.textContent = product.title;
+
+      // Options — replace design's hardcoded selects with real options.
+      // Design's template has 1 option; we replace with N based on product.options.
+      var optsWrap = card.querySelector('.gb-acct-prod__opts');
+      if (optsWrap) {
+        optsWrap.innerHTML = '';
+        (product.options || []).forEach(function (opt, i) {
+          if (opt.values.length <= 1 && opt.values[0] === 'Default Title') return;
+          var wrap2 = document.createElement('div');
+          wrap2.className = 'gb-acct-prod__opt';
+          var label = document.createElement('span');
+          label.className = 'gb-acct-prod__opt-label';
+          label.textContent = opt.name;
+          var control = document.createElement('div');
+          control.className = 'gb-acct-field__control gb-acct-prod__control';
+          var select = document.createElement('select');
+          select.className = 'gb-acct-field__input gb-acct-prod__select';
+          select.setAttribute('data-acct-field', '');
+          select.setAttribute('data-select', '');
+          select.setAttribute('data-option-index', i);
+          opt.values.forEach(function (v, j) {
+            var o = document.createElement('option');
+            o.value = v;
+            o.textContent = v;
+            if (j === 0) o.selected = true;
+            select.appendChild(o);
+          });
+          control.appendChild(select);
+          wrap2.appendChild(label);
+          wrap2.appendChild(control);
+          optsWrap.appendChild(wrap2);
+        });
+      }
+
+      updateCardPrice(card, product);
+      return card;
+    }
+
+    // Read all option <select>s in a card, resolve the matching variant, and
+    // update the price display. Called on init and on any select change.
+    function updateCardPrice(card, product) {
+      var chosen = Array.prototype.map.call(
+        card.querySelectorAll('.gb-acct-prod__select'),
+        function (s) { return s.value; }
+      );
+      var v = findVariant(product, chosen);
+      card.setAttribute('data-variant-id', v ? v.id : '');
+      var now = card.querySelector('.gb-acct-prod__now');
+      var was = card.querySelector('.gb-acct-prod__was');
+      if (now) now.textContent = v ? moneyPrice(v.price) : '';
+      if (was) {
+        if (v && v.compare_at_price && Number(v.compare_at_price) > Number(v.price)) {
+          was.textContent = moneyPrice(v.compare_at_price);
+          was.style.display = '';
+        } else {
+          was.style.display = 'none';
+        }
+      }
+    }
+
+    // Qty +/- click handler for any product card in add/edit product modals.
+    // The CTA sync differs between modes: add uses total==0 to disable;
+    // edit compares to original variant/qty and toggles label.
+    function attachQtyControls(panel) {
+      panel._acctQtyOwned = true;
+      var name = panel.getAttribute('data-acct-modal-panel');
+      var syncCta = name === 'edit-product' ? syncEditCta : syncAddCta;
+      panel.querySelectorAll('.gb-acct-prod').forEach(function (card) {
+        var qtyEl = card.querySelector('[data-acct-qty-value]');
+        var minus = card.querySelector('[data-acct-qty="down"]');
+        var plus = card.querySelector('[data-acct-qty="up"]');
+        var min = Number(card.getAttribute('data-acct-qty-min') || '0');
+        qtyEl.min = min;
+        function refresh() {
+          var v = Number(qtyEl.value || '0');
+          if (minus) minus.disabled = v <= min;
+        }
+        if (!qtyEl.__bound) {
+          qtyEl.__bound = true;
+          qtyEl.addEventListener('input', function () {
+            refresh();
+            syncCta(panel);
+          });
+          qtyEl.addEventListener('change', function () {
+            qtyEl.value = Math.max(min, Math.floor(Number(qtyEl.value) || min));
+            refresh();
+            syncCta(panel);
+          });
+        }
+        if (minus && !minus.__bound) {
+          minus.__bound = true;
+          minus.addEventListener('click', function () {
+            var v = Math.max(min, Number(qtyEl.value || '0') - 1);
+            qtyEl.value = v;
+            refresh();
+            syncCta(panel);
+          });
+        }
+        if (plus && !plus.__bound) {
+          plus.__bound = true;
+          plus.addEventListener('click', function () {
+            var v = Number(qtyEl.value || '0') + 1;
+            qtyEl.value = v;
+            refresh();
+            syncCta(panel);
+          });
+        }
+        refresh();
+      });
+    }
+
+    function syncAddCta(panel) {
+      var cta = panel.querySelector('[data-acct-save]');
+      if (!cta) return;
+      var total = 0;
+      var valid = true;
+      panel.querySelectorAll('[data-acct-qty-value]').forEach(function (el) {
+        valid = valid && el.value !== '' && el.checkValidity();
+        total += Number(el.value || '0');
+      });
+      cta.disabled = !valid || total === 0;
+    }
+
+    // edit-product Save button toggles label to "Remove this product" when
+    // qty drops to zero (design attribute data-acct-label-zero).
+    function syncEditCta(panel) {
+      var cta = panel.querySelector('[data-acct-save]');
+      if (!cta) return;
+      var qtyEl = panel.querySelector('[data-acct-qty-value]');
+      var qty = Number((qtyEl && qtyEl.value) || '0');
+      var valid = qtyEl && qtyEl.value !== '' && qtyEl.checkValidity();
+      var origVariant = panel.getAttribute('data-acct-line-orig-variant-id');
+      var origQty = Number(panel.getAttribute('data-acct-line-orig-qty') || '0');
+      var card = panel.querySelector('.gb-acct-prod');
+      var newVariant = card && card.getAttribute('data-variant-id');
+      var changed = (qty !== origQty) || (newVariant && String(newVariant) !== String(origVariant));
+      cta.disabled = !valid || !changed;
+      var labelZero = cta.getAttribute('data-acct-label-zero');
+      var labelDefault = cta.getAttribute('data-acct-label-default') || 'Save';
+      cta.textContent = (qty === 0 && labelZero) ? labelZero : labelDefault;
+    }
+
+    // Subscription name from customAttribute (fallback to design default).
+    function subscriptionName(contract) {
+      var attrs = (contract && contract.customAttributes) || [];
+      var found = attrs.find && attrs.find(function (a) {
+        return a && (a.key === '_subscription_name' || a.name === '_subscription_name');
+      });
+      var v = found && found.value;
+      return (v && String(v).trim()) || 'My Subscription';
+    }
+
+    // Applied discount id (used by remove).
+    function currentDiscountId(contract) {
+      var codes = contract.discountCodes || contract.appliedDiscounts || contract.discounts || [];
+      var d = codes && codes[0];
+      return d ? (d.id || d.discountId) : null;
+    }
+
+    // Prefill handlers ------------------------------------------------------
+    var prefill = {
+      'edit-date': function (panel, contract) {
+        setDateInput(panel.querySelector('#acct-f-date'), contract.nextBillingDate);
+      },
+      'edit-name': function (panel, contract) {
+        var input = panel.querySelector('#acct-f-name');
+        if (!input) return;
+        var attrs = contract.customAttributes || [];
+        var nameAttr = attrs.find && attrs.find(function (a) { return a && a.key === '_subscription_name'; });
+        input.value = (nameAttr && nameAttr.value) || 'My Subscription';
+      },
+      'edit-frequency': function (panel, contract) {
+        var select = panel.querySelector('#acct-f-freq');
+        var hint = panel.querySelector('.gb-acct-modal__hint');
+        if (hint) hint.innerHTML = 'Your next renewal date is <b>' + formatDate(contract.nextBillingDate) + '</b><br>Please allow 2-5 working days for your order to be with you';
+        if (!select) return;
+        // Populate options once selling plans arrive.
+        ensureSellingPlans().then(function (plans) {
+          var currentPlanId = contract.deliveryPolicy && contract.deliveryPolicy.sellingPlanId;
+          // Extract plans list (Appstle groups → nested plans)
+          var flat = [];
+          plans.forEach(function (g) {
+            var arr = g.sellingPlans || g.plans || (Array.isArray(g) ? g : [g]);
+            (arr || []).forEach(function (p) { if (p && p.id) flat.push(p); });
+          });
+          if (!flat.length) return;
+          select.innerHTML = '';
+          flat.forEach(function (p) {
+            var opt = document.createElement('option');
+            opt.value = idOf(p.id);
+            opt.textContent = p.name || frequencyLabel(p.deliveryPolicy || p);
+            if (String(idOf(p.id)) === String(currentPlanId)) opt.selected = true;
+            select.appendChild(opt);
+          });
+        });
+      },
+      'skip-next': function (panel, contract) {
+        var copy = panel.querySelector('.gb-acct-modal__copy');
+        if (!copy) return;
+        var next = addInterval(contract.nextBillingDate, contract.deliveryPolicy);
+        copy.innerHTML = 'Are you sure you want to skip the next order? Your next order date will be changed to <strong>' + longDate(next) + '</strong>';
+      },
+      'cancel-skipped': function (panel, contract) {
+        var sub = panel.querySelector('.gb-acct-modal__sub');
+        if (!sub) return;
+        var next = addInterval(contract.nextBillingDate, contract.deliveryPolicy);
+        sub.textContent = 'Next order will renew on ' + longDate(next);
+      },
+      'discount-applied': function (panel, contract) {
+        var codes = contract.discountCodes || contract.appliedDiscounts || contract.discounts || [];
+        var d = codes && codes[0];
+        var result = panel.querySelector('.gb-acct-discount__result');
+        if (result) result.hidden = !d;
+        var chip = panel.querySelector('.gb-acct-chip p');
+        if (chip && d) {
+          var code = d.code || d.discountCode || '';
+          var amt = d.amount || (d.value && d.value.amount) || 0;
+          var cur = (d.value && d.value.currencyCode) || d.currencyCode || 'AUD';
+          chip.innerHTML = 'Discount <strong>' + code + '</strong> applied ' + money(amt, cur) + ' off';
+        }
+      },
+      'restart': function (panel, contract) {
+        setDateInput(panel.querySelector('#acct-f-restart'), contract.nextBillingDate || new Date().toISOString().slice(0, 10));
+      },
+      'edit-product': function (panel, contract) {
+        // Trigger is the "Edit" button inside a .gb-acct-product row in the
+        // detail view. Walk up to the row to find the line metadata.
+        var trigger = panel.__gbTrigger;
+        var row = trigger && trigger.closest('.gb-acct-product');
+        if (!row) return;
+        var lineId = row.getAttribute('data-acct-line-id');
+        var variantId = row.getAttribute('data-acct-line-variant-id');
+        var productId = row.getAttribute('data-acct-line-product-id');
+        var qty = Number(row.getAttribute('data-acct-line-qty') || '1');
+
+        panel.setAttribute('data-acct-line-id', lineId);
+        panel.setAttribute('data-acct-line-orig-variant-id', variantId);
+        panel.setAttribute('data-acct-line-orig-qty', qty);
+
+        var grid = panel.querySelector('.gb-acct-prod-grid');
+        if (!grid) return;
+        // Locate the product in ADD_PRODUCTS to get its options / variants.
+        var product = (ADD_PRODUCTS || []).find(function (p) { return String(p.id) === String(productId); });
+        if (!product) {
+          // Fallback: no option data available, only allow qty edit or remove.
+          grid.innerHTML =
+            '<div class="gb-acct-prod" data-acct-product data-acct-qty-min="0">' +
+              '<div class="gb-acct-prod__info">' +
+                '<p class="gb-acct-prod__name">' + (row.querySelector('.gb-acct-product__label') || {}).textContent + '</p>' +
+                '<p class="gb-acct-empty" style="font-size:12px">Add this product to the "Add Items" collection to edit its options.</p>' +
+              '</div>' +
+              '<div class="gb-acct-qty">' +
+                '<button class="gb-acct-qty__btn gb-acct-qty__btn--down" type="button" data-acct-qty="down" aria-label="Decrease quantity">-</button>' +
+                '<input class="gb-acct-qty__value" type="number" inputmode="numeric" min="0" step="1" value="' + qty + '" data-acct-qty-value aria-label="Quantity">' +
+                '<button class="gb-acct-qty__btn gb-acct-qty__btn--up" type="button" data-acct-qty="up" aria-label="Increase quantity">+</button>' +
+              '</div>' +
+            '</div>';
+          attachQtyControls(panel);
+          syncEditCta(panel);
+          return;
+        }
+        // Render the single card, preselect current variant options.
+        grid.innerHTML = '';
+        var card = renderAddProductCard(product);
+        card.setAttribute('data-acct-qty-min', '0');
+        grid.appendChild(card);
+
+        // Pre-select each option to match the current variant.
+        var current = (product.variants || []).find(function (v) { return String(v.id) === String(variantId); });
+        if (current) {
+          card.querySelectorAll('.gb-acct-prod__select').forEach(function (sel, i) {
+            var key = 'option' + (i + 1);
+            var val = current[key];
+            if (val) sel.value = val;
+          });
+          updateCardPrice(card, product);
+        }
+        // Preset qty
+        var qtyEl = card.querySelector('[data-acct-qty-value]');
+        if (qtyEl) qtyEl.value = qty;
+
+        // Wire selects to refresh price on change.
+        card.querySelectorAll('.gb-acct-prod__select').forEach(function (sel) {
+          if (sel.__bound) return; sel.__bound = true;
+          sel.addEventListener('change', function () {
+            updateCardPrice(card, product);
+            syncEditCta(panel);
+          });
+        });
+        attachQtyControls(panel);
+        syncEditCta(panel);
+      },
+      'add-product': function (panel, contract) {
+        var grid = panel.querySelector('.gb-acct-prod-grid');
+        if (!grid || !addProdCardTplHtml) return;
+        grid.innerHTML = '';
+        var eligible = (ADD_PRODUCTS || []).filter(function (p) {
+          return !productAlreadyInContract(p, contract);
+        });
+        if (!eligible.length) {
+          grid.innerHTML = '<p class="gb-acct-empty">No additional products available to add.</p>';
+          return;
+        }
+        eligible.forEach(function (p) {
+          var card = renderAddProductCard(p);
+          grid.appendChild(card);
+        });
+        // Wire option-select change to refresh price + variant id
+        grid.querySelectorAll('.gb-acct-prod').forEach(function (card) {
+          var pid = card.getAttribute('data-product-id');
+          var product = ADD_PRODUCTS.find(function (p) { return String(p.id) === String(pid); });
+          card.querySelectorAll('.gb-acct-prod__select').forEach(function (sel) {
+            if (sel.__bound) return; sel.__bound = true;
+            sel.addEventListener('change', function () { updateCardPrice(card, product); });
+          });
+        });
+        attachQtyControls(panel);
+        syncAddCta(panel);
+      },
+    };
+
+    // Submit handlers -------------------------------------------------------
+    var submit = {
+      'edit-date': function (panel, contract) {
+        var iso = readDateInput(panel.querySelector('#acct-f-date'));
+        if (!iso) return Promise.reject(new Error('invalid_date'));
+        return api('/update-date', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: idOf(contract.id), next_billing_date: iso }),
+        });
+      },
+      'edit-name': function (panel, contract) {
+        var value = (panel.querySelector('#acct-f-name').value || '').trim();
+        return api('/update-attributes', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subscription_id: idOf(contract.id),
+            attributes: [{ key: '_subscription_name', value: value }],
+          }),
+        });
+      },
+      'edit-frequency': function (panel, contract) {
+        var select = panel.querySelector('#acct-f-freq');
+        var sellingPlanId = select && select.value;
+        if (!sellingPlanId) return Promise.reject(new Error('no_plan'));
+        return api('/update-frequency', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: idOf(contract.id), selling_plan_id: sellingPlanId }),
+        });
+      },
+      'skip-next': function (panel, contract) {
+        return api('/skip-next', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: idOf(contract.id) }),
+        });
+      },
+      'need-now': function (panel, contract) {
+        return api('/need-now', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: idOf(contract.id) }),
+        });
+      },
+      'edit-payment': function (panel, contract) {
+        return api('/send-payment-magic-link', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: CUSTOMER_EMAIL }),
+        });
+      },
+      'discount-add': function (panel, contract) {
+        var code = (panel.querySelector('[data-acct-discount-input]').value || '').trim();
+        if (!code) return Promise.reject(new Error('no_code'));
+        return api('/apply-discount', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: idOf(contract.id), code: code }),
+        });
+      },
+      'shipping-form': function (panel, contract) {
+        var g = function (sel) { return (panel.querySelector(sel) || {}).value || ''; };
+        var address = {
+          firstName: g('#acct-sh-first'),
+          lastName: g('#acct-sh-last'),
+          phone: g('#acct-sh-phone'),
+          company: g('#acct-sh-company'),
+          address1: g('#acct-sh-a1'),
+          address2: g('#acct-sh-a2'),
+          city: g('#acct-sh-suburb'),
+          provinceCode: g('#acct-sh-state'),
+          province: g('#acct-sh-state'),
+          zip: g('#acct-sh-post'),
+          country: 'Australia',
+          countryCode: 'AU',
+        };
+        return api('/update-address', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: idOf(contract.id), address: address }),
+        });
+      },
+      'restart': function (panel, contract) {
+        var iso = readDateInput(panel.querySelector('#acct-f-restart'));
+        // Two steps: flip status to ACTIVE, then set the restart date
+        return api('/update-status', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: idOf(contract.id), status: 'ACTIVE' }),
+        }).then(function () {
+          if (!iso) return { ok: true };
+          return api('/update-date', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription_id: idOf(contract.id), next_billing_date: iso }),
+          });
+        });
+      },
+      'cancel-holiday': function (panel, contract) {
+        // Fake-pause per funkyfood pattern: skip upcoming + move billing to
+        // resume date + record _resume_date attribute. Status stays ACTIVE.
+        var hidden = panel.querySelector('[data-acct-cal-input]');
+        var iso = readDateInput(hidden);
+        if (!iso) return Promise.reject(new Error('no_resume_date'));
+        var subId = idOf(contract.id);
+        return api('/skip-next', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: subId }),
+        }).then(function () {
+          return api('/update-date', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription_id: subId, next_billing_date: iso }),
+          });
+        }).then(function () {
+          return api('/update-attributes', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subscription_id: subId,
+              attributes: [
+                { key: '_resume_date', value: iso },
+                { key: '_pause_reason', value: 'going-away' },
+              ],
+            }),
+          });
+        });
+      },
+      'cancel-discount': function (panel, contract) {
+        // Apply a fixed retention code. Client can change GB_RETENTION_20
+        // in Appstle admin to whatever discount code they configure.
+        return api('/apply-discount', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: idOf(contract.id), code: 'GB_RETENTION_20' }),
+        });
+      },
+      'cancel-reason': function (panel, contract) {
+        // Frontend routing (verified against live account.js):
+        //   going-away   → jumps to cancel-holiday   (branch handles it)
+        //   too-expensive → jumps to cancel-discount (branch handles it)
+        //   others (5)   → CTA becomes "Cancel", frontend only closes the
+        //                  modal. We call /update-status CANCELLED here.
+        var picked = panel.querySelector('input[name="acct-cancel-reason"]:checked');
+        var reason = picked ? picked.value : '';
+        var subId = idOf(contract.id);
+        // Always record the reason.
+        var writeReason = api('/update-attributes', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subscription_id: subId,
+            attributes: [{ key: '_cancel_reason', value: reason }],
+          }),
+        });
+        if (reason === 'going-away' || reason === 'too-expensive') return writeReason;
+        return writeReason.then(function () {
+          return api('/update-status', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription_id: subId, status: 'CANCELLED' }),
+          });
+        });
+      },
+      'edit-product': function (panel, contract) {
+        var subId = idOf(contract.id);
+        var lineId = panel.getAttribute('data-acct-line-id');
+        var origVariantId = panel.getAttribute('data-acct-line-orig-variant-id');
+        var origQty = Number(panel.getAttribute('data-acct-line-orig-qty') || '0');
+        var qtyEl = panel.querySelector('[data-acct-qty-value]');
+        var qty = Number((qtyEl && qtyEl.value) || '0');
+        var card = panel.querySelector('.gb-acct-prod');
+        var newVariantId = card && card.getAttribute('data-variant-id');
+        var variantChanged = newVariantId && String(newVariantId) !== String(origVariantId);
+
+        // Case 1: qty dropped to zero → remove line entirely.
+        if (qty === 0) {
+          return api('/remove-line-item', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription_id: subId, line_id: lineId }),
+          });
+        }
+        // Case 2: variant swap → replace-variants-v3 (also handles qty change).
+        if (variantChanged) {
+          var sellingPlanId = contract.deliveryPolicy && contract.deliveryPolicy.sellingPlanId;
+          return api('/replace-variants', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subscription_id: subId,
+              old_variants: [{ variant_id: origVariantId, quantity: origQty }],
+              new_variants: [{ variant_id: newVariantId, quantity: qty, selling_plan_id: sellingPlanId }],
+            }),
+          });
+        }
+        // Case 3: only qty changed → update quantity in place.
+        if (qty !== origQty) {
+          return api('/update-line-item', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subscription_id: subId,
+              line_id: lineId,
+              quantity: qty,
+              variant_id: origVariantId,
+            }),
+          });
+        }
+        return Promise.resolve({ ok: true, j: { ok: true } });
+      },
+      'add-product': function (panel, contract) {
+        var cards = panel.querySelectorAll('.gb-acct-prod');
+        var subId = idOf(contract.id);
+        var chain = Promise.resolve();
+        cards.forEach(function (card) {
+          var qty = Number((card.querySelector('[data-acct-qty-value]') || {}).value || '0');
+          if (qty <= 0) return;
+          var variantId = card.getAttribute('data-variant-id');
+          if (!variantId) return;
+          chain = chain.then(function () {
+            return api('/add-line-item', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                subscription_id: subId,
+                variant_id: variantId,
+                quantity: qty,
+              }),
+            });
+          });
+        });
+        return chain;
+      },
+      'cancel-offer-skip': function (panel, contract) {
+        // "Continue to Skip" — skip 1 or 2 upcoming orders.
+        var picked = panel.querySelector('input[name="acct-skip-count"]:checked');
+        var count = picked && picked.value === 'skip-2' ? 2 : 1;
+        var subId = idOf(contract.id);
+        var chain = Promise.resolve();
+        for (var i = 0; i < count; i++) {
+          chain = chain.then(function () {
+            return api('/skip-next', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ subscription_id: subId }),
+            });
+          });
+        }
+        return chain;
+      },
+    };
+
+    submit['discount-applied'] = submit['discount-add'];
+
+    // Chip remove (discount) — separate flow from save/apply/cta.
+    document.addEventListener('click', function (e) {
+      if (!e.target || !e.target.closest) return;
+      var btn = e.target.closest('[data-acct-chip-remove]');
+      if (!btn) return;
+      var contract = currentContract();
+      if (!contract) return;
+      var discId = currentDiscountId(contract);
+      if (!discId) return;
+      btn.classList.add('is-loading');
+      btn.setAttribute('data-acct-busy', '');
+      api('/remove-discount', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription_id: idOf(contract.id), discount_id: discId }),
+      }).then(refetchAndRerender).finally(function () {
+        if (btn.isConnected) { btn.classList.remove('is-loading'); btn.removeAttribute('data-acct-busy'); }
+      });
+    }, true);
+
+    // Refetch subscriptions and rerender the detail view for the current id.
+    function refetchAndRerender() {
+      return api('/subscriptions').then(function (res) {
+        if (!res.ok || !res.j.ok) return;
+        var list = res.j.subscriptions || [];
+        list.forEach(function (c) { contractCache[idOf(c.id)] = c; });
+        // Update card in place (cheapest: rebuild the whole list — still fast).
+        renderList(list);
+        var id = currentSubParam();
+        if (id && contractCache[id]) renderDetail(contractCache[id]);
+      });
+    }
+
+    // Capture click on any modal trigger to prefill *before* it opens.
+    // Also remember which trigger opened the modal so we can toggle its
+    // loading state when the modal's save action fires.
+    document.addEventListener('click', function (e) {
+      if (!e.target || !e.target.closest) return;
+      var trigger = e.target.closest('[data-acct-modal]');
+      if (!trigger) return;
+      var name = trigger.getAttribute('data-acct-modal');
+      var panel = document.querySelector('[data-acct-modal-panel="' + name + '"]');
+      if (panel) panel.__gbTrigger = trigger;
+      var handler = prefill[name];
+      if (!handler) return;
+      var contract = currentContract();
+      if (!contract) return;
+      if (!panel) return;
+      try { handler(panel, contract); } catch (err) { console.warn('prefill', name, err); }
+    }, true);
+
+    // Capture click on any modal primary action ([data-acct-save],
+    // [data-acct-apply], [data-acct-cta]) to POST *before* frontend closes
+    // / switches modals.
+    document.addEventListener('click', function (e) {
+      if (!e.target || !e.target.closest) return;
+      var save = e.target.closest('[data-acct-save], [data-acct-apply], [data-acct-cta]');
+      if (!save) return;
+      var panel = save.closest('[data-acct-modal-panel]');
+      if (!panel) return;
+      var name = panel.getAttribute('data-acct-modal-panel');
+      var handler = submit[name];
+      if (!handler || save.disabled || save.hasAttribute('data-acct-busy')) return;
+      var contract = currentContract();
+      if (!contract) return;
+      // Mark the originating trigger as loading. renderDetail() rebuilds the
+      // DOM on refetch success so the class naturally clears. On failure we
+      // clear it manually below.
+      var trigger = panel.__gbTrigger;
+      if (trigger) { trigger.classList.add('is-loading'); trigger.setAttribute('data-acct-busy', ''); }
+      var isDiscount = name === 'discount-add' || name === 'discount-applied';
+      var error = panel.querySelector('[data-acct-discount-error]');
+      if (error) error.remove();
+      if (isDiscount) { save.classList.add('is-loading'); save.setAttribute('data-acct-busy', ''); }
+      function showDiscountError() {
+        if (!isDiscount) return;
+        var message = document.createElement('p');
+        message.setAttribute('data-acct-discount-error', '');
+        message.setAttribute('role', 'alert');
+        message.textContent = 'This discount code could not be applied. Please check it and try again.';
+        panel.querySelector('.gb-acct-discount').appendChild(message);
+      }
+      // Discount UI waits for the API result; other actions keep their choreography.
+      Promise.resolve()
+        .then(function () { return handler(panel, contract); })
+        .then(function (res) {
+          if (!res || !res.ok || (res.j && res.j.ok === false)) {
+            console.warn('acct save', name, 'failed', res && res.j);
+            if (isDiscount) { showDiscountError(); return; }
+          }
+          return refetchAndRerender().then(function () {
+            if (isDiscount && window.gumiAcct && window.gumiAcct.modal) window.gumiAcct.modal.close();
+          });
+        })
+        .catch(function (err) { console.error('acct save', name, err); showDiscountError(); })
+        .finally(function () {
+          if (isDiscount) { save.classList.remove('is-loading'); save.removeAttribute('data-acct-busy'); }
+          if (trigger && trigger.isConnected) {
+            trigger.classList.remove('is-loading');
+            trigger.removeAttribute('data-acct-busy');
+          }
+        });
+    }, true);
+
+    // ────────── Overview: current order card ──────────
+    //
+    // Design has three states baked in via [data-state=...] spans; frontend
+    // CSS uses BOTH `.gb-acct-order--{state}` and `[data-acct-order-state]`
+    // selectors, so we must swap the class AND the attribute together.
+
+    var currentOrderEl = document.querySelector('.gb-acct-order');
+    // Hide until we know the real state — avoids a flash of the design's
+    // default `--shipped` variant before data lands.
+    if (currentOrderEl) {
+      currentOrderEl.hidden = true;
+      currentOrderEl.style.display = 'none';
+    }
+
+    function setCurrentOrderState(state) {
+      if (!currentOrderEl) return;
+      ['preparing', 'shipped', 'renewal'].forEach(function (s) {
+        currentOrderEl.classList.remove('gb-acct-order--' + s);
+      });
+      currentOrderEl.classList.add('gb-acct-order--' + state);
+      currentOrderEl.setAttribute('data-acct-order-state', state);
+      currentOrderEl.hidden = false;
+      currentOrderEl.style.display = '';
+    }
+
+    function pickActiveSub(subs) {
+      return (subs || []).find(function (s) {
+        return String(s.status || '').toUpperCase() === 'ACTIVE';
+      }) || (subs && subs[0]) || null;
+    }
+
+    function mostRecentOrder() {
+      var live = (CUSTOMER_ORDERS || []).filter(function (o) { return !o.cancelled_at; });
+      live.sort(function (a, b) {
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+      return live[0] || null;
+    }
+
+    // Set the status label / date / note / CTA text for a given state.
+    function fillCurrentOrder(state, opts) {
+      if (!currentOrderEl) return;
+      // Status text (spans keyed by data-state="preparing|shipped|renewal")
+      var statusEls = currentOrderEl.querySelectorAll('.gb-acct-order__status span[data-state]');
+      statusEls.forEach(function (el) {
+        var s = el.getAttribute('data-state');
+        if (s === state) el.textContent = opts.statusText || el.textContent;
+      });
+      var noteEls = currentOrderEl.querySelectorAll('.gb-acct-order__note span[data-state]');
+      noteEls.forEach(function (el) {
+        var s = el.getAttribute('data-state');
+        if (s === state && opts.noteText) el.textContent = opts.noteText;
+      });
+      var cta = currentOrderEl.querySelector('.gb-acct-order__cta');
+      if (cta) {
+        if (opts.ctaHref) cta.setAttribute('href', opts.ctaHref);
+        if (opts.orderId) cta.setAttribute('data-acct-order-id', opts.orderId);
+        else cta.removeAttribute('data-acct-order-id');
+      }
+    }
+
+    function shortMonthDay(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' });
+    }
+
+    function renderCurrentOrder(subs) {
+      if (!currentOrderEl) return;
+      var order = mostRecentOrder();
+      var sub = pickActiveSub(subs);
+
+      // Consider an order "current" if created within the last 60 days.
+      var recent = false;
+      if (order) {
+        var days = (Date.now() - new Date(order.created_at).getTime()) / 86400000;
+        recent = days >= 0 && days <= 60;
+      }
+
+      if (recent && order.fulfillment_status === 'fulfilled') {
+        setCurrentOrderState('shipped');
+        fillCurrentOrder('shipped', {
+          statusText: 'It\'s been shipped',
+          ctaHref: '?order=' + order.id + '#order',
+          orderId: order.id,
+        });
+      } else if (recent) {
+        setCurrentOrderState('preparing');
+        fillCurrentOrder('preparing', {
+          statusText: 'Preparing, ' + shortMonthDay(order.created_at),
+          ctaHref: '?order=' + order.id + '#order',
+          orderId: order.id,
+        });
+      } else if (sub && sub.nextBillingDate) {
+        setCurrentOrderState('renewal');
+        fillCurrentOrder('renewal', {
+          statusText: 'Renewal Date, ' + shortMonthDay(sub.nextBillingDate),
+          noteText: 'You can make changes up until ' + shortMonthDay(sub.nextBillingDate) + ', 6:59 AM',
+          ctaHref: '?sub=' + idOf(sub.id) + '#detail',
+        });
+      } else {
+        // No orders and no active sub — hide the card entirely.
+        currentOrderEl.hidden = true;
+      }
+    }
+
+    // ────────── Order detail view (#order) ──────────
+
+    var orderView = document.querySelector('[data-acct-view="order"]');
+    var orderPage = orderView && orderView.querySelector('.gb-acct-stack');
+    var orderPageHtml = orderPage && orderPage.innerHTML;
+
+    // Snapshot the line-item row as a template (first hardcoded row).
+    var orderItemTplHtml = '';
+    if (orderPage) {
+      var firstItem = orderPage.querySelector('.gb-acct-item');
+      if (firstItem) orderItemTplHtml = firstItem.outerHTML;
+    }
+
+    // Loading state on boot.
+    if (orderPage) {
+      orderPage.innerHTML =
+        '<div class="gb-acct-card"><div class="gb-acct-card__body">' +
+          '<p class="gb-acct-empty">Loading…</p>' +
+        '</div></div>';
+    }
+
+    function findOrder(id) {
+      if (id == null) return null;
+      var idStr = String(id);
+      return (CUSTOMER_ORDERS || []).find(function (o) { return String(o.id) === idStr; }) || null;
+    }
+
+    function formatAddress(a) {
+      if (!a) return '';
+      var parts = [];
+      if (a.name) parts.push(a.name);
+      if (a.address1) parts.push(a.address1);
+      if (a.address2) parts.push(a.address2);
+      var line3 = [a.city, a.province_code || a.province, a.zip].filter(Boolean).join(' ');
+      if (line3) parts.push(line3);
+      if (a.country) parts.push(a.country);
+      return parts.join(', ');
+    }
+
+    function statusLabel(order) {
+      if (order.cancelled_at) return 'Cancelled';
+      if (order.fulfillment_status_label) return order.fulfillment_status_label;
+      if (order.financial_status === 'paid') return 'Preparing';
+      return order.financial_status_label || 'Processing';
+    }
+
+    function renderOrderDetail(order) {
+      if (!orderPage || !orderPageHtml) return;
+      if (!order) {
+        orderPage.innerHTML =
+          '<div class="gb-acct-card"><div class="gb-acct-card__body">' +
+            '<p class="gb-acct-empty">Order not found.</p>' +
+          '</div></div>';
+        return;
+      }
+      // Restore the full structure.
+      orderPage.innerHTML = orderPageHtml;
+
+      // Title
+      var title = orderView.querySelector('.gb-acct-intro__title');
+      if (title) title.textContent = 'Order ' + (order.name || '');
+
+      var cur = order.currency || 'AUD';
+
+      // Top rows: Date / Status / Total
+      var rows = orderPage.querySelectorAll('.gb-acct-hist__row');
+      if (rows[0]) rows[0].querySelector('.gb-acct-hist__value').textContent = formatDate(order.created_at);
+      if (rows[1]) rows[1].querySelector('.gb-acct-hist__value').textContent = statusLabel(order);
+      if (rows[2]) rows[2].querySelector('.gb-acct-hist__value').textContent = moneyCents(order.total_price, cur);
+
+      // Items — rebuild from template
+      var itemsWrap = orderPage.querySelector('.gb-acct-items');
+      if (itemsWrap && orderItemTplHtml) {
+        itemsWrap.innerHTML = '';
+        (order.line_items || []).forEach(function (li) {
+          var w = document.createElement('div');
+          w.innerHTML = orderItemTplHtml;
+          var row = w.firstElementChild;
+
+          var thumb = row.querySelector('.gb-acct-item__thumb');
+          if (thumb && li.image) thumb.setAttribute('src', li.image);
+          else if (thumb) thumb.removeAttribute('src');
+
+          var name = row.querySelector('.gb-acct-item__name');
+          if (name) name.textContent = li.product_title || li.title || '';
+
+          var flavour = row.querySelector('.gb-acct-item__flavour');
+          if (flavour) flavour.textContent = (li.variant_title && li.variant_title !== 'Default Title') ? li.variant_title : '';
+
+          var qty = row.querySelector('.gb-acct-item__qty');
+          if (qty) qty.textContent = 'Quantity: ' + (li.quantity || 1);
+
+          // Subscription vs one-off tag
+          var tag = row.querySelector('.gb-acct-item__tag span');
+          if (tag) tag.textContent = li.is_subscription ? 'Subscription' : 'One-off purchase';
+
+          var price = row.querySelector('.gb-acct-item__price');
+          if (price) price.textContent = moneyCents(li.price, cur);
+
+          var was = row.querySelector('.gb-acct-item__was');
+          if (was) {
+            if (li.compare_at_price && Number(li.compare_at_price) > Number(li.price)) {
+              was.textContent = moneyCents(li.compare_at_price, cur);
+            } else {
+              was.remove();
+            }
+          }
+
+          itemsWrap.appendChild(row);
+        });
+      }
+
+      // Summary recap
+      var recapRows = orderPage.querySelectorAll('.gb-acct-recap__row .gb-acct-recap__value');
+      if (recapRows[0]) recapRows[0].textContent = moneyCents(order.subtotal_price, cur);
+      if (recapRows[1]) recapRows[1].textContent = '-' + moneyCents(order.total_discounts, cur);
+      if (recapRows[2]) recapRows[2].textContent = moneyCents(order.shipping_price, cur);
+      var recapTotal = orderPage.querySelector('.gb-acct-recap__total');
+      if (recapTotal) recapTotal.querySelectorAll('span')[1].textContent = moneyCents(order.total_price, cur);
+
+      // Shipping / Billing info
+      var infos = orderPage.querySelectorAll('.gb-acct-info__value');
+      var infoLabels = orderPage.querySelectorAll('.gb-acct-info__label');
+      infoLabels.forEach(function (lbl, i) {
+        var val = infos[i];
+        if (!val) return;
+        var t = (lbl.textContent || '').toLowerCase();
+        if (t.indexOf('shipping address') >= 0) val.textContent = formatAddress(order.shipping_address);
+        else if (t.indexOf('shipping method') >= 0) val.textContent = order.shipping_method ? (order.shipping_method.title + ': ' + moneyCents(order.shipping_method.price, cur)) : '';
+        else if (t.indexOf('billing address') >= 0) val.textContent = formatAddress(order.billing_address);
+      });
+      // Payment method card — Liquid doesn't expose brand/last4; hide the row.
+      var payCard = orderPage.querySelector('.gb-acct-info__card');
+      if (payCard) payCard.textContent = 'On file';
+
+      // Download Invoice — client-side PDF via html2pdf (lazy-loaded on click).
+      var invoiceBtn = orderPage.querySelector('.gb-acct-card__foot .gb-acct-btn');
+      if (invoiceBtn) {
+        invoiceBtn.setAttribute('data-acct-invoice', order.id);
+      }
+    }
+
+    // Lazy-load jsPDF on first Download Invoice click. html2pdf.bundle also
+    // exposes window.jspdf.jsPDF so we reuse the same script.
+    var _pdfLibPromise = null;
+    function loadHtml2Pdf() {
+      if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve();
+      if (_pdfLibPromise) return _pdfLibPromise;
+      _pdfLibPromise = new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
+        s.onload = function () { resolve(); };
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+      return _pdfLibPromise;
+    }
+
+    function buildInvoicePdf(order) {
+      var jsPDF = window.jspdf.jsPDF;
+      var doc = new jsPDF({ unit: 'mm', format: 'a4' });
+      var cur = order.currency || 'AUD';
+      var m = moneyCents;
+      var margin = 18;
+      var y = margin;
+      var pageW = doc.internal.pageSize.getWidth();
+      var contentW = pageW - margin * 2;
+
+      function line() { doc.setDrawColor(220); doc.line(margin, y, margin + contentW, y); y += 6; }
+      function h1(text) { doc.setFontSize(18); doc.setFont('helvetica', 'bold'); doc.text(text, margin, y); y += 8; }
+      function h2(text) { doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.text(text, margin, y); y += 6; }
+      function p(label, value) {
+        doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+        doc.setTextColor(120); doc.text(label, margin, y);
+        doc.setTextColor(20); doc.text(String(value || ''), margin + 45, y);
+        y += 5;
+      }
+      function row(left, right) {
+        doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+        doc.setTextColor(60); doc.text(String(left), margin, y);
+        doc.setTextColor(20); doc.text(String(right), margin + contentW, y, { align: 'right' });
+        y += 5;
+      }
+      function pMulti(label, text) {
+        // Label + wrapped multi-line value aligned to the value column.
+        doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+        doc.setTextColor(120); doc.text(label, margin, y);
+        doc.setTextColor(20);
+        var lines = doc.splitTextToSize(String(text || ''), contentW - 45);
+        doc.text(lines, margin + 45, y);
+        y += Math.max(lines.length, 1) * 5;
+      }
+      function space(n) { y += (n || 4); }
+      function pageBreakIfNeeded(need) {
+        if (y + (need || 20) > doc.internal.pageSize.getHeight() - margin) {
+          doc.addPage(); y = margin;
+        }
+      }
+
+      h1('Order ' + (order.name || ''));
+      space(2);
+
+      p('Order Date:', formatDate(order.created_at));
+      p('Status:', statusLabel(order));
+      p('Total:', m(order.total_price, cur));
+      space(2); line();
+
+      h2('Order Items');
+      (order.line_items || []).forEach(function (li) {
+        pageBreakIfNeeded(20);
+        var name = (li.product_title || li.title || '');
+        var variant = (li.variant_title && li.variant_title !== 'Default Title') ? ' — ' + li.variant_title : '';
+        var tag = li.is_subscription ? '[Subscription]' : '[One-off]';
+        row(name + variant, m(li.price, cur));
+        doc.setFontSize(9); doc.setTextColor(120);
+        doc.text('Qty ' + (li.quantity || 1) + '  ' + tag, margin, y);
+        y += 5;
+      });
+      space(2); line();
+
+      h2('Order Summary');
+      row('Subtotal', m(order.subtotal_price, cur));
+      if (Number(order.total_discounts) > 0) row('Promo code discount', '-' + m(order.total_discounts, cur));
+      row('Shipping', m(order.shipping_price, cur));
+      space(1);
+      doc.setFont('helvetica', 'bold'); row('Total', m(order.total_price, cur));
+      doc.setFont('helvetica', 'normal');
+      space(2); line();
+
+      pageBreakIfNeeded(30);
+      h2('Shipping Information');
+      pMulti('Address:', formatAddress(order.shipping_address));
+      if (order.shipping_method) pMulti('Method:', order.shipping_method.title + ': ' + m(order.shipping_method.price, cur));
+      space(2); line();
+
+      pageBreakIfNeeded(30);
+      h2('Payment Information');
+      pMulti('Method:', 'On file');
+      pMulti('Billing:', formatAddress(order.billing_address));
+
+      doc.save('Invoice-' + (order.name || order.id).replace(/^#/, '') + '.pdf');
+    }
+
+    document.addEventListener('click', function (e) {
+      if (!e.target || !e.target.closest) return;
+      var btn = e.target.closest('[data-acct-invoice]');
+      if (!btn) return;
+      e.preventDefault();
+      var orderId = btn.getAttribute('data-acct-invoice');
+      var order = findOrder(orderId);
+      if (!order) return;
+      var target = orderPage && orderPage.querySelector('.gb-acct-card');
+      if (!target) return;
+      btn.classList.add('is-loading');
+      btn.setAttribute('data-acct-busy', '');
+      loadHtml2Pdf().then(function () {
+        buildInvoicePdf(order);
+      }).catch(function (err) {
+        console.error('invoice pdf failed', err);
+      }).finally(function () {
+        if (btn.isConnected) {
+          btn.classList.remove('is-loading');
+          btn.removeAttribute('data-acct-busy');
+        }
+      });
+    }, true);
+
+    // URL param helpers for ?order=
+    function currentOrderParam() { return new URL(window.location.href).searchParams.get('order'); }
+    function setOrderParam(id) {
+      var url = new URL(window.location.href);
+      if (id) { url.searchParams.set('order', id); url.searchParams.delete('sub'); }
+      else url.searchParams.delete('order');
+      history.replaceState(null, '', url.toString());
+    }
+
+    // Intercept "View Order" links inside order history — keep users on-page.
+    document.addEventListener('click', function (e) {
+      if (!e.target || !e.target.closest) return;
+      var link = e.target.closest('[data-acct-order-id]');
+      if (!link) return;
+      var order = findOrder(link.getAttribute('data-acct-order-id'));
+      if (!order) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setOrderParam(order.id);
+      renderOrderDetail(order);
+      // Trigger the frontend's tab switch.
+      var goto = document.createElement('button');
+      goto.setAttribute('data-acct-goto', 'order');
+      goto.style.display = 'none';
+      document.body.appendChild(goto);
+      goto.click();
+      goto.remove();
+    }, true);
+
+    function restoreOrderFromUrl() {
+      if (window.location.hash !== '#order') return;
+      var id = currentOrderParam();
+      if (!id) return;
+      var order = findOrder(id);
+      if (order) renderOrderDetail(order);
+    }
+
+    // On load, if hash is #detail and ?sub= is present, restore detail once
+    // the list has hydrated the cache.
+    function restoreDetailFromUrl() {
+      if (window.location.hash !== '#detail') return;
+      var id = currentSubParam();
+      if (!id) return;
+      var contract = contractCache[id];
+      if (contract) renderDetail(contract);
+    }
+
+
+    function boot() {
+      api('/subscriptions').then(function (res) {
+        if (!res.ok || !res.j.ok) {
+          console.warn('gumiAcctData: subscriptions fetch failed', res.j);
+          subsList.innerHTML = '<p class="gb-acct-empty">Couldn\'t load subscriptions right now. Please refresh.</p>';
+          return;
+        }
+        renderList(res.j.subscriptions || []);
+        renderCurrentOrder(res.j.subscriptions || []);
+        restoreDetailFromUrl();
+        restoreOrderFromUrl();
+      }).catch(function (err) {
+        console.error('gumiAcctData:', err);
+      });
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
+  })();
+</script>

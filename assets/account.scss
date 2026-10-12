@@ -22,7 +22,7 @@
 // ship on their own schedules.
 // ============================================================================
 
-$build-acct: "20260911-a19";
+$build-acct: "20261009-a73";
 
 // ==========================================================================
 // Variables
@@ -137,6 +137,9 @@ $t-fast:      0.15s;   // icons, underlines — small areas
 $t-base:      0.2s;    // button / link colour, the default
 $t-slow:      0.3s;    // card lift + shadow, larger area so slower
 $t-panel:     0.35s;   // header dropdown: height / background / chevron must match
+// View swap. Client called $t-slow too quick here (2026-09-17): this moves the
+// whole right column, not a card, so it runs longer than any of the above.
+$t-view:      0.5s;
 // Mobile drawer. Lifted from funkyfood's .header-mobile-menu at the client's
 // request — the slide is long and heavily eased, quite unlike $t-panel.
 $t-drawer:    0.7s;
@@ -395,6 +398,7 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 // ==========================================================================
 
 .gb-acct {
+  overflow-x: clip;
   position: relative;
   min-height: 40vh;
   // Site gutters, same --pad-x as .gb-header__bar. The band and the wave below
@@ -435,10 +439,8 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 // Account header — 2284:34627 / 34854 desktop, 2284:34534 / 34804 mobile
 // ==========================================================================
 
-// This replaces the site header rather than restyling it: the board's header is
-// a different component (logo + two icons, no Menu / Shop now / cart) and its
-// burger opens the account menu, not the site menu (Figma note 2284:34518).
-// customstyle.scss is untouched.
+// Account top bar: logo left, account dropdown and hamburger right. The configured site menu and
+// main.js handle the panel; customstyle.scss remains unchanged.
 
 .gb-acct-header {
   position: sticky;
@@ -446,20 +448,13 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   z-index: $z-header;
   background: $c-lime-150;
 
-  transition: trans(background-color, box-shadow);
-  transition-duration: $t-panel;
+  border-bottom: 0;
 
   // The rule is strokeAlign INSIDE on the board, so it has to be painted inside
   // the 80/64 box -- border-bottom would make the header a pixel taller.
-  // Desktop closed carries none at all (34627); the phone shows a half-pixel
-  // (34534) and both boards show a full one once the menu is down.
+  // Desktop carries none at all (34627), the phone shows a half-pixel (34534).
+  // ⚠ Task 33 dropped the board's open state: the bar keeps one colour now.
   @include narrow { box-shadow: inset 0 -0.5px 0 $c-sand; }
-
-  // The board lightens the whole bar while the menu is down (34854 / 34804).
-  &.is-open {
-    background: $c-acct-menu-bg;
-    box-shadow: inset 0 -1px 0 $c-sand;
-  }
 }
 
 .gb-acct-header__bar {
@@ -476,58 +471,105 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
 .gb-acct-header__logo {
   display: block;
+  width: 123px;
   height: 32px;
+  flex: none;
   color: $c-green;
 
-  transition: trans(opacity);
+  svg, img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  @include narrow { width: 92px; height: 24px; }
+}
 
-  svg { display: block; width: auto; height: 100%; }
+.gb-acct-header__toggle {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  gap: 0;
 
-  @include hover { opacity: 0.7; }
-
-  @include narrow { height: 24px; }
-  @include tablet { height: fluid(24px, 32px); }
+  .gb-icon-menu { display: block; }
+  .gb-icon-close { display: none; }
+  .gb-acct-header.is-open & {
+    .gb-icon-menu { display: none; }
+    .gb-icon-close { display: block; }
+  }
 }
 
 .gb-acct-header__icons {
   display: flex;
   align-items: center;
-  column-gap: 16px;
+  column-gap: 24px;
+  // so --account below can run the full bar height
+  align-self: stretch;
 }
 
+// Account icon hover and click both expose the existing account dropdown.
 .gb-acct-header__link {
   display: block;
   width: 24px;
   height: 24px;
   color: $c-green;
 
-  transition: trans(color, opacity);
-
   svg { display: block; width: 100%; height: 100%; }
-
-  @include hover { opacity: 0.6; }
 }
 
 // Line 115: the lime rule under the account icon marks the section you are in.
 .gb-acct-header__link--account {
   position: relative;
+  // Task 29: the panel is a child of this box now, and the box runs the whole bar
+  // height so the pointer can travel from the icon down into the panel without
+  // ever leaving the hover area. The icon itself stays 24.
+  height: auto;              // release the base 24, or align-self cannot stretch
+  align-self: stretch;
+  display: flex;
+  align-items: center;
 
+  svg { height: 24px; }
+
+  // 34578 (closed) draws no rule under the icon; 34805 (open) does. So the bar
+  // is a hover state, not a current-page marker.
   &::after {
     content: "";
     position: absolute;
     left: 0;
     right: 0;
-    top: calc(100% + 5px);
+    // the box is taller than the icon now: centre + half the icon + the board's 5
+    top: calc(50% + 17px);
     height: 2px;
     background: $c-lime;
+    opacity: 0;
+    transition: trans(opacity);
+  }
+
+  @include hover { &::after { opacity: 1; } }
+}
+
+// Desktop hover and the explicit toggle share the same panel.
+@media (hover: hover) {
+  .gb-acct-header__link--account:hover::after { opacity: 1; }
+
+  .gb-acct-header:has(.gb-acct-header__link--account:hover) .gb-acct-menu,
+  .gb-acct-menu:hover {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
   }
 }
 
 .gb-acct-menu {
+  opacity: 0;
+  visibility: hidden;
+  transition: trans(opacity), visibility 0s linear $t-base;
   position: absolute;
   top: 100%;
-  right: 0;
   width: 221px;
+  // The containing block is the account icon now, not the header. Reach back out
+  // to where the header's content box ends: 24 (the icons gap) + 24 (the burger)
+  // + the container's own gutter, which keeps the panel flush right as it was.
+  // ⚠ tracks .gb-acct-header__icons' column-gap -- r25check catches a mismatch.
+  right: calc(-48px - var(--pad-x));
   padding-block: 4px;
   background: $c-acct-menu-bg;
   // 8px on the bottom-left only: the panel hangs off the header and sits flush
@@ -536,8 +578,30 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   box-shadow: 0 10.29px 8px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 
+  &[hidden] { display: block; }
+
   @include narrow { width: 164px; }
   @include tablet { width: fluid(164px, 221px); }
+}
+
+[data-acct-menu-toggle] {
+  display: block;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+[data-acct-menu-open] {
+  &::after { opacity: 1; }
+  .gb-acct-menu {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
+  }
 }
 
 .gb-acct-menu__list {
@@ -566,6 +630,39 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 // (34854 vs 34804). One item, the tail drops out below the phone breakpoint.
 .gb-acct-menu__more {
   @include narrow { display: none; }
+}
+
+.gb-footer__logo {
+  transition: none;
+  @include hover { opacity: 1; }
+}
+
+// ==========================================================================
+// Select — ul/li dropdown drawn over the native control
+// ==========================================================================
+
+// main.js selectBox draws every <select data-select> as .gb-select -- the same
+// button + ul listbox the enquiry and cart selects use, styled in
+// customstyle.scss. Only the fit into the account's field belongs here.
+.gb-acct-field__control .gb-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+// The button rides customstyle's .gb-field__input, whose ink is one step darker
+// than the account's own fields.
+.gb-acct-field__control .gb-select__button { color: $c-gray-600; }
+
+.gb-acct .gb-select__arrow,
+.gb-acct-modal .gb-select__arrow {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+
+  path {
+    stroke: $c-gray-700;
+    stroke-width: 2px;
+  }
 }
 
 // ==========================================================================
@@ -602,6 +699,87 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   }
 }
 
+
+// [hidden] is display:none and cannot transition, so the swap plays one-shot
+// animations instead. view._enter()/._leave() strip the classes on animationend
+// -- left on, the fill state would freeze every later transition in the subtree.
+// The blanket reduced-motion rule in customstyle already flattens the duration.
+.gb-acct__view.is-entering,
+.gb-acct-auth.is-entering {
+  animation: gb-acct-view-in $t-view $ease-out both;
+}
+
+// The outgoing view is held for the length of one exit animation, out of flow so
+// the incoming one has the space straight away.
+// ⚠ Only views inside this container animate out: the auth page's two <main>s
+// are body children with a footer under them, so taking one out of flow there
+// would jump the page. view._leave() checks for the same hook.
+[data-acct-views] {
+  position: relative;
+}
+
+.gb-acct__view.is-leaving {
+  position: absolute;
+  inset: 0 0 auto;
+  pointer-events: none;
+  animation: gb-acct-view-out $t-view $ease-out both;
+}
+
+@keyframes gb-acct-view-out {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+
+@keyframes gb-acct-view-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+// Phone account views crossfade in place; auth retains its slide.
+@include narrow {
+  :root.acct-live [data-acct-views] > .gb-acct__view[hidden] {
+    display: block;
+    position: absolute;
+    inset: 0;
+    overflow: clip;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .gb-acct-auth.is-entering { animation-name: gb-acct-view-in-right; }
+
+  .gb-acct__view.is-entering { animation-name: gb-acct-view-fade-in; }
+
+  .gb-acct__view.is-entering,
+  .gb-acct__view.is-covering {
+    position: relative;
+    z-index: 1;
+    // Match the shell's 176px band minus its 8px top padding.
+    background: linear-gradient($c-lime-150 168px, $c-cream 168px);
+  }
+
+  .gb-acct__view.is-leaving {
+    z-index: 0;
+    animation-name: gb-acct-view-fade-out;
+  }
+}
+
+@keyframes gb-acct-view-in-right {
+  from { transform: translateX(100%); }
+  to   { transform: none; }
+}
+
+@keyframes gb-acct-view-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes gb-acct-view-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
 // ==========================================================================
 // Desktop side nav — 2284:27843
 // ==========================================================================
@@ -610,11 +788,19 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 // Account Overview and Contact Preferences, the card carries six. Keeping them
 // as two elements is what the boards show; do not try to reflow one into the other.
 .gb-acct-nav {
+  // Sticky rail under the sticky header. align-self must drop the grid default
+  // of stretch: a stretched item is as tall as the row and never scrolls past
+  // its own box, so sticky would never engage.
+  position: sticky;
+  top: calc(#{$h-header} + 48px);
+  align-self: start;
   display: flex;
   flex-direction: column;
   row-gap: 16px;
   width: 241px;
 
+  // Tracks the header's own fluid height plus __inner's fluid padding-top.
+  @include tablet { top: fluid($h-header-mobile, 128px); }
   @include narrow { display: none; }
 }
 
@@ -641,7 +827,23 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
   color: $c-gray-900;
 
+  // 34631 puts a 16.67 dot in a 20 slot and starts the label at 48
+  // (16 padding + 20 slot + 12). The 1.67 either side is the rest of the slot.
+  // The dot stands in for an icon nobody has designed yet (design, 2026-09-17),
+  // so it gets replaced and the slot stays.
+  column-gap: 12px;
+
   transition: trans(background-color, color);
+
+  &::before {
+    content: "";
+    flex: none;
+    width: 16.67px;
+    height: 16.67px;
+    margin-inline: 1.67px;
+    border-radius: 50%;
+    background: $c-gray-200;
+  }
 
   &.is-current { background: $c-gray-050; }
 
@@ -654,7 +856,7 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
   &[aria-disabled="true"] {
     color: $c-gray-400;
-    cursor: default;
+    cursor: not-allowed;
   }
 }
 
@@ -705,7 +907,22 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
   color: $c-gray-900;
 
+  // Same placeholder dot and slot as .gb-acct-nav__link -- Task 34 left the
+  // phone card out because the note named the rail; both were asked for on
+  // 2026-09-17. Replace the two together.
+  column-gap: 12px;
+
   transition: trans(background-color, color);
+
+  &::before {
+    content: "";
+    flex: none;
+    width: 16.67px;
+    height: 16.67px;
+    margin-inline: 1.67px;
+    border-radius: 50%;
+    background: $c-gray-200;
+  }
 
   &:not([aria-disabled="true"]) {
     cursor: pointer;
@@ -714,8 +931,13 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
   &[aria-disabled="true"] {
     color: $c-gray-400;
-    cursor: default;
+    cursor: not-allowed;
   }
+}
+
+.gb-acct-list__arrow {
+  display: none;
+  @include narrow { display: block; flex: none; width: 20px; height: 20px; margin-left: auto; }
 }
 
 // ==========================================================================
@@ -736,9 +958,8 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   display: flex;
   flex-direction: column;
   row-gap: 8px;
-  position: relative;   // the bear decoration anchors here
-  // The board frame is a fixed 136 while its content measures 108, so the extra
-  // 28 is empty space under the text, not a padding value.
+  justify-content: center;   // client (2026-09-17): the spare 28 splits either side
+  position: relative;        // the bear decoration anchors here
   min-height: 136px;
   padding: 24px 32px;
   background: $c-lime-200;
@@ -789,12 +1010,16 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
   [data-state] { display: none; }
 
+  // Three authored states, one shown at a time. Either hook works: the class is
+  // what a template will emit, the attribute is what the preview notes use.
   @each $s in preparing, shipped, renewal {
-    &[data-acct-order-state="#{$s}"] [data-state="#{$s}"] { display: inline; }
+    &[data-acct-order-state="#{$s}"] [data-state="#{$s}"],
+    &.gb-acct-order--#{$s} [data-state="#{$s}"] { display: inline; }
   }
 
   // Renewal inverts the card: light fill, dark text, solid button.
-  &[data-acct-order-state="renewal"] {
+  &[data-acct-order-state="renewal"],
+  &.gb-acct-order--renewal {
     background: $c-lime-300;
 
     .gb-acct-order__label {
@@ -824,7 +1049,7 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 }
 
 // Desktop puts the label and the status on one line (gap 12); the phone stacks
-// them (gap 4).
+// them with no gap at all (client, 2026-09-17).
 .gb-acct-order__head {
   display: flex;
   align-items: center;
@@ -833,7 +1058,6 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   @include narrow {
     flex-direction: column;
     align-items: flex-start;
-    row-gap: 4px;
   }
 }
 
@@ -887,15 +1111,18 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   @include font($font-brand-stack, 16px, 500, 24px, 0);
   color: $c-green;
 
-  transition: trans(background-color, color, opacity);
+  transition: trans(background-color, color);
 
-  @include hover { opacity: 0.85; }
+  @include hover { background: $c-lime; color: $c-green-900; }
 }
 
 // ==========================================================================
 // Refer a Friend card — 2284:27780 desktop / 2284:27639 phone
 // ==========================================================================
 
+// The two boards disagree about the arrow: 27780 centres it against the photo,
+// 27639 puts it on the photo's top edge. Client asked for the top edge while
+// looking at the phone (2026-09-17), so only that width drops the centring.
 .gb-acct-refer {
   display: flex;
   align-items: center;
@@ -905,7 +1132,7 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   background: $c-sand;
   border-radius: $r-sm;
 
-  @include narrow { padding: 16px; }
+  @include narrow { align-items: flex-start; padding: 16px; }
 }
 
 .gb-acct-refer__body {
@@ -932,7 +1159,7 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   flex-direction: column;
   row-gap: 8px;
 
-  @include narrow { row-gap: 4px; }
+  @include narrow { row-gap: 4px; padding-top: 3px; }
 }
 
 .gb-acct-refer__tag {
@@ -969,12 +1196,13 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   background: $c-white;
   color: $c-green;
 
-  transition: trans(background-color, transform);
+  transition: trans(background-color, color);
 
   @include narrow { width: 32px; height: 32px; }
   @include tablet { width: fluid(32px, 40px); height: fluid(32px, 40px); }
 
-  @include hover { transform: translateX(2px); }
+  // Colour only, no nudge: matches .gb-btn, the site-wide hover.
+  @include hover { background: $c-lime; color: $c-green-900; }
 }
 
 .gb-acct-refer__arrow {
@@ -1009,9 +1237,12 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
   @include narrow { display: flex; }
 
+  // .gb-btn's house rule: flip to the lime accent, no lift and no fade.
+  // Darkening green on green is a change the eye does not read.
   @include hover {
-    background: $c-green-900;
-    border-color: $c-green-900;
+    background: $c-lime;
+    border-color: $c-lime;
+    color: $c-green-900;
   }
 }
 
@@ -1021,21 +1252,17 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   height: 24px;
 }
 
-// Greeting decoration 2284:27651 "Artwork": a lime outline with the bear photo
-// on top, clipped to a box smaller than the photo. The photo node carries an
-// 18.47deg rotation, so its 186x164 bbox is NOT the artwork -- 188.9x145.7 is
-// the box before rotation, and it sits centred in the clip (board centres differ
-// by 3px). Desktop lets it hang 41.9 past the card's right edge.
+// Preserve the rotated artwork beyond its original Figma clipping frame.
 .gb-acct-hello__art {
   position: absolute;
   top: 31.4px;
   right: -41.9px;
   width: 113.9px;
   height: 145px;
-  overflow: hidden;
+  overflow: visible;
   pointer-events: none;
 
-  @include narrow { top: 24px; right: 16px; width: 94.2px; height: 120px; }
+  @include narrow { top: -17px; right: 16px; width: 94.2px; height: 120px; }
   @include tablet {
     top: fluid(24px, 31.4px);
     right: fluid(16px, -41.9px);
@@ -1122,10 +1349,10 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   color: $c-green;
   cursor: pointer;
 
-  transition: trans(background-color, transform);
+  transition: trans(background-color, color);
 
   @include narrow { display: flex; }
-  @include hover { transform: translateX(-2px); }
+  @include hover { background: $c-lime; color: $c-green-900; }
 }
 
 // 27860 keeps the back button at every width; 28068 has none at all.
@@ -1270,10 +1497,11 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 .gb-acct-sub__body {
   display: flex;
   flex-direction: column;
-  row-gap: 24px;
+  row-gap: 23.5px;
   padding: 24px;
 
-  @include narrow { padding: 20px; }
+  // The 23.5 is client-set and desktop-only; the phone stays on the board's 24.
+  @include narrow { row-gap: 24px; padding: 20px; }
   @include tablet { padding: fluid(20px, 24px); }
 }
 
@@ -1342,12 +1570,15 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   max-width: 308px;
 }
 
+// The same exported #d9d9d9 swatch .gb-acct-prod__thumb uses (Task 26): the
+// boards draw a flat grey square here, there is no product shot in the design.
 .gb-acct-sub__thumb {
   flex: none;
+  display: block;
   width: 64px;
   height: 64px;
   border-radius: 4.57px;
-  background: $c-gray-200;
+  object-fit: cover;
 }
 
 .gb-acct-sub__product-text {
@@ -1385,7 +1616,7 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 .gb-acct-sub__total {
   display: flex;
   column-gap: 8px;
-  margin: 0;
+  margin: 0 0 0 auto;
   @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
   color: $c-gray-900;
 }
@@ -1414,9 +1645,16 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   color: $c-white;
   cursor: pointer;
 
-  transition: trans(background-color, opacity);
+  transition: trans(background-color, border-color, color);
 
-  @include hover { opacity: 0.85; }
+  // --ghost fills in the same move, the way .gb-btn--lg does.
+  &:not(:disabled) {
+    @include hover {
+      background: $c-lime;
+      border-color: $c-lime;
+      color: $c-green-900;
+    }
+  }
 
   // 27081 draws Save grey until a field actually changes (note 27446). The
   // border has to travel with the fill or a green outline stays behind it.
@@ -1424,10 +1662,38 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
     border-color: $c-gray-150;
     background: $c-gray-150;
     color: $c-gray-400;
-    cursor: default;
-    opacity: 1;
+    cursor: not-allowed;
   }
 }
+
+// Set by gb-account-data.liquid on any button during an API call. Scoped to
+// button: .gb-cart-item (a row) uses the same class for its own overlay.
+// Text is hidden with text-fill-color, not color, so the ring can take currentColor.
+button.is-loading {
+  position: relative;
+  -webkit-text-fill-color: transparent;
+  text-decoration-color: transparent;
+  pointer-events: none;
+
+  > * { visibility: hidden; }
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--gb-spinner-size, 1.25em);
+    height: var(--gb-spinner-size, 1.25em);
+    translate: -50% -50%;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: gb-acct-spin 0.7s linear infinite, gb-acct-spin-in $t-base $ease-out both;
+  }
+}
+
+@keyframes gb-acct-spin { to { transform: rotate(360deg); } }
+@keyframes gb-acct-spin-in { from { opacity: 0; } }
 
 // ==========================================================================
 // Subscription Detail — 2284:27792 desktop, 2284:28330 phone
@@ -1470,6 +1736,11 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 // data the same condition has to set the `disabled` attribute as well, or they
 // stay focusable and are announced as enabled.
 .gb-acct-detail[data-acct-sub-state="cancelled"] {
+  [data-acct-modal="discount-add"],
+  [data-acct-modal="discount-applied"] {
+    @include hover { color: $c-blue; }
+  }
+
   .gb-acct-row .gb-acct-link,
   .gb-acct-product .gb-acct-link {
     color: rgba($c-gray-400, 0.4);
@@ -1485,6 +1756,15 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
     pointer-events: none;
   }
 
+  // pointer-events:none stops these being hit targets at all, so their own
+  // `cursor` never resolves -- the nearest real target is the parent, which is
+  // why the signal has to hang there. Keep both: swapping in a real `disabled`
+  // attribute later makes the element's own rule take over.
+  .gb-acct-row:has(.gb-acct-link),
+  .gb-acct-product:has(.gb-acct-link),
+  *:has(> [data-acct-modal="add-product"]),
+  *:has(> [data-acct-modal="skip-next"]) { cursor: not-allowed; }
+
   .gb-acct-schedule__day {
     border-color: $c-gray-150;
     background: $c-gray-150;
@@ -1498,6 +1778,47 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
     color: $c-coral;
     text-decoration: line-through;
   }
+}
+
+// 28922: skipping the next order greys that one block and puts a line under the
+// button pointing at the date picker. Note 30908 -- only the next order can be
+// skipped -- is why this is :first-child and not a per-block flag.
+// ⚠ Same caveat as the cancelled block above: CSS only makes the button look
+// disabled. Wiring this to real data has to set `disabled` as well.
+.gb-acct-schedule__unskip { display: none; }
+
+.gb-acct-schedule__day.is-skipped,
+.gb-acct-schedule__day[data-acct-skipped] {
+  border-color: $c-gray-150;
+  background: $c-gray-150;
+  color: $c-gray-400;
+}
+
+.gb-acct-schedule[data-acct-skipped] {
+  .gb-acct-schedule__day:first-child {
+    border-color: $c-gray-150;
+    background: $c-gray-150;
+    color: $c-gray-400;
+  }
+
+  [data-acct-modal="skip-next"] {
+    border: 1px solid $c-gray-150;
+    background: $c-gray-150;
+    color: $c-gray-400;
+    pointer-events: none;
+  }
+
+  *:has(> [data-acct-modal="skip-next"]) { cursor: not-allowed; }
+
+  .gb-acct-schedule__unskip { display: block; }
+}
+
+// 28940/28941: one line, centred under the button, with the link inline.
+.gb-acct-schedule__unskip {
+  margin: 0;
+  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  color: $c-gray-600;
+  text-align: center;
 }
 
 // 34079, cancelled only: centred under the Restart button, in the board's own
@@ -1566,6 +1887,7 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   align-items: flex-start;
   justify-content: space-between;
   column-gap: 4px;
+  margin-top: -1px;   // client-set: also lifts the first row off the body padding
 }
 
 .gb-acct-row__main {
@@ -1631,7 +1953,9 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
   transition: trans(color, opacity);
 
-  @include hover { opacity: 0.7; }
+  // Colour, like every other link on the site (.gb-header__link / .gb-footer__link);
+  // opacity alone reads as "fading out" rather than as a hover.
+  @include hover { color: $c-green; }
 }
 
 .gb-acct-link--sm {
@@ -1697,6 +2021,8 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 // name runs on one line and the row stops matching.
 .gb-acct-product__name {
   display: flex;
+  flex: 1;
+  min-width: 0;
   column-gap: 3px;
   max-width: 212px;
   margin: 0;
@@ -1710,6 +2036,15 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   text-align: center;
 }
 
+.gb-acct-product__label {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .gb-acct-product__meta {
   display: flex;
   align-items: center;
@@ -1717,6 +2052,9 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   column-gap: 6px;
   width: 217px;
   max-width: 100%;
+  padding-left: 24px;
+
+  @include narrow { width: 100%; }
 }
 
 // 34098: coral, and it takes the flavour slot rather than adding a line.
@@ -1736,7 +2074,7 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   display: flex;
   align-items: center;
   column-gap: 2px;
-  margin: 0;
+  margin: 0 0 0 auto;
 }
 
 .gb-acct-product__was {
@@ -1748,6 +2086,7 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 .gb-acct-product__now {
   @include font($font-brand-stack, 12px, 500, 18px, -0.12px);
   color: $c-gray-900;
+  margin-left: 2px;   // on top of the row's own 2px gap
 }
 
 .gb-acct-detail__add {
@@ -1788,9 +2127,11 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   row-gap: 8px;
 }
 
+// 28774: a 51-character code wraps to four lines and the row's other two parts
+// stay on the first one -- label, code and tag all sit at the row's top edge.
 .gb-acct-summary__row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   column-gap: 8px;
   margin: 0;
@@ -1800,8 +2141,10 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
 .gb-acct-summary__discount {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   column-gap: 8px;
+
+  .gb-acct-tag[hidden], .gb-acct-tag:empty { display: none; }
 }
 
 // 27955 only: the phone board (28433) shows the tag on its own. Both boards are
@@ -1858,8 +2201,9 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 .gb-acct-schedule__days {
   display: flex;
   column-gap: 16px;
+  padding: 0 4px;
 
-  @include narrow { column-gap: 8px; }
+  @include narrow { column-gap: 8px; padding: 0; margin: 0 -3px; }
   @include tablet { column-gap: fluid(8px, 16px); }
 }
 
@@ -1902,6 +2246,10 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 // Lime band -> page cream. customstyle ships --to-white (lime-150 -> white) but
 // the account board's page fill is cream, and on the wave that difference shows.
 .gb-scallop--mint-to-cream { --wave-bg: #{$c-lime-150}; --wave-fg: #{$c-cream}; }
+
+// Footer wave. customstyle runs it lime -> green-900, but the account pages end
+// on white, so only the ground changes; the green the wave cuts into stays.
+.gb-scallop--to-green { --wave-bg: #{$c-cream}; }
 
 // Sits where the band ends. Desktop overlaps it by 9 -- the board puts the wave
 // top at 367 and the rectangle bottom at 376 (main starts at 179.6), and the
@@ -1962,6 +2310,119 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   flex-direction: column;
   row-gap: 8px;
   padding: 8px 16px 20px;
+}
+
+// Refer a Friend — no board at all (SPEC 决策 C left it dead); built to the
+// 2026-09-15 brief after funkyfood's module, so every value here is ours and is
+// logged as 待设计方裁决.
+.gb-acct-referral__hero {
+  display: block;
+  width: 100%;
+  // wins over the 400x400 attrs, which are there for the ratio-free load only
+  aspect-ratio: 16 / 9;
+  border-radius: $r-sm;
+  object-fit: cover;
+}
+
+.gb-acct-referral__give {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 4px;
+  margin: 0;
+}
+
+.gb-acct-referral__amount {
+  @include font($font-brand-stack, 20px, 800, 28px, 0);
+  color: $c-green;
+  text-transform: uppercase;
+
+  & + & {
+    color: $c-gray-900;
+  }
+
+  @include narrow { font-size: 18px; }
+}
+
+.gb-acct-referral__block {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.gb-acct-referral__label {
+  margin: 0;
+  @include font($font-brand-stack, 16px, 500, 24px, -0.32px);
+  color: $c-gray-900;
+}
+
+.gb-acct-referral__field {
+  display: flex;
+  align-items: center;
+  column-gap: 8px;
+
+  .gb-acct-field__input { flex: 1 1 auto; min-width: 0; }
+
+  // .gb-acct-btn is width:100%, and flex-basis:auto resolves off it, so the
+  // button claimed the whole row and shrank the input to nothing.
+  .gb-acct-referral__copy { flex: none; max-width: 120px; }
+
+  @include narrow {
+    flex-wrap: wrap;
+    .gb-acct-referral__copy { width: 100%; max-width: none; }
+  }
+}
+
+.gb-acct-referral__social {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gb-acct-referral__social-link {
+  display: inline-flex;
+  color: $c-green;
+
+  transition: trans(color);
+
+  svg { width: 32px; height: 32px; }
+
+  @include hover { color: $c-green-900; }
+}
+
+// Change Password — the 2026-09-15 brief takes funkyfood's behaviour: the form
+// slides out under the button. Same .acct-live gate as the FAQ, so a dead script
+// leaves the form open instead of unreachable.
+.gb-acct-pw {
+  overflow: hidden;
+}
+
+:root.acct-live .gb-acct-pw:not(.is-open) {
+  height: 0;
+  // same as the FAQ: without this the three password inputs stay tabbable while
+  // the form is shut, and focus lands somewhere invisible
+  visibility: hidden;
+}
+
+.gb-acct-pw__form {
+  display: flex;
+  flex-direction: column;
+  row-gap: 16px;
+  // matches __foot's inline padding so the fields line up under the button
+  padding: 0 16px 20px;
+}
+
+.gb-acct-pw__actions {
+  display: flex;
+  align-items: center;
+  column-gap: 16px;
+  padding-top: 4px;
 }
 
 .gb-acct-card__title {
@@ -2038,6 +2499,7 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 .gb-acct-rule {
   height: 1px;
   background: $c-gray-150;
+  margin-top: -1px;   // client-set: the 1px row sits a pixel up in the column
 }
 
 // The section headings are w400 on $c-ink; .gb-acct-card__title next to them is
@@ -2065,23 +2527,26 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   display: flex;
   align-items: flex-start;
   column-gap: 12px;
+  padding-right: 12px;   // client-set: keeps the name off the row's right side
   min-width: 0;
 }
 
 // 40/14 on the board. The fill is a bare #d9d9d9 rectangle with no imageRef --
-// the design has no product photo here (SPEC 8b), same as the subscription card.
+// the design has no product photo here (SPEC 8b), so it carries the same
+// exported placeholder as every other thumbnail.
 .gb-acct-item__thumb {
   flex: none;
+  display: block;
   width: 40px;
   height: 40px;
   border-radius: 2.86px;
-  background: $c-gray-200;
+  object-fit: cover;
 }
 
 .gb-acct-item__text {
   display: flex;
   flex-direction: column;
-  row-gap: 6px;
+  row-gap: 8px;          // client-set, the board's is 6
   min-width: 0;
 }
 
@@ -2094,7 +2559,7 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 .gb-acct-item__names {
   display: flex;
   flex-direction: column;
-  row-gap: 2px;
+  row-gap: 0;            // client-set, the board's is 2
 }
 
 .gb-acct-item__name {
@@ -2273,6 +2738,8 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   transition: trans(background-color);
 
   // Both arrows ship disabled -- a static page has no second page to reach.
+  &:disabled { cursor: not-allowed; }
+
   &:not(:disabled) {
     cursor: pointer;
     @include hover { background: $c-gray-050; }
@@ -2287,6 +2754,14 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 .gb-acct-pager__label {
   @include font($font-brand-stack, 14px, 400, 20px, 0);
   color: $c-gray-700;
+  strong { font-weight: 700; }
+}
+
+// Ending a view on the pager reads 14 lower than ending on a card edge: 4 below
+// the centred 36 button, 8 more to the 20 arrow, 2 of slack in its viewBox. The
+// phone's 48 is the only gap tight enough to notice; desktop keeps its 144.
+@include narrow {
+  .gb-acct-stack > .gb-acct-pager:last-child { margin-bottom: -14px; }
 }
 
 // 2284:27170. Rows are 16 apart and every row but the first carries a 1px rule
@@ -2300,7 +2775,7 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 .gb-acct-faq__item {
   & + & {
     padding-top: 20px;
-    border-top: 1px solid $c-ink;
+    border-top: 1px solid rgba($c-ink, 0.05);
   }
 }
 
@@ -2339,10 +2814,29 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   .gb-acct-faq__item.is-open & { transform: scaleY(0); }
 }
 
+// The answer may be rich text, so __panel is the box whose height runs and __a
+// holds the content. ⚠ The collapsed height is gated on .acct-live: written flat,
+// a dead script would hide six of the seven answers for good.
+.gb-acct-faq__panel {
+  overflow: hidden;
+}
+
+:root.acct-live .gb-acct-faq__item:not(.is-open) .gb-acct-faq__panel {
+  height: 0;
+  // ⚠ not decoration: a zero-height overflow:hidden box is still read aloud and
+  // its links are still tabbable. slideTo holds visibility while it animates.
+  visibility: hidden;
+}
+
+// padding, not margin: a margin on the first child collapses out through the
+// zero-height wrapper and leaves 8px showing while the row is shut.
 .gb-acct-faq__a {
-  margin: 8px 0 0;
+  padding-top: 8px;
   @include font($font-brand-stack, 16px, 400, 24px, -0.32px);
   color: $c-gray-700;
+
+  > * { margin: 0; }
+  > * + * { margin-top: 12px; }
 }
 
 // 2284:27170 Frame 1984078368 / 27304's closing card -- radius 8, not the 12
@@ -2388,7 +2882,8 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
 .gb-acct-help__link {
   color: $c-blue;
-  text-decoration: none;
+  // 27170 marks the email, the number and "visit FAQ page" as UNDERLINE runs
+  text-decoration: underline;
 
   transition: trans(color);
 
@@ -2410,7 +2905,13 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 //   - 35015 reads "Forgot you password?"; 35202 has the r.
 //   - 35034 drops "your" from the sub line 35111 carries.
 //   - the note is 472 wide against a 480 form on both desktop boards while the
-//     phone boards match at 350; built at 480.
+//     phone boards match at 350. Built at 480 until the client confirmed the 8
+//     (decision AA, 2026-09-16); it is 472 now.
+
+// Header CTA, account pages only. account.css is not loaded by the MVP pages, so
+// this reaches the two auth headers and nothing else -- customstyle keeps the
+// client's r78 value of 40 for the rest of the site.
+.gb-header__cta { padding: 0 32px; }
 
 .gb-acct-auth {
   display: flex;
@@ -2423,6 +2924,13 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 
   @include tablet { padding-bottom: fluid(64px, 96px); }
   @include narrow { padding-bottom: 64px; }
+
+  // Log in and Sign up are two views on one page; display:flex outranks the UA's
+  // [hidden]{display:none}, so the inactive one would stay on screen. Gated on
+  // .acct-live -- account.js adds it only after running to the end, so a 404 or a
+  // top-level throw leaves BOTH forms visible rather than making Sign up, the only
+  // way to register, permanently unreachable.
+  :root.acct-live &[hidden] { display: none; }
 }
 
 // 35187: 960 on the board, and the sub line is held to 768 inside it so the
@@ -2508,6 +3016,9 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
   @include narrow { width: 100%; }
 }
 
+// The boards' own value, 8 narrower than the form (decision AA).
+.gb-acct-auth__note { width: 472px; }
+
 .gb-acct-auth__form {
   display: flex;
   flex-direction: column;
@@ -2565,10 +3076,12 @@ $fluid-span: math.div($fluid-to - $fluid-from, 1px);            // 513
 }
 
 a.gb-acct-auth__aside {
+  // it sits in a stretch container; without this the underline runs the full row
+  align-self: flex-start;
   text-decoration: underline;
-  transition: trans(opacity);
+  transition: trans(color);
 
-  @include hover { opacity: 0.7; }
+  @include hover { color: $c-lime; }
 }
 
 // 35203: the board's button is the site's large pill, but .gb-btn--lg drops to
@@ -2616,9 +3129,9 @@ a.gb-acct-auth__aside {
     color: $c-green;
     text-decoration: underline;
 
-    transition: trans(opacity);
+    transition: trans(color);
 
-    @include hover { opacity: 0.7; }
+    @include hover { color: $c-lime; }
   }
 }
 
@@ -2677,11 +3190,13 @@ a.gb-acct-auth__aside {
 //   short  h<=394  centred (top == bottom on all nine boards), radius 12
 //   tall   h=672   flush to the bottom, radius 12 12 0 0, body scrolls
 //
-// ⚠ Desktop has no board (SPEC 待裁决 E). The panel keeps the board's own 390
-// and centres; only --acct-modal-w changes once a width is given.
+// ⚠ Desktop has no board (SPEC 待裁决 E). Client 2026-09-15: take it from
+// funkyfood's account portal -- .delivery-*-pop-up .content is 520 wide and its
+// cancel flow caps at 90vh. This REVERSES the 2026-09-10 ruling that desktop
+// keeps the board's own 390; the phone still uses it.
 // ---------------------------------------------------------------------------
 .gb-acct-modal {
-  --acct-modal-w: #{$bp-design-m};
+  --acct-modal-w: 520px;
   --acct-modal-exit: #{$t-slow};
 
   position: fixed;
@@ -2690,6 +3205,8 @@ a.gb-acct-auth__aside {
   display: flex;
   justify-content: center;
   align-items: center;
+
+  @include narrow { --acct-modal-w: #{$bp-design-m}; }
 
   // display:flex outranks the UA's [hidden]{display:none}, so a closed panel
   // would keep covering the page and swallowing every click.
@@ -2711,10 +3228,15 @@ a.gb-acct-auth__aside {
   position: relative;
   width: 100%;
   max-width: var(--acct-modal-w);
-  max-height: calc(100vh - 32px);
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
   border-radius: 12px;
+  // clip, NOT hidden: hidden makes the panel a scroll container, and a field
+  // below the fold in the body then cannot be scrolled to (measured: the suburb
+  // input sits at y=740 with the body's viewport ending at 732). clip crops to
+  // the radius without creating one. Same reason body.is-modal-open uses clip.
+  overflow: clip;
   background: $c-white;
   opacity: 0;
   transform: translateY(8px);
@@ -2734,11 +3256,18 @@ a.gb-acct-auth__aside {
     .gb-acct-modal__panel {
       max-width: none;
       // fixed, not capped: 29767 holds two lines of text and the board still
-      // draws it 672. Every drawer board is v:FIXE.
+      // draws it 672. Every drawer board is v:FIXE -- so `height`, not
+      // `max-height`, or a sparse drawer would shrink to its content.
       height: calc(100vh - 168px);
-      max-height: none;
+      max-height: 85vh;   // funkyfood's account portal cap under 575
       border-radius: 12px 12px 0 0;
-      transform: translateY(16px);
+      // off-screen, not a nudge: a drawer has to look like it comes up from the
+      // bottom edge. The centred card keeps its 8px lift.
+      transform: translateY(100%);
+      @supports (height: 100dvh) {
+        height: calc(100dvh - 168px);
+        max-height: 85dvh;
+      }
     }
 
     &.is-open .gb-acct-modal__panel { transform: none; }
@@ -2785,11 +3314,12 @@ a.gb-acct-auth__aside {
   background: none;
   color: $c-gray-900;
   cursor: pointer;
-  transition: color $t-base $ease-out, transform $t-base $ease-out;
+  transition: color $t-base $ease-out;
 
-  svg { width: 10px; height: 10px; }
+  // box = the icon's slot on the board; the ink inside is smaller on purpose
+  svg { width: 24px; height: 24px; }
 
-  @include hover { color: $c-gray-600; transform: scale(1.1); }
+  @include hover { color: $c-gray-600; }
 }
 
 // 32773 / 32128: the cream middle, and the only part of the panel that scrolls.
@@ -2806,6 +3336,29 @@ a.gb-acct-auth__aside {
 
   @include narrow { padding: 20px; }
   @include tablet { padding: fluid(20px, 24px); }
+}
+
+// Figma 2284:29195–29197: 16px lane, 8px gray thumb, transparent track.
+:root:has(.gb-acct),
+.gb-acct-modal__body,
+.gb-acct .gb-select__list,
+.gb-acct-modal .gb-select__list {
+  scrollbar-color: $c-gray-150 transparent;
+  scrollbar-width: thin;
+
+  @supports selector(::-webkit-scrollbar) {
+    scrollbar-color: auto;
+    scrollbar-width: auto;
+    &::-webkit-scrollbar { width: 16px; height: 16px; }
+    &::-webkit-scrollbar-track { background: transparent; margin-block: 20px; }
+    &::-webkit-scrollbar-thumb {
+      background: $c-gray-150;
+      border: 4px solid transparent;
+      background-clip: content-box;
+      border-radius: 8px;
+    }
+    &::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+  }
 }
 
 // 32776: 72 tall, 16 top and bottom, Cancel then the action, both to the right.
@@ -2831,7 +3384,9 @@ a.gb-acct-auth__aside {
 // boards (32621 / 33350 / 32463) all draw it, so the 30 of slack on the right is
 // the component, not a stray text box.
 .gb-acct-modal__copy {
-  max-width: 320px;
+  // ⚠ the 30 of slack is the component, the 320 is not: pinning 320 wraps the
+  // desktop panel's copy at phone width and leaves 150 empty on the right.
+  max-width: calc(100% - 30px);
   margin: 0;
   @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
   color: $c-gray-600;
@@ -2844,6 +3399,28 @@ a.gb-acct-auth__aside {
 }
 
 // 32131: the line under a field.
+// Edit Date reuses the holiday panel's calendar (30465) rather than a vendor
+// picker: it is the only calendar the boards draw, and it needs no async load.
+// It drops out of the field on click; the boards draw no such state.
+.gb-acct-cal--field {
+  margin-top: 12px;
+  overflow: hidden;
+  transition: trans(margin-top);
+}
+
+// ⚠ The shut height is gated on .acct-live, same as the FAQ: written flat, a
+// dead script would hide the calendar for good. The negative margin cancels
+// .gb-acct-field's row-gap, which a zero-height flex item is still given.
+:root.acct-live .gb-acct-cal--field:not(.is-open) {
+  height: 0;
+  margin-top: -6px;
+  visibility: hidden;
+}
+
+// The field is what opens the calendar, so it has to read as clickable even
+// though it is still a text input.
+.gb-acct-field:has(> .gb-acct-cal--field) .gb-acct-field__input { cursor: pointer; }
+
 .gb-acct-modal__hint {
   margin: 0;
   @include font($font-brand-stack, 12px, 400, 18px, -0.24px);
@@ -2892,7 +3469,7 @@ a.gb-acct-auth__aside {
 
   transition: trans(border-color);
 
-  &:focus-within { outline: 2px solid $c-blue; outline-offset: 1px; }
+  &:focus-within { border-color: $c-green; }
 }
 
 // 196:17794. The chevron beside it (196:17798) is visible=false on the board,
@@ -2932,7 +3509,8 @@ a.gb-acct-auth__aside {
   // the boards give a placeholder the same ink as a filled value
   &::placeholder { color: $c-gray-600; opacity: 1; }
 
-  &:focus-visible { outline: 2px solid $c-blue; outline-offset: 1px; }
+  // Same as .gb-field__input site-wide: a green border, not a ring.
+  &:focus-visible { border-color: $c-green; }
 }
 
 // The trailing glyph is decorative: it sits over the control's own padding so
@@ -2960,6 +3538,11 @@ a.gb-acct-auth__aside {
 select.gb-acct-field__input {
   appearance: none;
   cursor: pointer;
+  // Only seen with the script dead: .gb-select__button sets background-image:none.
+  padding-right: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5L10 12.5L15 7.5' stroke='%234d4d4d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
 }
 
 // 32778 / 32134: 40 tall, 32 each side, pill, and it hugs its label. The board
@@ -2982,15 +3565,16 @@ select.gb-acct-field__input {
   cursor: pointer;
   white-space: nowrap;
 
-  transition: trans(background-color, opacity);
+  transition: trans(background-color, color);
 
-  @include hover { opacity: 0.85; }
+  &:not(:disabled) {
+    @include hover { background: $c-lime; color: $c-green-900; }
+  }
 
   &:disabled {
     background: $c-gray-150;
     color: $c-gray-400;
-    cursor: default;
-    opacity: 1;
+    cursor: not-allowed;
   }
 }
 
@@ -3026,7 +3610,7 @@ select.gb-acct-field__input {
 // outside the scroll area, so it stays put while the cards move.
 .gb-acct-modal__alert {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   flex: 0 0 auto;
   padding: 16px;
@@ -3053,6 +3637,8 @@ select.gb-acct-field__input {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   column-gap: 15px;
   row-gap: 24px;
+
+  > .gb-acct-empty { grid-column: 1 / -1; }
 }
 
 // 31114: 16 all round, 20 between blocks, centred, r8.
@@ -3068,9 +3654,14 @@ select.gb-acct-field__input {
 
 // 196:19033 is a flat #d9d9d9 square: the design has no product photography.
 // Square is the invariant, the board's 136 is just 168 minus the padding.
+// An exported #d9d9d9 swatch, not a CSS fill (Task 26 req 3). The boards draw a
+// flat grey square here -- there is still no product shot in the design.
 .gb-acct-prod__thumb {
+  display: block;
   width: 100%;
+  height: auto;
   aspect-ratio: 1;
+  object-fit: cover;
   border-radius: 4.43px;
   background: $c-gray-200;
 }
@@ -3126,25 +3717,22 @@ select.gb-acct-field__input {
   color: $c-gray-600;
 }
 
-// 84:8161. Drawn but inert: note 30913 says flavour is not an option yet
-// (待裁决 J), so it carries aria-disabled and no handler rather than looking
-// clickable. No hover here for the same reason -- global rule 13 cuts both ways.
-.gb-acct-prod__select {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  height: 40px;
-  padding: 10px 16px;
-  border: 1px solid $c-gray-350;
-  border-radius: $r-sm;
-  background: $c-white;
-  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
-  color: $c-gray-700;
+// 84:8161 draws these 40/14, not the 44/16 the generic field uses, so the shared
+// .gb-select has to be pulled back to the smaller tier. Its 10px chevron is not:
+// client asked for the shared 20 (2026-09-17), so the arrow is left uncapped.
+.gb-acct-prod__control {
+  .gb-select__button {
+    height: 40px;
+    padding: 10px 16px;
+    border-color: $c-gray-350;
+    @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+    color: $c-gray-700;
+  }
 
-  &[aria-disabled="true"] { cursor: default; }
-
-  svg { flex: 0 0 auto; width: 10px; height: 5px; }
+  .gb-select__option {
+    padding: 10px 16px;
+    @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+  }
 }
 
 // 31129: one 42-tall box split 40 | 54 | 40 by its own hairlines.
@@ -3179,7 +3767,7 @@ select.gb-acct-field__input {
   &:disabled {
     background: $c-cream;
     color: $c-gray-350;
-    cursor: default;
+    cursor: not-allowed;
   }
 
   svg { width: 14px; height: 14px; }
@@ -3195,6 +3783,18 @@ select.gb-acct-field__input {
   justify-content: center;
   @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
   color: $c-gray-700;
+  min-width: 0;
+  width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: center;
+  appearance: textfield;
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button { appearance: none; margin: 0; }
+  &:focus-visible { outline: 2px solid $c-green; outline-offset: -2px; }
 }
 
 // ---------------------------------------------------------------------------
@@ -3229,6 +3829,9 @@ select.gb-acct-field__input {
 .gb-acct-discount__input {
   flex: 1 1 auto;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   height: 44px;
   padding: 10px 14px;
   border: 1px solid $c-gray-300;
@@ -3242,7 +3845,7 @@ select.gb-acct-field__input {
   // the boards give a placeholder the same ink as a filled value
   &::placeholder { color: $c-gray-600; opacity: 1; }
 
-  &:focus-visible { outline: 2px solid $c-blue; outline-offset: 1px; }
+  &:focus-visible { border-color: $c-green; }
 }
 
 // 31645: 96x44 with an 8 radius -- an inline field button, not the foot's pill.
@@ -3260,37 +3863,51 @@ select.gb-acct-field__input {
   color: $c-white;
   cursor: pointer;
 
-  transition: trans(background-color, opacity);
+  transition: trans(background-color, color);
 
-  @include hover { opacity: 0.85; }
+  &:not(:disabled) {
+    @include hover { background: $c-lime; color: $c-green-900; }
+  }
 
   &:disabled {
     background: $c-gray-150;
     color: $c-gray-400;
-    cursor: default;
-    opacity: 1;
+    cursor: not-allowed;
   }
 }
 
 // 31968: only the applied state carries the chip, 8 under the field group.
 .gb-acct-discount__result {
+  &[hidden] { display: none; }
+  template { display: none; }
   [data-acct-discount-state="empty"] & { display: none; }
 }
 
-// 31969. min-height rather than height: the board's 38 is 2 more than its own
-// 8 + 20 + 8, and the padding is the value worth keeping exact.
+.gb-acct-discount [data-acct-discount-error] {
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: $r-sm;
+}
+
+// Discount feedback shares the input's 44px minimum height.
 .gb-acct-chip {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  min-height: 38px;
+  min-height: 44px;
   padding: 8px 16px;
   border-radius: $r-sm;
   background: $c-acct-menu-bg;
   box-shadow: inset 0 0 0 1px #daf6b0;   // INSIDE stroke
 
   p {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    column-gap: 4px;
+    white-space: nowrap;
     margin: 0;
     @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
     // 31972 tints the sentence and leaves only the code itself dark
@@ -3298,6 +3915,9 @@ select.gb-acct-field__input {
   }
 
   strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-weight: 400;
     color: #011307;
   }
@@ -3320,7 +3940,8 @@ select.gb-acct-field__input {
 
   @include hover { opacity: 0.6; }
 
-  svg { width: 12px; height: 12px; }
+  // box = the icon's slot on the board; the ink inside is smaller on purpose
+  svg { width: 16px; height: 16px; }
 }
 
 // ---------------------------------------------------------------------------
@@ -3363,11 +3984,13 @@ select.gb-acct-field__input {
   cursor: pointer;
 }
 
-// 32450: a 16 circle, #e9facf inside a 0.8 green ring, with an 8.8 dot when it
-// is the picked one. The board only ever draws it picked -- one address, always
-// selected -- so the unpicked ring is ours (SPEC 待裁决 S).
+// 32450 dimensions: 16px circle and 8.8px dot. Sept 30 feedback specifies an
+// ink checked ring with a green dot, including the Horizon hover state.
 .gb-acct-addr__radio {
+  position: relative;
+  -webkit-appearance: none;
   appearance: none;
+  accent-color: $c-green;
   flex: 0 0 auto;
   width: 16px;
   height: 16px;
@@ -3381,12 +4004,30 @@ select.gb-acct-field__input {
   transition: trans(background-color, box-shadow);
 
   &:checked {
-    background: $c-acct-radio
-      radial-gradient(circle at 50% 50%, $c-green 0 4.4px, transparent 4.4px);
-    box-shadow: inset 0 0 0 0.8px $c-green;
+    border: 0.8px solid $c-ink;
+    background-color: $c-acct-radio;
+    background-image: radial-gradient(circle at center, $c-green 4.4px, transparent 4.4px);
+    box-shadow: none;
+  }
+
+  &:checked::after {
+    display: none;
+  }
+
+  &:not(:disabled):hover:checked {
+    border-color: $c-ink;
+    background-color: $c-acct-radio;
   }
 
   &:focus-visible { outline: 2px solid $c-blue; outline-offset: 2px; }
+}
+
+:where(input[type="radio"]):checked::after { background: $c-green; }
+
+@media (hover: hover) {
+  :where(input[type="radio"]):not(:disabled):hover:checked::after {
+    background: $c-green;
+  }
 }
 
 .gb-acct-addr__pick {
@@ -3521,6 +4162,14 @@ select.gb-acct-field__input {
   overflow: hidden;
 }
 
+// No source yet, so this paints nothing and the grey above shows through.
+.gb-acct-video__media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .gb-acct-video__play {
   position: absolute;
   left: 50%;
@@ -3532,7 +4181,13 @@ select.gb-acct-field__input {
   height: 38.636px;
   border-radius: 7.7273px;
   background: $c-white;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
   transform: translate(-50%, -50%);
+  transition: trans(opacity, background-color);
+  @include hover { background: $c-cream; }
+  .gb-acct-video.is-playing & { opacity: 0; pointer-events: none; }
 
   svg {
     width: 13.743px;
@@ -3541,11 +4196,11 @@ select.gb-acct-field__input {
   }
 }
 
-// 30082 / 29754: the option rows, 12 apart.
+// 30082 / 29754: the option rows. 12.5 is client-set, the board's own is 12.
 .gb-acct-reasons {
   display: flex;
   flex-direction: column;
-  row-gap: 12px;
+  row-gap: 12.5px;
 }
 
 // 30083 has strokesIncludedInLayout true, so 12 + 20 + 12 + two 1px borders is
@@ -3572,7 +4227,9 @@ select.gb-acct-field__input {
 
 // 30084: the same 16 circle as the address radio, but its ring is #011307 here.
 .gb-acct-reason__radio {
+  -webkit-appearance: none;
   appearance: none;
+  accent-color: $c-green;
   flex: 0 0 auto;
   width: 16px;
   height: 16px;
@@ -3591,6 +4248,12 @@ select.gb-acct-field__input {
     box-shadow: inset 0 0 0 0.8px $c-ink;
   }
 
+  // Touch Safari retains :hover even when (hover: hover) does not match.
+  // Draw the dot in the background so Horizon's ::after cannot cover it.
+  &:checked::after { display: none; }
+
+  &:not(:disabled):hover:checked { background-color: $c-acct-radio; }
+
   &:focus-visible { outline: 2px solid $c-blue; outline-offset: 2px; }
 }
 
@@ -3606,10 +4269,16 @@ select.gb-acct-field__input {
 }
 
 // ---------------------------------------------------------------------------
-// 30621 date picker. Every token here is the board's; the grid is not -- see
-// SPEC §8, the board's July 2026 is misaligned and has a "32".
+// 30621 date picker. flatpickr draws it (same plugin as the funkyfood portal);
+// every token below is the board's. Its own stylesheet is NOT loaded -- the
+// look is entirely ours, so shipping 16KB of defaults would only be something
+// to override. The layout rules here are therefore load-bearing, not cosmetic:
+// without them the plugin's markup has no grid at all.
+// ⚠ The grid is not the board's -- SPEC §8, its July 2026 is misaligned and has
+// a "32".
 // ---------------------------------------------------------------------------
-// The table's caption names the grid for a screen reader without drawing.
+// The table's caption named the grid for a screen reader without drawing; the
+// plugin has no caption, so the holiday panel's input carries the label.
 .gb-acct-sr { @include visually-hidden; }
 
 .gb-acct-cal {
@@ -3617,95 +4286,137 @@ select.gb-acct-field__input {
   background: $c-white;
   // 30622's 1px INSIDE stroke is not counted in its 365, unlike the reason row
   box-shadow: inset 0 0 0 1px $c-gray-300;
-}
 
-// 30623 pads 20/24; the #eaecf0 rule under it is 30736, inside the ring.
-.gb-acct-cal__content {
-  padding: 20px 24px;
-  border-bottom: 1px solid #eaecf0;
-}
-
-// 30625: 32 tall with the 40 buttons overhanging it, label centred.
-.gb-acct-cal__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 32px;
-  margin-bottom: 12px;   // 30624's gap between Month and Dates
-}
-
-.gb-acct-cal__title {
-  @include font($font-brand-stack, 16px, 500, 24px, -0.32px);
-  color: $c-gray-700;
-}
-
-.gb-acct-cal__arrow {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: 0;
-  border-radius: $r-sm;
-  background: none;
-  color: $c-gray-400;
-  cursor: pointer;
-
-  transition: trans(background-color, color);
-
-  svg { width: 5px; height: 10px; }
-
-  @include hover { background: $c-gray-050; color: $c-gray-600; }
-}
-
-.gb-acct-cal__grid {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-
-  th, td {
-    height: 40px;
-    padding: 0;
-    text-align: center;
+  // 30623 pads 20/24; the 22 is client-set.
+  .flatpickr-calendar {
+    width: 100%;
+    padding: 20px 22px;
+    background: none;
+    font-family: inherit;
   }
 
-  th {
+  // 30625: 32 tall with the 40 buttons overhanging it, label centred.
+  .flatpickr-months {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 32px;
+    margin-bottom: 12px;   // 30624's gap between Month and Dates
+  }
+
+  .flatpickr-month {
+    flex: 1 1 auto;
+    display: flex;
+    justify-content: center;
+  }
+
+  // The plugin splits the title into a month span and a year <input>.
+  .flatpickr-current-month {
+    display: flex;
+    align-items: center;
+    column-gap: 4px;
+    @include font($font-brand-stack, 16px, 500, 24px, -0.32px);
+    color: $c-gray-700;
+  }
+
+  .cur-year {
+    width: 2.7em;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    -moz-appearance: textfield;
+
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+    &:focus-visible { outline: 2px solid $c-blue; outline-offset: 2px; }
+  }
+
+  .numInputWrapper .arrowUp,
+  .numInputWrapper .arrowDown { display: none; }
+
+  .flatpickr-prev-month,
+  .flatpickr-next-month {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 40px;
+    height: 40px;
+    border-radius: $r-sm;
+    color: $c-gray-400;
+    cursor: pointer;
+
+    transition: trans(background-color, color, opacity);
+
+    // box = the icon's slot on the board; the ink inside is smaller on purpose
+    svg { width: 20px; height: 20px; }
+
+    @include hover { background: $c-gray-050; color: $c-gray-600; }
+
+    // Kept in the flow rather than display:none, or the title jumps sideways
+    // on the month that has nothing before it.
+    &.flatpickr-disabled { opacity: 0; pointer-events: none; }
+  }
+
+  // Seven equal columns, same as the table's fixed layout.
+  .flatpickr-weekdaycontainer,
+  .dayContainer {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+  }
+
+  .flatpickr-weekday {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
     @include font($font-brand-stack, 14px, 500, 20px, -0.28px);
     color: $c-gray-700;
-    font-weight: 500;
-  }
-}
-
-// 30631: a 40 circle inside its column, so the fill is the board's 40x40 even
-// though seven of them plus the gaps do not add up to the board's own 302.
-.gb-acct-cal__day {
-  width: 40px;
-  height: 40px;
-  margin: 0 auto;
-  padding: 0;
-  border: 0;
-  border-radius: 20px;
-  background: none;
-  @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
-  color: $c-gray-700;
-  cursor: pointer;
-
-  transition: trans(background-color, color);
-
-  @include hover { background: $c-lime-100; }
-
-  &[aria-pressed="true"] {
-    background: $c-green;
-    color: $c-white;
-    font-weight: 500;
   }
 
-  &:disabled {
-    color: $c-gray-400;
-    background: none;
-    cursor: default;
-  }
+  // 30631: a 40 circle inside its column, so the fill is the board's 40x40 even
+  // though seven of them plus the gaps do not add up to the board's own 302.
+  .flatpickr-day {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin: 0 auto;
+    border-radius: 20px;
+    @include font($font-brand-stack, 14px, 400, 20px, -0.28px);
+    color: $c-gray-700;
+    cursor: pointer;
 
-  &:focus-visible { outline: 2px solid $c-blue; outline-offset: -2px; }
+    transition: trans(background-color, color);
+
+    @include hover { background: $c-lime-100; }
+
+    &.selected {
+      background: $c-green;
+      color: $c-white;
+      font-weight: 500;
+    }
+
+    // A day the user cannot pick keeps its pointer events, or the cursor never
+    // reaches it; flatpickr refuses the click itself. `background: none` here
+    // outranks the hover fill above, so it still does not light up.
+    &.flatpickr-disabled {
+      color: $c-gray-400;
+      background: none;
+      cursor: not-allowed;
+    }
+
+    // ⚠ The overflow days stay inert: clicking one moves flatpickr a month.
+    &.prevMonthDay,
+    &.nextMonthDay {
+      color: $c-gray-400;
+      background: none;
+      pointer-events: none;
+    }
+
+    &:focus-visible { outline: 2px solid $c-blue; outline-offset: -2px; }
+  }
 }

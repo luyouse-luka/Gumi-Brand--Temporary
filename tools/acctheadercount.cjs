@@ -1,0 +1,14 @@
+const fs = require('node:fs'), path = require('node:path');
+const assert = require('node:assert/strict');
+const root = path.join(__dirname, '..');
+const source = fs.readFileSync(path.join(root, 'liquid/account-qty-discount/sections/gb-account.liquid'), 'utf8');
+const fresh = fs.readFileSync(path.join(root, '../Gumi-Brand-shopify/prework-20261009-qty-discount/sections/gb-account.liquid'), 'utf8');
+const layout = fs.readFileSync(path.join(root, '../Gumi-Brand-shopify/prework-20261009-qty-discount/layout/account.liquid'), 'utf8');
+const group = JSON.parse(fs.readFileSync(path.join(root, '../Gumi-Brand-shopify/prework-20261009-qty-discount/sections/header-group.json'), 'utf8').replace(/^\s*\/\*[\s\S]*?\*\//, ''));
+assert(source.includes('<main class="gb-acct">') && fresh.includes('<header class="gb-acct-header"'));
+assert.equal((layout.match(/sections 'header-group'/g) || []).length, 1);
+assert.equal(group.order.filter(id => group.sections[id].type === 'gb-header').length, 1);
+assert.equal((source.match(/<header\b/g) || []).length, 0, 'Account section must not duplicate the layout header');
+assert.equal(source.split('<main class="gb-acct">')[1], fresh.split('<main class="gb-acct">')[1], 'Account body and backend must match fresh live');
+assert(!source.includes('<div class="gb-announcement">'), 'No duplicate announcement');
+console.log('6 header composition and fresh-body checks passed');

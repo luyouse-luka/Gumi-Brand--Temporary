@@ -45,6 +45,7 @@ GOTO_PASSWORD = "goto-password"
 GOTO_HELP = "goto-help"
 DETAILS_DIRTY = "details-dirty"
 HELP_OPEN2 = "help-open-2"
+GOTO_SIGNUP = "goto-signup"
 # 2284:28878, the board's own worst case (note 34044)
 LONG_CODE = "THISISADISAVERYVERYVERYVERYVERYLONGDISCOUNTCODE1265"
 
@@ -89,7 +90,7 @@ GROUPS = {
         # that padding is measured off the logo's ink bbox, not its layout box.
         # Assert the centring instead.
         ("css", ".gb-acct-header__bar", "align-items", "center"),
-        ("css", ".gb-acct-header__icons", "column-gap", "16px"),
+        ("css", ".gb-acct-header__icons", "column-gap", "24px"),
         ("css", ".gb-acct-header__logo", "height", "32px"),
         # account icon carries the lime active underline (Line 115, 24x2 #b5ed61)
         ("css", ".gb-acct-header__link--account::after", "background-color", "rgb(181, 237, 97)"),
@@ -125,11 +126,12 @@ GROUPS = {
           "Refer a Friend",
           "Help", "Contact Preferences",
           "Logout"]),
-        # Decision C (2026-09-10) turned four of these into real rows. The two
-        # left dead have no board at all, not even a phone one, so building
-        # them would mean inventing content (global rule 3).
+        # Decision C (2026-09-10) turned four of these into real rows, and Task 29
+        # (2026-09-15) built Refer a Friend after funkyfood's module even though it
+        # still has no board. Contact Preferences is the only one left dead -- it
+        # has no board either, so building it would mean inventing content.
         ("text", ".gb-acct-nav__link[aria-disabled='true']",
-         ["Refer a Friend", "Contact Preferences"]),
+         ["Contact Preferences"]),
         # Two-column shell (2284:27842). The asymmetric 244/352 gutters are
         # identical on all three desktop boards, so they are intended. They are
         # produced by 952 centred inside the shell's --pad-x, so assert where the
@@ -300,7 +302,7 @@ GROUPS = {
         ("css", "[data-acct-sub-state='cancelled'] .gb-acct-pill__dot::before", "border-top-color", "rgb(102, 102, 102)"),
 
         ("css", ".gb-acct-sub__body", "padding-top", "24px"),
-        ("css", ".gb-acct-sub__body", "row-gap", "24px"),
+        ("css", ".gb-acct-sub__body", "row-gap", "23.5px"),
         ("css", ".gb-acct-sub__meta", "flex-direction", "row"),
         ("css", ".gb-acct-sub__meta", "column-gap", "16px"),
         ("css", ".gb-acct-sub__meta-item", "column-gap", "8px"),
@@ -319,7 +321,9 @@ GROUPS = {
         ("css", ".gb-acct-sub__thumb", "width", "64px"),
         ("css", ".gb-acct-sub__thumb", "height", "64px"),
         ("css", ".gb-acct-sub__thumb", "border-radius", "4.57px"),
-        ("css", ".gb-acct-sub__thumb", "background-color", "rgb(217, 217, 217)"),
+        # Task 30 moved the board's #d9d9d9 out of CSS and into the shared
+        # placeholder image; r30check holds the "is an <img> and it loaded" pair.
+        ("css", ".gb-acct-sub__thumb", "object-fit", "cover"),
         ("css", ".gb-acct-sub__product-text", "row-gap", "6px"),
         ("css", ".gb-acct-sub__product-name", "font-size", "14px"),
         ("css", ".gb-acct-sub__product-name", "color", "rgb(26, 26, 26)"),
@@ -370,9 +374,10 @@ GROUPS = {
          ["Manage Subscription", "Manage Subscription", "Re-Activate Subscription"]),
     ],
     # -- Task 2: desktop header, expanded (2284:34854) --
+    # ⚠ Task 33 dropped the board's lightened bar: the two .gb-acct-header colour
+    # assertions that used to live here are gone on purpose, not lost.
     ("account.html", 1440, OPEN_MENU): [
-        ("css", ".gb-acct-header", "background-color", "rgb(246, 254, 236)"),
-        ("css", ".gb-acct-header", "box-shadow", "rgb(245, 241, 233) 0px -1px 0px 0px inset"),
+        ("css", ".gb-acct-header", "background-color", "rgb(231, 248, 208)"),
         ("css", "[data-acct-menu]", "width", "221px"),
         ("css", "[data-acct-menu]", "height", "184px"),
         ("css", "[data-acct-menu]", "background-color", "rgb(246, 254, 236)"),
@@ -425,7 +430,8 @@ GROUPS = {
           "My Details", "Change Password",
           "Refer a Friend",
           "Help"]),
-        ("text", ".gb-acct-list__link[aria-disabled='true']", ["Refer a Friend"]),
+        # Task 29 made Refer a Friend live; nothing is left disabled in the list
+        ("absent", ".gb-acct-list__link[aria-disabled='true']"),
 
         # -- Task 4: Overview, phone (2284:27604) --
         # The greeting is bare here (2284:27610), not the desktop's lime card
@@ -533,7 +539,7 @@ GROUPS = {
         # 27866: the detail head pads 24 at the sides, the list head pads 20
         ("css", D + ".gb-acct-sub__head", "padding-left", "24px"),
         ("css", D + ".gb-acct-sub__body", "padding-top", "24px"),
-        ("css", D + ".gb-acct-sub__body", "row-gap", "24px"),
+        ("css", D + ".gb-acct-sub__body", "row-gap", "23.5px"),
 
         # 27871 / 27882 / 27966 / 27973: icon + label/value + optional Edit
         ("css", D + ".gb-acct-row", "justify-content", "space-between"),
@@ -630,7 +636,7 @@ GROUPS = {
         ("css", D + ".gb-acct-summary__total", "line-height", "24px"),
         ("css", D + ".gb-acct-summary__total", "color", "rgb(1, 19, 7)"),
 
-        ("css", D + ".gb-acct-schedule", "row-gap", "24px"),
+        ("css", D + ".gb-acct-schedule", "row-gap", "23.5px"),
         ("css", D + ".gb-acct-schedule__title", "font-size", "14px"),
         ("css", D + ".gb-acct-schedule__title", "font-weight", "500"),
         ("css", D + ".gb-acct-schedule__title", "color", "rgb(26, 26, 26)"),
@@ -824,7 +830,7 @@ GROUPS = {
     ("account.html", 390, OPEN_MENU): [
         ("css", "[data-acct-menu]", "width", "164px"),
         ("css", "[data-acct-menu]", "height", "184px"),
-        ("css", ".gb-acct-header", "background-color", "rgb(246, 254, 236)"),
+        ("css", ".gb-acct-header", "background-color", "rgb(231, 248, 208)"),
         ("text", ".gb-acct-menu__link",
          ["Account", "My Subscriptions", "My Details", "Log Out"]),
     ],
@@ -968,7 +974,9 @@ GROUPS = {
         ("css", CP + ".gb-acct-card__title", "font-weight", "500"),
         ("css", CP + ".gb-acct-card__title", "color", "rgb(26, 26, 26)"),
         # The board's copy reads "instructions ro reset it" -- typo, see SPEC 8
-        ("text", CP + ".gb-acct-card__text", ['Click the button below and we’ll send you an email with instructions to reset it.']),
+        # Task 29 rewrote this: the brief replaced the board's reset email with
+        # funkyfood's inline form, so the copy had to follow
+        ("text", CP + ".gb-acct-card__text", ['Enter your current password and choose a new one.']),
         ("css", CP + ".gb-acct-card__text", "font-weight", "400"),
         ("css", CP + ".gb-acct-card__text", "color", "rgb(102, 102, 102)"),
         ("text", CP + ".gb-acct-btn", ["Change Password"]),
@@ -1002,7 +1010,7 @@ GROUPS = {
         ("css", HP + ".gb-acct-faq", "row-gap", "16px"),
         # 45 = 1px rule + 20 + 24; the first row has no rule above it
         ("css", HP + ".gb-acct-faq__item + .gb-acct-faq__item", "border-top-width", "1px"),
-        ("css", HP + ".gb-acct-faq__item + .gb-acct-faq__item", "border-top-color", "rgb(1, 19, 7)"),
+        ("css", HP + ".gb-acct-faq__item + .gb-acct-faq__item", "border-top-color", "rgba(1, 19, 7, 0.05)"),
         ("css", HP + ".gb-acct-faq__item + .gb-acct-faq__item", "padding-top", "20px"),
         ("css", HP + ".gb-acct-faq__item + .gb-acct-faq__item", "height", "45px"),
         ("css", HP + ".gb-acct-faq__q", "font-size", "16px"),
@@ -1018,7 +1026,10 @@ GROUPS = {
         ("css", HP + ".gb-acct-help__title", "font-size", "14px"),
         ("css", HP + ".gb-acct-help__title", "color", "rgb(26, 26, 26)"),
         ("css", HP + ".gb-acct-help__lines", "row-gap", "8px"),
-        ("text", HP + ".gb-acct-help__link", ["visit FAQ page"]),
+        # Task 29: 27170's characterStyleOverrides mark the address and the number
+        # as link runs too, so they became real <a>s
+        ("text", HP + ".gb-acct-help__link",
+         ["email@email.com.au", "0400 000 000", "visit FAQ page"]),
         ("css", HP + ".gb-acct-help__link", "color", "rgb(3, 116, 165)"),
         ("css", HP + ".gb-acct-stack", "row-gap", "32px"),
         ("nofit", HP + ".gb-acct-card"),
@@ -1100,170 +1111,176 @@ GROUPS = {
     ],
 
     # -- Task 14: Log in, desktop (2284:35137) --
-    # These two pages carry the SITE header, not the account one: the board's
+    # Task 28 merged Sign up into this page as a second [data-acct-view]; the
+    # signup groups below reach it by clicking the alt link.
+    # This page carries the SITE header, not the account one: the board's
     # instance is Header Navigation Desktop/Closed, the same component the 11
     # MVP pages use (Menu / logo / Shop now / two icons). The account header is
     # a different component and its burger opens the account menu, which a
     # logged-out visitor has no use for.
     ("account-login.html", 1440, None): [
         # anchor first -- every absence below is only meaningful once this exists
-        ("vis", ".gb-acct-auth", True),
+        ("vis", "[data-acct-view=\"login\"].gb-acct-auth", True),
+        ("vis", "[data-acct-view=\"signup\"]", False),
         ("absent", ".gb-acct-nav"),
         ("absent", ".gb-acct-header"),
         ("vis", ".gb-header__cta", True),
         ("text", ".gb-header__cta", ["Shop now"]),
         ("css", ".gb-header__cta", "background-color", "rgb(0, 86, 53)"),
         # 2284:35137 fill
-        ("css", ".gb-acct-auth", "background-color", "rgb(250, 249, 248)"),
+        ("css", "[data-acct-view=\"login\"].gb-acct-auth", "background-color", "rgb(250, 249, 248)"),
         # 35188 / 35189
-        ("text", ".gb-acct-auth__title", ["Log in"]),
-        ("css", ".gb-acct-auth__title", "font-size", "32px"),
-        ("css", ".gb-acct-auth__title", "line-height", "40px"),
-        ("css", ".gb-acct-auth__title", "letter-spacing", "-0.32px"),
-        ("css", ".gb-acct-auth__title", "font-weight", "800"),
-        ("css", ".gb-acct-auth__title", "color", "rgb(27, 28, 30)"),
-        ("text", ".gb-acct-auth__sub", ["Log in to manage your subscription"]),
-        ("css", ".gb-acct-auth__sub", "font-size", "18px"),
-        ("css", ".gb-acct-auth__sub", "line-height", "28px"),
-        ("css", ".gb-acct-auth__sub", "letter-spacing", "-0.36px"),
-        ("css", ".gb-acct-auth__sub", "color", "rgb(101, 101, 101)"),
+        ("text", "[data-acct-view=\"login\"] .gb-acct-auth__title", ["Log in"]),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__title", "font-size", "32px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__title", "line-height", "40px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__title", "letter-spacing", "-0.32px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__title", "font-weight", "800"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__title", "color", "rgb(27, 28, 30)"),
+        ("text", "[data-acct-view=\"login\"] .gb-acct-auth__sub", ["Log in to manage your subscription"]),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__sub", "font-size", "18px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__sub", "line-height", "28px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__sub", "letter-spacing", "-0.36px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__sub", "color", "rgb(101, 101, 101)"),
         # 35179 pads 64/96 and puts 48 between the heading and the container
-        ("css", ".gb-acct-auth", "padding-top", "64px"),
-        ("css", ".gb-acct-auth", "padding-bottom", "96px"),
-        ("css", ".gb-acct-auth", "row-gap", "48px"),
+        ("css", "[data-acct-view=\"login\"].gb-acct-auth", "padding-top", "64px"),
+        ("css", "[data-acct-view=\"login\"].gb-acct-auth", "padding-bottom", "96px"),
+        ("css", "[data-acct-view=\"login\"].gb-acct-auth", "row-gap", "48px"),
         # 35190: 1280 wide, 32 each side, 32 between the form, the alt line and
         # the note
-        ("css", ".gb-acct-auth__inner", "max-width", "1280px"),
-        ("css", ".gb-acct-auth__inner", "padding-left", "32px"),
-        ("css", ".gb-acct-auth__inner", "row-gap", "32px"),
-        ("css", ".gb-acct-auth__form", "width", "480px"),
-        ("css", ".gb-acct-auth__form", "row-gap", "32px"),
-        ("css", ".gb-acct-auth__fields", "row-gap", "24px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__inner", "max-width", "1280px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__inner", "padding-left", "32px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__inner", "row-gap", "32px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__form", "width", "480px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__form", "row-gap", "32px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__fields", "row-gap", "24px"),
         # 196:17634, the same input component the modals already use
-        ("text", ".gb-acct-auth__form .gb-acct-field__label", ["Email", "Password"]),
-        ("css", ".gb-acct-auth__form .gb-acct-field__input", "height", "44px"),
-        ("css", ".gb-acct-auth__form .gb-acct-field__input", "border-radius", "8px"),
-        ("css", ".gb-acct-auth__form .gb-acct-field__input",
+        ("text", "[data-acct-view=\"login\"] .gb-acct-auth__form .gb-acct-field__label", ["Email", "Password"]),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__form .gb-acct-field__input", "height", "44px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__form .gb-acct-field__input", "border-radius", "8px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__form .gb-acct-field__input",
          "border-top-color", "rgb(204, 204, 204)"),
-        ("css", ".gb-acct-auth__form .gb-acct-field__input", "font-size", "16px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__form .gb-acct-field__input", "font-size", "16px"),
         # 35202: underlined, and it is a link here (35129 on sign-up is not)
-        ("text", ".gb-acct-auth__aside", ["Forgot your password?"]),
-        ("css", ".gb-acct-auth__aside", "font-size", "16px"),
-        ("css", ".gb-acct-auth__aside", "line-height", "24px"),
-        ("css", ".gb-acct-auth__aside", "color", "rgb(128, 128, 128)"),
-        ("css", ".gb-acct-auth__aside", "text-decoration-line", "underline"),
+        ("text", "[data-acct-view=\"login\"] .gb-acct-auth__aside", ["Forgot your password?"]),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__aside", "font-size", "16px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__aside", "line-height", "24px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__aside", "color", "rgb(128, 128, 128)"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__aside", "text-decoration-line", "underline"),
         # 35203
-        ("text", ".gb-acct-auth__submit", ["Log in"]),
-        ("css", ".gb-acct-auth__submit", "height", "52px"),
-        ("css", ".gb-acct-auth__submit", "background-color", "rgb(0, 86, 53)"),
-        ("css", ".gb-acct-auth__submit", "color", "rgb(255, 255, 255)"),
-        ("css", ".gb-acct-auth__submit", "font-size", "16px"),
-        ("css", ".gb-acct-auth__submit", "line-height", "28px"),
-        ("css", ".gb-acct-auth__submit", "letter-spacing", "0.48px"),
+        ("text", "[data-acct-view=\"login\"] .gb-acct-auth__submit", ["Log in"]),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__submit", "height", "52px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__submit", "background-color", "rgb(0, 86, 53)"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__submit", "color", "rgb(255, 255, 255)"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__submit", "font-size", "16px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__submit", "line-height", "28px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__submit", "letter-spacing", "0.48px"),
         # 35204: only the trailing run is green and underlined
-        ("text", ".gb-acct-auth__alt", [u"Don\u2019t have an account? Sign up"]),
-        ("css", ".gb-acct-auth__alt", "font-size", "16px"),
-        ("css", ".gb-acct-auth__alt", "color", "rgb(102, 102, 102)"),
-        ("css", ".gb-acct-auth__alt a", "color", "rgb(0, 86, 53)"),
-        ("css", ".gb-acct-auth__alt a", "text-decoration-line", "underline"),
+        ("text", "[data-acct-view=\"login\"] .gb-acct-auth__alt", [u"Don\u2019t have an account? Sign up"]),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__alt", "font-size", "16px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__alt", "color", "rgb(102, 102, 102)"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__alt a", "color", "rgb(0, 86, 53)"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__alt a", "text-decoration-line", "underline"),
         # 35205
-        ("css", ".gb-acct-auth__note", "background-color", "rgb(245, 241, 233)"),
-        ("css", ".gb-acct-auth__note", "border-radius", "8px"),
-        ("css", ".gb-acct-auth__note", "padding-top", "24px"),
-        ("css", ".gb-acct-auth__note", "padding-left", "24px"),
-        ("css", ".gb-acct-auth__note", "row-gap", "4px"),
-        ("text", ".gb-acct-auth__note-title",
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note", "background-color", "rgb(245, 241, 233)"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note", "border-radius", "8px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note", "padding-top", "24px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note", "padding-left", "24px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note", "row-gap", "4px"),
+        ("text", "[data-acct-view=\"login\"] .gb-acct-auth__note-title",
          [u"Ordered before but haven\u2019t set up an account?"]),
-        ("css", ".gb-acct-auth__note-title", "font-size", "16px"),
-        ("css", ".gb-acct-auth__note-title", "font-weight", "500"),
-        ("css", ".gb-acct-auth__note-title", "color", "rgb(27, 28, 30)"),
-        ("text", ".gb-acct-auth__note-text",
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note-title", "font-size", "16px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note-title", "font-weight", "500"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note-title", "color", "rgb(27, 28, 30)"),
+        ("text", "[data-acct-view=\"login\"] .gb-acct-auth__note-text",
          [u"No worries\u2014just sign up with the same email and we\u2019ll link "
           u"your order history automatically."]),
-        ("css", ".gb-acct-auth__note-text", "font-size", "16px"),
-        ("css", ".gb-acct-auth__note-text", "color", "rgb(101, 101, 101)"),
-        ("nofit", ".gb-acct-auth"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note-text", "font-size", "16px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note-text", "color", "rgb(101, 101, 101)"),
+        ("nofit", "[data-acct-view=\"login\"].gb-acct-auth"),
     ],
     # -- Task 14: Log in, phone (2284:34993) --
     ("account-login.html", 390, None): [
-        ("vis", ".gb-acct-auth", True),
+        ("vis", "[data-acct-view=\"login\"].gb-acct-auth", True),
+        ("vis", "[data-acct-view=\"signup\"]", False),
         ("absent", ".gb-acct-nav"),
         # 35002 / 35004: smaller, and the ink is $c-ink here, not $c-gray-850
-        ("css", ".gb-acct-auth__title", "font-size", "24px"),
-        ("css", ".gb-acct-auth__title", "line-height", "30px"),
-        ("css", ".gb-acct-auth__title", "letter-spacing", "-0.24px"),
-        ("css", ".gb-acct-auth__title", "color", "rgb(1, 19, 7)"),
-        ("css", ".gb-acct-auth__sub", "font-size", "16px"),
-        ("css", ".gb-acct-auth__sub", "line-height", "24px"),
-        ("css", ".gb-acct-auth__sub", "letter-spacing", "-0.32px"),
-        ("css", ".gb-acct-auth__sub", "color", "rgb(102, 102, 102)"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__title", "font-size", "24px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__title", "line-height", "30px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__title", "letter-spacing", "-0.24px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__title", "color", "rgb(1, 19, 7)"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__sub", "font-size", "16px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__sub", "line-height", "24px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__sub", "letter-spacing", "-0.32px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__sub", "color", "rgb(102, 102, 102)"),
         # 34999: 64 top and bottom, 20 each side
-        ("css", ".gb-acct-auth", "padding-top", "64px"),
-        ("css", ".gb-acct-auth", "padding-bottom", "64px"),
-        ("css", ".gb-acct-auth__inner", "padding-left", "20px"),
+        ("css", "[data-acct-view=\"login\"].gb-acct-auth", "padding-top", "64px"),
+        ("css", "[data-acct-view=\"login\"].gb-acct-auth", "padding-bottom", "64px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__inner", "padding-left", "20px"),
         # 35005: the phone board spaces the button, the alt line and the note
         # 48 apart, not the desktop's 32
-        ("css", ".gb-acct-auth__inner", "row-gap", "48px"),
-        ("css", ".gb-acct-auth__form", "row-gap", "32px"),
-        ("css", ".gb-acct-auth__aside", "font-size", "14px"),
-        ("css", ".gb-acct-auth__aside", "line-height", "20px"),
-        ("css", ".gb-acct-auth__aside", "color", "rgb(128, 128, 128)"),
-        ("css", ".gb-acct-auth__alt", "font-size", "14px"),
-        ("css", ".gb-acct-auth__alt", "line-height", "20px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__inner", "row-gap", "48px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__form", "row-gap", "32px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__aside", "font-size", "14px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__aside", "line-height", "20px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__aside", "color", "rgb(128, 128, 128)"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__alt", "font-size", "14px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__alt", "line-height", "20px"),
         # 35016 stays 52 tall on the phone board, unlike .gb-btn--lg which the
         # site drops to 44 below 768
-        ("css", ".gb-acct-auth__submit", "height", "52px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__submit", "height", "52px"),
         # 35018
-        ("css", ".gb-acct-auth__note", "padding-top", "16px"),
-        ("css", ".gb-acct-auth__note", "padding-left", "20px"),
-        ("css", ".gb-acct-auth__note-title", "font-size", "14px"),
-        ("css", ".gb-acct-auth__note-title", "font-weight", "400"),
-        ("css", ".gb-acct-auth__note-title", "color", "rgb(1, 19, 7)"),
-        ("css", ".gb-acct-auth__note-text", "font-size", "14px"),
-        ("css", ".gb-acct-auth__note-text", "color", "rgb(102, 102, 102)"),
-        ("nofit", ".gb-acct-auth"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note", "padding-top", "16px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note", "padding-left", "20px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note-title", "font-size", "14px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note-title", "font-weight", "400"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note-title", "color", "rgb(1, 19, 7)"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note-text", "font-size", "14px"),
+        ("css", "[data-acct-view=\"login\"] .gb-acct-auth__note-text", "color", "rgb(102, 102, 102)"),
+        ("nofit", "[data-acct-view=\"login\"].gb-acct-auth"),
     ],
     # -- Task 14: Sign up, desktop (2284:35059) --
     # The heading on this one board is Lexend 36/44; every other heading in the
     # account set, this page's own phone board included, is PP Palma. Treated as
     # a board slip and built to match Log in -- logged in SPEC section 8.
-    ("account-signup.html", 1440, None): [
-        ("vis", ".gb-acct-auth", True),
+    ("account-login.html", 1440, GOTO_SIGNUP): [
+        ("vis", "[data-acct-view=\"signup\"].gb-acct-auth", True),
+        ("vis", "[data-acct-view=\"login\"]", False),
         ("absent", ".gb-acct-nav"),
         ("absent", ".gb-acct-header"),
         ("vis", ".gb-header__cta", True),
         ("css", ".gb-header__cta", "background-color", "rgb(0, 86, 53)"),
-        ("text", ".gb-acct-auth__title", ["Sign up"]),
-        ("css", ".gb-acct-auth__title", "font-size", "32px"),
-        ("css", ".gb-acct-auth__title", "font-weight", "800"),
-        ("text", ".gb-acct-auth__sub",
+        ("text", "[data-acct-view=\"signup\"] .gb-acct-auth__title", ["Sign up"]),
+        ("css", "[data-acct-view=\"signup\"] .gb-acct-auth__title", "font-size", "32px"),
+        ("css", "[data-acct-view=\"signup\"] .gb-acct-auth__title", "font-weight", "800"),
+        ("text", "[data-acct-view=\"signup\"] .gb-acct-auth__sub",
          ["Sign up to edit, skip or manage your subscription"]),
-        ("css", ".gb-acct-auth__sub", "font-size", "18px"),
+        ("css", "[data-acct-view=\"signup\"] .gb-acct-auth__sub", "font-size", "18px"),
         # 35116: two 224 columns, 32 apart
-        ("text", ".gb-acct-auth__form .gb-acct-field__label",
+        ("text", "[data-acct-view=\"signup\"] .gb-acct-auth__form .gb-acct-field__label",
          ["First name*", "Last name*", "Email*", "Password"]),
-        ("css", ".gb-acct-auth__row", "column-gap", "32px"),
-        ("css", ".gb-acct-auth__row .gb-acct-field", "width", "224px"),
+        ("css", "[data-acct-view=\"signup\"] .gb-acct-auth__row", "column-gap", "32px"),
+        ("css", "[data-acct-view=\"signup\"] .gb-acct-auth__row .gb-acct-field", "width", "224px"),
         # 35129: same slot as Log in's Forgot line but static text, no underline
-        ("text", ".gb-acct-auth__aside", ["Must be at least 8 characters"]),
-        ("css", ".gb-acct-auth__aside", "text-decoration-line", "none"),
-        ("text", ".gb-acct-auth__submit", ["Sign up"]),
-        ("css", ".gb-acct-auth__submit", "height", "52px"),
-        ("text", ".gb-acct-auth__alt", ["Already have an account? Log in"]),
-        ("css", ".gb-acct-auth__alt a", "color", "rgb(0, 86, 53)"),
-        ("nofit", ".gb-acct-auth"),
+        ("text", "[data-acct-view=\"signup\"] .gb-acct-auth__aside", ["Must be at least 8 characters"]),
+        ("css", "[data-acct-view=\"signup\"] .gb-acct-auth__aside", "text-decoration-line", "none"),
+        ("text", "[data-acct-view=\"signup\"] .gb-acct-auth__submit", ["Sign up"]),
+        ("css", "[data-acct-view=\"signup\"] .gb-acct-auth__submit", "height", "52px"),
+        ("text", "[data-acct-view=\"signup\"] .gb-acct-auth__alt", ["Already have an account? Log in"]),
+        ("css", "[data-acct-view=\"signup\"] .gb-acct-auth__alt a", "color", "rgb(0, 86, 53)"),
+        ("nofit", "[data-acct-view=\"signup\"].gb-acct-auth"),
     ],
     # -- Task 14: Sign up, phone (2284:35023) --
-    ("account-signup.html", 390, None): [
-        ("vis", ".gb-acct-auth", True),
+    ("account-login.html", 390, GOTO_SIGNUP): [
+        ("vis", "[data-acct-view=\"signup\"].gb-acct-auth", True),
+        ("vis", "[data-acct-view=\"login\"]", False),
         ("absent", ".gb-acct-nav"),
-        ("css", ".gb-acct-auth__title", "font-size", "24px"),
+        ("css", "[data-acct-view=\"signup\"] .gb-acct-auth__title", "font-size", "24px"),
         # 35038-35045: the two name fields stack, they do not stay side by side
-        ("css", ".gb-acct-auth__row .gb-acct-field", "width", "350px"),
-        ("css", ".gb-acct-auth__row", "row-gap", "24px"),
-        ("text", ".gb-acct-auth__aside", ["Must be at least 8 characters"]),
-        ("css", ".gb-acct-auth__aside", "font-size", "14px"),
-        ("nofit", ".gb-acct-auth"),
+        ("css", "[data-acct-view=\"signup\"] .gb-acct-auth__row .gb-acct-field", "width", "350px"),
+        ("css", "[data-acct-view=\"signup\"] .gb-acct-auth__row", "row-gap", "24px"),
+        ("text", "[data-acct-view=\"signup\"] .gb-acct-auth__aside", ["Must be at least 8 characters"]),
+        ("css", "[data-acct-view=\"signup\"] .gb-acct-auth__aside", "font-size", "14px"),
+        ("nofit", "[data-acct-view=\"signup\"].gb-acct-auth"),
     ],
 }
 
@@ -1301,11 +1318,13 @@ def main():
                     # skip the wiring Task 5 put on that button.
                     nav = ".gb-acct-nav" if w > 767 else ".gb-acct-list"
                     try:
+                        # ⚠ Task 40: 750, not 450 -- the view being left runs a
+                        # 500ms exit animation and is on screen until it ends
                         pg.click(nav + " [data-acct-goto='subscriptions']", timeout=2000)
-                        pg.wait_for_timeout(450)
+                        pg.wait_for_timeout(750)
                         pg.click("[data-acct-view='subscriptions'] "
                                  ".gb-acct-sub__cta[data-acct-goto='detail']", timeout=2000)
-                        pg.wait_for_timeout(450)
+                        pg.wait_for_timeout(750)
                     except Exception as e:
                         print("RED  %-52s cannot reach detail: %s" % (label, type(e).__name__))
                         red += len(checks); pg.close(); continue
@@ -1341,7 +1360,10 @@ def main():
                         pg.wait_for_timeout(450)
                         pg.click(HP + ".gb-acct-faq__item:nth-child(2) "
                                  ".gb-acct-faq__q", timeout=2000)
-                        pg.wait_for_timeout(400)
+                        # ⚠ Task 29 gave the rows a 400ms slide, and the closing
+                        # row only drops out of the a11y tree on animationend.
+                        # Waiting exactly 400 raced it and read two answers.
+                        pg.wait_for_timeout(700)
                     except Exception as e:
                         print("RED  %-52s cannot open row 2: %s" % (label, type(e).__name__))
                         red += len(checks); pg.close(); continue
@@ -1355,14 +1377,31 @@ def main():
                     except Exception as e:
                         print("RED  %-52s cannot dirty the form: %s" % (label, type(e).__name__))
                         red += len(checks); pg.close(); continue
+                elif action == GOTO_SIGNUP:
+                    # Through the link, not location.hash: "click Sign up and it
+                    # swaps" IS the requirement, so the judge has to exercise it.
+                    try:
+                        pg.click("[data-acct-view='login'] "
+                                 ".gb-acct-auth__alt [data-acct-goto='signup']",
+                                 timeout=2000)
+                        pg.wait_for_timeout(450)
+                    except Exception as e:
+                        print("RED  %-52s cannot reach signup: %s"
+                              % (label, type(e).__name__))
+                        red += len(checks); pg.close(); continue
                 elif action == GOTO_ORDER:
                     pg.evaluate("()=>{location.hash='#order'}")
                     pg.wait_for_timeout(450)
                 elif action in (STATE_PREPARING, STATE_RENEWAL):
                     state = action.split("-", 1)[1]
                     n = pg.evaluate(
+                        # Task 25 gave the card a modifier class as well; both hooks
+                        # select the state, so both have to move or the two states
+                        # render at once.
                         "s=>{const e=document.querySelector('[data-acct-order-state]');"
-                        "if(!e)return 0;e.setAttribute('data-acct-order-state',s);return 1}",
+                        "if(!e)return 0;e.setAttribute('data-acct-order-state',s);"
+                        "e.className=e.className.replace(/gb-acct-order--[a-z]+/,'gb-acct-order--'+s);"
+                        "return 1}",
                         state)
                     if not n:
                         print("RED  %-52s no [data-acct-order-state] to set" % label)
@@ -1373,18 +1412,24 @@ def main():
                 else:
                     nav = ".gb-acct-nav" if w > 767 else ".gb-acct-list"
                     trigger = {
-                        OPEN_MENU: "[data-acct-menu-toggle]",
                         GOTO_SUBS: nav + " [data-acct-goto='subscriptions']",
                         GOTO_ORDERS: nav + " [data-acct-goto='orders']",
                         GOTO_DETAILS: nav + " [data-acct-goto='details']",
                         GOTO_PASSWORD: nav + " [data-acct-goto='password']",
                         GOTO_HELP: nav + " [data-acct-goto='help']",
-                    }[action]
+                    }[action] if action != OPEN_MENU else ".gb-acct-header__link--account"
                     try:
-                        pg.click(trigger, timeout=2000)
-                        pg.wait_for_timeout(450)
+                        # the menu has no click route any more: it is the account
+                        # icon's hover panel, and hover leaves [hidden] in place
+                        if action == OPEN_MENU:
+                            pg.hover(trigger, timeout=2000)
+                        else:
+                            pg.click(trigger, timeout=2000)
+                        # ⚠ Task 40: 500ms of exit animation on the view being
+                        # left, so a 450 read still has both on screen
+                        pg.wait_for_timeout(750)
                     except Exception as e:
-                        print("RED  %-52s cannot click %s: %s" % (label, trigger, type(e).__name__))
+                        print("RED  %-52s cannot reach %s: %s" % (label, trigger, type(e).__name__))
                         red += len(checks); pg.close(); continue
             for chk in checks:
                 kind, sel = chk[0], chk[1]
@@ -1405,8 +1450,11 @@ def main():
                     # textContent inside a display:none subtree, so from Task 7
                     # on -- where every state ships all its variants and hides
                     # the rest -- an unfiltered read returns the hidden ones too.
+                    # ⚠ checkVisibility() ignores the visibility property by
+                    # default, so a panel hidden that way counts as shown and
+                    # contributes an empty string. acctdiff hit this in Task 27.
                     got = pg.eval_on_selector_all(
-                        sel, "els=>els.filter(e=>e.checkVisibility())"
+                        sel, "els=>els.filter(e=>e.checkVisibility({visibilityProperty:true}))"
                              ".map(e=>e.innerText.trim())")
                     tag = "%s text(%s)" % (label, sel)
                     if got == want:

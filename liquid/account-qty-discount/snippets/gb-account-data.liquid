@@ -1,0 +1,3047 @@
+{%- doc -%}
+  Account portal data layer. Fetches from the Cloudflare Worker at
+  /apps/account/* and populates the DOM. Frontend account.js handles UI
+  choreography (tab switching, modal open/close, dirty checking) — this
+  script only owns data.
+
+  v1: fetch subscription list on page load, render into
+  [data-acct-view="subscriptions"] .gb-acct-subs__list.
+  v2: on "Manage Subscription" click, populate [data-acct-view="detail"] from
+  the cached contract (Worker merges full detail into the list response).
+  v3: modal submit hooks — prefill on open, POST on save, refetch on success.
+{%- enddoc -%}
+<style>
+  .gb-acct-api-loading { min-height: 140px; display: flex; align-items: center; justify-content: center; }
+  .gb-acct-api-loading--overview { min-height: 175px; background: #d5f59a; border-radius: 12px; }
+  .gb-acct-api-spinner { display: inline-block; width: 32px; height: 32px; border: 3px solid rgba(0,84,55,.16); border-top-color: #005437; border-radius: 50%; animation: gb-acct-api-spin .7s linear infinite; }
+  @keyframes gb-acct-api-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .gb-acct-api-spinner { animation: none; } }
+</style>
+
+<script>
+  (function () {
+    if (window.__gbAcctDataBound) return; window.__gbAcctDataBound = true;
+
+    var CUSTOMER_EMAIL = {{ customer.email | json }};
+    var RETENTION_DISCOUNT_CODE = {{ settings.gb_account_retention_discount_code | default: 'Test20' | strip | json }};
+
+    // Products available in the "Add Items" modal. Sourced from the section's
+    // configured collection (Theme Editor → Account portal → Add-items
+    // collection). Empty array if the merchant hasn't picked one yet.
+    var ADD_PRODUCTS = [
+      {%- assign _col = collections[settings.add_items_collection] -%}
+      {%- if _col != blank -%}
+        {%- for prod in _col.products -%}
+          {%- unless forloop.first -%},{%- endunless -%}
+          {
+            "id": {{ prod.id | json }},
+            "title": {{ prod.title | json }},
+            "handle": {{ prod.handle | json }},
+            "image": {{ prod.featured_image | img_url: '400x' | json }},
+            "options": [{%- for o in prod.options_with_values -%}{%- unless forloop.first -%},{%- endunless -%}{
+              "name": {{ o.name | json }},
+              "values": [{%- for v in o.values -%}{%- unless forloop.first -%},{%- endunless -%}{{ v | json }}{%- endfor -%}]
+            }{%- endfor -%}],
+            "variants": [{%- for v in prod.variants -%}{%- unless forloop.first -%},{%- endunless -%}{
+              "id": {{ v.id | json }},
+              "title": {{ v.title | json }},
+              "price": {{ v.price | json }},
+              "compare_at_price": {{ v.compare_at_price | json }},
+              "selling_plan_allocations": [{%- for allocation in v.selling_plan_allocations -%}{%- unless forloop.first -%},{%- endunless -%}{"selling_plan_id": {{ allocation.selling_plan.id | json }}, "price": {{ allocation.price | json }}, "compare_at_price": {{ allocation.compare_at_price | json }}}{%- endfor -%}],
+              "option1": {{ v.option1 | json }},
+              "option2": {{ v.option2 | json }},
+              "option3": {{ v.option3 | json }},
+              "available": {{ v.available | json }},
+              "inventory_quantity": {{ v.inventory_quantity | json }},
+              "inventory_policy": {{ v.inventory_policy | json }},
+              "inventory_management": {{ v.inventory_management | json }},
+              "image": {{ v.image | img_url: '400x' | json }}
+            }{%- endfor -%}],
+            "selling_plans": [
+              {%- assign _first_add_plan = true -%}
+              {%- for plan_group in prod.selling_plan_groups -%}
+                {%- for plan in plan_group.selling_plans -%}
+                  {%- unless _first_add_plan -%},{%- endunless -%}
+                  {"id": {{ plan.id | json }}, "name": {{ plan.name | json }}}
+                  {%- assign _first_add_plan = false -%}
+                {%- endfor -%}
+              {%- endfor -%}
+            ]
+          }
+        {%- endfor -%}
+      {%- endif -%}
+    ];
+
+    var VARIANT_STOCK = Object.create(null);
+    function stockForVariant(id) {
+      var key = String(idOf(id));
+      if (VARIANT_STOCK[key]) return VARIANT_STOCK[key];
+      var variant;
+      ADD_PRODUCTS.some(function (product) {
+        variant = (product.variants || []).find(function (v) { return String(v.id) === key; });
+        return !!variant;
+      });
+      if (!variant) return null;
+      var limited = !!variant.inventory_management && variant.inventory_policy === 'deny';
+      return { available: variant.available !== false, maxQuantity: limited ? Math.max(0, Number(variant.inventory_quantity) || 0) : null };
+    }
+    function stockForLine(line) { return VARIANT_STOCK[String(idOf(line.variantId))] || line.inventoryAvailability || stockForVariant(line.variantId); }
+    // The merchant enabled Appstle partial orders: sold-out lines are retained
+    // on the contract but excluded from the next-order price preview.
+    function lineBillsNextOrder(line) {
+      var stock = stockForLine(line);
+      return !stock || stock.available !== false;
+    }
+    function nextOrderShipping(contract) {
+      if (!collectionItems(contract.lines).some(lineBillsNextOrder)) return 0;
+      return contract.deliveryPrice ? parseFloat(contract.deliveryPrice.amount || 0) : 0;
+    }
+
+    function refreshModalStock(panel) {
+      var version = (panel.__gbStockVersion || 0) + 1;
+      panel.__gbStockVersion = version;
+      var previousError = panel.querySelector('[data-acct-stock-error]');
+      if (previousError) previousError.remove();
+      panel.setAttribute('data-acct-stock-loading', '');
+      var mode = panel.getAttribute('data-acct-modal-panel');
+      var sync = mode === 'edit-product' ? syncEditCta : syncAddCta;
+      sync(panel);
+      var ids = [];
+      panel.querySelectorAll('.gb-acct-prod').forEach(function (card) {
+        var product = ADD_PRODUCTS.find(function (p) { return String(p.id) === card.getAttribute('data-product-id'); });
+        if (product) (product.variants || []).forEach(function (v) { if (ids.indexOf(v.id) < 0) ids.push(v.id); });
+      });
+      var chain = Promise.resolve();
+      for (var i = 0; i < ids.length; i += 250) {
+        (function (batch) {
+          chain = chain.then(function () {
+            return api('/variant-availability', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ variant_ids: batch }) })
+              .then(function (res) {
+                if (!res.ok || !res.j || !res.j.ok) throw new Error(res.j && res.j.error || 'Unable to check stock. Please try again.');
+                Object.keys(res.j.variants || {}).forEach(function (id) { VARIANT_STOCK[id] = res.j.variants[id]; });
+              });
+          });
+        })(ids.slice(i, i + 250));
+      }
+      chain.then(function () {
+        if (panel.__gbStockVersion !== version) return;
+        panel.querySelectorAll('.gb-acct-prod').forEach(function (card) {
+          var product = ADD_PRODUCTS.find(function (p) { return String(p.id) === card.getAttribute('data-product-id'); });
+          if (product) updateCardPrice(card, product);
+        });
+        panel.removeAttribute('data-acct-stock-loading');
+        sync(panel);
+      }).catch(function (error) {
+        if (panel.__gbStockVersion !== version) return;
+        var alert = panel.querySelector('[data-acct-stock-error]');
+        if (!alert) { alert = document.createElement('p'); alert.setAttribute('data-acct-stock-error', ''); alert.setAttribute('role', 'alert'); alert.style.color = '#dd655e'; panel.querySelector('.gb-acct-prod-grid').appendChild(alert); }
+        alert.textContent = error.message;
+        // Leave Save disabled until stock can be verified on reopening the modal.
+      });
+    }
+
+    // Full customer orders inlined from Liquid — covers both overview's
+    // current-order card and the #order detail view.
+    var CUSTOMER_ORDERS = [
+      {%- for o in customer.orders limit: 20 -%}
+        {%- unless forloop.first -%},{%- endunless -%}
+        {
+          "id": {{ o.id | json }},
+          "name": {{ o.name | json }},
+          "created_at": {{ o.created_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }},
+          "fulfillment_status": {{ o.fulfillment_status | json }},
+          "fulfillment_status_label": {{ o.fulfillment_status_label | json }},
+          "financial_status": {{ o.financial_status | json }},
+          "financial_status_label": {{ o.financial_status_label | json }},
+          "cancelled_at": {{ o.cancelled_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }},
+          "url": {{ o.customer_url | json }},
+          "order_status_url": {{ o.order_status_url | json }},
+          "subtotal_price": {{ o.subtotal_price | json }},
+          "total_price": {{ o.total_price | json }},
+          "total_discounts": {{ o.total_discounts | json }},
+          "shipping_price": {{ o.shipping_price | json }},
+          "currency": {{ o.currency | json }},
+          "shipping_method": {%- if o.shipping_methods.first -%}{
+            "title": {{ o.shipping_methods.first.title | json }},
+            "price": {{ o.shipping_methods.first.price | json }}
+          }{%- else -%}null{%- endif -%},
+          "shipping_address": {%- if o.shipping_address -%}{
+            "name": {{ o.shipping_address.name | json }},
+            "address1": {{ o.shipping_address.address1 | json }},
+            "address2": {{ o.shipping_address.address2 | json }},
+            "city": {{ o.shipping_address.city | json }},
+            "province_code": {{ o.shipping_address.province_code | json }},
+            "province": {{ o.shipping_address.province | json }},
+            "zip": {{ o.shipping_address.zip | json }},
+            "country": {{ o.shipping_address.country | json }}
+          }{%- else -%}null{%- endif -%},
+          "billing_address": {%- if o.billing_address -%}{
+            "name": {{ o.billing_address.name | json }},
+            "address1": {{ o.billing_address.address1 | json }},
+            "address2": {{ o.billing_address.address2 | json }},
+            "city": {{ o.billing_address.city | json }},
+            "province_code": {{ o.billing_address.province_code | json }},
+            "province": {{ o.billing_address.province | json }},
+            "zip": {{ o.billing_address.zip | json }},
+            "country": {{ o.billing_address.country | json }}
+          }{%- else -%}null{%- endif -%},
+          "line_items": [
+            {%- for li in o.line_items -%}
+              {%- unless forloop.first -%},{%- endunless -%}
+              {
+                "title": {{ li.title | json }},
+                "product_title": {{ li.product.title | json }},
+                "variant_title": {{ li.variant.title | json }},
+                "quantity": {{ li.quantity | json }},
+                "price": {{ li.price | json }},
+                "original_price": {{ li.original_price | json }},
+                "original_line_price": {{ li.original_line_price | json }},
+                "final_price": {{ li.final_price | json }},
+                "final_line_price": {{ li.final_line_price | json }},
+                "discount_allocations": [{%- for allocation in li.discount_allocations -%}{%- unless forloop.first -%},{%- endunless -%}{"amount": {{ allocation.amount | json }}}{%- endfor -%}],
+                "image": {{ li.image | img_url: '200x' | json }},
+                "is_subscription": {%- if li.selling_plan_allocation -%}true{%- else -%}false{%- endif -%},
+                "product_id": {{ li.product.id | json }},
+                "selling_plans": [
+                  {%- assign _first_order_plan = true -%}
+                  {%- for plan_group in li.product.selling_plan_groups -%}
+                    {%- for plan in plan_group.selling_plans -%}
+                      {%- unless _first_order_plan -%},{%- endunless -%}
+                      {"id": {{ plan.id | json }}, "name": {{ plan.name | json }}}
+                      {%- assign _first_order_plan = false -%}
+                    {%- endfor -%}
+                  {%- endfor -%}
+                ]
+              }
+            {%- endfor -%}
+          ]
+        }
+      {%- endfor -%}
+    ];
+    // Money is in minor units (cents) via Liquid | json on money fields.
+    function moneyCents(cents, currency) {
+      var n = (cents == null ? 0 : Number(cents)) / 100;
+      var sym = { AUD: '$', USD: '$', NZD: '$', GBP: '£', EUR: '€' }[currency || 'AUD'] || '$';
+      return sym + n.toFixed(2);
+    }
+
+    var subsView = document.querySelector('[data-acct-view="subscriptions"]');
+    var subsList = subsView && subsView.querySelector('.gb-acct-subs__list');
+    var subsTpl = subsView && subsView.querySelector('template[data-acct-sub-template]');
+    if (!subsList || !subsTpl) return;
+    var tplCard = subsTpl.content.querySelector('.gb-acct-sub');
+    if (!tplCard) return;
+    var cardHtml = tplCard.outerHTML;
+
+    // Loading state: keep the card shell visible, replace the body with a
+    // a loading spinner while the subscription API responds.
+    var LOADING_CARD_HTML =
+      '<article class="gb-acct-sub" data-acct-loading>' +
+        '<div class="gb-acct-sub__body">' +
+          '<div class="gb-acct-api-loading" role="status" aria-label="Loading"><span class="gb-acct-api-spinner" aria-hidden="true"></span></div>' +
+        '</div>' +
+      '</article>';
+    subsList.innerHTML = LOADING_CARD_HTML;
+
+    function api(path, opts) {
+      return fetch('/apps/account' + path, Object.assign({ credentials: 'same-origin' }, opts || {}))
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); });
+    }
+
+    // Strip Shopify gid:// prefix; Appstle exposes ids as numeric strings inside gids.
+    function idOf(gid) { return typeof gid === 'string' ? gid.replace(/^gid:\/\/shopify\/\w+\//, '') : gid; }
+
+    function money(amount, code) {
+      var n = parseFloat(amount || 0);
+      var sym = { AUD: '$', USD: '$', NZD: '$', GBP: '£', EUR: '€' }[code || 'AUD'] || '$';
+      return sym + n.toFixed(2);
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function shortAddress(addr) {
+      if (!addr) return '';
+      var parts = [];
+      if (addr.address1) parts.push(addr.address1);
+      if (addr.provinceCode) parts.push(addr.provinceCode);
+      if (addr.zip) parts.push(addr.zip);
+      return parts.join(', ');
+    }
+
+    // Sum line totals from a contract's lines.nodes.
+    function contractTotal(contract) {
+      var sub = subtotal(contract);
+      var discounts = activeDiscounts(contract);
+      var reduction = discounts.reduce(function (sum, discount) { return sum + (discount.amount || 0); }, 0);
+      return money(Math.max(0, sub.amount - reduction) + nextOrderShipping(contract), sub.currency);
+    }
+
+    function firstProduct(contract) {
+      var nodes = (contract.lines && contract.lines.nodes) || [];
+      return nodes[0] || null;
+    }
+
+    function moreCount(contract) {
+      var nodes = (contract.lines && contract.lines.nodes) || [];
+      return Math.max(0, nodes.length - 1);
+    }
+
+    // Holiday pauses keep Appstle ACTIVE; the saved resume date controls the UI.
+    function holidayResumeDate(contract) {
+      var attrs = collectionItems(contract && contract.customAttributes);
+      var attr = attrs.find(function (item) { return item && (item.key || item.name) === '_resume_date'; });
+      var iso = attr && String(attr.value || '').trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || '')) return null;
+      var parts = iso.split('-').map(Number);
+      var date = new Date(parts[0], parts[1] - 1, parts[2]);
+      if (localDateToISO(date) !== iso) return null;
+      return iso > localDateToISO(new Date()) ? iso : null;
+    }
+
+    function subscriptionUiState(contract) {
+      var status = String(contract.status || '').toLowerCase();
+      return status === 'active' && holidayResumeDate(contract) ? 'paused' : status;
+    }
+
+    function subscriptionDisplayDate(contract) {
+      // Billing dates come from Appstle; _resume_date only identifies the holiday pause.
+      return contract.nextBillingDate;
+    }
+
+    // Render one subscription card by cloning the template HTML and filling in.
+    function renderCard(contract) {
+      var wrap = document.createElement('div');
+      wrap.innerHTML = cardHtml;
+      var card = wrap.firstElementChild;
+
+      var status = subscriptionUiState(contract);  // Includes holiday fake-pauses.
+      card.setAttribute('data-acct-sub-state', status);
+      card.setAttribute('data-sub-id', idOf(contract.id));
+
+      // Subscription name (customAttribute _subscription_name or fallback)
+      var titleEl = card.querySelector('.gb-acct-sub__title');
+      if (titleEl) titleEl.textContent = subscriptionName(contract);
+
+      // Status pill text (last <span> child of .gb-acct-pill)
+      var pill = card.querySelector('.gb-acct-pill');
+      if (pill) {
+        // Keep the dot, replace the trailing text node
+        var dot = pill.querySelector('.gb-acct-pill__dot');
+        pill.textContent = '';
+        if (dot) pill.appendChild(dot);
+        pill.appendChild(document.createTextNode(status.charAt(0).toUpperCase() + status.slice(1)));
+      }
+
+      // Next renewal date
+      var renewalValue = card.querySelector('[data-acct-sub-renewal] .gb-acct-sub__meta-value');
+      if (renewalValue) renewalValue.textContent = formatDate(subscriptionDisplayDate(contract));
+      var renewalLabel = card.querySelector('[data-acct-sub-renewal] .gb-acct-sub__meta-label');
+      if (renewalLabel) renewalLabel.textContent = status === 'paused' ? 'Subscription restarts' : 'Next renewal date';
+
+      // Shipping address short form
+      var shipValue = card.querySelector('[data-acct-sub-shipping] .gb-acct-sub__meta-value');
+      var addr = contract.deliveryMethod && contract.deliveryMethod.address;
+      if (shipValue) shipValue.textContent = shortAddress(addr);
+
+      // Primary product (thumb + name + qty)
+      var p = firstProduct(contract);
+      var thumb = card.querySelector('.gb-acct-sub__thumb');
+      if (thumb && p) {
+        if (p.variantImage && p.variantImage.url) thumb.setAttribute('src', p.variantImage.url);
+        else thumb.removeAttribute('src');
+      }
+      var pname = card.querySelector('.gb-acct-sub__product-name');
+      if (pname && p) pname.textContent = p.title || '';
+      var pqty = card.querySelector('.gb-acct-sub__product-qty');
+      if (pqty && p) pqty.textContent = 'Quantity: ' + (p.quantity || 1);
+
+      // "+N More Products" — hide if only one line
+      var more = card.querySelector('.gb-acct-sub__more');
+      var mc = moreCount(contract);
+      if (more) {
+        if (mc > 0) more.textContent = '+' + mc + ' More Product' + (mc > 1 ? 's' : '');
+        else more.remove();
+      }
+
+      // Total
+      var totalRow = card.querySelector('.gb-acct-sub__total');
+      if (totalRow) {
+        var spans = totalRow.querySelectorAll('span');
+        if (spans.length >= 2) spans[1].textContent = contractTotal(contract);
+      }
+
+      // CTA button — attach sub id so detail view knows what to fetch
+      var cta = card.querySelector('.gb-acct-sub__cta');
+      if (cta) {
+        cta.setAttribute('data-sub-id', idOf(contract.id));
+        if (status === 'cancelled') cta.textContent = 'Re-Activate Subscription';
+        else cta.textContent = 'Manage Subscription';
+      }
+
+      applyImmediateOrderUi(card, contract);
+      return card;
+    }
+
+    function renderList(contracts) {
+      subsList.innerHTML = '';
+      if (!contracts || !contracts.length) {
+        subsList.innerHTML = '<p class="gb-acct-empty">You have no subscriptions yet.</p>';
+        return;
+      }
+      contracts.forEach(function (c) {
+        contractCache[idOf(c.id)] = c;
+        subsList.appendChild(renderCard(c));
+      });
+    }
+
+    // ────────── Detail view ──────────
+
+    var contractCache = Object.create(null);  // id → contract
+
+    var detailView = document.querySelector('[data-acct-view="detail"]');
+    var detailRoot = detailView && detailView.querySelector('.gb-acct-detail');
+    var detailBody = detailRoot && detailRoot.querySelector('.gb-acct-detail__body');
+
+    // Capture the full detail body markup (structure + <template> children)
+    // BEFORE we swap in the loading state. renderDetail() restores it so
+    // selectors keep working.
+    var detailBodyHtml = detailBody && detailBody.innerHTML;
+
+    // Product row + schedule day pre-rendered as <template>; read their HTML
+    // once from the captured markup so renderDetail can clone freely.
+    function extractTpl(html, attr) {
+      if (!html) return '';
+      var wrap = document.createElement('div');
+      wrap.innerHTML = html;
+      var tpl = wrap.querySelector('template[' + attr + ']');
+      return tpl && tpl.content.firstElementChild ? tpl.content.firstElementChild.outerHTML : '';
+    }
+    var productTplHtml = extractTpl(detailBodyHtml, 'data-acct-product-template');
+    var scheduleDayTplHtml = extractTpl(detailBodyHtml, 'data-acct-schedule-day-template');
+
+    var DETAIL_LOADING_HTML =
+      '<article class="gb-acct-sub" data-acct-loading>' +
+        '<div class="gb-acct-sub__body">' +
+          '<div class="gb-acct-api-loading" role="status" aria-label="Loading"><span class="gb-acct-api-spinner" aria-hidden="true"></span></div>' +
+        '</div>' +
+      '</article>';
+
+    // Swap in loading state on boot so the design's blanked structure doesn't
+    // flash on ?sub=X#detail direct load.
+    if (detailBody) detailBody.innerHTML = DETAIL_LOADING_HTML;
+
+    function frequencyLabel(policy) {
+      if (!policy) return '';
+      var n = policy.intervalCount || 1;
+      var unit = String(policy.interval || 'WEEK').toLowerCase();
+      var plural = { day: 'days', week: 'weeks', month: 'months', year: 'years' }[unit] || unit + 's';
+      var singular = { day: 'day', week: 'week', month: 'month', year: 'year' }[unit] || unit;
+      return 'Ships every ' + n + ' ' + (n === 1 ? singular : plural);
+    }
+
+    // Compute next N renewal dates given the delivery policy.
+    function upcomingDates(startIso, policy, count) {
+      var out = [];
+      if (!startIso || !policy) return out;
+      var unit = String(policy.interval || 'WEEK').toUpperCase();
+      var step = policy.intervalCount || 1;
+      var base = new Date(startIso);
+      if (isNaN(base.getTime())) return out;
+      for (var i = 0; i < count; i++) {
+        var d = new Date(base.getTime());
+        if (unit === 'DAY') d.setDate(base.getDate() + step * i);
+        else if (unit === 'WEEK') d.setDate(base.getDate() + step * 7 * i);
+        else if (unit === 'MONTH') d.setMonth(base.getMonth() + step * i);
+        else if (unit === 'YEAR') d.setFullYear(base.getFullYear() + step * i);
+        out.push(d);
+      }
+      return out;
+    }
+
+    function formatShort(d) {
+      return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+    }
+
+    // Appstle exposes discounts through several shapes. Merge the sources so
+    // stacked discounts are kept, while de-duplicating the same discount when
+    // an endpoint exposes it through more than one property.
+    function collectionItems(source) {
+      if (Array.isArray(source)) return source;
+      if (source && Array.isArray(source.nodes)) return source.nodes;
+      if (source && Array.isArray(source.edges)) {
+        return source.edges.map(function (edge) { return edge && (edge.node || edge); }).filter(Boolean);
+      }
+      return [];
+    }
+
+    function discountCode(discount) {
+      var nested = discount && discount.discountCode;
+      if (nested && typeof nested === 'object') return discount.code || nested.code || discount.title || '';
+      return discount && (discount.code || nested || discount.title) || '';
+    }
+
+    function discountId(discount) {
+      var nested = discount && discount.discountCode;
+      return discount && (discount.id || discount.discountId || discount.appstleDiscountId ||
+        (nested && typeof nested === 'object' && nested.id)) || null;
+    }
+
+    function contractDiscounts(contract) {
+      var sources = [contract.discountCodes, contract.appliedDiscounts, contract.discounts];
+      var discounts = [];
+      var seen = Object.create(null);
+      sources.forEach(function (source) {
+        collectionItems(source).forEach(function (raw) {
+          var item = typeof raw === 'string' ? { code: raw } : raw;
+          if (!item || typeof item !== 'object') return;
+          var id = discountId(item);
+          var code = discountCode(item);
+          var key = id ? 'id:' + String(id) : (code ? 'code:' + String(code).toLowerCase() : '');
+          if (key && Object.prototype.hasOwnProperty.call(seen, key)) {
+            Object.keys(item).forEach(function (name) {
+              if (seen[key][name] == null && item[name] != null) seen[key][name] = item[name];
+            });
+            return;
+          }
+          if (key) seen[key] = item;
+          discounts.push(item);
+        });
+      });
+      return discounts;
+    }
+
+    function discountAllocation(contract, discount) {
+      var id = discountId(discount);
+      if (!id) return null;
+      var found = false;
+      var amount = 0;
+      var currency = null;
+      collectionItems(contract.lines).forEach(function (line) {
+        collectionItems(line && line.discountAllocations).forEach(function (allocation) {
+          var allocatedDiscount = allocation && (allocation.discount || allocation.appliedDiscount);
+          var allocatedId = allocation && allocation.discountId || (allocatedDiscount && allocatedDiscount.id);
+          if (!allocatedId || (String(allocatedId) !== String(id) && String(idOf(allocatedId)) !== String(idOf(id)))) return;
+          found = true;
+          if (!lineBillsNextOrder(line)) return;
+          var allocatedAmount = allocation.amount || allocation.allocatedAmount || allocation.discountAmount;
+          var value = allocatedAmount && typeof allocatedAmount === 'object' ? allocatedAmount.amount : allocatedAmount;
+          amount += parseFloat(value || 0) || 0;
+          currency = (allocatedAmount && allocatedAmount.currencyCode) || currency;
+        });
+      });
+      return found ? { amount: amount, currency: currency } : null;
+    }
+
+    function discountPercentage(discount) {
+      var value = discount && discount.value;
+      var nestedValue = value && typeof value === 'object' ? value.percentage : null;
+      var percent = nestedValue != null ? nestedValue : (discount && (discount.percentage || discount.discountPercentage));
+      var type = [discount && discount.__typename, discount && discount.type, value && value.__typename].join(' ');
+      if (percent == null && /percentage/i.test(type) && typeof value === 'number') percent = value;
+      percent = parseFloat(percent);
+      return isFinite(percent) && percent > 0 ? percent : null;
+    }
+
+    function activeDiscounts(contract) {
+      var remaining = subtotal(contract).amount;
+      return contractDiscounts(contract).map(function (discount) {
+        var allocation = discountAllocation(contract, discount);
+        var percentage = discountPercentage(discount);
+        var value = discount.value;
+        var rawAmount = discount.amount || discount.discountAmount ||
+          (value && typeof value === 'object' && (value.amount || (value.fixedAmount && value.fixedAmount.amount))) ||
+          (discount.fixedAmount && discount.fixedAmount.amount) || 0;
+        var amount = allocation ? allocation.amount : (percentage != null
+          ? subtotal(contract).amount * percentage / 100
+          : parseFloat((rawAmount && typeof rawAmount === 'object' ? rawAmount.amount : rawAmount) || 0));
+        var currency = (allocation && allocation.currency) ||
+          (value && typeof value === 'object' && value.currencyCode) || discount.currencyCode ||
+          (rawAmount && typeof rawAmount === 'object' && rawAmount.currencyCode) || 'AUD';
+        amount = Math.min(remaining, Math.max(0, Math.round((Number(amount) || 0) * 100) / 100));
+        remaining = Math.max(0, Math.round((remaining - amount) * 100) / 100);
+        return { code: discountCode(discount), id: discountId(discount), amount: amount, currency: currency };
+      });
+    }
+
+    function paymentLabel(pm) {
+      if (!pm) return '';
+      var inst = pm.instrument || pm.paymentInstrument || pm;
+      var brand = inst.brand || inst.type || '';
+      var last4 = inst.lastDigits || inst.last4 || '';
+      var email = inst.paypalAccountEmail || inst.email || '';
+      if (email) return 'PayPal\n(' + email + ')';
+      if (brand && last4) return brand + ' •••• ' + last4;
+      return brand || 'Card on file';
+    }
+
+    // Cancel deadline: 1 day before nextBillingDate, at 6:59 AM.
+    function cancelDeadline(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      d.setDate(d.getDate() - 1);
+      var dayMonth = d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+      return 'You can make changes to your next subscription up until ' + dayMonth + ', 6:59 AM';
+    }
+
+    function subtotal(contract) {
+      var sum = 0, currency = 'AUD';
+      collectionItems(contract.lines).forEach(function (line) {
+        var price = line.currentPrice || line.lineDiscountedPrice;
+        if (price) currency = price.currencyCode || currency;
+        if (!lineBillsNextOrder(line) || !price) return;
+        // currentPrice is per unit; lineDiscountedPrice is already a line total.
+        sum += parseFloat(price.amount || 0) * (line.currentPrice ? Number(line.quantity || 1) : 1);
+      });
+      return { amount: Math.round(sum * 100) / 100, currency: currency };
+    }
+
+    function setText(sel, text) {
+      var el = detailRoot.querySelector(sel);
+      if (el) el.textContent = text;
+    }
+
+    function renderProductRow(line) {
+      var wrap = document.createElement('div');
+      wrap.innerHTML = productTplHtml;
+      var row = wrap.firstElementChild;
+      var stock = stockForLine(line);
+      var outOfStock = stock && stock.available === false;
+      row.classList.toggle('gb-acct-product--oos', !!outOfStock);
+      var edit = row.querySelector('[data-acct-modal="edit-product"]');
+      if (edit) { edit.disabled = !!outOfStock; edit.setAttribute('aria-disabled', String(!!outOfStock)); }
+
+      // Line metadata for edit-product prefill.
+      row.setAttribute('data-acct-line-id', idOf(line.id || ''));
+      row.setAttribute('data-acct-line-variant-id', idOf(line.variantId || ''));
+      row.setAttribute('data-acct-line-product-id', idOf(line.productId || ''));
+      row.setAttribute('data-acct-line-qty', line.quantity || 1);
+
+      var thumb = row.querySelector('.gb-acct-product__thumb');
+      if (thumb && line.variantImage && line.variantImage.url) {
+        thumb.style.backgroundImage = 'url(' + line.variantImage.url + ')';
+        thumb.style.backgroundSize = 'cover';
+        thumb.style.backgroundPosition = 'center';
+      }
+
+      var qty = row.querySelector('.gb-acct-product__qty');
+      if (qty) qty.textContent = line.quantity || 1;
+
+      var label = row.querySelector('.gb-acct-product__label');
+      if (label) label.textContent = line.title || '';
+
+      var flavour = row.querySelector('.gb-acct-product__flavour');
+      if (flavour) flavour.textContent = outOfStock ? 'Out of stock' : line.variantTitle || '';
+
+      // Price: show was/now if discounted, else just now.
+      var priceEl = row.querySelector('.gb-acct-product__price');
+      if (priceEl) {
+        // currentPrice is the unit price; lineDiscountedPrice includes quantity and all line discounts.
+        var quantity = Math.max(1, Number(line.quantity) || 1);
+        var original = line.currentPrice;
+        var current = original;
+        var discountedTotal = line.lineDiscountedPrice && parseFloat(line.lineDiscountedPrice.amount);
+        if (typeof discountedTotal === 'number' && isFinite(discountedTotal) && discountedTotal >= 0) {
+          current = { amount: discountedTotal / quantity, currencyCode: line.lineDiscountedPrice.currencyCode || (original && original.currencyCode) || 'AUD' };
+        } else if (original) {
+          var allocations = collectionItems(line.discountAllocations);
+          var reduction = allocations.reduce(function (sum, allocation) {
+            var value = allocation && (allocation.amount || allocation.allocatedAmount || allocation.discountAmount);
+            return sum + (parseFloat(value && typeof value === 'object' ? value.amount : value) || 0);
+          }, 0);
+          if (reduction > 0) current = { amount: Math.max(0, parseFloat(original.amount) - reduction / quantity), currencyCode: original.currencyCode };
+        }
+        if (outOfStock) current = { amount: 0, currencyCode: original && original.currencyCode || current && current.currencyCode || 'AUD' };
+        priceEl.innerHTML = '';
+        if (!outOfStock && original && current && parseFloat(original.amount) > parseFloat(current.amount)) {
+          var was = document.createElement('s');
+          was.className = 'gb-acct-product__was';
+          was.textContent = money(original.amount, original.currencyCode);
+          priceEl.appendChild(was);
+        }
+        var now = document.createElement('span');
+        now.className = 'gb-acct-product__now';
+        now.textContent = current ? money(current.amount, current.currencyCode) : '';
+        priceEl.appendChild(now);
+      }
+
+      return row;
+    }
+
+    function renderDetail(contract) {
+      if (!detailRoot) return;
+      // Restore the full structure (removes the loading card, brings back
+      // rows / summary / schedule / templates).
+      if (detailBody && detailBodyHtml != null) detailBody.innerHTML = detailBodyHtml;
+      var status = subscriptionUiState(contract);
+      detailRoot.setAttribute('data-acct-sub-state', status);
+      detailRoot.setAttribute('data-sub-id', idOf(contract.id));
+      detailRoot.querySelectorAll('[data-acct-modal="cancel-offer-skip"]').forEach(function (button) {
+        var paused = status === 'paused';
+        button.disabled = paused;
+        button.setAttribute('aria-disabled', String(paused));
+        if (paused) { button.style.opacity = '0.5'; button.style.cursor = 'not-allowed'; }
+      });
+      detailRoot.querySelectorAll('[data-acct-modal="discount-applied"], [data-acct-modal="discount-add"]').forEach(function (button) {
+        var cancelled = status === 'cancelled' || status === 'canceled';
+        button.disabled = cancelled;
+        button.setAttribute('aria-disabled', String(cancelled));
+        if (cancelled) { button.style.opacity = '0.5'; button.style.cursor = 'not-allowed'; }
+      });
+
+      // Subscription name — intro title and body title both.
+      var subName = subscriptionName(contract);
+      var introTitle = detailRoot.querySelector('.gb-acct-intro__title');
+      if (introTitle) introTitle.textContent = subName;
+      var bodyTitle = detailRoot.querySelector('.gb-acct-sub__title');
+      if (bodyTitle) bodyTitle.textContent = subName;
+
+      // Next renewal date
+      var dateEl = detailRoot.querySelector('.gb-acct-row--renewal .gb-acct-row__date');
+      var displayDate = subscriptionDisplayDate(contract);
+      if (dateEl) dateEl.textContent = formatDate(displayDate);
+
+      // Frequency
+      var freqRow = detailRoot.querySelectorAll('.gb-acct-row')[1];
+      var freqValue = freqRow && freqRow.querySelector('.gb-acct-row__value');
+      if (freqValue) freqValue.textContent = frequencyLabel(contract.deliveryPolicy || (contract.billingPolicy));
+
+      // Products — remove any existing rows (from a prior render) and rebuild
+      // from the <template>. Insert before .gb-acct-detail__add.
+      if (productTplHtml) {
+        var existing = detailRoot.querySelectorAll('.gb-acct-product');
+        for (var i = 0; i < existing.length; i++) existing[i].remove();
+        var addWrap = detailRoot.querySelector('.gb-acct-detail__add');
+        var lines = (contract.lines && contract.lines.nodes) || [];
+        lines.forEach(function (line) {
+          var row = renderProductRow(line);
+          if (addWrap) addWrap.parentNode.insertBefore(row, addWrap);
+          else detailRoot.appendChild(row);
+        });
+      }
+
+      // Cancel deadline
+      var deadline = detailRoot.querySelector('.gb-acct-detail__deadline');
+      if (deadline) deadline.textContent = cancelDeadline(displayDate);
+
+      // Summary
+      var sub = subtotal(contract);
+      var summary = detailRoot.querySelector('.gb-acct-summary');
+      if (summary) {
+        var rows = summary.querySelectorAll('.gb-acct-summary__row');
+        // Subtotal
+        if (rows[0]) rows[0].querySelectorAll('span')[1].textContent = money(sub.amount, sub.currency);
+        // Shipping
+        var shippingRow = summary.querySelector('.gb-acct-summary__row:not(.gb-acct-summary__row--discount) + .gb-acct-summary__row, .gb-acct-summary__row:last-of-type');
+        // Better: find the "Shipping" label
+        var shipRow = null;
+        rows.forEach(function (r) {
+          var l = r.querySelector('span');
+          if (l && /shipping/i.test(l.textContent)) shipRow = r;
+        });
+        if (shipRow) {
+          var deliv = nextOrderShipping(contract);
+          shipRow.querySelectorAll('span')[1].textContent = deliv > 0 ? money(deliv, (contract.deliveryPrice && contract.deliveryPrice.currencyCode) || sub.currency) : 'FREE';
+        }
+      }
+
+      // Discounts — show every applied code and sum the exact line allocations.
+      var discounts = activeDiscounts(contract);
+      var disc = discounts[0] || null;
+      detailRoot.setAttribute('data-acct-discount', discounts.length ? 'applied' : 'none');
+      var discountRow = detailRoot.querySelector('.gb-acct-summary__row--discount');
+      if (discountRow) {
+        discountRow.hidden = !discounts.length;
+        if (discounts.length) discountRow.style.removeProperty('display');
+        else discountRow.style.setProperty('display', 'none', 'important');
+      }
+      var codeEl = detailRoot.querySelector('.gb-acct-summary__code');
+      if (codeEl) codeEl.textContent = discounts.map(function (d) { return d.code; }).filter(Boolean).join(', ');
+      var tagEl = detailRoot.querySelector('.gb-acct-summary__discount .gb-acct-tag');
+      if (tagEl) {
+        var discountTotal = discounts.reduce(function (sum, d) { return sum + (d.amount || 0); }, 0);
+        tagEl.textContent = discounts.length ? '-' + money(discountTotal, (disc && disc.currency) || sub.currency) : '';
+        tagEl.hidden = !discounts.length;
+        if (discounts.length) tagEl.style.removeProperty('display');
+        else tagEl.style.setProperty('display', 'none', 'important');
+      }
+
+      // Total
+      var totalEl = detailRoot.querySelector('.gb-acct-summary__total');
+      if (totalEl) {
+        var delivery = nextOrderShipping(contract);
+        var discAmt = discounts.reduce(function (sum, d) { return sum + (d.amount || 0); }, 0);
+        var total = Math.max(0, sub.amount - discAmt) + delivery;
+        totalEl.querySelectorAll('span')[1].textContent = money(total, sub.currency);
+      }
+      // Shipping row (find by label text since selector is ambiguous)
+      var rowEls = detailRoot.querySelectorAll('.gb-acct-row');
+      rowEls.forEach(function (r) {
+        var lbl = r.querySelector('.gb-acct-row__label');
+        if (!lbl) return;
+        if (/shipping/i.test(lbl.textContent) && !r.classList.contains('gb-acct-row--renewal')) {
+          var v = r.querySelector('.gb-acct-row__value');
+          if (v) v.textContent = shortAddress(contract.deliveryMethod && contract.deliveryMethod.address);
+        }
+        if (/payment method/i.test(lbl.textContent)) {
+          var v2 = r.querySelector('.gb-acct-row__value');
+          if (v2) {
+            var text = paymentLabel(contract.paymentMethod);
+            v2.innerHTML = text.split('\n').map(function (s) { return s.replace(/</g, '&lt;'); }).join('<br>');
+          }
+        }
+      });
+
+      // Keep the skipped dates visible alongside the real upcoming renewals.
+      // During a holiday pause, show upcoming billing dates without prior skipped dates.
+      var skippedDates = status === 'paused' ? [] : activeSkippedDates(contract);
+      var schedule = detailRoot.querySelector('.gb-acct-schedule');
+      if (schedule) {
+        if (skippedDates.length) schedule.setAttribute('data-acct-skipped', '');
+        else schedule.removeAttribute('data-acct-skipped');
+        var skipButton = schedule.querySelector('[data-acct-modal="skip-next"]');
+        if (skipButton) {
+          skipButton.disabled = !!skippedDates.length || status === 'cancelled' || status === 'paused';
+          skipButton.setAttribute('aria-disabled', String(skipButton.disabled));
+        }
+      }
+      var daysWrap = detailRoot.querySelector('.gb-acct-schedule__days');
+      if (daysWrap && scheduleDayTplHtml) {
+        daysWrap.innerHTML = '';
+        var dates = skippedDates.map(function (iso) { var parts = iso.split('-').map(Number); return { date: new Date(parts[0], parts[1] - 1, parts[2]), skipped: true }; });
+        dates = dates.concat(upcomingDates(displayDate, contract.deliveryPolicy || contract.billingPolicy, 4).map(function (date) { return { date: date, skipped: false }; })).slice(0, 4);
+        dates.forEach(function (item) {
+          var wrap = document.createElement('div');
+          wrap.innerHTML = scheduleDayTplHtml;
+          var day = wrap.firstElementChild;
+          day.textContent = formatShort(item.date);
+          if (item.skipped) { day.classList.add('is-skipped'); day.setAttribute('data-acct-skipped', ''); day.setAttribute('aria-label', formatShort(item.date) + ', skipped'); }
+          daysWrap.appendChild(day);
+        });
+      }
+      applyImmediateOrderUi(detailRoot, contract);
+    }
+
+    // Persist current sub id as ?sub=<id> so refresh / share restores detail.
+    function setSubParam(id) {
+      var url = new URL(window.location.href);
+      if (id) { url.searchParams.set('sub', id); url.searchParams.delete('order'); }
+      else url.searchParams.delete('sub');
+      history.replaceState(null, '', url.toString());
+    }
+
+    function currentSubParam() {
+      return new URL(window.location.href).searchParams.get('sub');
+    }
+
+    // Delegate: any click on a card CTA carrying data-sub-id renders detail
+    // before the frontend switches tabs.
+    document.addEventListener('click', function (e) {
+      if (!e.target || !e.target.closest) return;
+      var btn = e.target.closest('.gb-acct-sub__cta[data-sub-id]');
+      if (btn) {
+        var id = btn.getAttribute('data-sub-id');
+        var contract = contractCache[id];
+        if (contract) { renderDetail(contract); setSubParam(id); }
+        return;
+      }
+      // Leaving detail / order view — drop the corresponding ?sub / ?order.
+      var back = e.target.closest('[data-acct-goto]');
+      if (back) {
+        var goto = back.getAttribute('data-acct-goto');
+        if (goto !== 'detail') {
+          var url = new URL(window.location.href);
+          url.searchParams.delete('sub');
+          history.replaceState(null, '', url.toString());
+        }
+        if (goto !== 'order') {
+          var url2 = new URL(window.location.href);
+          url2.searchParams.delete('order');
+          history.replaceState(null, '', url2.toString());
+        }
+      }
+    }, true);
+
+    // ────────── Modal wiring (v3) ──────────
+    //
+    // Frontend owns modal open/close choreography. We prefill inputs on the
+    // capture phase of the trigger click (before frontend opens it) and
+    // intercept save clicks on the capture phase of the panel's save button
+    // (before frontend runs its close handler). Save is fire-and-forget from
+    // the UI's perspective — modal closes immediately, we refetch in the
+    // background and rerender detail when the fresh contract lands.
+
+    // Which contract is currently open in the detail view.
+    function currentContract() {
+      var id = detailRoot && detailRoot.getAttribute('data-sub-id');
+      return id ? contractCache[id] : null;
+    }
+
+    function toDDMMYYYY(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      var dd = String(d.getDate()).padStart(2, '0');
+      var mm = String(d.getMonth() + 1).padStart(2, '0');
+      return dd + '/' + mm + '/' + d.getFullYear();
+    }
+
+    function parseDDMMYYYY(s) {
+      var m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(s || '').trim());
+      if (!m) return null;
+      return m[3] + '-' + m[2] + '-' + m[1];  // YYYY-MM-DD
+    }
+
+    // Helpers used across modals -------------------------------------------
+
+    function setDateInput(input, iso) {
+      if (!input || !iso) return;
+      input.value = toDDMMYYYY(iso);
+      if (input._flatpickr) { try { input._flatpickr.setDate(iso, false); } catch (e) {} }
+    }
+
+    function localDateToISO(date) {
+      var yyyy = date.getFullYear();
+      var mm = String(date.getMonth() + 1).padStart(2, '0');
+      var dd = String(date.getDate()).padStart(2, '0');
+      return yyyy + '-' + mm + '-' + dd;
+    }
+
+    function readDateInput(input) {
+      if (!input) return null;
+      // flatpickr selectedDates are local calendar dates. Avoid toISOString(),
+      // which converts local midnight to the previous UTC date in UTC+ zones.
+      if (input._flatpickr && input._flatpickr.selectedDates && input._flatpickr.selectedDates[0]) {
+        return localDateToISO(input._flatpickr.selectedDates[0]);
+      }
+      return parseDDMMYYYY(input.value);
+    }
+
+    function addInterval(iso, policy) {
+      if (!iso || !policy) return iso;
+      var d = new Date(iso);
+      var step = policy.intervalCount || 1;
+      var unit = String(policy.interval || 'WEEK').toUpperCase();
+      if (unit === 'DAY') d.setDate(d.getDate() + step);
+      else if (unit === 'WEEK') d.setDate(d.getDate() + step * 7);
+      else if (unit === 'MONTH') d.setMonth(d.getMonth() + step);
+      else if (unit === 'YEAR') d.setFullYear(d.getFullYear() + step);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function longDate(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    // Selling plans cache (fetched once on first edit-frequency open).
+    var sellingPlansCache = null;
+    function ensureSellingPlans() {
+      if (sellingPlansCache) return Promise.resolve(sellingPlansCache);
+      return api('/selling-plans').then(function (res) {
+        if (res.ok && res.j.ok) sellingPlansCache = res.j.sellingPlans || res.j.data || [];
+        else sellingPlansCache = [];
+        return sellingPlansCache;
+      });
+    }
+    function planFrequencyKey(value) {
+      if (value && typeof value === 'object') {
+        var count = value.intervalCount || value.interval_count || value.count;
+        var interval = value.interval || value.intervalUnit || value.interval_unit || value.unit;
+        if (count && interval) return String(count) + ' ' + String(interval).toLowerCase().replace(/s$/, '');
+      }
+      var match = String(value || '').toLowerCase().match(/(\d+)\s*(day|week|month|year)s?/);
+      return match ? match[1] + ' ' + match[2] : '';
+    }
+
+    function planName(plan) {
+      if (!plan) return '';
+      if (plan.name || plan.sellingPlanName || plan.planName) return plan.name || plan.sellingPlanName || plan.planName;
+      var policy = plan.deliveryPolicy || plan.billingPolicy || plan.orderFrequency || plan;
+      if (policy && (policy.intervalCount || policy.interval_count || policy.count) && (policy.interval || policy.intervalUnit || policy.unit)) {
+        return frequencyLabel({ intervalCount: policy.intervalCount || policy.interval_count || policy.count, interval: policy.interval || policy.intervalUnit || policy.unit });
+      }
+      return '';
+    }
+
+    function flattenSellingPlans(source, out) {
+      out = out || [];
+      if (Array.isArray(source)) {
+        source.forEach(function (item) { flattenSellingPlans(item, out); });
+        return out;
+      }
+      if (!source || typeof source !== 'object') return out;
+      if (source.id && planName(source)) out.push(source);
+      ['sellingPlans', 'selling_plans', 'plans', 'edges', 'nodes', 'data', 'sellingPlanGroups', 'groups'].forEach(function (key) {
+        if (source[key] != null) flattenSellingPlans(source[key], out);
+      });
+      return out;
+    }
+
+    function sellingPlansForContract(contract, fallback) {
+      var productIds = Object.create(null);
+      collectionItems(contract && contract.lines).forEach(function (line) {
+        if (line && line.productId != null) productIds[String(idOf(line.productId))] = true;
+      });
+      var found = [];
+      var seen = Object.create(null);
+      function addProduct(productId, plans) {
+        if (productId == null || !productIds[String(idOf(productId))]) return;
+        (plans || []).forEach(function (plan) {
+          if (!plan || !plan.id) return;
+          var key = String(idOf(plan.id));
+          if (seen[key]) return;
+          seen[key] = true;
+          found.push({ id: plan.id, name: planName(plan) });
+        });
+      }
+      ADD_PRODUCTS.forEach(function (product) { addProduct(product.id, product.selling_plans); });
+      CUSTOMER_ORDERS.forEach(function (order) {
+        (order.line_items || []).forEach(function (item) { addProduct(item.product_id, item.selling_plans); });
+      });
+      return found.length ? found : flattenSellingPlans(fallback).map(function (plan) {
+        return { id: plan.id, name: planName(plan) };
+      });
+    }
+
+    // ────────── Add / Edit product helpers ──────────
+
+    // Snapshot the first product card in add-product modal at boot as our
+    // template; the container is emptied so no design copy flashes.
+    var addProdPanel = document.querySelector('[data-acct-modal-panel="add-product"]');
+    var addProdGrid = addProdPanel && addProdPanel.querySelector('.gb-acct-prod-grid');
+    var addProdCardTplHtml = '';
+    if (addProdGrid) {
+      var firstProd = addProdGrid.querySelector('.gb-acct-prod');
+      if (firstProd) addProdCardTplHtml = firstProd.outerHTML;
+      addProdGrid.innerHTML = '';
+    }
+
+    function moneyPrice(price) {
+      // Storefront prices are cents in Shopify Liquid `variant.price | json`.
+      return moneyCents(price, 'AUD');
+    }
+
+    function productAlreadyInContract(product, contract) {
+      var lines = (contract.lines && contract.lines.nodes) || [];
+      var productGid = 'gid://shopify/Product/' + product.id;
+      return lines.some(function (li) {
+        // Try match on product id (gid form) OR on variant id.
+        if (li.productId && String(li.productId) === productGid) return true;
+        if (li.variantId) {
+          return (product.variants || []).some(function (v) {
+            return String(li.variantId).indexOf(String(v.id)) >= 0;
+          });
+        }
+        return false;
+      });
+    }
+
+    // Given a product and its options, return the matching variant given
+    // currently-selected option values (from the card's <select> elements).
+    function findVariant(product, chosen) {
+      return (product.variants || []).find(function (v) {
+        if (chosen.length >= 1 && v.option1 !== chosen[0]) return false;
+        if (chosen.length >= 2 && v.option2 !== chosen[1]) return false;
+        if (chosen.length >= 3 && v.option3 !== chosen[2]) return false;
+        return true;
+      }) || (!chosen.length ? product.variants[0] : null);
+    }
+
+    function renderAddProductCard(product) {
+      var wrap = document.createElement('div');
+      wrap.innerHTML = addProdCardTplHtml;
+      var card = wrap.firstElementChild;
+      card.setAttribute('data-product-id', product.id);
+
+      var thumb = card.querySelector('.gb-acct-prod__thumb');
+      if (thumb && product.image) thumb.setAttribute('src', product.image);
+      var name = card.querySelector('.gb-acct-prod__name');
+      if (name) name.textContent = product.title;
+
+      // Options — replace design's hardcoded selects with real options.
+      // Design's template has 1 option; we replace with N based on product.options.
+      var optsWrap = card.querySelector('.gb-acct-prod__opts');
+      if (optsWrap) {
+        optsWrap.innerHTML = '';
+        (product.options || []).forEach(function (opt, i) {
+          if (opt.values.length <= 1 && opt.values[0] === 'Default Title') return;
+          var wrap2 = document.createElement('div');
+          wrap2.className = 'gb-acct-prod__opt';
+          var label = document.createElement('span');
+          label.className = 'gb-acct-prod__opt-label';
+          label.textContent = opt.name;
+          var control = document.createElement('div');
+          control.className = 'gb-acct-field__control gb-acct-prod__control';
+          var select = document.createElement('select');
+          select.className = 'gb-acct-field__input gb-acct-prod__select';
+          select.setAttribute('data-acct-field', '');
+          select.setAttribute('data-select', '');
+          select.setAttribute('data-option-index', i);
+          opt.values.forEach(function (v, j) {
+            var o = document.createElement('option');
+            o.value = v;
+            o.textContent = v;
+            if (j === 0) o.selected = true;
+            select.appendChild(o);
+          });
+          control.appendChild(select);
+          wrap2.appendChild(label);
+          wrap2.appendChild(control);
+          optsWrap.appendChild(wrap2);
+        });
+      }
+
+      var firstAvailable = (product.variants || []).find(function (v) { var stock = stockForVariant(v.id); return !stock || stock.available; });
+      if (firstAvailable) card.querySelectorAll('.gb-acct-prod__select').forEach(function (select, i) { select.value = firstAvailable['option' + (i + 1)]; });
+      updateCardPrice(card, product);
+      return card;
+    }
+
+    // Read all option <select>s in a card, resolve the matching variant, and
+    // update the price display. Called on init and on any select change.
+    function updateCardPrice(card, product) {
+      var chosen = Array.prototype.map.call(
+        card.querySelectorAll('.gb-acct-prod__select'),
+        function (s) { return s.value; }
+      );
+      var v = findVariant(product, chosen);
+      card.setAttribute('data-variant-id', v ? v.id : '');
+      var stock = v && stockForVariant(v.id);
+      var available = !!v && (!stock || stock.available !== false);
+      card.setAttribute('data-acct-stock-available', String(available));
+      card.classList.toggle('gb-acct-prod--oos', !available);
+      var stockNote = card.querySelector('[data-acct-stock-note]');
+      if (!stockNote) { stockNote = document.createElement('p'); stockNote.setAttribute('data-acct-stock-note', ''); stockNote.className = 'gb-acct-prod__stock'; card.querySelector('.gb-acct-prod__info').appendChild(stockNote); }
+      stockNote.hidden = available;
+      stockNote.textContent = 'Out of stock';
+      var modal = card.closest('[data-acct-modal-panel]');
+      var quantity = card.querySelector('[data-acct-qty-value]');
+      if (quantity) {
+        quantity.disabled = !available;
+        if (stock && stock.maxQuantity !== null) quantity.max = stock.maxQuantity;
+        else quantity.removeAttribute('max');
+        if (!available && (!modal || modal.getAttribute('data-acct-modal-panel') !== 'edit-product')) quantity.value = 0;
+      }
+      card.querySelectorAll('[data-acct-qty]').forEach(function (button) {
+        var qty = Number(quantity && quantity.value || 0);
+        button.disabled = !available || (button.getAttribute('data-acct-qty') === 'down' ? qty <= Number(quantity && quantity.min || 0) : stock && stock.maxQuantity !== null && qty >= stock.maxQuantity);
+      });
+      card.querySelectorAll('.gb-acct-prod__select').forEach(function (select) {
+        var index = Number(select.getAttribute('data-option-index')) + 1;
+        Array.prototype.forEach.call(select.options, function (option) {
+          var hasStock = (product.variants || []).some(function (variant) { var state = stockForVariant(variant.id); return variant['option' + index] === option.value && (!state || state.available); });
+          option.disabled = !hasStock;
+          option.textContent = option.value + (hasStock ? '' : ' — Out of stock');
+        });
+      });
+      var now = card.querySelector('.gb-acct-prod__now');
+      var was = card.querySelector('.gb-acct-prod__was');
+      if (card.__gbSubscriptionLine) {
+        var line = card.__gbSubscriptionLine;
+        if (v && String(idOf(line.variantId)) === String(v.id)) {
+          // Use the same actual contract price/discounts as the subscription row.
+          var row = renderProductRow(line);
+          var actualNow = row.querySelector('.gb-acct-product__now');
+          var actualWas = row.querySelector('.gb-acct-product__was');
+          if (now) now.textContent = actualNow ? actualNow.textContent : '';
+          if (was) {
+            var quantity = Math.max(1, Number(line.quantity) || 1);
+            var actualAmount = line.lineDiscountedPrice ? Number(line.lineDiscountedPrice.amount) / quantity : Number(line.currentPrice && line.currentPrice.amount);
+            var catalogOriginal = Number(v.compare_at_price);
+            var showCatalogOriginal = isFinite(actualAmount) && catalogOriginal > Math.round(actualAmount * 100);
+            was.textContent = showCatalogOriginal ? moneyPrice(catalogOriginal) : actualWas ? actualWas.textContent : '';
+            was.style.display = showCatalogOriginal || actualWas ? '' : 'none';
+          }
+          return;
+        }
+        var contract = card.__gbSubscriptionContract;
+        var policy = contract.deliveryPolicy || contract.billingPolicy;
+        var frequency = planFrequencyKey(frequencyLabel(policy));
+        var plan = (product.selling_plans || []).find(function (item) { return planFrequencyKey(item.name) === frequency; });
+        var planId = plan && plan.id || line.sellingPlanId || policy && policy.sellingPlanId;
+        var allocation = v && (v.selling_plan_allocations || []).find(function (item) { return String(item.selling_plan_id) === String(idOf(planId)); });
+        if (now) now.textContent = allocation ? moneyPrice(allocation.price) : 'Price confirmed after saving';
+        if (was) {
+          var original = v && v.compare_at_price || allocation && allocation.compare_at_price;
+          was.textContent = original ? moneyPrice(original) : '';
+          was.style.display = allocation && Number(original) > Number(allocation.price) ? '' : 'none';
+        }
+        return;
+      }
+      if (now) now.textContent = v ? moneyPrice(v.price) : '';
+      if (was) {
+        if (v && v.compare_at_price && Number(v.compare_at_price) > Number(v.price)) {
+          was.textContent = moneyPrice(v.compare_at_price);
+          was.style.display = '';
+        } else {
+          was.style.display = 'none';
+        }
+      }
+    }
+
+    // Qty +/- click handler for any product card in add/edit product modals.
+    // The CTA sync differs between modes: add uses total==0 to disable;
+    // edit compares to original variant/qty and toggles label.
+    function attachQtyControls(panel) {
+      panel._acctQtyOwned = true;
+      var name = panel.getAttribute('data-acct-modal-panel');
+      var syncCta = name === 'edit-product' ? syncEditCta : syncAddCta;
+      panel.querySelectorAll('.gb-acct-prod').forEach(function (card) {
+        var qtyEl = card.querySelector('[data-acct-qty-value]');
+        var minus = card.querySelector('[data-acct-qty="down"]');
+        var plus = card.querySelector('[data-acct-qty="up"]');
+        var min = Number(card.getAttribute('data-acct-qty-min') || '0');
+        qtyEl.min = min;
+        function refresh() {
+          var v = Number(qtyEl.value || '0');
+          var available = card.getAttribute('data-acct-stock-available') !== 'false';
+          qtyEl.disabled = !available;
+          if (minus) minus.disabled = !available || v <= min;
+          if (plus) plus.disabled = !available || (qtyEl.hasAttribute('max') && v >= Number(qtyEl.max));
+        }
+        if (!qtyEl.__bound) {
+          qtyEl.__bound = true;
+          qtyEl.addEventListener('input', function () {
+            refresh();
+            syncCta(panel);
+          });
+          qtyEl.addEventListener('change', function () {
+            qtyEl.value = Math.min(qtyEl.hasAttribute('max') ? Number(qtyEl.max) : Infinity, Math.max(min, Math.floor(Number(qtyEl.value) || min)));
+            refresh();
+            syncCta(panel);
+          });
+        }
+        if (minus && !minus.__bound) {
+          minus.__bound = true;
+          minus.addEventListener('click', function () {
+            var v = Math.max(min, Number(qtyEl.value || '0') - 1);
+            qtyEl.value = v;
+            refresh();
+            syncCta(panel);
+          });
+        }
+        if (plus && !plus.__bound) {
+          plus.__bound = true;
+          plus.addEventListener('click', function () {
+            var v = Math.min(qtyEl.hasAttribute('max') ? Number(qtyEl.max) : Infinity, Number(qtyEl.value || '0') + 1);
+            qtyEl.value = v;
+            refresh();
+            syncCta(panel);
+          });
+        }
+        refresh();
+      });
+    }
+
+    function syncAddCta(panel) {
+      var cta = panel.querySelector('[data-acct-save]');
+      if (!cta) return;
+      var total = 0;
+      var valid = true;
+      panel.querySelectorAll('[data-acct-qty-value]').forEach(function (el) {
+        valid = valid && el.value !== '' && el.checkValidity();
+        var card = el.closest('.gb-acct-prod');
+        var qty = Number(el.value || '0');
+        if (qty > 0 && card && card.getAttribute('data-acct-stock-available') === 'false') valid = false;
+        total += qty;
+      });
+      cta.disabled = panel.hasAttribute('data-acct-stock-loading') || !valid || total === 0;
+    }
+
+    // edit-product Save button toggles label to "Remove this product" when
+    // qty drops to zero (design attribute data-acct-label-zero).
+    function syncEditCta(panel) {
+      var cta = panel.querySelector('[data-acct-save]');
+      if (!cta) return;
+      var qtyEl = panel.querySelector('[data-acct-qty-value]');
+      var qty = Number((qtyEl && qtyEl.value) || '0');
+      var productError = panel.querySelector('[data-acct-product-error]');
+      if (productError && qty > 0) { productError.hidden = true; productError.style.display = 'none'; }
+      var valid = qtyEl && qtyEl.value !== '' && qtyEl.checkValidity();
+      var origVariant = panel.getAttribute('data-acct-line-orig-variant-id');
+      var origQty = Number(panel.getAttribute('data-acct-line-orig-qty') || '0');
+      var card = panel.querySelector('.gb-acct-prod');
+      var newVariant = card && card.getAttribute('data-variant-id');
+      var changed = (qty !== origQty) || (newVariant && String(newVariant) !== String(origVariant));
+      cta.disabled = panel.hasAttribute('data-acct-stock-loading') || !valid || !changed || (qty > 0 && card && card.getAttribute('data-acct-stock-available') === 'false');
+      var labelZero = cta.getAttribute('data-acct-label-zero');
+      var labelDefault = cta.getAttribute('data-acct-label-default') || 'Save';
+      cta.textContent = (qty === 0 && labelZero) ? labelZero : labelDefault;
+    }
+
+    // Subscription name from customAttribute (fallback to design default).
+    function subscriptionName(contract) {
+      var attrs = (contract && contract.customAttributes) || [];
+      var found = attrs.find && attrs.find(function (a) {
+        return a && (a.key === '_subscription_name' || a.name === '_subscription_name');
+      });
+      var v = found && found.value;
+      return (v && String(v).trim()) || 'My Subscription';
+    }
+
+    var skippedAttempts = Object.create(null);
+
+    function rememberSkippedDate(subId, iso) {
+      var date = String(iso || '').slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+      var dates = skippedAttempts[String(subId)] || (skippedAttempts[String(subId)] = []);
+      if (dates.indexOf(date) === -1) dates.push(date);
+    }
+
+    function loadSkippedOrders() {
+      return api('/orders/past').then(function (res) {
+        if (!res || !res.ok || !res.j || res.j.ok === false) return;
+        skippedAttempts = Object.create(null);
+        collectionItems(res.j.orders).forEach(function (attempt) {
+          if (attempt && String(attempt.status || '').toUpperCase() === 'SKIPPED') rememberSkippedDate(idOf(attempt.contractId), attempt.billingDate);
+        });
+      }).catch(function (error) { console.warn('Could not load skipped order states', error); });
+    }
+
+    function activeSkippedDates(contract) {
+      var today = localDateToISO(new Date());
+      var next = String(contract.nextBillingDate || '').slice(0, 10);
+      return (skippedAttempts && skippedAttempts[String(idOf(contract.id))] || []).filter(function (date) { return date >= today && date < next; }).sort();
+    }
+
+    var immediateOrderStates = Object.create(null);
+
+    function immediateOrderPending(contract) {
+      var state = contract && immediateOrderStates && immediateOrderStates[String(idOf(contract.id))];
+      return state && (state.status === 'pending' || state.status === 'refreshing');
+    }
+
+    function applyImmediateOrderUi(root, contract) {
+      if (!root) return;
+      var state = immediateOrderStates && immediateOrderStates[String(idOf(contract.id))];
+      var pending = !!immediateOrderPending(contract);
+      root.setAttribute('aria-busy', String(pending));
+      if (pending) root.setAttribute('data-acct-order-processing', '');
+      else root.removeAttribute('data-acct-order-processing');
+      root.querySelectorAll('button:not([data-acct-goto]), input, select, textarea').forEach(function (control) {
+        if (pending) {
+          if (!control.__gbOrderLock) control.__gbOrderLock = { disabled: control.disabled, aria: control.getAttribute('aria-disabled'), opacity: control.style.opacity, cursor: control.style.cursor };
+          control.disabled = true;
+          control.setAttribute('aria-disabled', 'true');
+          control.style.opacity = '0.5';
+          control.style.cursor = 'not-allowed';
+        } else if (control.__gbOrderLock) {
+          var original = control.__gbOrderLock;
+          control.disabled = original.disabled;
+          if (original.aria == null) control.removeAttribute('aria-disabled');
+          else control.setAttribute('aria-disabled', original.aria);
+          control.style.opacity = original.opacity;
+          control.style.cursor = original.cursor;
+          delete control.__gbOrderLock;
+        }
+      });
+      var date = root.querySelector('.gb-acct-row--renewal .gb-acct-row__date, [data-acct-sub-renewal] .gb-acct-sub__meta-value');
+      if (date) date.textContent = pending ? 'Updating…' : formatDate(subscriptionDisplayDate(contract));
+      var note = root.querySelector('[data-acct-order-progress]');
+      if (state) {
+        if (!note) {
+          note = document.createElement('p');
+          note.className = 'gb-acct-row__note';
+          note.setAttribute('data-acct-order-progress', '');
+          note.setAttribute('role', 'status');
+          note.setAttribute('aria-live', 'polite');
+          if (date) date.parentNode.appendChild(note);
+          else root.appendChild(note);
+        }
+        note.textContent = state.message;
+      } else if (note) note.remove();
+    }
+
+    function updateImmediateOrderUi(subId) {
+      var contract = contractCache[subId];
+      if (!contract) return;
+      var card = subsList.querySelector('[data-sub-id="' + subId + '"]');
+      if (card) applyImmediateOrderUi(card, contract);
+      if (detailRoot && String(detailRoot.getAttribute('data-sub-id')) === subId) applyImmediateOrderUi(detailRoot, contract);
+    }
+
+    function waitForImmediateOrder(panel, contract, response) {
+      var subId = String(idOf(contract.id));
+      var data = response.j && response.j.data || {};
+      var attemptId = data.billingAttemptId || data.requestedBillingAttemptId || response.requestedBillingAttemptId;
+      var state = { status: 'pending', attemptId: String(idOf(attemptId)), started: Date.now(), message: 'Your order is processing. Subscription changes will be available once payment is confirmed.' };
+      immediateOrderStates[subId] = state;
+      panel.querySelector('[data-acct-save]').__gbOrderAccepted = true;
+      updateImmediateOrderUi(subId);
+      function pause(ms) { return new Promise(function (resolve) { window.setTimeout(resolve, ms); }); }
+      function delay() { var elapsed = Date.now() - state.started; return elapsed < 120000 ? 4000 : elapsed < 300000 ? 10000 : 30000; }
+      function message(text) { state.message = text; updateImmediateOrderUi(subId); }
+      function refreshSubscription() {
+        return api('/subscription/' + encodeURIComponent(subId)).then(function (result) {
+          var updated = result && result.ok && result.j && result.j.ok !== false && result.j.subscription;
+          return updated ? syncHolidayBillingDate(contract, updated) : null;
+        }).then(function (updated) {
+          if (updated) {
+            var advanced = String(updated.nextBillingDate || '').slice(0, 10) !== String(contract.nextBillingDate || '').slice(0, 10);
+            contractCache[subId] = updated;
+            if (advanced) {
+              state.status = 'success';
+              state.message = 'Your order has been placed successfully.';
+            }
+            var card = subsList.querySelector('[data-sub-id="' + subId + '"]');
+            if (card) card.replaceWith(renderCard(updated));
+            if (String(currentSubParam()) === subId) renderDetail(updated);
+            renderCurrentOrder(Object.keys(contractCache).map(function (id) { return contractCache[id]; }));
+            if (advanced) return;
+          }
+          return pause(delay()).then(refreshSubscription);
+        }).catch(function () { return pause(delay()).then(refreshSubscription); });
+      }
+      function poll() {
+        return api('/orders/past').then(function (result) {
+          if (result && result.ok && result.j && result.j.ok !== false) {
+            var attempt = collectionItems(result.j.orders).find(function (item) {
+              return item && String(idOf(item.contractId)) === subId &&
+                (String(idOf(item.id)) === state.attemptId || String(idOf(item.billingAttemptId)) === state.attemptId);
+            });
+            var status = String(attempt && attempt.status || '').toUpperCase();
+            if (status === 'SUCCESS') {
+              state.status = 'refreshing';
+              message('Payment successful. Updating your next renewal date…');
+              return refreshSubscription();
+            }
+            if (['FAILURE', 'SHOPIFY_EXCEPTION', 'CONTRACT_CANCELLED', 'CONTRACT_ENDED', 'CONTRACT_PAUSED'].indexOf(status) !== -1) {
+              state.status = 'failed';
+              message(attempt.billingAttemptResponseMessage || 'Payment could not be completed. Check your payment method before trying again.');
+              return;
+            }
+            if (status === 'SECURITY_CHALLENGE') message('Your bank requires payment verification. Please check the payment verification instructions sent to you.');
+          }
+          return pause(delay()).then(poll);
+        }).catch(function () { return pause(delay()).then(poll); });
+      }
+      // Continue independently after the modal closes; never resubmit the charge.
+      pause(2000).then(poll).catch(function (error) { console.warn('Immediate order status check failed', error); });
+    }
+
+    // Prefill handlers ------------------------------------------------------
+    var skipConfirmation = null;
+
+    var prefill = {
+      'shipping-current': function (panel, contract) {
+        var address = contract.deliveryMethod && contract.deliveryMethod.address || {};
+        var group = panel.querySelector('.gb-acct-addr__group');
+        if (!group) return;
+        group.textContent = '';
+        var lines = [[address.firstName, address.lastName].filter(Boolean).join(' '), address.company, address.address1, address.address2, [address.city, address.province || address.provinceCode, address.country || address.countryCode].filter(Boolean).join(', '), address.zip, address.phone];
+        lines.filter(Boolean).forEach(function (text, index) {
+          var line = document.createElement('span');
+          line.className = 'gb-acct-addr__line' + (index === 0 ? ' gb-acct-addr__line--name' : '');
+          line.textContent = text;
+          group.appendChild(line);
+        });
+      },
+      'shipping-form': function (panel, contract) {
+        var address = contract.deliveryMethod && contract.deliveryMethod.address || {};
+        var attributes = collectionItems(contract.customAttributes);
+        var instructions = attributes.find(function (attr) { return (attr.key || attr.name) === 'Delivery Instructions'; });
+        var values = {
+          '#acct-sh-first': address.firstName,
+          '#acct-sh-last': address.lastName,
+          '#acct-sh-phone': String(address.phone || '').replace(/^\+61\s*/, ''),
+          '#acct-sh-company': address.company,
+          '#acct-sh-a1': address.address1,
+          '#acct-sh-a2': address.address2,
+          '#acct-sh-suburb': address.city,
+          '#acct-sh-state': address.provinceCode,
+          '#acct-sh-post': address.zip,
+          '#acct-sh-note': instructions && instructions.value
+        };
+        Object.keys(values).forEach(function (selector) {
+          var input = panel.querySelector(selector);
+          if (!input) return;
+          input.value = values[selector] || '';
+          input.setCustomValidity('');
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        var error = panel.querySelector('[data-acct-discount-error]');
+        if (error) error.remove();
+      },
+      'need-now': function (panel, contract) {
+        var save = panel.querySelector('[data-acct-save]');
+        save.__gbOrderAccepted = !!immediateOrderPending(contract);
+        save.disabled = !!immediateOrderPending(contract);
+        var error = panel.querySelector('[data-acct-discount-error]');
+        if (error) error.remove();
+      },
+      'edit-payment': function (panel) {
+        var save = panel.querySelector('[data-acct-save]');
+        save.__gbEmailSent = false;
+        save.disabled = false;
+        save.textContent = 'Update payment method';
+        var error = panel.querySelector('[data-acct-discount-error]');
+        if (error) error.remove();
+        var copy = panel.querySelector('.gb-acct-modal__copy');
+        if (copy) { copy.removeAttribute('role'); copy.textContent = "We will email you a link to change your payment method. It might take a few minutes to arrive, try checking your spam folder if you can't find it."; }
+        var close = panel.querySelector('.gb-acct-modal__foot .gb-acct-link');
+        if (close) close.textContent = 'Cancel';
+      },
+      'edit-date': function (panel, contract) {
+        panel.__gbUnskipDate = panel.__gbTrigger && panel.__gbTrigger.hasAttribute('data-acct-unskip') ? activeSkippedDates(contract)[0] || '' : '';
+        panel.__gbRestored = false;
+        var error = panel.querySelector('[data-acct-discount-error]');
+        if (error) error.remove();
+        var input = panel.querySelector('#acct-f-date');
+        var date = panel.__gbUnskipDate || String(contract.nextBillingDate || '').slice(0, 10);
+        var parts = date.split('-').map(Number);
+        if (input && input._flatpickr && parts.length === 3) input._flatpickr.setDate(new Date(parts[0], parts[1] - 1, parts[2]), false);
+        else setDateInput(input, date);
+      },
+      'edit-name': function (panel, contract) {
+        var input = panel.querySelector('#acct-f-name');
+        if (!input) return;
+        var attrs = contract.customAttributes || [];
+        var nameAttr = attrs.find && attrs.find(function (a) { return a && a.key === '_subscription_name'; });
+        input.value = (nameAttr && nameAttr.value) || 'My Subscription';
+      },
+      'edit-frequency': function (panel, contract) {
+        var select = panel.querySelector('#acct-f-freq');
+        var hint = panel.querySelector('.gb-acct-modal__hint');
+        if (hint) hint.innerHTML = 'Your next renewal date is <b>' + formatDate(contract.nextBillingDate) + '</b><br>Please allow 2-5 working days for your order to be with you';
+        if (!select) return;
+        var productPlans = sellingPlansForContract(contract, []);
+        var planRequest = productPlans.length
+          ? Promise.resolve(productPlans)
+          : ensureSellingPlans().then(function (fallbackPlans) { return sellingPlansForContract(contract, fallbackPlans); });
+        planRequest.then(function (flat) {
+          if (!flat.length) return;
+
+          var policy = contract.deliveryPolicy || contract.billingPolicy || {};
+          var currentFrequency = planFrequencyKey(frequencyLabel(policy));
+          var currentPlanId = policy.sellingPlanId || contract.sellingPlanId ||
+            (contract.sellingPlan && contract.sellingPlan.id);
+          if (!currentPlanId) {
+            collectionItems(contract.lines).some(function (line) {
+              if (line && line.sellingPlanId) { currentPlanId = line.sellingPlanId; return true; }
+              return false;
+            });
+          }
+          // The contract's delivery policy is what the account summary displays;
+          // use it first when selecting the current plan, then fall back to ID.
+          var selectedPlan = currentFrequency && flat.find(function (plan) {
+            return planFrequencyKey(plan.name) === currentFrequency;
+          });
+          if (!selectedPlan && currentPlanId) {
+            selectedPlan = flat.find(function (plan) {
+              return String(idOf(plan.id)) === String(idOf(currentPlanId));
+            });
+          }
+
+          select.innerHTML = '';
+          flat.forEach(function (plan) {
+            var option = document.createElement('option');
+            option.value = idOf(plan.id);
+            var frequency = planFrequencyKey(plan.name);
+            if (frequency) {
+              var frequencyParts = frequency.split(' ');
+              var count = Number(frequencyParts[0]);
+              var unit = frequencyParts[1];
+              option.textContent = 'Ships every ' + count + ' ' + unit + (count === 1 ? '' : 's');
+            } else {
+              option.textContent = plan.name || 'Subscription frequency';
+            }
+            if (selectedPlan && String(idOf(plan.id)) === String(idOf(selectedPlan.id))) option.selected = true;
+            select.appendChild(option);
+          });
+
+          // main.js builds a custom select from the initial markup, so keep its
+          // visible option list in lockstep with the updated native select.
+          var customSelect = select.closest('.gb-select');
+          var customList = customSelect && customSelect.querySelector('.gb-select__list');
+          if (customList) {
+            customList.innerHTML = '';
+            Array.prototype.forEach.call(select.options, function (option, index) {
+              var item = document.createElement('li');
+              item.className = 'gb-select__option';
+              item.id = select.id + '-opt-' + index;
+              item.setAttribute('role', 'option');
+              item.setAttribute('aria-selected', index === select.selectedIndex ? 'true' : 'false');
+              item.textContent = option.text;
+              customList.appendChild(item);
+            });
+          }
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+      },      'skip-next': function (panel, contract) {
+        var copy = panel.querySelector('.gb-acct-modal__copy');
+        if (!copy) return;
+        var next = addInterval(contract.nextBillingDate, contract.deliveryPolicy);
+        copy.innerHTML = 'Are you sure you want to skip the next order? Your next order date will be changed to <strong>' + longDate(next) + '</strong>';
+      },
+      'cancel-offer-skip': function (panel, contract) {
+        var error = panel.querySelector('[data-acct-discount-error]');
+        if (error) error.remove();
+        var firstOption = panel.querySelector('input[name="acct-skip-count"]');
+        if (firstOption) {
+          firstOption.checked = true;
+          firstOption.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      },
+      'cancel-skipped': function (panel, contract) {
+        var confirmation = skipConfirmation && String(skipConfirmation.subId) === String(idOf(contract.id)) ? skipConfirmation : null;
+        var count = confirmation ? confirmation.count : 1;
+        var title = panel.querySelector('.gb-acct-modal__title');
+        var lead = panel.querySelector('.gb-acct-modal__lead');
+        var sub = panel.querySelector('.gb-acct-modal__sub');
+        if (title) title.textContent = count === 2 ? 'Your next 2 orders have been skipped!' : 'Your next order has been skipped!';
+        if (lead) lead.textContent = count === 2 ? 'You have skipped your next 2 orders.' : 'You have skipped your next order.';
+        if (sub) sub.textContent = 'Next order will renew on ' + longDate(confirmation ? confirmation.nextBillingDate : contract.nextBillingDate);
+      },
+      'discount-applied': function (panel, contract) {
+        var discounts = activeDiscounts(contract);
+        var result = panel.querySelector('.gb-acct-discount__result');
+        if (!result) return;
+        var template = result.querySelector('template[data-acct-chip-template]');
+        var chipTemplate = template && template.content.firstElementChild;
+        if (!chipTemplate) {
+          // Recover gracefully if a pre-template markup version is still present.
+          var legacyChip = result.querySelector('.gb-acct-chip');
+          if (!legacyChip) { result.hidden = !discounts.length; return; }
+          chipTemplate = legacyChip.cloneNode(true);
+          legacyChip.remove();
+        }
+        result.querySelectorAll('.gb-acct-chip').forEach(function (chip) { chip.remove(); });
+        discounts.forEach(function (discount) {
+          var chip = chipTemplate.cloneNode(true);
+          var text = chip.querySelector('p');
+          var code = discount.code || '';
+          if (text) {
+            text.textContent = '';
+            text.appendChild(document.createTextNode('Discount '));
+            var strong = document.createElement('strong');
+            strong.textContent = code;
+            text.appendChild(strong);
+            text.appendChild(document.createTextNode(' applied' + (discount.amount ? ' ' + money(discount.amount, discount.currency || 'AUD') + ' off' : '')));
+          }
+          var remove = chip.querySelector('[data-acct-chip-remove]');
+          if (remove) {
+            if (discount.id) remove.setAttribute('data-acct-discount-id', String(discount.id));
+            else remove.removeAttribute('data-acct-discount-id');
+            remove.setAttribute('aria-label', 'Remove discount ' + (code || 'code'));
+          }
+          result.appendChild(chip);
+        });
+        result.hidden = !discounts.length;
+      },
+      'cancel-holiday': function (panel, contract) {
+        var input = panel.querySelector('[data-acct-cal-input]');
+        var iso = String(contract.nextBillingDate || '').slice(0, 10);
+        if (!input || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
+        var parts = iso.split('-').map(Number);
+        var date = new Date(parts[0], parts[1] - 1, parts[2]);
+        panel.setAttribute('data-acct-resume-min-date', iso);
+        input.value = toDDMMYYYY(iso);
+        var calendar = panel.querySelector('[data-acct-cal]');
+        var picker = input._flatpickr || (calendar && calendar._fp);
+        if (picker) {
+          picker.set('minDate', date);
+          picker.setDate(date, false);
+          picker.jumpToDate(date);
+        }
+        var error = panel.querySelector('[data-acct-discount-error]');
+        if (error) error.remove();
+      },
+      'restart': function (panel, contract) {
+        setDateInput(panel.querySelector('#acct-f-restart'), contract.nextBillingDate || new Date().toISOString().slice(0, 10));
+      },
+      'edit-product': function (panel, contract) {
+        var productError = panel.querySelector('[data-acct-product-error]');
+        if (productError) { productError.hidden = true; productError.style.display = 'none'; }
+        // Trigger is the "Edit" button inside a .gb-acct-product row in the
+        // detail view. Walk up to the row to find the line metadata.
+        var trigger = panel.__gbTrigger;
+        var row = trigger && trigger.closest('.gb-acct-product');
+        if (!row) return;
+        var lineId = row.getAttribute('data-acct-line-id');
+        var variantId = row.getAttribute('data-acct-line-variant-id');
+        var productId = row.getAttribute('data-acct-line-product-id');
+        var qty = Number(row.getAttribute('data-acct-line-qty') || '1');
+
+        panel.setAttribute('data-acct-line-id', lineId);
+        panel.setAttribute('data-acct-line-orig-variant-id', variantId);
+        panel.setAttribute('data-acct-line-orig-qty', qty);
+
+        var grid = panel.querySelector('.gb-acct-prod-grid');
+        if (!grid) return;
+        // Locate the product in ADD_PRODUCTS to get its options / variants.
+        var product = (ADD_PRODUCTS || []).find(function (p) { return String(p.id) === String(productId); });
+        if (!product) {
+          // Fallback: no option data available, only allow qty edit or remove.
+          grid.innerHTML =
+            '<div class="gb-acct-prod" data-acct-product data-acct-qty-min="0">' +
+              '<div class="gb-acct-prod__info">' +
+                '<p class="gb-acct-prod__name">' + (row.querySelector('.gb-acct-product__label') || {}).textContent + '</p>' +
+                '<p class="gb-acct-empty" style="font-size:12px">Add this product to the "Add Items" collection to edit its options.</p>' +
+              '</div>' +
+              '<div class="gb-acct-qty">' +
+                '<button class="gb-acct-qty__btn gb-acct-qty__btn--down" type="button" data-acct-qty="down" aria-label="Decrease quantity">-</button>' +
+                '<input class="gb-acct-qty__value" type="number" inputmode="numeric" min="0" step="1" value="' + qty + '" data-acct-qty-value aria-label="Quantity">' +
+                '<button class="gb-acct-qty__btn gb-acct-qty__btn--up" type="button" data-acct-qty="up" aria-label="Increase quantity">+</button>' +
+              '</div>' +
+            '</div>';
+          attachQtyControls(panel);
+          syncEditCta(panel);
+          return;
+        }
+        // Render the single card, preselect current variant options.
+        grid.innerHTML = '';
+        var card = renderAddProductCard(product);
+        card.__gbSubscriptionLine = collectionItems(contract.lines).find(function (line) { return String(idOf(line.id)) === String(idOf(lineId)); });
+        card.__gbSubscriptionContract = contract;
+        card.setAttribute('data-acct-qty-min', '0');
+        grid.appendChild(card);
+
+        // Pre-select each option to match the current variant.
+        var current = (product.variants || []).find(function (v) { return String(v.id) === String(variantId); });
+        if (current) {
+          card.querySelectorAll('.gb-acct-prod__select').forEach(function (sel, i) {
+            var key = 'option' + (i + 1);
+            var val = current[key];
+            if (val) sel.value = val;
+          });
+          updateCardPrice(card, product);
+        }
+        updateCardPrice(card, product);
+        // Preset qty
+        var qtyEl = card.querySelector('[data-acct-qty-value]');
+        if (qtyEl) qtyEl.value = qty;
+
+        // Wire selects to refresh price on change.
+        card.querySelectorAll('.gb-acct-prod__select').forEach(function (sel) {
+          if (sel.__bound) return; sel.__bound = true;
+          sel.addEventListener('change', function () {
+            updateCardPrice(card, product);
+            syncEditCta(panel);
+          });
+        });
+        attachQtyControls(panel);
+        syncEditCta(panel);
+        refreshModalStock(panel);
+      },
+      'add-product': function (panel, contract) {
+        var grid = panel.querySelector('.gb-acct-prod-grid');
+        if (!grid || !addProdCardTplHtml) return;
+        grid.innerHTML = '';
+        var eligible = (ADD_PRODUCTS || []).filter(function (p) {
+          return !productAlreadyInContract(p, contract);
+        });
+        if (!eligible.length) {
+          grid.innerHTML = '<p class="gb-acct-empty">No additional products available to add.</p>';
+          return;
+        }
+        eligible.forEach(function (p) {
+          var card = renderAddProductCard(p);
+          grid.appendChild(card);
+        });
+        // Wire option-select change to refresh price + variant id
+        grid.querySelectorAll('.gb-acct-prod').forEach(function (card) {
+          var pid = card.getAttribute('data-product-id');
+          var product = ADD_PRODUCTS.find(function (p) { return String(p.id) === String(pid); });
+          card.querySelectorAll('.gb-acct-prod__select').forEach(function (sel) {
+            if (sel.__bound) return; sel.__bound = true;
+            sel.addEventListener('change', function () { updateCardPrice(card, product); syncAddCta(panel); });
+          });
+        });
+        attachQtyControls(panel);
+        syncAddCta(panel);
+        refreshModalStock(panel);
+      },
+    };
+
+    function skipUpcomingOrders(panel, contract) {
+        var picked = panel.querySelector('input[name="acct-skip-count"]:checked');
+        var count = panel.getAttribute('data-acct-modal-panel') === 'skip-next' ? 1 : picked && picked.value === 'skip-2' ? 2 : 1;
+        if (activeSkippedDates(contract).length) return Promise.resolve({ ok: false, j: { error: 'Your next order has already been skipped. Edit your renewal date to change this.' } });
+        var subId = idOf(contract.id);
+        var completed = 0;
+        function failed(result) {
+          var detail = result && result.j && (result.j.error || result.j.message);
+          var text = typeof detail === 'string' ? detail : detail && (detail.detail || detail.message || detail.title);
+          return { ok: false, j: { error: (completed ? completed + (completed === 1 ? ' order was skipped. ' : ' orders were skipped. ') : '') + (text || 'We couldn’t skip your upcoming order. Please try again.') } };
+        }
+        function readUpdated(previous, tries) {
+          return api('/subscription/' + encodeURIComponent(subId)).then(function (res) {
+            var updated = res && res.ok && res.j && res.j.ok !== false && res.j.subscription;
+            if (updated && updated.nextBillingDate && String(updated.nextBillingDate).slice(0, 10) !== String(previous.nextBillingDate || '').slice(0, 10)) return updated;
+            if (tries > 0) return new Promise(function (resolve) { window.setTimeout(resolve, 750); }).then(function () { return readUpdated(previous, tries - 1); });
+            throw new Error('The skipped order was accepted, but the updated renewal date is not available yet. Please refresh before trying again.');
+          });
+        }
+        function skipOne(current) {
+          return api('/skip-next', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription_id: subId }),
+          }).then(function (res) {
+            if (!res || !res.ok || !res.j || res.j.ok === false) return failed(res);
+            completed++;
+            rememberSkippedDate(subId, current.nextBillingDate);
+            return readUpdated(current, 6).then(function (updated) {
+              contractCache[subId] = updated;
+              if (completed < count) return skipOne(updated);
+              return { ok: true, j: { ok: true }, skippedCount: completed, updatedContract: updated };
+            });
+          });
+        }
+        return skipOne(contract).catch(function (error) { return failed({ j: { error: error.message } }); });
+    }
+
+    // Submit handlers -------------------------------------------------------
+    var submit = {
+      'edit-date': function (panel, contract) {
+        var iso = readDateInput(panel.querySelector('#acct-f-date'));
+        if (!iso) return Promise.reject(new Error('Please select a valid renewal date.'));
+        var subId = idOf(contract.id);
+        function updateDate() {
+          return api('/update-date', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription_id: subId, next_billing_date: iso }),
+          }).then(function (res) {
+            if (panel.__gbRestored && (!res || !res.ok || res.j && res.j.ok === false)) {
+              showRestoredState();
+              return { ok: false, j: { error: 'The order was restored, but its renewal date could not be updated. Please save the date again.' } };
+            }
+            return res;
+          });
+        }
+        function showRestoredState() {
+          skippedAttempts[String(subId)] = (skippedAttempts[String(subId)] || []).filter(function (date) { return date !== panel.__gbUnskipDate; });
+        }
+        if (!panel.__gbUnskipDate || panel.__gbRestored) return updateDate();
+        return api('/orders/past').then(function (res) {
+          if (!res || !res.ok || res.j && res.j.ok === false) return res;
+          var attempt = collectionItems(res.j.orders).find(function (order) {
+            return String(idOf(order.contractId)) === String(subId) && String(order.status || '').toUpperCase() === 'SKIPPED' && String(order.billingDate || '').slice(0, 10) === panel.__gbUnskipDate;
+          });
+          if (!attempt || !attempt.id) return { ok: false, j: { error: 'This skipped order is no longer available to restore. Please refresh the page.' } };
+          return api('/unskip-order/' + encodeURIComponent(idOf(attempt.id)), {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription_id: subId }),
+          }).then(function (restored) {
+            if (!restored || !restored.ok || restored.j && restored.j.ok === false) return restored;
+            panel.__gbRestored = true;
+            showRestoredState();
+            return updateDate();
+          });
+        });
+      },
+      'edit-name': function (panel, contract) {
+        var value = (panel.querySelector('#acct-f-name').value || '').trim();
+        return api('/update-attributes', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subscription_id: idOf(contract.id),
+            attributes: [{ key: '_subscription_name', value: value }],
+          }),
+        });
+      },
+      'edit-frequency': function (panel, contract) {
+        var select = panel.querySelector('#acct-f-freq');
+        var sellingPlanId = select && select.value;
+        if (!sellingPlanId) return Promise.reject(new Error('no_plan'));
+        return api('/update-frequency', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: idOf(contract.id), selling_plan_id: sellingPlanId }),
+        });
+      },
+      'skip-next': skipUpcomingOrders,
+      'need-now': function (panel, contract) {
+        var subId = String(idOf(contract.id));
+        var pending = immediateOrderStates[subId];
+        if (pending && pending.status === 'pending') {
+          return Promise.resolve({ ok: false, j: { error: pending.message } });
+        }
+        return api('/orders/upcoming').then(function (res) {
+          if (!res || !res.ok || !res.j || res.j.ok === false) return res;
+          var attempts = collectionItems(res.j.orders).filter(function (attempt) {
+            return attempt && String(idOf(attempt.contractId)) === subId &&
+              String(attempt.status || '').toUpperCase() === 'QUEUED' && attempt.id != null;
+          });
+          attempts.sort(function (a, b) { return new Date(a.billingDate).getTime() - new Date(b.billingDate).getTime(); });
+          if (!attempts.length) {
+            return { ok: false, j: { error: 'There is no upcoming order available for this subscription. Refresh the page and try again.' } };
+          }
+          return api('/need-now', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription_id: subId, billing_attempt_id: attempts[0].id }),
+          }).then(function (result) {
+            result.requestedBillingAttemptId = attempts[0].id;
+            return result;
+          });
+        });
+      },
+      'edit-payment': function (panel, contract) {
+        return api('/send-payment-update-email', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: idOf(contract.id) }),
+        });
+      },
+      'discount-add': function (panel, contract) {
+        var code = (panel.querySelector('[data-acct-discount-input]').value || '').trim();
+        if (!code) return Promise.reject(new Error('no_code'));
+        return api('/apply-discount', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: idOf(contract.id), code: code }),
+        });
+      },
+      'shipping-form': function (panel, contract) {
+        var g = function (selector) { return String((panel.querySelector(selector) || {}).value || '').trim(); };
+        var phone = g('#acct-sh-phone').replace(/[^+0-9]/g, '');
+        if (phone && phone.charAt(0) !== '+') {
+          phone = /^61\d{9}$/.test(phone) ? '+' + phone : '+61' + phone.replace(/^0/, '');
+        }
+        var state = g('#acct-sh-state');
+        var states = { ACT: 'Australian Capital Territory', NSW: 'New South Wales', NT: 'Northern Territory', QLD: 'Queensland', SA: 'South Australia', TAS: 'Tasmania', VIC: 'Victoria', WA: 'Western Australia' };
+        var address = {
+          methodType: 'SHIPPING',
+          firstName: g('#acct-sh-first'), lastName: g('#acct-sh-last'), phone: phone,
+          company: g('#acct-sh-company'), address1: g('#acct-sh-a1'), address2: g('#acct-sh-a2'),
+          city: g('#acct-sh-suburb'), provinceCode: state, province: states[state] || state,
+          zip: g('#acct-sh-post'), country: 'Australia', countryCode: 'AU'
+        };
+        var subId = idOf(contract.id);
+        var instructions = g('#acct-sh-note');
+        var existingInstructions = collectionItems(contract.customAttributes).find(function (attr) { return (attr.key || attr.name) === 'Delivery Instructions'; });
+        var savedAddress;
+        return api('/update-address', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: subId, address: address }),
+        }).then(function (res) {
+          if (!res || !res.ok || !res.j || res.j.ok === false) return res;
+          savedAddress = res;
+          if (instructions === String(existingInstructions && existingInstructions.value || '')) return res;
+          return api('/update-attributes', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription_id: subId, attributes: [{ key: 'Delivery Instructions', value: instructions }] }),
+          });
+        }).then(function (res) {
+          if (!res || !res.ok || !res.j || res.j.ok === false) return res;
+          var returned = savedAddress.j.data;
+          if (returned && returned.deliveryMethod && returned.deliveryMethod.address) {
+            var updated = Object.assign({}, contract, returned);
+            contractCache[subId] = updated;
+            var card = subsList.querySelector('[data-sub-id="' + subId + '"]');
+            if (card) card.replaceWith(renderCard(updated));
+            if (String(currentSubParam()) === String(subId)) renderDetail(updated);
+          }
+          return res;
+        });
+      },
+      'restart': function (panel, contract) {
+        var iso = readDateInput(panel.querySelector('#acct-f-restart'));
+        // Two steps: flip status to ACTIVE, then set the restart date
+        return api('/update-status', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: idOf(contract.id), status: 'ACTIVE' }),
+        }).then(function () {
+          if (!iso) return { ok: true };
+          return api('/update-date', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription_id: idOf(contract.id), next_billing_date: iso }),
+          });
+        });
+      },
+      'cancel-holiday': function (panel, contract) {
+        // Fake-pause per funkyfood pattern: skip upcoming + move billing to
+        // resume date + record _resume_date attribute. Status stays ACTIVE.
+        var hidden = panel.querySelector('[data-acct-cal-input]');
+        var iso = readDateInput(hidden);
+        if (!iso) return Promise.reject(new Error('Choose a resume date before pausing your subscription.'));
+        var minDate = String(contract.nextBillingDate || '').slice(0, 10);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(minDate)) {
+          return Promise.reject(new Error('We couldn’t read your next payment date. Refresh the page and try again.'));
+        }
+        if (iso < minDate) {
+          return Promise.reject(new Error('Choose a resume date on or after your next payment date: ' + toDDMMYYYY(minDate) + '.'));
+        }
+        var subId = idOf(contract.id);
+        return api('/skip-next', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: subId }),
+        }).then(function (res) {
+          if (!res || !res.ok || (res.j && res.j.ok === false)) return res;
+          return api('/update-date', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription_id: subId, next_billing_date: iso }),
+          });
+        }).then(function (res) {
+          if (!res || !res.ok || (res.j && res.j.ok === false)) return res;
+          return api('/update-attributes', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subscription_id: subId,
+              attributes: [
+                { key: '_resume_date', value: iso },
+                { key: '_pause_reason', value: 'going-away' },
+              ],
+            }),
+          });
+        });
+      },
+      'cancel-discount': function (panel, contract) {
+        // Apply the retention discount configured in global theme settings.
+        return api('/apply-discount', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: idOf(contract.id), code: RETENTION_DISCOUNT_CODE }),
+        });
+      },
+      'cancel-reason': function (panel, contract) {
+        // Frontend routing (verified against live account.js):
+        //   going-away   → jumps to cancel-holiday   (branch handles it)
+        //   too-expensive → jumps to cancel-discount (branch handles it)
+        //   others (5)   → CTA becomes "Cancel", frontend only closes the
+        //                  modal. We call /update-status CANCELLED here.
+        var picked = panel.querySelector('input[name="acct-cancel-reason"]:checked');
+        var reason = picked ? picked.value : '';
+        var subId = idOf(contract.id);
+        // Always record the reason.
+        var writeReason = api('/update-attributes', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subscription_id: subId,
+            attributes: [{ key: '_cancel_reason', value: reason }],
+          }),
+        });
+        if (reason === 'going-away' || reason === 'too-expensive') return writeReason;
+        return writeReason.then(function (res) {
+          if (!res || !res.ok || res.j && res.j.ok === false) return res;
+          return api('/update-status', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription_id: subId, status: 'CANCELLED' }),
+          });
+        });
+      },
+      'edit-product': function (panel, contract) {
+        var subId = idOf(contract.id);
+        var lineId = panel.getAttribute('data-acct-line-id');
+        var origVariantId = panel.getAttribute('data-acct-line-orig-variant-id');
+        var origQty = Number(panel.getAttribute('data-acct-line-orig-qty') || '0');
+        var qtyEl = panel.querySelector('[data-acct-qty-value]');
+        var qty = Number((qtyEl && qtyEl.value) || '0');
+        var card = panel.querySelector('.gb-acct-prod');
+        var newVariantId = card && card.getAttribute('data-variant-id');
+        var variantChanged = newVariantId && String(newVariantId) !== String(origVariantId);
+
+        // Case 1: qty dropped to zero → remove line entirely.
+        if (qty === 0) {
+          return api('/remove-line-item', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription_id: subId, line_id: lineId }),
+          });
+        }
+        // Case 2: variant swap → replace-variants-v3 (also handles qty change).
+        if (variantChanged) {
+          var sellingPlanId = contract.deliveryPolicy && contract.deliveryPolicy.sellingPlanId;
+          return api('/replace-variants', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subscription_id: subId,
+              old_variants: [{ variant_id: origVariantId, quantity: origQty }],
+              new_variants: [{ variant_id: newVariantId, quantity: qty, selling_plan_id: sellingPlanId }],
+            }),
+          });
+        }
+        // Case 3: only qty changed → update quantity in place.
+        if (qty !== origQty) {
+          return api('/update-line-item', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subscription_id: subId,
+              line_id: lineId,
+              quantity: qty,
+              variant_id: origVariantId,
+            }),
+          });
+        }
+        return Promise.resolve({ ok: true, j: { ok: true } });
+      },
+      'add-product': function (panel, contract) {
+        var cards = panel.querySelectorAll('.gb-acct-prod');
+        var subId = idOf(contract.id);
+        var chain = Promise.resolve();
+        cards.forEach(function (card) {
+          var qty = Number((card.querySelector('[data-acct-qty-value]') || {}).value || '0');
+          if (qty <= 0) return;
+          var variantId = card.getAttribute('data-variant-id');
+          if (!variantId) return;
+          chain = chain.then(function (previous) {
+            if (previous && (!previous.ok || previous.j && previous.j.ok === false)) return previous;
+            if (card.getAttribute('data-acct-stock-available') === 'false') return { ok: false, j: { error: 'This product is out of stock. Please choose another option.' } };
+            return api('/add-line-item', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                subscription_id: subId,
+                variant_id: variantId,
+                quantity: qty,
+              }),
+            }).then(function (res) {
+              if (res && res.ok && res.j && res.j.ok !== false) card.remove();
+              return res;
+            });
+          });
+        });
+        return chain;
+      },
+      'cancel-offer-skip': skipUpcomingOrders,
+    };
+
+    submit['discount-applied'] = submit['discount-add'];
+
+    // Chip remove (discount) — separate flow from save/apply/cta.
+    document.addEventListener('click', function (e) {
+      if (!e.target || !e.target.closest) return;
+      var btn = e.target.closest('[data-acct-chip-remove]');
+      if (!btn) return;
+      if (immediateOrderPending(currentContract())) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+      var contract = currentContract();
+      if (!contract) return;
+      var panel = btn.closest('[data-acct-modal-panel]');
+      var discountId = btn.getAttribute('data-acct-discount-id');
+      if (!discountId) {
+        showDiscountActionError(panel, null, 'We couldn’t identify this discount. Refresh the page and try again.');
+        return;
+      }
+      btn.classList.add('is-loading');
+      btn.setAttribute('data-acct-busy', '');
+      api('/remove-discount', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription_id: idOf(contract.id), discount_id: discountId }),
+      }).then(function (res) {
+        if (res && res.ok && res.j && res.j.ok !== false) {
+          var error = panel && panel.querySelector('[data-acct-discount-error]');
+          if (error) error.remove();
+          return refetchAndRerender().then(function (updatedContract) {
+            if (updatedContract && panel) {
+              var refreshAppliedDiscounts = prefill['discount-applied'];
+              if (refreshAppliedDiscounts) refreshAppliedDiscounts(panel, updatedContract);
+            }
+          });
+        }
+        console.warn('acct remove discount failed', res && res.j);
+        showDiscountActionError(panel, res && res.j, 'We couldn’t remove this discount. Please try again.');
+      }).catch(function (err) {
+        console.error('acct remove discount', err);
+        showDiscountActionError(panel, err, 'We couldn’t remove this discount. Please try again.');
+      }).finally(function () {
+        if (btn.isConnected) { btn.classList.remove('is-loading'); btn.removeAttribute('data-acct-busy'); }
+      });
+    }, true);
+
+    // Only synchronize after actions started in this portal, never during boot/read-only refresh.
+    function syncHolidayBillingDate(contract, latest) {
+      var original = collectionItems(contract && contract.customAttributes).find(function (attr) {
+        return (attr.key || attr.name) === '_resume_date' && /^\d{4}-\d{2}-\d{2}$/.test(String(attr.value || ''));
+      });
+      if (!original) return Promise.resolve(latest || null);
+      var subId = idOf(contract.id);
+      var read = latest ? Promise.resolve(latest) : api('/subscription/' + encodeURIComponent(subId)).then(function (res) {
+        if (!res || !res.ok || !res.j || !res.j.subscription) throw new Error('The subscription changed, but its updated restart date could not be read. Please refresh before trying again.');
+        return res.j.subscription;
+      });
+      return read.then(function (updated) {
+        var nextDate = String(updated.nextBillingDate || '').slice(0, 10);
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) throw new Error('The updated billing date is unavailable. Please refresh before trying again.');
+        var attrs = collectionItems(updated.customAttributes);
+        var resume = attrs.find(function (attr) { return (attr.key || attr.name) === '_resume_date'; });
+        if (!resume || !resume.value || String(resume.value) === nextDate) return updated;
+        return api('/update-attributes', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription_id: subId, attributes: [{ key: '_resume_date', value: nextDate }] }),
+        }).then(function (res) {
+          if (!res || !res.ok || res.j && res.j.ok === false) throw new Error('Your billing date changed, but the restart date could not be synchronized. Please refresh before trying again.');
+          updated.customAttributes = attrs.map(function (attr) { return (attr.key || attr.name) === '_resume_date' ? { key: '_resume_date', value: nextDate } : attr; });
+          contractCache[subId] = updated;
+          return updated;
+        });
+      });
+    }
+
+    // These portal actions can reschedule billing, including restoring a skipped order.
+    ['edit-date', 'edit-frequency', 'skip-next', 'cancel-offer-skip', 'restart', 'edit-product', 'add-product'].forEach(function (name) {
+      var originalHandler = submit[name];
+      submit[name] = function (panel, contract) {
+        return Promise.resolve().then(function () { return originalHandler(panel, contract); }).then(function (res) {
+          // Edit Date can restore an order before a later date update fails; sync the actual resulting date too.
+          var succeeded = res && res.ok && (!res.j || res.j.ok !== false);
+          if (!succeeded && !(name === 'edit-date' && panel.__gbRestored)) return res;
+          return syncHolidayBillingDate(contract, res && res.updatedContract).then(function (updated) {
+            if (res && res.updatedContract && updated) res.updatedContract = updated;
+            return res;
+          });
+        });
+      };
+    });
+
+    // Refetch subscriptions and rerender the detail view for the current id.
+    function refetchAndRerender() {
+      return Promise.all([api('/subscriptions'), loadSkippedOrders()]).then(function (results) {
+        var res = results[0];
+        if (!res.ok || !res.j || !res.j.ok) return null;
+        var list = res.j.subscriptions || [];
+        list.forEach(function (c) { contractCache[idOf(c.id)] = c; });
+        // Update card in place (cheapest: rebuild the whole list — still fast).
+        renderList(list);
+        renderCurrentOrder(list);
+        var id = currentSubParam();
+        if (id && contractCache[id]) {
+          renderDetail(contractCache[id]);
+          return contractCache[id];
+        }
+        return null;
+      });
+    }
+
+    function confirmProductQuantity(contract, expected) {
+      var attempts = 0;
+      function read() {
+        return api('/subscription/' + encodeURIComponent(idOf(contract.id)), { cache: 'no-store' }).then(function (res) {
+          var updated = res && res.ok && res.j && res.j.ok !== false && res.j.subscription;
+          if (!updated) throw new Error('The product update was submitted, but its saved quantity could not be read. Please refresh before trying again.');
+          var lines = collectionItems(updated.lines);
+          var confirmed = expected.every(function (item) {
+            var line = lines.find(function (candidate) {
+              return item.lineId
+                ? String(idOf(candidate.id)) === item.lineId
+                : String(idOf(candidate.variantId)) === item.variantId;
+            });
+            return item.quantity === 0 ? !line : !!line && Number(line.quantity) === item.quantity;
+          });
+          if (confirmed) return updated;
+          if (++attempts >= 6) throw new Error('The product update was submitted, but the saved quantity has not been confirmed yet. Please refresh before trying again.');
+          return new Promise(function (resolve) { window.setTimeout(resolve, 700); }).then(read);
+        });
+      }
+      return read();
+    }
+
+    // Capture click on any modal trigger to prefill *before* it opens.
+    // Also remember which trigger opened the modal so we can toggle its
+    // loading state when the modal's save action fires.
+    document.addEventListener('click', function (e) {
+      if (!e.target || !e.target.closest) return;
+      var trigger = e.target.closest('[data-acct-modal]');
+      if (!trigger) return;
+      var name = trigger.getAttribute('data-acct-modal');
+      if (name === 'edit-product' && trigger.disabled) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+      if (name === 'skip-next' && (trigger.disabled || activeSkippedDates(currentContract() || {}).length)) {
+        e.preventDefault(); e.stopImmediatePropagation(); return;
+      }
+      if (trigger.closest('.gb-acct-detail') && immediateOrderPending(currentContract())) {
+        e.preventDefault(); e.stopImmediatePropagation(); return;
+      }
+      if (name === 'cancel-offer-skip') {
+        var cancelContract = currentContract();
+        if (trigger.disabled || (cancelContract && subscriptionUiState(cancelContract) === 'paused')) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          return;
+        }
+      }
+      if (name === 'discount-applied' || name === 'discount-add') {
+        var discountContract = currentContract();
+        var discountStatus = discountContract && subscriptionUiState(discountContract);
+        if (trigger.disabled || discountStatus === 'cancelled' || discountStatus === 'canceled') {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          return;
+        }
+      }
+      var panel = document.querySelector('[data-acct-modal-panel="' + name + '"]');
+      if (panel) panel.__gbTrigger = trigger;
+      var handler = prefill[name];
+      if (!handler) return;
+      var contract = currentContract();
+      if (!contract) return;
+      if (!panel) return;
+      try { handler(panel, contract); } catch (err) { console.warn('prefill', name, err); }
+    }, true);
+
+    document.addEventListener('input', function (event) {
+      if (event.target.closest('[data-acct-modal-panel="shipping-form"]') && event.target.setCustomValidity) event.target.setCustomValidity('');
+    }, true);
+    document.addEventListener('submit', function (event) {
+      var panel = event.target.closest('[data-acct-modal-panel="shipping-form"]');
+      if (!panel) return;
+      event.preventDefault(); event.stopImmediatePropagation();
+      var save = panel.querySelector('[data-acct-save]');
+      if (save && !save.disabled && !save.hasAttribute('data-acct-busy')) save.click();
+    }, true);
+
+    // Capture click on any modal primary action ([data-acct-save],
+    // [data-acct-apply], [data-acct-cta]) to POST *before* frontend closes
+    // / switches modals.
+    document.addEventListener('click', function (e) {
+      if (!e.target || !e.target.closest) return;
+      var save = e.target.closest('[data-acct-save], [data-acct-apply], [data-acct-cta]');
+      if (!save) return;
+      var panel = save.closest('[data-acct-modal-panel]');
+      if (!panel) return;
+      var name = panel.getAttribute('data-acct-modal-panel');
+      if (name === 'shipping-form') {
+        e.preventDefault(); e.stopImmediatePropagation();
+        var form = panel.querySelector('form');
+        form.querySelectorAll('[required]').forEach(function (input) {
+          input.setCustomValidity(String(input.value || '').trim() ? '' : 'Please fill in this field.');
+        });
+        if (!form.reportValidity()) return;
+      }
+      var handler = submit[name];
+      if (!handler || save.disabled || save.hasAttribute('data-acct-busy')) {
+        if (name === 'cancel-offer-skip' || name === 'skip-next' || name === 'edit-date' || name === 'edit-payment') { e.preventDefault(); e.stopImmediatePropagation(); }
+        return;
+      }
+      var contract = currentContract();
+      if (!contract) return;
+      if (immediateOrderPending(contract)) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+      if (name === 'edit-product') {
+        var qtyInput = panel.querySelector('[data-acct-qty-value]');
+        var requestedQty = Number(qtyInput && qtyInput.value || '0');
+        var lineCount = collectionItems(contract.lines).length;
+        if (requestedQty === 0 && lineCount <= 1) {
+          // Stop before the theme closes this modal or calls remove-line-item.
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          var productError = panel.querySelector('[data-acct-product-error]');
+          if (productError) {
+            productError.hidden = false;
+            productError.style.removeProperty('display');
+          }
+          return;
+        }
+      }
+      // Mark the originating trigger as loading. renderDetail() rebuilds the
+      // DOM on refetch success so the class naturally clears. On failure we
+      // clear it manually below.
+      var trigger = panel.__gbTrigger;
+      if (trigger) { trigger.classList.add('is-loading'); trigger.setAttribute('data-acct-busy', ''); }
+      var isDiscount = name === 'discount-add' || name === 'discount-applied';
+      var isHoliday = name === 'cancel-holiday';
+      var isNeedNow = name === 'need-now';
+      var isShipping = name === 'shipping-form';
+      var isDate = name === 'edit-date' || name === 'edit-frequency' || name === 'restart';
+      var isPayment = name === 'edit-payment';
+      var isCancelSkip = name === 'cancel-offer-skip' || name === 'skip-next';
+      var isProduct = name === 'add-product' || name === 'edit-product';
+      var expectedProducts = [];
+      if (isProduct) {
+        panel.querySelectorAll('.gb-acct-prod').forEach(function (card) {
+          var quantity = Number((card.querySelector('[data-acct-qty-value]') || {}).value || '0');
+          if (name === 'add-product' && quantity <= 0) return;
+          var originalVariant = String(idOf(panel.getAttribute('data-acct-line-orig-variant-id') || ''));
+          var variant = String(idOf(card.getAttribute('data-variant-id') || originalVariant));
+          expectedProducts.push({
+            lineId: name === 'edit-product' && (quantity === 0 || variant === originalVariant)
+              ? String(idOf(panel.getAttribute('data-acct-line-id'))) : null,
+            variantId: variant,
+            quantity: quantity
+          });
+        });
+      }
+      var selectedCancelReason = panel.querySelector('input[name="acct-cancel-reason"]:checked');
+      var isCancellation = name === 'cancel-reason' && selectedCancelReason && ['going-away', 'too-expensive'].indexOf(selectedCancelReason.value) === -1;
+      if (isHoliday || isNeedNow || isCancelSkip || isDate || isPayment || isProduct || isCancellation) { e.preventDefault(); e.stopImmediatePropagation(); }
+      var discountMutationSucceeded = false;
+      var discountInput = isDiscount && panel.querySelector('[data-acct-discount-input]');
+      var submittedDiscountCode = discountInput ? String(discountInput.value || '').trim() : '';
+      var error = panel.querySelector('[data-acct-discount-error]');
+      if (error) error.remove();
+      if (isDiscount || isHoliday || isNeedNow || isShipping || isCancelSkip || isDate || isPayment || isProduct || isCancellation) { save.classList.add('is-loading'); save.setAttribute('data-acct-busy', ''); }
+      if (isNeedNow || isPayment || isCancellation) save.disabled = true;
+      function showDiscountError(result) {
+        if (!isDiscount && !isHoliday && !isNeedNow && !isShipping && !isCancelSkip && !isDate && !isPayment && !isProduct && !isCancellation) return;
+        var message = document.createElement('div');
+        message.className = 'gb-acct-modal__alert';
+        message.setAttribute('data-acct-discount-error', '');
+        message.setAttribute('role', 'alert');
+        message.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="17 249 20 20" fill="none" aria-hidden="true"><path d="M26.9964 267.366C31.5988 267.366 35.3298 263.635 35.3298 259.033C35.3298 254.43 31.5988 250.699 26.9964 250.699C22.394 250.699 18.6631 254.43 18.6631 259.033C18.6631 263.635 22.394 267.366 26.9964 267.366Z" fill="#DD655E"/><path d="M29.4971 256.535L24.4971 261.535M24.4971 256.535L29.4971 261.535" stroke="#ffffff" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg><p></p>';
+        var detail = result && result.error;
+        var text = typeof detail === 'string'
+          ? detail
+          : detail && (detail.message || detail.detail || detail.title || detail.error) || (result && (result.message || result.title)) || '';
+        text = String(text).replace(/^UserGeneratedError:\s*/i, '').trim();
+        if (text.length > 320) text = text.slice(0, 317) + '…';
+        message.querySelector('p').textContent = text || (isCancellation ? 'We couldn’t cancel your subscription. Please try again.' : isProduct ? 'We couldn’t update this product. Please try again.' : isPayment ? 'We couldn’t send the payment update email. Please try again.' : isDate ? 'We couldn’t update your renewal date. Please try again.' : isHoliday ? 'We couldn’t pause your subscription. Please try again.' : isNeedNow ? 'We couldn’t place your order. Please try again.' : isShipping ? 'We couldn’t save your shipping address. Please try again.' : isCancelSkip ? 'We couldn’t skip your upcoming order. Please try again.' : 'We couldn’t apply this discount code. Check the code and try again.');
+        var discount = panel.querySelector(isHoliday || isNeedNow || isShipping || isCancelSkip || isDate || isPayment || isProduct || isCancellation ? '.gb-acct-modal__body' : '.gb-acct-discount');
+        if (discount) discount.appendChild(message);
+      }
+      // Discount UI waits for the API result; other actions keep their choreography.
+      Promise.resolve()
+        .then(function () { return handler(panel, contract); })
+        .then(function (res) {
+          if (!res || !res.ok || (res.j && res.j.ok === false)) {
+            console.warn('acct save', name, 'failed', res && res.j);
+            if (isDiscount || isHoliday || isNeedNow || isShipping || isCancelSkip || isDate || isPayment || isProduct || isCancellation) { showDiscountError(res && res.j); if (isCancelSkip || isProduct || isCancellation) return refetchAndRerender(); return; }
+          }
+          if (isCancellation) {
+            var attempts = 0;
+            function confirmCancelled() {
+              return refetchAndRerender().then(function (updated) {
+                var status = updated && String(updated.status || '').toLowerCase();
+                if (status === 'cancelled' || status === 'canceled') {
+                  var close = panel.querySelector('.gb-acct-modal__close[data-acct-modal-close]');
+                  if (close) close.click();
+                  return;
+                }
+                if (++attempts >= 6) throw new Error('Cancellation was submitted, but the updated status could not be confirmed yet. Please refresh to check your subscription.');
+                return new Promise(function (resolve) { window.setTimeout(resolve, 700); }).then(confirmCancelled);
+              });
+            }
+            return confirmCancelled();
+          }
+          if (isCancelSkip) {
+            var updated = res.updatedContract;
+            skipConfirmation = { subId: idOf(updated.id), count: res.skippedCount, nextBillingDate: updated.nextBillingDate };
+            contractCache[idOf(updated.id)] = updated;
+            var card = subsList.querySelector('[data-sub-id="' + idOf(updated.id) + '"]');
+            if (card) card.replaceWith(renderCard(updated));
+            if (String(currentSubParam()) === String(idOf(updated.id))) renderDetail(updated);
+            renderCurrentOrder(Object.keys(contractCache).map(function (id) { return contractCache[id]; }));
+            if (name === 'skip-next') {
+              var close = panel.querySelector('.gb-acct-modal__close[data-acct-modal-close]');
+              if (close) close.click();
+              return;
+            }
+            var skippedTrigger = document.createElement('button');
+            skippedTrigger.type = 'button';
+            skippedTrigger.hidden = true;
+            skippedTrigger.setAttribute('data-acct-modal', 'cancel-skipped');
+            document.body.appendChild(skippedTrigger);
+            skippedTrigger.click();
+            skippedTrigger.remove();
+            return;
+          }
+          if (isDiscount) {
+            discountMutationSucceeded = true;
+            // Display the accepted code immediately; the subscription endpoint can briefly return its pre-mutation snapshot.
+            var optimisticContract = Object.assign({}, contract);
+            var optimisticDiscounts = collectionItems(contract.discounts).slice();
+            var alreadyPresent = activeDiscounts(contract).some(function (discount) {
+              return String(discount.code || '').toLowerCase() === submittedDiscountCode.toLowerCase();
+            });
+            if (submittedDiscountCode && !alreadyPresent) optimisticDiscounts.push({ code: submittedDiscountCode });
+            optimisticContract.discounts = optimisticDiscounts;
+            var optimisticId = idOf(optimisticContract.id);
+            contractCache[optimisticId] = optimisticContract;
+            renderDetail(optimisticContract);
+            var successPanel = document.querySelector('[data-acct-modal-panel="discount-applied"]');
+            if (!successPanel) {
+              console.error('acct discount applied but success panel is missing');
+              return;
+            }
+            var appliedPrefill = prefill['discount-applied'];
+            function syncAppliedDiscountResult() {
+              var panelNow = document.querySelector('[data-acct-modal-panel="discount-applied"]');
+              if (!panelNow) return;
+              var latestContract = contractCache[optimisticId] || optimisticContract;
+              if (appliedPrefill) appliedPrefill(panelNow, latestContract);
+              var resultNow = panelNow.querySelector('.gb-acct-discount__result');
+              if (resultNow) {
+                resultNow.hidden = !activeDiscounts(latestContract).length;
+                if (!resultNow.hidden) resultNow.removeAttribute('hidden');
+              }
+            }
+            if (appliedPrefill) appliedPrefill(successPanel, optimisticContract);
+            // Open through the account frontend's supported data-acct-modal trigger.
+            var successTrigger = detailRoot && detailRoot.querySelector('[data-acct-modal="discount-applied"]');
+            if (successTrigger) successTrigger.click();
+            else console.error('acct discount applied but modal trigger is missing');
+            // The frontend can reset modal contents as it changes state. Refill after it finishes opening.
+            window.requestAnimationFrame(syncAppliedDiscountResult);
+            window.setTimeout(syncAppliedDiscountResult, 150);
+            refetchAndRerender().then(function (updatedContract) {
+              if (!updatedContract) return;
+              var hasAppliedCode = activeDiscounts(updatedContract).some(function (discount) {
+                return String(discount.code || '').toLowerCase() === submittedDiscountCode.toLowerCase();
+              });
+              if (hasAppliedCode) {
+                syncAppliedDiscountResult();
+                window.setTimeout(syncAppliedDiscountResult, 150);
+                return;
+              }
+              contractCache[optimisticId] = optimisticContract;
+              renderDetail(optimisticContract);
+              syncAppliedDiscountResult();
+              window.setTimeout(syncAppliedDiscountResult, 150);
+            }).catch(function (refreshError) {
+              console.warn('acct discount applied but refresh failed', refreshError);
+            });
+            return;
+          }
+          if (isHoliday) {
+            var resumeDate = readDateInput(panel.querySelector('[data-acct-cal-input]'));
+            var attributes = collectionItems(contract.customAttributes).filter(function (attr) {
+              return ['_resume_date', '_pause_reason'].indexOf(attr.key || attr.name) === -1;
+            });
+            attributes.push({ key: '_resume_date', value: resumeDate }, { key: '_pause_reason', value: 'going-away' });
+            var pausedContract = Object.assign({}, contract, { customAttributes: attributes, nextBillingDate: resumeDate });
+            contractCache[idOf(contract.id)] = pausedContract;
+            renderList(Object.keys(contractCache).map(function (id) { return contractCache[id]; }));
+            renderDetail(pausedContract);
+            var close = panel.querySelector('.gb-acct-modal__close[data-acct-modal-close]');
+            if (close) close.click();
+          }
+          if (isPayment) {
+            save.__gbEmailSent = true;
+            save.textContent = 'Email sent';
+            var copy = panel.querySelector('.gb-acct-modal__copy');
+            if (copy) { copy.setAttribute('role', 'status'); copy.textContent = 'A payment update email has been sent. Please check your inbox and spam folder, then follow the link to update your payment method.'; }
+            var paymentClose = panel.querySelector('.gb-acct-modal__foot .gb-acct-link');
+            if (paymentClose) paymentClose.textContent = 'Done';
+            return;
+          }
+          if (isProduct) {
+            return confirmProductQuantity(contract, expectedProducts).then(function (updated) {
+              contractCache[idOf(updated.id)] = updated;
+              var list = Object.keys(contractCache).map(function (id) { return contractCache[id]; });
+              renderList(list);
+              renderCurrentOrder(list);
+              renderDetail(updated);
+              var productClose = panel.querySelector('.gb-acct-modal__close[data-acct-modal-close]');
+              if (productClose) productClose.click();
+            });
+          }
+          if (isDate) {
+            var dateClose = panel.querySelector('.gb-acct-modal__close[data-acct-modal-close]');
+            if (dateClose) dateClose.click();
+          }
+          if (isNeedNow) {
+            waitForImmediateOrder(panel, contract, res);
+            var orderClose = panel.querySelector('.gb-acct-modal__close[data-acct-modal-close]');
+            if (orderClose) orderClose.click();
+            return;
+          }
+          if (isShipping) {
+            var shippingSuccess = document.createElement('button');
+            shippingSuccess.type = 'button';
+            shippingSuccess.hidden = true;
+            shippingSuccess.setAttribute('data-acct-modal', 'shipping-success');
+            document.body.appendChild(shippingSuccess);
+            shippingSuccess.click();
+            shippingSuccess.remove();
+          }
+          return refetchAndRerender();
+        })
+        .catch(function (err) { console.error('acct save', name, err); if (!discountMutationSucceeded) showDiscountError({ error: err.message }); })
+        .finally(function () {
+          if (isDiscount || isHoliday || isNeedNow || isShipping || isCancelSkip || isDate || isPayment || isProduct || isCancellation) { save.classList.remove('is-loading'); save.removeAttribute('data-acct-busy'); }
+          if (isCancellation) save.disabled = false;
+          if (isNeedNow) save.disabled = !!save.__gbOrderAccepted;
+          if (isPayment) save.disabled = !!save.__gbEmailSent;
+          if (isProduct) { if (name === 'add-product') syncAddCta(panel); else syncEditCta(panel); }
+          if (trigger && trigger.isConnected) {
+            trigger.classList.remove('is-loading');
+            trigger.removeAttribute('data-acct-busy');
+          }
+        });
+    }, true);
+
+    // ────────── Overview: current order card ──────────
+    //
+    // Design has three states baked in via [data-state=...] spans; frontend
+    // CSS uses BOTH `.gb-acct-order--{state}` and `[data-acct-order-state]`
+    // selectors, so we must swap the class AND the attribute together.
+
+    var currentOrderEl = document.querySelector('.gb-acct-order');
+    var overviewLoading = document.querySelector('[data-acct-overview-loading]');
+    // Hide until we know the real state — avoids a flash of the design's
+    // default `--shipped` variant before data lands.
+    if (currentOrderEl) {
+      currentOrderEl.hidden = true;
+      currentOrderEl.style.display = 'none';
+    }
+
+    function setCurrentOrderState(state) {
+      if (!currentOrderEl) return;
+      ['preparing', 'shipped', 'renewal'].forEach(function (s) {
+        currentOrderEl.classList.remove('gb-acct-order--' + s);
+      });
+      currentOrderEl.classList.add('gb-acct-order--' + state);
+      currentOrderEl.setAttribute('data-acct-order-state', state);
+      currentOrderEl.hidden = false;
+      currentOrderEl.style.display = '';
+    }
+
+    function pickActiveSub(subs) {
+      return (subs || []).filter(function (sub) {
+        return subscriptionUiState(sub) === 'active' && !immediateOrderPending(sub) && new Date(sub.nextBillingDate).getTime() > Date.now();
+      }).sort(function (a, b) { return new Date(a.nextBillingDate) - new Date(b.nextBillingDate); })[0] || null;
+    }
+
+    var orderDeliveryStates = Object.create(null);
+    var currentOrderSubs = [];
+
+    function loadOrderDelivery(order) {
+      var id = String(order.id);
+      if (Object.prototype.hasOwnProperty.call(orderDeliveryStates, id)) return;
+      orderDeliveryStates[id] = { loading: true, delivered: false };
+      api('/order-delivery/' + encodeURIComponent(id)).then(function (res) {
+        if (!res || !res.ok || !res.j || res.j.ok === false) throw new Error(res && res.j && res.j.error || 'order_delivery_unavailable');
+        orderDeliveryStates[id] = { loading: false, delivered: res.j.delivered === true };
+        renderCurrentOrder(currentOrderSubs);
+      }).catch(function (error) {
+        orderDeliveryStates[id] = { loading: false, delivered: false, error: error.message };
+        console.warn('Current order delivery status unavailable', error.message);
+      });
+    }
+
+    function mostRecentOrder() {
+      var live = (CUSTOMER_ORDERS || []).filter(function (o) { return !o.cancelled_at; });
+      live.sort(function (a, b) {
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+      return live[0] || null;
+    }
+
+    // Set the status label / date / note / CTA text for a given state.
+    function fillCurrentOrder(state, opts) {
+      if (!currentOrderEl) return;
+      // Status text (spans keyed by data-state="preparing|shipped|renewal")
+      var statusEls = currentOrderEl.querySelectorAll('.gb-acct-order__status span[data-state]');
+      statusEls.forEach(function (el) {
+        var s = el.getAttribute('data-state');
+        if (s === state) el.textContent = opts.statusText || el.textContent;
+      });
+      var noteEls = currentOrderEl.querySelectorAll('.gb-acct-order__note span[data-state]');
+      noteEls.forEach(function (el) {
+        var s = el.getAttribute('data-state');
+        if (s === state && opts.noteText) el.textContent = opts.noteText;
+      });
+      var cta = currentOrderEl.querySelector('.gb-acct-order__cta');
+      if (cta) {
+        if (opts.ctaHref) cta.setAttribute('href', opts.ctaHref);
+        if (opts.orderId) cta.setAttribute('data-acct-order-id', opts.orderId);
+        else cta.removeAttribute('data-acct-order-id');
+      }
+    }
+
+    function shortMonthDay(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('en-AU', { month: 'short', day: 'numeric' });
+    }
+
+    function renderCurrentOrder(subs) {
+      if (!currentOrderEl) return;
+      if (overviewLoading) overviewLoading.remove();
+      currentOrderSubs = subs || [];
+      var order = mostRecentOrder();
+      var sub = pickActiveSub(subs);
+      var fulfilled = order && ['fulfilled', 'partial'].indexOf(order.fulfillment_status) !== -1;
+      if (fulfilled) loadOrderDelivery(order);
+      var delivered = order && orderDeliveryStates[String(order.id)] && orderDeliveryStates[String(order.id)].delivered;
+
+      // Use the current order's lifecycle, not an arbitrary age threshold.
+      if (fulfilled && !delivered) {
+        setCurrentOrderState('shipped');
+        fillCurrentOrder('shipped', {
+          statusText: 'It\'s been shipped',
+          ctaHref: '?order=' + order.id + '#order',
+          orderId: order.id,
+        });
+      } else if (order && !delivered && order.financial_status === 'paid') {
+        setCurrentOrderState('preparing');
+        fillCurrentOrder('preparing', {
+          statusText: 'Preparing, ' + shortMonthDay(order.created_at),
+          ctaHref: '?order=' + order.id + '#order',
+          orderId: order.id,
+        });
+      } else if (sub && sub.nextBillingDate) {
+        setCurrentOrderState('renewal');
+        fillCurrentOrder('renewal', {
+          statusText: 'Renewal Date, ' + shortMonthDay(sub.nextBillingDate),
+          noteText: cancelDeadline(sub.nextBillingDate).replace('to your next subscription ', ''),
+          ctaHref: '?sub=' + idOf(sub.id) + '#detail',
+        });
+      } else {
+        // No orders and no active sub — hide the card entirely.
+        currentOrderEl.hidden = true;
+      }
+    }
+
+    // ────────── Order detail view (#order) ──────────
+
+    var orderView = document.querySelector('[data-acct-view="order"]');
+    var orderPage = orderView && orderView.querySelector('.gb-acct-stack');
+    var orderPageHtml = orderPage && orderPage.innerHTML;
+
+    // Snapshot the line-item row as a template (first hardcoded row).
+    var orderItemTplHtml = '';
+    if (orderPage) {
+      var firstItem = orderPage.querySelector('.gb-acct-item');
+      if (firstItem) orderItemTplHtml = firstItem.outerHTML;
+    }
+
+    // Loading state on boot.
+    if (orderPage) {
+      orderPage.innerHTML =
+        '<div class="gb-acct-card"><div class="gb-acct-card__body">' +
+          '<div class="gb-acct-api-loading" role="status" aria-label="Loading"><span class="gb-acct-api-spinner" aria-hidden="true"></span></div>' +
+        '</div></div>';
+    }
+
+    function findOrder(id) {
+      if (id == null) return null;
+      var idStr = String(id);
+      return (CUSTOMER_ORDERS || []).find(function (o) { return String(o.id) === idStr; }) || null;
+    }
+
+    function formatAddress(a) {
+      if (!a) return '';
+      var parts = [];
+      if (a.name) parts.push(a.name);
+      if (a.address1) parts.push(a.address1);
+      if (a.address2) parts.push(a.address2);
+      var line3 = [a.city, a.province_code || a.province, a.zip].filter(Boolean).join(' ');
+      if (line3) parts.push(line3);
+      if (a.country) parts.push(a.country);
+      return parts.join(', ');
+    }
+
+    function statusLabel(order) {
+      if (order.cancelled_at) return 'Cancelled';
+      if (order.fulfillment_status === 'partial') return 'Partially fulfilled';
+      if (order.fulfillment_status_label) return order.fulfillment_status_label;
+      if (order.financial_status === 'paid') return 'Preparing';
+      return order.financial_status_label || 'Processing';
+    }
+
+    // Historical order prices come from its line items, never the product's current compare-at price.
+    function orderLinePrices(li) {
+      var quantity = Math.max(1, Number(li.quantity) || 1);
+      var originalUnit = Number(li.original_price != null ? li.original_price : li.price) || 0;
+      var originalTotal = li.original_line_price != null ? Number(li.original_line_price) : originalUnit * quantity;
+      var allocations = li.discount_allocations || [];
+      var allocated = allocations.reduce(function (sum, discount) { return sum + (Number(discount.amount) || 0); }, 0);
+      var finalTotal = allocations.length ? Math.max(0, originalTotal - allocated)
+        : li.final_line_price != null ? Number(li.final_line_price)
+        : li.final_price != null ? Number(li.final_price) * quantity : originalTotal;
+      return { originalUnit: originalTotal / quantity, finalUnit: finalTotal / quantity, originalTotal: originalTotal, finalTotal: finalTotal };
+    }
+
+    function orderOriginalSubtotal(order) {
+      return (order.line_items || []).reduce(function (sum, li) { return sum + orderLinePrices(li).originalTotal; }, 0);
+    }
+
+    function renderOrderDetail(order) {
+      if (!orderPage || !orderPageHtml) return;
+      if (!order) {
+        orderPage.innerHTML =
+          '<div class="gb-acct-card"><div class="gb-acct-card__body">' +
+            '<p class="gb-acct-empty">Order not found.</p>' +
+          '</div></div>';
+        return;
+      }
+      // Restore the full structure.
+      orderPage.innerHTML = orderPageHtml;
+
+      // Title
+      var title = orderView.querySelector('.gb-acct-intro__title');
+      if (title) title.textContent = 'Order ' + (order.name || '');
+
+      var cur = order.currency || 'AUD';
+
+      // Top rows: Date / Status / Total
+      var rows = orderPage.querySelectorAll('.gb-acct-hist__row');
+      if (rows[0]) rows[0].querySelector('.gb-acct-hist__value').textContent = formatDate(order.created_at);
+      if (rows[1]) rows[1].querySelector('.gb-acct-hist__value').textContent = statusLabel(order);
+      if (rows[2]) rows[2].querySelector('.gb-acct-hist__value').textContent = moneyCents(order.total_price, cur);
+
+      // Items — rebuild from template
+      var itemsWrap = orderPage.querySelector('.gb-acct-items');
+      if (itemsWrap && orderItemTplHtml) {
+        itemsWrap.innerHTML = '';
+        (order.line_items || []).forEach(function (li) {
+          var w = document.createElement('div');
+          w.innerHTML = orderItemTplHtml;
+          var row = w.firstElementChild;
+
+          var thumb = row.querySelector('.gb-acct-item__thumb');
+          if (thumb && li.image) thumb.setAttribute('src', li.image);
+          else if (thumb) thumb.removeAttribute('src');
+
+          var name = row.querySelector('.gb-acct-item__name');
+          if (name) name.textContent = li.product_title || li.title || '';
+
+          var flavour = row.querySelector('.gb-acct-item__flavour');
+          if (flavour) flavour.textContent = (li.variant_title && li.variant_title !== 'Default Title') ? li.variant_title : '';
+
+          var qty = row.querySelector('.gb-acct-item__qty');
+          if (qty) qty.textContent = 'Quantity: ' + (li.quantity || 1);
+
+          // Subscription vs one-off tag
+          var tag = row.querySelector('.gb-acct-item__tag span');
+          if (tag) tag.textContent = li.is_subscription ? 'Subscription' : 'One-off purchase';
+
+          var prices = orderLinePrices(li);
+          var price = row.querySelector('.gb-acct-item__price');
+          if (price) price.textContent = moneyCents(prices.finalUnit, cur);
+
+          var was = row.querySelector('.gb-acct-item__was');
+          if (was) {
+            if (prices.originalTotal > prices.finalTotal) {
+              was.textContent = moneyCents(prices.originalUnit, cur);
+            } else {
+              was.remove();
+            }
+          }
+
+          itemsWrap.appendChild(row);
+        });
+      }
+
+      // Summary recap
+      var recapRows = orderPage.querySelectorAll('.gb-acct-recap__row .gb-acct-recap__value');
+      if (recapRows[0]) recapRows[0].textContent = moneyCents(orderOriginalSubtotal(order), cur);
+      if (recapRows[1]) {
+        recapRows[1].textContent = '-' + moneyCents(order.total_discounts, cur);
+        var discountRow = recapRows[1].closest('.gb-acct-recap__row');
+        discountRow.querySelector('.gb-acct-recap__label').textContent = 'Discounts';
+        discountRow.hidden = !(Number(order.total_discounts) > 0);
+        if (Number(order.total_discounts) > 0) discountRow.style.removeProperty('display');
+        else discountRow.style.setProperty('display', 'none', 'important');
+      }
+      if (recapRows[2]) recapRows[2].textContent = moneyCents(order.shipping_price, cur);
+      var recapTotal = orderPage.querySelector('.gb-acct-recap__total');
+      if (recapTotal) recapTotal.querySelectorAll('span')[1].textContent = moneyCents(order.total_price, cur);
+
+      // Shipping / Billing info
+      var infoLabels = orderPage.querySelectorAll('.gb-acct-info__label');
+      infoLabels.forEach(function (lbl) {
+        var field = lbl.closest('.gb-acct-info');
+        var val = field && field.querySelector('.gb-acct-info__value');
+        if (!val) return;
+        var t = (lbl.textContent || '').toLowerCase();
+        if (t.indexOf('shipping address') >= 0) val.textContent = formatAddress(order.shipping_address);
+        else if (t.indexOf('shipping method') >= 0) val.textContent = order.shipping_method ? (order.shipping_method.title + ': ' + moneyCents(order.shipping_method.price, cur)) : '';
+        else if (t.indexOf('billing address') >= 0) val.textContent = formatAddress(order.billing_address) || 'Not provided';
+      });
+      // Payment method card — Liquid doesn't expose brand/last4; hide the row.
+      var payCard = orderPage.querySelector('.gb-acct-info__card');
+      if (payCard) payCard.textContent = 'On file';
+
+      // Download Invoice — client-side PDF via html2pdf (lazy-loaded on click).
+      var invoiceBtn = orderPage.querySelector('.gb-acct-card__foot .gb-acct-btn');
+      if (invoiceBtn) {
+        invoiceBtn.setAttribute('data-acct-invoice', order.id);
+      }
+    }
+
+    // Lazy-load jsPDF on first Download Invoice click. html2pdf.bundle also
+    // exposes window.jspdf.jsPDF so we reuse the same script.
+    var _pdfLibPromise = null;
+    function loadHtml2Pdf() {
+      if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve();
+      if (_pdfLibPromise) return _pdfLibPromise;
+      _pdfLibPromise = new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js';
+        s.onload = function () { resolve(); };
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+      return _pdfLibPromise;
+    }
+
+    function buildInvoicePdf(order) {
+      var jsPDF = window.jspdf.jsPDF;
+      var doc = new jsPDF({ unit: 'mm', format: 'a4' });
+      var cur = order.currency || 'AUD';
+      var m = moneyCents;
+      var margin = 18;
+      var y = margin;
+      var pageW = doc.internal.pageSize.getWidth();
+      var contentW = pageW - margin * 2;
+
+      function line() { doc.setDrawColor(220); doc.line(margin, y, margin + contentW, y); y += 6; }
+      function h1(text) { doc.setFontSize(18); doc.setFont('helvetica', 'bold'); doc.text(text, margin, y); y += 8; }
+      function h2(text) { doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.text(text, margin, y); y += 6; }
+      function p(label, value) {
+        doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+        doc.setTextColor(120); doc.text(label, margin, y);
+        doc.setTextColor(20); doc.text(String(value || ''), margin + 45, y);
+        y += 5;
+      }
+      function row(left, right) {
+        doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+        doc.setTextColor(60); doc.text(String(left), margin, y);
+        doc.setTextColor(20); doc.text(String(right), margin + contentW, y, { align: 'right' });
+        y += 5;
+      }
+      function pMulti(label, text) {
+        // Label + wrapped multi-line value aligned to the value column.
+        doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+        doc.setTextColor(120); doc.text(label, margin, y);
+        doc.setTextColor(20);
+        var lines = doc.splitTextToSize(String(text || ''), contentW - 45);
+        doc.text(lines, margin + 45, y);
+        y += Math.max(lines.length, 1) * 5;
+      }
+      function space(n) { y += (n || 4); }
+      function pageBreakIfNeeded(need) {
+        if (y + (need || 20) > doc.internal.pageSize.getHeight() - margin) {
+          doc.addPage(); y = margin;
+        }
+      }
+
+      h1('Order ' + (order.name || ''));
+      space(2);
+
+      p('Order Date:', formatDate(order.created_at));
+      p('Status:', statusLabel(order));
+      p('Total:', m(order.total_price, cur));
+      space(2); line();
+
+      h2('Order Items');
+      (order.line_items || []).forEach(function (li) {
+        pageBreakIfNeeded(20);
+        var name = (li.product_title || li.title || '');
+        var variant = (li.variant_title && li.variant_title !== 'Default Title') ? ' — ' + li.variant_title : '';
+        var tag = li.is_subscription ? '[Subscription]' : '[One-off]';
+        var prices = orderLinePrices(li);
+        row(name + variant, m(prices.finalUnit, cur));
+        doc.setFontSize(9); doc.setTextColor(120);
+        doc.text('Qty ' + (li.quantity || 1) + '  ' + tag, margin, y);
+        y += 5;
+      });
+      space(2); line();
+
+      h2('Order Summary');
+      row('Subtotal', m(orderOriginalSubtotal(order), cur));
+      if (Number(order.total_discounts) > 0) row('Discounts', '-' + m(order.total_discounts, cur));
+      row('Shipping', m(order.shipping_price, cur));
+      space(1);
+      doc.setFont('helvetica', 'bold'); row('Total', m(order.total_price, cur));
+      doc.setFont('helvetica', 'normal');
+      space(2); line();
+
+      pageBreakIfNeeded(30);
+      h2('Shipping Information');
+      pMulti('Address:', formatAddress(order.shipping_address));
+      if (order.shipping_method) pMulti('Method:', order.shipping_method.title + ': ' + m(order.shipping_method.price, cur));
+      space(2); line();
+
+      pageBreakIfNeeded(30);
+      h2('Payment Information');
+      pMulti('Method:', 'On file');
+      pMulti('Billing:', formatAddress(order.billing_address));
+
+      doc.save('Invoice-' + (order.name || order.id).replace(/^#/, '') + '.pdf');
+    }
+
+    document.addEventListener('click', function (e) {
+      if (!e.target || !e.target.closest) return;
+      var btn = e.target.closest('[data-acct-invoice]');
+      if (!btn) return;
+      e.preventDefault();
+      var orderId = btn.getAttribute('data-acct-invoice');
+      var order = findOrder(orderId);
+      if (!order) return;
+      var target = orderPage && orderPage.querySelector('.gb-acct-card');
+      if (!target) return;
+      btn.classList.add('is-loading');
+      btn.setAttribute('data-acct-busy', '');
+      loadHtml2Pdf().then(function () {
+        buildInvoicePdf(order);
+      }).catch(function (err) {
+        console.error('invoice pdf failed', err);
+      }).finally(function () {
+        if (btn.isConnected) {
+          btn.classList.remove('is-loading');
+          btn.removeAttribute('data-acct-busy');
+        }
+      });
+    }, true);
+
+    // URL param helpers for ?order=
+    function currentOrderParam() { return new URL(window.location.href).searchParams.get('order'); }
+    function setOrderParam(id) {
+      var url = new URL(window.location.href);
+      if (id) { url.searchParams.set('order', id); url.searchParams.delete('sub'); }
+      else url.searchParams.delete('order');
+      history.replaceState(null, '', url.toString());
+    }
+
+    // Intercept "View Order" links inside order history — keep users on-page.
+    document.addEventListener('click', function (e) {
+      if (!e.target || !e.target.closest) return;
+      var link = e.target.closest('[data-acct-order-id]');
+      if (!link) return;
+      var order = findOrder(link.getAttribute('data-acct-order-id'));
+      if (!order) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setOrderParam(order.id);
+      renderOrderDetail(order);
+      // Trigger the frontend's tab switch.
+      var goto = document.createElement('button');
+      goto.setAttribute('data-acct-goto', 'order');
+      goto.style.display = 'none';
+      document.body.appendChild(goto);
+      goto.click();
+      goto.remove();
+    }, true);
+
+    function restoreOrderFromUrl() {
+      if (window.location.hash !== '#order') return;
+      var id = currentOrderParam();
+      if (!id) return;
+      var order = findOrder(id);
+      if (order) renderOrderDetail(order);
+    }
+
+    // On load, if hash is #detail and ?sub= is present, restore detail once
+    // the list has hydrated the cache.
+    function restoreDetailFromUrl() {
+      if (window.location.hash !== '#detail') return;
+      var id = currentSubParam();
+      if (!id) return;
+      var contract = contractCache[id];
+      if (contract) renderDetail(contract);
+    }
+
+
+    function showSubscriptionLoadError() {
+      var text = "Couldn’t load subscriptions right now. Please refresh.";
+      subsList.innerHTML = '<p class="gb-acct-empty">' + text + '</p>';
+      if (detailBody) detailBody.innerHTML = '<p class="gb-acct-empty">' + text + '</p>';
+      if (overviewLoading && overviewLoading.isConnected) {
+        overviewLoading.removeAttribute('aria-label');
+        overviewLoading.textContent = text;
+      }
+    }
+
+    function boot() {
+      Promise.all([api('/subscriptions'), loadSkippedOrders()]).then(function (results) {
+        var res = results[0];
+        if (!res.ok || !res.j || !res.j.ok) {
+          console.warn('gumiAcctData: subscriptions fetch failed', res.j);
+          showSubscriptionLoadError();
+          return;
+        }
+        renderList(res.j.subscriptions || []);
+        renderCurrentOrder(res.j.subscriptions || []);
+        restoreDetailFromUrl();
+        restoreOrderFromUrl();
+      }).catch(function (err) {
+        console.error('gumiAcctData:', err);
+        showSubscriptionLoadError();
+      });
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
+  })();
+</script>

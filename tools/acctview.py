@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Eight views live in one DOM; exactly one may be showing at any moment.
+"""Nine views live in one DOM; exactly one may be showing at any moment.
 
 Everything else in tools/ checks a view once it is open. This checks the router
-itself: that each hash lands on its own view, that the other seven are hidden,
+itself: that each hash lands on its own view, that the other eight are hidden,
 that an unknown hash falls back rather than showing nothing, and that the three
 nav surfaces agree on which sections are reachable.
 
@@ -22,14 +22,16 @@ def _chrome():
     return hits[-1]
 
 VIEWS = ["overview", "subscriptions", "detail", "orders", "order",
-         "details", "password", "help"]
+         "details", "password", "referral", "help"]
 
 # Order History / My Details / Change Password / Help became reachable with
-# decision C. Refer a Friend and Contact Preferences have no board at all --
-# not even a phone one -- so they stay dead on purpose.
-NAV_LIVE = ["overview", "subscriptions", "orders", "details", "password", "help"]
-NAV_DEAD = ["Refer a Friend", "Contact Preferences"]
-LIST_DEAD = ["Refer a Friend"]
+# decision C. Refer a Friend joined them on 2026-09-15 (Task 29), built after
+# funkyfood's module -- it still has no board of its own. Contact Preferences
+# has none either and stays dead.
+NAV_LIVE = ["overview", "subscriptions", "orders", "details", "password",
+            "referral", "help"]
+NAV_DEAD = ["Contact Preferences"]
+LIST_DEAD = []
 
 SHOWN = ("()=>Array.from(document.querySelectorAll('[data-acct-view]'))"
          ".filter(e=>!e.hidden).map(e=>e.getAttribute('data-acct-view'))")
@@ -57,13 +59,16 @@ def main():
 
             for name in VIEWS:
                 pg.evaluate("n=>{location.hash='#'+n}", name)
-                pg.wait_for_timeout(300)
+                # ⚠ Task 40: the outgoing view is held on screen for one exit
+                # animation ($t-view, 500ms). Reading before it lands returns
+                # two views and the assertion below is still the right one.
+                pg.wait_for_timeout(700)
                 shown = pg.evaluate(SHOWN)
                 check(shown == [name], "@%d #%s shows %s" % (w, name, shown))
 
             # an unknown hash must land somewhere, not nowhere
             pg.evaluate("()=>{location.hash='#not-a-view'}")
-            pg.wait_for_timeout(300)
+            pg.wait_for_timeout(700)
             check(pg.evaluate(SHOWN) == ["overview"],
                   "@%d unknown hash did not fall back to overview" % w)
 

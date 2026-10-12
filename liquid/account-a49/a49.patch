@@ -1,0 +1,276 @@
+--- a/snippets/gb-account-data.liquid
++++ b/snippets/gb-account-data.liquid
+@@ -798,6 +798,7 @@
+     // The CTA sync differs between modes: add uses total==0 to disable;
+     // edit compares to original variant/qty and toggles label.
+     function attachQtyControls(panel) {
++      panel._acctQtyOwned = true;
+       var name = panel.getAttribute('data-acct-modal-panel');
+       var syncCta = name === 'edit-product' ? syncEditCta : syncAddCta;
+       panel.querySelectorAll('.gb-acct-prod').forEach(function (card) {
+@@ -805,15 +806,28 @@
+         var minus = card.querySelector('[data-acct-qty="down"]');
+         var plus = card.querySelector('[data-acct-qty="up"]');
+         var min = Number(card.getAttribute('data-acct-qty-min') || '0');
++        qtyEl.min = min;
+         function refresh() {
+-          var v = Number(qtyEl.textContent || '0');
++          var v = Number(qtyEl.value || '0');
+           if (minus) minus.disabled = v <= min;
++        }
++        if (!qtyEl.__bound) {
++          qtyEl.__bound = true;
++          qtyEl.addEventListener('input', function () {
++            refresh();
++            syncCta(panel);
++          });
++          qtyEl.addEventListener('change', function () {
++            qtyEl.value = Math.max(min, Math.floor(Number(qtyEl.value) || min));
++            refresh();
++            syncCta(panel);
++          });
+         }
+         if (minus && !minus.__bound) {
+           minus.__bound = true;
+           minus.addEventListener('click', function () {
+-            var v = Math.max(min, Number(qtyEl.textContent || '0') - 1);
+-            qtyEl.textContent = v;
++            var v = Math.max(min, Number(qtyEl.value || '0') - 1);
++            qtyEl.value = v;
+             refresh();
+             syncCta(panel);
+           });
+@@ -821,8 +835,8 @@
+         if (plus && !plus.__bound) {
+           plus.__bound = true;
+           plus.addEventListener('click', function () {
+-            var v = Number(qtyEl.textContent || '0') + 1;
+-            qtyEl.textContent = v;
++            var v = Number(qtyEl.value || '0') + 1;
++            qtyEl.value = v;
+             refresh();
+             syncCta(panel);
+           });
+@@ -835,10 +849,12 @@
+       var cta = panel.querySelector('[data-acct-save]');
+       if (!cta) return;
+       var total = 0;
++      var valid = true;
+       panel.querySelectorAll('[data-acct-qty-value]').forEach(function (el) {
+-        total += Number(el.textContent || '0');
+-      });
+-      cta.disabled = total === 0;
++        valid = valid && el.value !== '' && el.checkValidity();
++        total += Number(el.value || '0');
++      });
++      cta.disabled = !valid || total === 0;
+     }
+ 
+     // edit-product Save button toggles label to "Remove this product" when
+@@ -847,13 +863,14 @@
+       var cta = panel.querySelector('[data-acct-save]');
+       if (!cta) return;
+       var qtyEl = panel.querySelector('[data-acct-qty-value]');
+-      var qty = Number((qtyEl && qtyEl.textContent) || '0');
++      var qty = Number((qtyEl && qtyEl.value) || '0');
++      var valid = qtyEl && qtyEl.value !== '' && qtyEl.checkValidity();
+       var origVariant = panel.getAttribute('data-acct-line-orig-variant-id');
+       var origQty = Number(panel.getAttribute('data-acct-line-orig-qty') || '0');
+       var card = panel.querySelector('.gb-acct-prod');
+       var newVariant = card && card.getAttribute('data-variant-id');
+       var changed = (qty !== origQty) || (newVariant && String(newVariant) !== String(origVariant));
+-      cta.disabled = !changed;
++      cta.disabled = !valid || !changed;
+       var labelZero = cta.getAttribute('data-acct-label-zero');
+       var labelDefault = cta.getAttribute('data-acct-label-default') || 'Save';
+       cta.textContent = (qty === 0 && labelZero) ? labelZero : labelDefault;
+@@ -928,6 +945,8 @@
+       'discount-applied': function (panel, contract) {
+         var codes = contract.discountCodes || contract.appliedDiscounts || contract.discounts || [];
+         var d = codes && codes[0];
++        var result = panel.querySelector('.gb-acct-discount__result');
++        if (result) result.hidden = !d;
+         var chip = panel.querySelector('.gb-acct-chip p');
+         if (chip && d) {
+           var code = d.code || d.discountCode || '';
+@@ -968,7 +987,7 @@
+               '</div>' +
+               '<div class="gb-acct-qty">' +
+                 '<button class="gb-acct-qty__btn gb-acct-qty__btn--down" type="button" data-acct-qty="down" aria-label="Decrease quantity">-</button>' +
+-                '<span class="gb-acct-qty__value" data-acct-qty-value>' + qty + '</span>' +
++                '<input class="gb-acct-qty__value" type="number" inputmode="numeric" min="0" step="1" value="' + qty + '" data-acct-qty-value aria-label="Quantity">' +
+                 '<button class="gb-acct-qty__btn gb-acct-qty__btn--up" type="button" data-acct-qty="up" aria-label="Increase quantity">+</button>' +
+               '</div>' +
+             '</div>';
+@@ -994,7 +1013,7 @@
+         }
+         // Preset qty
+         var qtyEl = card.querySelector('[data-acct-qty-value]');
+-        if (qtyEl) qtyEl.textContent = qty;
++        if (qtyEl) qtyEl.value = qty;
+ 
+         // Wire selects to refresh price on change.
+         card.querySelectorAll('.gb-acct-prod__select').forEach(function (sel) {
+@@ -1084,7 +1103,7 @@
+         });
+       },
+       'discount-add': function (panel, contract) {
+-        var code = (panel.querySelector('#acct-f-code').value || '').trim();
++        var code = (panel.querySelector('[data-acct-discount-input]').value || '').trim();
+         if (!code) return Promise.reject(new Error('no_code'));
+         return api('/apply-discount', {
+           method: 'POST', headers: { 'Content-Type': 'application/json' },
+@@ -1193,7 +1212,7 @@
+         var origVariantId = panel.getAttribute('data-acct-line-orig-variant-id');
+         var origQty = Number(panel.getAttribute('data-acct-line-orig-qty') || '0');
+         var qtyEl = panel.querySelector('[data-acct-qty-value]');
+-        var qty = Number((qtyEl && qtyEl.textContent) || '0');
++        var qty = Number((qtyEl && qtyEl.value) || '0');
+         var card = panel.querySelector('.gb-acct-prod');
+         var newVariantId = card && card.getAttribute('data-variant-id');
+         var variantChanged = newVariantId && String(newVariantId) !== String(origVariantId);
+@@ -1236,7 +1255,7 @@
+         var subId = idOf(contract.id);
+         var chain = Promise.resolve();
+         cards.forEach(function (card) {
+-          var qty = Number((card.querySelector('[data-acct-qty-value]') || {}).textContent || '0');
++          var qty = Number((card.querySelector('[data-acct-qty-value]') || {}).value || '0');
+           if (qty <= 0) return;
+           var variantId = card.getAttribute('data-variant-id');
+           if (!variantId) return;
+@@ -1270,6 +1289,8 @@
+         return chain;
+       },
+     };
++
++    submit['discount-applied'] = submit['discount-add'];
+ 
+     // Chip remove (discount) — separate flow from save/apply/cta.
+     document.addEventListener('click', function (e) {
+@@ -1332,7 +1353,7 @@
+       if (!panel) return;
+       var name = panel.getAttribute('data-acct-modal-panel');
+       var handler = submit[name];
+-      if (!handler) return;
++      if (!handler || save.disabled || save.hasAttribute('data-acct-busy')) return;
+       var contract = currentContract();
+       if (!contract) return;
+       // Mark the originating trigger as loading. renderDetail() rebuilds the
+@@ -1340,15 +1361,33 @@
+       // clear it manually below.
+       var trigger = panel.__gbTrigger;
+       if (trigger) { trigger.classList.add('is-loading'); trigger.setAttribute('data-acct-busy', ''); }
+-      // Don't block modal-close — fire the request, refetch on success.
++      var isDiscount = name === 'discount-add' || name === 'discount-applied';
++      var error = panel.querySelector('[data-acct-discount-error]');
++      if (error) error.remove();
++      if (isDiscount) { save.classList.add('is-loading'); save.setAttribute('data-acct-busy', ''); }
++      function showDiscountError() {
++        if (!isDiscount) return;
++        var message = document.createElement('p');
++        message.setAttribute('data-acct-discount-error', '');
++        message.setAttribute('role', 'alert');
++        message.textContent = 'This discount code could not be applied. Please check it and try again.';
++        panel.querySelector('.gb-acct-discount').appendChild(message);
++      }
++      // Discount UI waits for the API result; other actions keep their choreography.
+       Promise.resolve()
+         .then(function () { return handler(panel, contract); })
+         .then(function (res) {
+-          if (!res || !res.ok) console.warn('acct save', name, 'failed', res && res.j);
+-          return refetchAndRerender();
++          if (!res || !res.ok || (res.j && res.j.ok === false)) {
++            console.warn('acct save', name, 'failed', res && res.j);
++            if (isDiscount) { showDiscountError(); return; }
++          }
++          return refetchAndRerender().then(function () {
++            if (isDiscount && window.gumiAcct && window.gumiAcct.modal) window.gumiAcct.modal.close();
++          });
+         })
+-        .catch(function (err) { console.error('acct save', name, err); })
++        .catch(function (err) { console.error('acct save', name, err); showDiscountError(); })
+         .finally(function () {
++          if (isDiscount) { save.classList.remove('is-loading'); save.removeAttribute('data-acct-busy'); }
+           if (trigger && trigger.isConnected) {
+             trigger.classList.remove('is-loading');
+             trigger.removeAttribute('data-acct-busy');
+--- a/snippets/gb-account-modals.liquid
++++ b/snippets/gb-account-modals.liquid
+@@ -146,13 +146,13 @@
+           <label class="gb-acct-field__label" for="acct-f-code">Discount code</label>
+           <div class="gb-acct-discount__row">
+             <input class="gb-acct-discount__input" id="acct-f-code" type="text" placeholder="Discount Code" value="" data-acct-discount-input>
+-            <button class="gb-acct-discount__apply" type="button" data-acct-apply data-acct-modal="discount-applied" disabled>Apply</button>
+-          </div>
+-        </div>
+-        <div class="gb-acct-discount__result">
++            <button class="gb-acct-discount__apply" type="button" data-acct-apply disabled>Apply</button>
++          </div>
++        </div>
++        <div class="gb-acct-discount__result" hidden>
+           <div class="gb-acct-chip">
+-            <p>Discount <strong>CEO90</strong> applied $35.25 off</p>
+-            <button class="gb-acct-chip__remove" type="button" data-acct-chip-remove aria-label="Remove discount CEO90"><svg xmlns="http://www.w3.org/2000/svg" viewBox="337 447 16 16" fill="none" aria-hidden="true"><path d="M343 449.129H347M339 451.129H351M349.667 451.129L349.199 458.142C349.129 459.194 349.094 459.72 348.867 460.119C348.667 460.47 348.365 460.752 348.001 460.929C347.588 461.129 347.061 461.129 346.006 461.129H343.994C342.939 461.129 342.412 461.129 341.999 460.929C341.635 460.752 341.333 460.47 341.133 460.119C340.906 459.72 340.871 459.194 340.801 458.142L340.333 451.129M343.667 454.129V457.462M346.333 454.129V457.462" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
++            <p></p>
++            <button class="gb-acct-chip__remove" type="button" data-acct-chip-remove aria-label="Remove discount"><svg xmlns="http://www.w3.org/2000/svg" viewBox="337 447 16 16" fill="none" aria-hidden="true"><path d="M343 449.129H347M339 451.129H351M349.667 451.129L349.199 458.142C349.129 459.194 349.094 459.72 348.867 460.119C348.667 460.47 348.365 460.752 348.001 460.929C347.588 461.129 347.061 461.129 346.006 461.129H343.994C342.939 461.129 342.412 461.129 341.999 460.929C341.635 460.752 341.333 460.47 341.133 460.119C340.906 459.72 340.871 459.194 340.801 458.142L340.333 451.129M343.667 454.129V457.462M346.333 454.129V457.462" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+           </div>
+         </div>
+       </div>
+@@ -177,13 +177,13 @@
+           <label class="gb-acct-field__label" for="acct-f-code-2">Discount code</label>
+           <div class="gb-acct-discount__row">
+             <input class="gb-acct-discount__input" id="acct-f-code-2" type="text" placeholder="Discount Code" value="" data-acct-discount-input>
+-            <button class="gb-acct-discount__apply" type="button" data-acct-apply data-acct-modal="discount-applied" disabled>Apply</button>
+-          </div>
+-        </div>
+-        <div class="gb-acct-discount__result">
++            <button class="gb-acct-discount__apply" type="button" data-acct-apply disabled>Apply</button>
++          </div>
++        </div>
++        <div class="gb-acct-discount__result" hidden>
+           <div class="gb-acct-chip">
+-            <p>Discount <strong>CEO90</strong> applied $35.25 off</p>
+-            <button class="gb-acct-chip__remove" type="button" data-acct-chip-remove aria-label="Remove discount CEO90"><svg xmlns="http://www.w3.org/2000/svg" viewBox="337 447 16 16" fill="none" aria-hidden="true"><path d="M343 449.129H347M339 451.129H351M349.667 451.129L349.199 458.142C349.129 459.194 349.094 459.72 348.867 460.119C348.667 460.47 348.365 460.752 348.001 460.929C347.588 461.129 347.061 461.129 346.006 461.129H343.994C342.939 461.129 342.412 461.129 341.999 460.929C341.635 460.752 341.333 460.47 341.133 460.119C340.906 459.72 340.871 459.194 340.801 458.142L340.333 451.129M343.667 454.129V457.462M346.333 454.129V457.462" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
++            <p></p>
++            <button class="gb-acct-chip__remove" type="button" data-acct-chip-remove aria-label="Remove discount"><svg xmlns="http://www.w3.org/2000/svg" viewBox="337 447 16 16" fill="none" aria-hidden="true"><path d="M343 449.129H347M339 451.129H351M349.667 451.129L349.199 458.142C349.129 459.194 349.094 459.72 348.867 460.119C348.667 460.47 348.365 460.752 348.001 460.929C347.588 461.129 347.061 461.129 346.006 461.129H343.994C342.939 461.129 342.412 461.129 341.999 460.929C341.635 460.752 341.333 460.47 341.133 460.119C340.906 459.72 340.871 459.194 340.801 458.142L340.333 451.129M343.667 454.129V457.462M346.333 454.129V457.462" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+           </div>
+         </div>
+       </div>
+@@ -342,7 +342,7 @@
+           </div>
+           <div class="gb-acct-qty">
+             <button class="gb-acct-qty__btn gb-acct-qty__btn--down" type="button" data-acct-qty="down" aria-label="Decrease quantity"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 7H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+-            <span class="gb-acct-qty__value" data-acct-qty-value>1</span>
++            <input class="gb-acct-qty__value" type="number" inputmode="numeric" min="0" step="1" value="1" data-acct-qty-value aria-label="Quantity">
+             <button class="gb-acct-qty__btn gb-acct-qty__btn--up" type="button" data-acct-qty="up" aria-label="Increase quantity"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1.167V12.833M1.167 7H12.833" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+           </div>
+         </div>
+@@ -379,7 +379,7 @@
+             </div>
+             <div class="gb-acct-qty">
+               <button class="gb-acct-qty__btn gb-acct-qty__btn--down" type="button" data-acct-qty="down" aria-label="Decrease quantity" disabled><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 7H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+-              <span class="gb-acct-qty__value" data-acct-qty-value>0</span>
++              <input class="gb-acct-qty__value" type="number" inputmode="numeric" min="0" step="1" value="0" data-acct-qty-value aria-label="Quantity">
+               <button class="gb-acct-qty__btn gb-acct-qty__btn--up" type="button" data-acct-qty="up" aria-label="Increase quantity"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1.167V12.833M1.167 7H12.833" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+             </div>
+           </div>
+@@ -573,7 +573,7 @@
+           </div>
+           <div class="gb-acct-qty">
+             <button class="gb-acct-qty__btn gb-acct-qty__btn--down" type="button" data-acct-qty="down" aria-label="Decrease quantity" disabled><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 7H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+-            <span class="gb-acct-qty__value" data-acct-qty-value>1</span>
++            <input class="gb-acct-qty__value" type="number" inputmode="numeric" min="0" step="1" value="1" data-acct-qty-value aria-label="Quantity">
+             <button class="gb-acct-qty__btn gb-acct-qty__btn--up" type="button" data-acct-qty="up" aria-label="Increase quantity"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1.167V12.833M1.167 7H12.833" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+           </div>
+         </div>
+--- a/snippets/gb-account-placeholders.liquid
++++ b/snippets/gb-account-placeholders.liquid
+@@ -241,7 +241,7 @@
+ 
+       <nav class="gb-acct-pager" aria-label="Order history pages">
+         <button class="gb-acct-pager__btn" type="button" disabled aria-label="Previous page"><svg class="gb-acct-pager__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M15.8333 10H4.16667M4.16667 10L10 15.8333M4.16667 10L10 4.16667" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+-        <span class="gb-acct-pager__label">Page 1 of 1</span>
++        <span class="gb-acct-pager__label">Page <strong>1</strong> of <strong>1</strong></span>
+         <button class="gb-acct-pager__btn" type="button" disabled aria-label="Next page"><svg class="gb-acct-pager__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4.16667 10H15.8333M15.8333 10L10 4.16667M15.8333 10L10 15.8333" stroke="currentColor" stroke-width="1.67" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+       </nav>
+     </div>

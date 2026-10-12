@@ -1,0 +1,20 @@
+const {chromium}=require('playwright');
+const {pathToFileURL}=require('node:url');
+const path=require('node:path');
+(async()=>{
+const b=await chromium.launch(process.env.ACCT_CHROME?{executablePath:process.env.ACCT_CHROME}:{});
+const p=await b.newPage({viewport:{width:390,height:844},reducedMotion:'no-preference'});
+await p.goto(pathToFileURL(path.join(__dirname,'../account.html')).href);await p.waitForTimeout(500);
+let bad=0;const check=(name,pass)=>{console.log((pass?'PASS ':'FAIL ')+name);if(!pass)bad++};
+await p.evaluate(()=>window.gumiAcct.modal.open('discount-add'));
+await p.locator('#acct-f-code').fill('NOT_A_VALID_CODE');await p.locator('[data-acct-modal-panel="discount-add"] [data-acct-apply]').click();await p.waitForTimeout(600);
+check('unverified code never sets applied',await p.locator('.gb-acct-detail').getAttribute('data-acct-discount')==='none');
+check('unverified code does not show success chip',await p.locator('[data-acct-modal-panel="discount-add"]').evaluate(e=>!e.hidden&&e.classList.contains('is-open')));
+await p.evaluate(()=>{window.gumiAcct.modal.open('discount-applied');window.gumiAcct.modal.close();window.gumiAcct.modal.open('discount-applied')});await p.waitForTimeout(600);
+check('reopened dialog survives stale close timer',await p.locator('[data-acct-modal-panel="discount-applied"]').evaluate(e=>!e.hidden&&e.classList.contains('is-open')));
+await p.evaluate(()=>window.gumiAcct.modal.open('edit-product'));await p.waitForTimeout(450);
+const qty=p.locator('[data-acct-modal-panel="edit-product"] [data-acct-qty-value]');
+check('quantity is an editable numeric input',await qty.evaluate(e=>e.tagName==='INPUT'&&e.type==='number'&&!e.readOnly));
+await p.evaluate(()=>window.gumiAcct.modal.open('edit-frequency'));await p.waitForTimeout(450);
+check('select active matches chosen after programmatic change',await p.evaluate(()=>{const box=window.gumi.selectBox.boxes.find(b=>b.native.closest('[data-acct-modal-panel="edit-frequency"]'));if(!box)return false;window.gumi.selectBox.show(box);window.gumi.selectBox.choose(box,(box.native.selectedIndex+1)%box.native.options.length);return box.list.querySelector('.is-active')===box.list.querySelector('[aria-selected="true"]')}));
+await b.close();if(bad)process.exitCode=1;})();

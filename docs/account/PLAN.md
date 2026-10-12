@@ -7,6 +7,12 @@
 单页三视图 + `account-login.html` + `account-signup.html`，独立 `account.scss` / `account.js`，
 复用现站 header / footer 与视觉体系。
 
+> ⚠ **Task 28（2026-09-15）把这两个 auth 页合成了一页** —— `account-signup.html` 已删，
+> 它的 `<main>` 成了 `account-login.html` 的第二个 `[data-acct-view]`。下文凡提「两页」按一页两视图读。
+>
+> ⚠ **Task 29（2026-09-15）又加了第九个视图 `referral`**（Refer a Friend，照 funkyfood 的模块搭，
+> 仍然没有任何板）。下文凡提「三视图 / 八视图」都按九视图读。
+
 **架构：** 静态 HTML，与 MVP 11 页同仓同目录。样式源 `assets/account.scss` 自带一份变量副本，
 编译成 `assets/account.css`。脚本 `assets/account.js` 是自包含 IIFE，不调 `window.gumi`；
 页面同时加载 `main.js`（驱动公共 header/footer 的站点交互）与 `account.js`（account 自己的

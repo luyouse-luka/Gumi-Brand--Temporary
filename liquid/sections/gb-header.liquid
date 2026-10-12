@@ -75,7 +75,9 @@
             {%- endif -%}
           {%- endfor -%}
         </ul>
-        <a class="gb-btn gb-btn--lg" href="{{ routes.account_url }}">{{ section.settings.account_label | default: 'Manage Account' | escape }}</a>
+        <div class="gb-header__nav-cta">
+          <a class="gb-btn gb-btn--lg" href="{{ routes.account_url }}">{{ section.settings.account_label | default: 'Manage Account' | escape }}</a>
+        </div>
       </nav>
 
       {%- if section.blocks.size > 0 -%}

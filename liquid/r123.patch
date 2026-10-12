@@ -1,0 +1,41 @@
+--- /tmp/claude-1007/-home-ly/af6d2363-070b-408c-8d99-7b8a6347533c/scratchpad/gb-reviews.base.liquid	2026-09-09 02:49:52.569928606 +0000
++++ liquid/sections/gb-reviews.liquid	2026-09-09 02:50:10.873737256 +0000
+@@ -41,7 +41,8 @@
+                 {%- endfor -%}
+                 {%- if video_url == '' -%}{%- assign video_url = b.video.sources.first.url -%}{%- endif -%}
+               {%- endif -%}
+-              <button class="gb-reel swiper-slide" type="button" data-modal="reel-video"{% if video_url != '' %} data-video="{{ video_url }}"{% endif %} aria-label="{{ b.alt | default: 'Play customer reel' | escape }}" {{ block.shopify_attributes }}>
++              <div class="gb-reel swiper-slide" data-reel {{ block.shopify_attributes }}>
++                <button class="gb-reel__trigger" type="button" data-reel-play{% if video_url != '' %} data-video="{{ video_url }}"{% endif %} aria-label="{{ b.alt | default: 'Play customer reel' | escape }}">
+                 <span class="gb-reel__media" aria-hidden="true">
+                   {%- if poster -%}
+                     <img class="gb-reel__media-img"
+@@ -53,7 +54,8 @@
+                   {%- endif -%}
+                 </span>
+                 <svg class="gb-reel__play" aria-hidden="true" viewBox="0 0 86 54" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="85.9996" height="53.7498" rx="10.6711" fill="white"/><path d="M53.2807 25.5673C54.5365 26.2924 54.5365 28.1051 53.2807 28.8301L37.9289 37.6935C36.673 38.4186 35.1032 37.5122 35.1032 36.0621L35.1032 18.3354C35.1032 16.8852 36.673 15.9789 37.9289 16.704L53.2807 25.5673Z" fill="currentColor"/></svg>
+-              </button>
++                </button>
++              </div>
+             {%- endif -%}
+           {%- endfor -%}
+         </div>
+@@ -93,18 +95,6 @@
+   </div>
+ </section>
+ 
+-<div class="gb-rv-modal" id="reel-video" role="dialog" aria-modal="true" tabindex="-1"
+-     aria-label="Customer reel" aria-hidden="true">
+-  <div class="gb-rv-modal__overlay" data-modal-close></div>
+-  <div class="gb-rv-modal__wrap">
+-    <div class="gb-rv-panel">
+-      <div class="gb-rv-panel__video" data-modal-media><svg aria-hidden="true" viewBox="0 0 86 54" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="85.9996" height="53.7498" rx="10.6711" fill="white"/><path d="M53.2807 25.5673C54.5365 26.2924 54.5365 28.1051 53.2807 28.8301L37.9289 37.6935C36.673 38.4186 35.1032 37.5122 35.1032 36.0621L35.1032 18.3354C35.1032 16.8852 36.673 15.9789 37.9289 16.704L53.2807 25.5673Z" fill="currentColor"/></svg></div>
+-      <button class="gb-rv-panel__close" type="button" data-modal-close aria-label="Close reel">
+-        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 2.5l11 11M13.5 2.5l-11 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+-      </button>
+-    </div>
+-  </div>
+-</div>
+ 
+ {% schema %}
+ {

@@ -110,7 +110,10 @@ def run(pages, widths):
             pg = br.new_page(viewport={"width": w, "height": 900})
             pg.add_init_script("Math.random = function () { return 0.5; };")
             for f in pages:
-                pg.goto("file://" + os.path.join(ROOT, f))
+                # "page.html#view" scans a view that is [hidden] on first paint
+                path, _, frag = f.partition("#")
+                pg.goto("file://" + os.path.join(ROOT, path)
+                        + ("#" + frag if frag else ""))
                 pg.evaluate("() => document.fonts.ready")
                 pg.wait_for_timeout(150)
                 r = pg.evaluate(PROBE)
@@ -132,7 +135,7 @@ def run(pages, widths):
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    pages = [a for a in args if a.endswith(".html")] or \
+    pages = [a for a in args if ".html" in a] or \
         [os.path.basename(f) for f in sorted(glob.glob(os.path.join(ROOT, "*.html")))
          if not f.endswith("font-check.html")]
     widths = [int(a) for a in args if a.isdigit()] or WIDTHS

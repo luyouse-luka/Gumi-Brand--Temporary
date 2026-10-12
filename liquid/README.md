@@ -21,6 +21,7 @@
 
 | 文件 | 轮次 | 改了什么 | 线上 |
 |---|---|---|---|
+| `sections/gb-reviews.liquid` | **r123 / r125 / r126** | r123 reel 卡片改就地播放（`<button class="gb-reel">` → `<div class="gb-reel" data-reel>` + 内层 `.gb-reel__trigger`）并删掉整个 `.gb-rv-modal` 弹窗块；r125 加两层「无视频不渲染」守卫；r126 schema 补竖版 9:16 上传提示 | ✅ 已推 |
 | `sections/gb-stats.liquid` | r70 | 补 4 个装饰箭头 | ✅ 已推 |
 | `sections/gb-expert.liquid` | r70 | 标题只在 ≤767 断行 | ✅ 已推 |
 | `sections/gb-reviews.liquid` | r70 | 补法务免责声明 + setting | ❌ 未推（需求方只点名推了另两个） |

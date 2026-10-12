@@ -31,14 +31,13 @@
 | 5 | `account.scss` **自带一份变量副本** | 不动 `customstyle.scss`。代价是漂移风险，以 `tools/acctvars.py` 判据兜底 |
 | 6 | `account.js` **自包含**，不调 `window.gumi` | 见 §4 的并存说明 |
 | 7 | **单页多视图**（照搬 funkyfood） | 客户要复用结构，整块搬走最方便 |
-| 8 | Log in / Sign up **独立两页**，共用 account 的 css/js | 未登录态 header 不同（多 `Shop now` 按钮），且对得上 Shopify `customers/login` 路由 |
+| 8 | ~~Log in / Sign up **独立两页**~~ → **合成一页两视图**（`account-login.html` 的 `#login` / `#signup`），共用 account 的 css/js | 原因是未登录态 header 不同（多 `Shop now` 按钮）且对得上 Shopify `customers/login` 路由。**Task 28（2026-09-15 需求方指示）反转了「两页」这半**：改为复用 `[data-acct-view]` 一页两视图、alt 链接互切。Shopify 化时仍是两个 template，各 `render` 同一个 section 并指定默认视图 |
 
 ## 3. 交付物
 
 ```
 account.html                单页多视图：Overview / Subscriptions / Subscription Detail
-account-login.html          未登录态
-account-signup.html
+account-login.html          未登录态一页两视图：#login / #signup（Task 28 合并）
 assets/account.scss         样式源，自带变量副本
 assets/account.css          编译产物（双写，勿手改）
 assets/account.js           自包含 IIFE
@@ -177,9 +176,9 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | A | **导航条目四个版本互不一致** | 桌面 `27678` 无 Contact Preferences；桌面 `27792`/`28000` 有；手机页内列表 `27604` 无 Account Overview 也无 Contact Preferences；手机汉堡 `34757` 只有 4 条（Account / My Subscriptions / My Details / Log Out）。**r-a3 查清了规律**：差异跟着页面走 —— Overview 页 8 项，Subscriptions / Detail 页 9 项。是有意还是漏画，需设计方回答。**已暂按 9 项实现**（PLAN Task 3 定的，一处可改） |
 | A2 | **桌面两栏在 1440 以下如何收敛无稿** | 三个桌面稿一致地画 nav 241 + gap 32 + 内容 **固定 571**，左右 gutter **244 / 352**（不对称，但三稿完全相同，故判定为有意）。合计 1440 恰好铺满，**照抄则 768 档横向溢出 864 > 768**（`rwd.py` 实测）。已暂用「nav 241 固定 + 内容 `minmax(0,1fr)`，gutter 从 244/352 用 `fluid()` 收到 20」，1440 与稿逐值一致 |
 | B | **评论与稿矛盾** | 评论 `2284:27077`：「原来的 contact preference 以及 refer a friend 去除了」，但两处稿上仍画着 |
-| ~~C~~ **已拍板** | **~~六项~~两项只有导航条目、没有页面稿** —— 2026-09-10 用户定：五个有手机稿的**都做，且桌面由我们外推**（Task 16-22 已完成）；无稿的两项不做 | 原列 Order History / My Details / Change Password / Refer a Friend / Help / Contact Preferences。**r-a5 逐节点比对推翻了一半**：Order History（`2284:27202`）/ My Details（`27081`·`27116`）/ Change Password（`27151`）/ Help（`27170`）**其实都有 390 手机稿**，另外还多出一个导航里没有的 **Order Detail**（`27304`）。真正无稿的只剩 **Refer a Friend** 与 **Contact Preferences**。⚠ 这五个页面**不在 PLAN 的 15 个 Task 里**，做不做、要不要补桌面稿，需拍板。比对见 `DETAIL-STATES.md` |
-| D | **左侧导航图标未设计** | 便签 `27602`：灰圆是占位 |
-| E | **21 类弹窗的桌面稿全缺** | 已定按决策 3 做居中卡片，具体宽度/内边距需给值。**r-a6 起面板暂用板上的 390 居中**（`--acct-modal-w`，源数据里的值、非自拟），给了宽度只改这一个变量。手机稿本身**有两种形态**：≤394 的居中卡（r12）与 672 的贴底抽屉（r12/12/0/0，内含 528 的滚动区），桌面是否也分两种一并回答。**r-a10 记一笔代价**：面板宽锁 390 而桌面内边距按卡片惯例升到 24，内容盒比手机窄 8px —— `shipping-success` 的 `Your shipping details have been updated.` 在桌面折成两行（面板 254→274）。给桌面一个更宽的面板即可消掉 |
+| ~~C~~ **已拍板** | **~~六项~~两项只有导航条目、没有页面稿** —— 2026-09-10 用户定：五个有手机稿的**都做，且桌面由我们外推**（Task 16-22 已完成）；无稿的两项不做 | 原列 Order History / My Details / Change Password / Refer a Friend / Help / Contact Preferences。**r-a5 逐节点比对推翻了一半**：Order History（`2284:27202`）/ My Details（`27081`·`27116`）/ Change Password（`27151`）/ Help（`27170`）**其实都有 390 手机稿**，另外还多出一个导航里没有的 **Order Detail**（`27304`）。真正无稿的只剩 **Refer a Friend** 与 **Contact Preferences**。⚠ **Task 29（2026-09-15）又反转了一半**：需求方要求把 **Refer a Friend** 按 funkyfood 的模块做出来，已建 `referral` 视图并接上三处入口。它**依然没有任何板**，整页的文案与数值都是我们定的，逐条登记在 CHANGELOG Task 29 末节。**Contact Preferences 仍然不可点**。⚠ 这五个页面**不在 PLAN 的 15 个 Task 里**，做不做、要不要补桌面稿，需拍板。比对见 `DETAIL-STATES.md` |
+| D | **左侧导航图标未设计 —— 灰圆点是占位，等图标** ⚠ **答复反复过一次** | 便签 `27602` 原话：灰圆是待设计图标的占位，且 `#D9D9D9` 正是 Figma 的默认占位灰，所以 Task 34 前先停下问过一次 → 需求方 **2026-09-14**「圆点不是占位而是 css 样式」，据此做进侧栏 `.gb-acct-nav__link::before` → **2026-09-17 设计方书面澄清：“These grey circles are placeholders for Icons which have yet to be designed.”**，与便签一致、与 09-14 的答复相反。**实现不动**（占位本来就得画出来），但**性质从「已定稿的样式」改回「待替换的占位」**，已进 8b。两处同源同值：20 槽 / 16.67 点 / `#D9D9D9` / gap 12 / 文字左沿 48（侧栏 Task 34、手机卡 Task 39）。⚠ 图标到位后换的是这两条 `::before`（给它 `background-image` 或换成真元素），不是加新结构。⚠ **每行右侧那个 5×10 的 chevron 两处都还没做**，需求从未提过 |
+| E | **21 类弹窗的桌面稿全缺** | 已定按决策 3 做居中卡片，具体宽度/内边距需给值。**r-a6 起面板暂用板上的 390 居中**（`--acct-modal-w`，源数据里的值、非自拟），给了宽度只改这一个变量。手机稿本身**有两种形态**：≤394 的居中卡（r12）与 672 的贴底抽屉（r12/12/0/0，内含 528 的滚动区），桌面是否也分两种一并回答。**r-a10 记一笔代价**：面板宽锁 390 而桌面内边距按卡片惯例升到 24，内容盒比手机窄 8px —— `shipping-success` 的 `Your shipping details have been updated.` 在桌面折成两行（面板 254→274）。给桌面一个更宽的面板即可消掉。**✅ r-a22 已定**：需求方 2026-09-15 指示「弹窗 pc 端的宽高参考 funkyfood 的 account 页面」——桌面 `--acct-modal-w: 520px`、`max-height: 90vh`（funkyfood `\.delivery-*-pop-up .content` 是 520，其取消流程封顶 90vh）。**这反转了 2026-09-10「桌面沿用 390」的裁决**；手机仍是 390。上面那条折行代价随之消失 |
 | F | **footer 内容差异** | 稿：两栏平铺 13 条链接 + Snapchat + `Subscribe now`；现站：三栏 + FB/IG/TikTok + `Subscribe`。且 Influencers / Press Inquiries / Careers 的目标页可能不存在 |
 | G | **header 差异** | 稿：logo 左 + 人形 + 汉堡、浅绿底；Log in 稿另有 `Shop now` 按钮。已定单独覆盖，但需确认这是最终态 |
 | H | **Add items 是否开启** | 便签 `30905`：「can be turned off for now until other items get added」，且「Edit 跳购物车还是 PDP？」设计方自己也没定 |
@@ -198,16 +197,28 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | S | **地址单选钮的未选中态无稿** | `2284:32450` 板上只画了选中态（#e9facf 填充 + 0.8 绿环 + 8.8 圆点），因为 `shipping-current` 只有一个地址且恒选中。未选中态用了字段描边同色的 1px 灰环，是自拟的，需确认 |
 | T | **表单两栏行比容器宽 1px** | `2284:33094`/`33109` 是 `168 + 15 + 168 = 351`，而体的内容盒只有 `390-20-20 = 350`。已按 `1fr / 15 / 1fr` 实现（每栏 167.5），需确认 168 是不是笔误 |
 | U | **`shipping-current` 只画了一个地址，却有单选钮** | 有单选就意味着可以有多个，但板上没有第二张卡、没有「新增地址」入口、`Save` 也是灰的。是「以后支持多地址」的预留，还是这一版就只有一个？影响 Save 的语义 |
-| V | **State 下拉的候选项只有 VIC** | `2284:33111` 闭合态显示 `VIC`，展开态无稿。已填澳洲 8 个州的标准缩写（ACT/NSW/NT/QLD/SA/TAS/VIC/WA）—— 是标准枚举不是自拟文案，但排序与是否用全称需确认 |
+| V | **State 下拉的候选项只有 VIC** | `2284:33111` 闭合态显示 `VIC`，展开态无稿。已填澳洲 8 个州的标准缩写（ACT/NSW/NT/QLD/SA/TAS/VIC/WA）—— 是标准枚举不是自拟文案，但排序与是否用全称需确认。**r-a22 补**：展开态改用站点自己的 `.gb-select`（需求方指示），所以投影是站点的 `0 4px 12px` + 1px 描边，不是 account 板上别处那种 `0 10.29px 8px`；无稿可比，按「与站内其他下拉一致」处理 |
 | R | **Detail 的四个状态全无桌面稿** | PAUSED / PAUSED+超长码 / CANCELLED / 重启后，都只有 390。桌面沿用基准态 `27792` 的字号阶梯，只有结构与文案随状态走。与 M 同类 |
 | Z | **Log in / Sign up 的 header 用的是站点 header，不是 account header** | 两页板上的 header instance 是 `Header Navigation Desktop/Closed` —— 与 MVP 11 页同一个组件（Menu 下拉 + logo 居中 + 绿 `Shop now` + 两个图标），**不是** account 那个（logo + 人形 + 汉堡、浅绿底）。未登录访客也确实用不上 account 菜单。**已按站点 header 实现**（直接复用 `.gb-header`，样式与交互都来自 `customstyle.css` / `main.js`，account.scss 一行没写），与 G 是同一件事的两面，请一并确认 |
-| AA | **note 卡在桌面比表单窄 8** | 两个桌面板都是表单 480 / note `472`（`35205`·`35132`），两个手机板则同为 350。桌面差的这 8px 没有语义、居中后左右各差 4，**已按 480 实现**（与表单同宽）。要真是 472 请回一句 |
+| AA | **note 卡在桌面比表单窄 8** | 两个桌面板都是表单 480 / note `472`（`35205`·`35132`），两个手机板则同为 350。桌面差的这 8px 没有语义、居中后左右各差 4，~~已按 480 实现~~ → **2026-09-16 需求方拍板 472，已实现**（`__alt` 仍 480）。**AA 已解决** |
 | AB | **auth 桌面板的次要文字是 `#656565`，全套其余地方是 `#666666`** | ⚠ **Task 24 的全量扫描订正：是五处不是三处** —— `35189`(login 副标题)·`35111`(signup 副标题)·`35208`/`35135`(两页 note 正文)·`35129`(`Must be at least 8 characters`)。两个手机板同位置是 `#666666`/`#808080`（全套统计：`#666666` 1022 次，`#656565` 这五处）。**已各按各自的板实现**（`$c-gray-650`；`35129` 走 `.gb-acct-auth__aside--hint`），需给出哪个对 |
 | AC | **My Details 的姓名两栏在桌面无稿** | 手机板 `27081` 把 `First name*` 与 `Last name*` **上下堆叠**（两个 308×70 在同一个 gap 16 的列里）。桌面没有板。**已按 Sign up 桌面板 `35059` 的两栏实现**（≤767 塌回堆叠），因为那是全套里唯一有桌面稿的同类表单，且桌面内容列 571 宽单栏会空。要保持堆叠请回一句 |
 | AD | **`Opt in to order updates via text message` 稿上没有勾选框** | 它在板 `27081` 上是一行 12/18 `#666` 的纯文本，与上一张卡的 `You will receive a confirmation email…` 同一角色（都挂在卡 body 的第二个槽）。但文案是「选择加入」的口吻，像漏画了 checkbox。**已按稿做成纯文字**，需确认 |
 | AF | **signup 桌面副标题没有字距，同类的另外三处都有** | `35111` 是 18/28 w400 **`ls=0`**，而 login 桌面的同位元素 `35189` 是 18/28 **`-0.36`**，两个手机板（`35034`/`35004`）都是 16/24 `-0.32`。四处同一角色、只有一处是 0，判为稿的疏漏，**已按体系给 -0.36**。要真是 0 请回一句 |
 | AG | **`My Subscription` 列表项三行颜色不一致** | 手机板 `28305` 的三行是 `#1a1a1a` / `#101828` / `#101828`（同一个列表、同一个 16/24 w500）。`#101828` 全套只有这两次，`#1a1a1a` 是通用正文色，**已统一按 `#1a1a1a`**，需确认 |
+| AO | **账号菜单只剩 hover 一条路** | Task 33 按需求去掉了汉堡的点击开关，`.gb-acct-menu` 只在 `@media (hover: hover)` 下靠图标 hover 打开，触屏与键盘都打不开（承载 hover 的是个不可聚焦的 `<div>`）。**没有链接因此失联** —— 那四条在桌面 `.gb-acct-nav`、手机 `.gb-acct-list` 里全都有。要不要给触屏/键盘补一条路（tap 开关，或把图标改成 `<button>` 加 `:focus-within`）请回一句 |
+| AP | **header 不再随菜单变色** | 板 `34854`（桌面展开）/ `34804`（手机展开）把整条 bar 提亮到 `#f6feec` 并加一像素内描边。Task 33 按需求整条删除，bar 只剩 `$c-lime-150`。**与稿不符是需求方的决定**，登记备查 |
 | AH | **signup 的 Email 输入框占位文字与其他字段不成体系** | `35023`/`35059` 上 Email 框内写的是 **`Email`**，而同一张板的 First name / Last name / Password 分别是 `First name` / `Last name` / **`Your password`**，login 两档的 Email 框也都是 `Your email`。**已统一按 `Your email`**，要照稿写 `Email` 请回一句 |
+| AL | **Edit renewal date 的日历用的是 `cancel-holiday` 那张板的组件**，⚠ **Task 38 起由 flatpickr 绘制**（需求方 2026-09-17 要 funkyfood 同款插件 + gumi 的样式）。新增待答：**年份成了可编辑的 number input**（插件结构，板上是纯文本），要不要锁成只读 | 需求方 2026-09-15 点名「查看设计 Heading away on holiday 的日历表」。`Edit Date` 板（`31976`）上确实只有输入框，日历只在 `30465` 画过一次。**已复用 `.gb-acct-cal`**（连同 `30622` 的 1px 内描边、`30623` 的 20/24 内边距、`30625` 的 32 高月份条）。这等于把一个挽留流程里的组件搬进表单弹窗 —— 若设计方认为两处应有不同样式，请给 Edit Date 的板 |
+| AM | **桌面弹窗正文的宽度是外推的** | 21 类弹窗**桌面稿全缺**（待裁决 E）。`.gb-acct-modal__copy` 板上是 `320` 框在 `350` 内容盒里，本轮判定**「右侧 30 的留白」才是组件、320 不是**，改成 `calc(100% - 30px)`；520 面板下算出 442。若设计方本意是正文固定 320、右侧留白随面板变宽，请回一句 |
+| AN | **弹窗内下拉的展开方向随面板会不会滚动而变** | 需求方要求「下拉应该往下」。不滚的面板（`edit-frequency` / `edit-product` 桌面）已改成往下；**内容真的要滚的面板（`add-product` / `shipping-form`、以及手机档）仍然往上** —— 往下会被滚动区裁掉半截。若要求「任何情况都往下」，需要把下拉改成脱离面板的浮层（会动到 `main.js` 的站点组件，属主站线） |
+| AI | ~~**Edit Date 的日历稿里不存在**~~ **（Task 31 已反转，见 AL）** | `2284:31976` 全部内容只有标题 / `Next renewal date` / `19/07/2026` / 说明 / Cancel / Save，**没有日历**。需求方 2026-09-15 要求「采用 funkyfood 项目中日历的同样插件做法」，故用 flatpickr `inline` 并沿用 funkyfood portal 的皮肤。**日历的字号 / 行高 / 选中态配色 / 箭头全部无设计源**，需设计方给规格 |
+| AJ | **加了日历后面板变高，板上是 290** ⚠ Task 31 换成 `.gb-acct-cal` 后实测 **632**（原 flatpickr 是 604） | 290 是「只有一个输入框」的面板高度。装进内联日历后必然变高；390×844 放得下，但 **390×667（iPhone SE 一代）会贴到 `max-height` 上开始滚动**。⚠ **Task 32 已消解这一条**：需求方 2026-09-16 要求日历默认收起、点 input 才展开，收起态的面板高度回到板上的值（`edit-date` 290 / `restart` 329，实测吻合），两条高度断言都已恢复。展开态 632 / 671 是瞬时状态，不再与板比 |
+| AK | **Suburb 自动补全没做（需求方指示先不做）** | 需求方 2026-09-15：「可能会同 funkyfood 的地址自动补全，可以加上注释先不做」。已在 `account.html` 的 Suburb 字段上留注释。**funkyfood 那套是纯前端**：`layout/theme.liquid` 首次交互时懒加载 `maps.googleapis.com/maps/api/js?key=…&libraries=places`，`assets/customer-portal-details.js:1344` 用 `new google.maps.places.Autocomplete(input, {componentRestrictions:{country:'au'}})` 接管输入框，`place_changed` 里把 `address_components` 拆成 address1 / city(=Suburb) / provinceCode(=State) / zip 回填，再用 `common-theme.js:461` 的 `findZoneData()` 拿一份配送区 JSON 本地比对，不在派送范围就显示 `Delivery not available at this suburb`。**要做需要两样 Gumi 目前都没有的东西**：① 一个 Google Places API key（funkyfood 的 key 是硬编码在 theme.liquid 里的，不能借用）② 一份 Gumi 自己的配送区数据。请需求方决定是否提供 |
+| AQ | **Refer a Friend 卡的箭头，两块板对不上** | `2284:27780`（桌面）的 `Content` 带 `counterAxisAlignItems: CENTER`，箭头 y=44=24+(80−40)/2，**居中**；`2284:27639`（手机）箭头 y=16=padding-top，**顶对齐**。需求方 2026-09-17 说「`.gb-acct-refer` 去掉 `align-item center`」，但同一条需求的另外两点都在讲手机，**故只在 ≤767 撤掉、桌面保留居中**。要桌面也顶对齐（即与 `27780` 不符）请回一句 |
+| AR | **跳过下一单：便签与板互相不一致** | 便签 `2284:30908` 说改期要走「I want it now」或「edit frequency」，而板 `2284:28922` 上真正画出来的那行字是 **「To unskip this order, edit your **renewal date**」**，链接指向的是日期选择。**已按板实现**（板是画出来的，便签是随手写的 —— 同一条便签里 subscription 还拼成了 `subscripition`）。要改成便签说的两个入口请回一句 |
+| AS | **`+N More products` 是后端规则，静态站做不了** | 便签 `2284:28326`：「More than one product in a subscription / +1 More products when more than one product in the subscripition」。即 `.gb-acct-sub__more` **只在订阅里多于一件商品时出现**，数字是「其余商品数」。板上六个实例渲染出来的字全是 `+4 More Products`（大写 P），**文案按板、规则待接后端**。已同时登进 8b |
+| AT | **自动播放的循环视频没有暂停控件** | 便签 `2284:34511`「Video / Auto plays」，Task 40 已把 `.gb-acct-video__media` 改成 `autoplay muted loop playsinline`。⚠ WCAG 2.2.2 要求超过 5 秒的自动播放内容可暂停，而 `.gb-acct-video__play` 目前只是板上画的装饰件；⚠ `prefers-reduced-motion: reduce` 下要不要不自动播也没说。**视频源还没来**，不臆造控件，两件事一起等拍板 |
 | AE | **订单状态三态没有任何视觉区分** | 板 `27202` 的 `Shipped` / `Delivered` / `Cancelled` 全是 `#1a1a1a` 14/20，与旁边的 `Date:` / `Total:` 值同一个样式，没有色块、没有徽章。订阅那边的 ACTIVE / PAUSED / CANCELLED 是有徽章的（`.gb-acct-pill`）。**已按稿实现（三者同色）**，需确认订单状态是不是也该有区分 |
 
 ## 8. 稿件自身的错误（不是我们做错）
@@ -308,22 +319,26 @@ Navigation x1、Container x1），`Navigation Expanded` 是汉堡面板归 heade
 | `$168.90` / `$121.50` / `$00.00` / `-$26.40` / `FREE` | 同上 | 板上的示例价格；小计与总计都写着 `$00.00`，显然是未填 |
 | `Ships every 4 weeks` / `PayPal (reallylongemail@email.com)` / `18th Jul, 2026, 6:59 AM` / `19 Jun`·`17 Jul`·`14 Aug`·`11 Sep` | 同上 | 板上的示例订阅设置与日期 |
 | `Flavour`（产品行的口味位） | `.gb-acct-product__flavour` | 板上 `27899` 的文字**就是「Flavour」这个词**，值没填。便签 `30913` 说口味暂不可编辑 |
-| **订阅卡的产品缩略图** | `account.html` 的 `.gb-acct-sub__thumb`（源 `196:19033`） | 板上是 64×64 的纯 `#d9d9d9` 矩形，**设计里根本没有产品图**，不是我们漏切 |
+| **导航行左侧的灰圆点** ×2 | `.gb-acct-nav__link::before`（侧栏 9 行）/ `.gb-acct-list__link::before`（手机卡 6 行） | 设计方 2026-09-17：“These grey circles are placeholders for Icons which have yet to be designed.” `#D9D9D9` 是 Figma 的默认占位灰。**图标未设计，上线前必须换掉**（裁决 D）|
+| **订阅卡的产品缩略图** | `account.html` 的 `.gb-acct-sub__thumb`（源 `196:19033`） | 板上是 64×64 的纯 `#d9d9d9` 矩形，**设计里根本没有产品图**，不是我们漏切。Task 30 起画的是 `images/product-placeholder.png` 而不是 CSS 底色 |
 | `Superfood Greens Gummies` / `Quantity: 1` / `+4 More Products` / `$1245.60` | `account.html` 三张订阅卡 | 板上的示例订阅数据 |
 | `19 Jul 2026`（active）/ `17 Aug 2026`（paused）/ `123 Express Ln, VIC 3121` | 同上 | 板上的示例日期与地址 |
-| **挽留屏的视频** | `.gb-acct-video`（源 `2284:29751`） | 板上是纯 `#d9d9d9` 矩形 + 播放键，没有 imageRef —— 设计里就没有视频，上线前要么给真视频要么整块删掉 |
+| **挽留屏的视频** | `.gb-acct-video` 内的 `<video class="gb-acct-video__media">`（源 `2284:29751`） | 板上是纯 `#d9d9d9` 矩形 + 播放键，没有 imageRef。Task 36 起灰块里有一个**不带 `src`** 的 `<video>` 占位，客户已明确要留这块。⚠ 接 `src` 时要一并删掉父级的 `role="img"` / `aria-label`（`role="img"` 的子树对辅助技术是 presentational，真视频留在里面等于把播放器藏了），并决定加不加 `controls` |
 | `Next order will renew on 17 July, 2026` | `cancel-skipped` 面板 | 板上的示例日期 |
 | `22/07/2026` | `restart` 面板的重启日期 | 板上的示例日期 |
-| 三处 `href="#"`（View Order / Refer a Friend / Re-Activate Subscription） | `account.html`，已标 `TODO client link` | 目标页未定 |
+| 两处 `href="#"`（View Order / Refer a Friend） | `account.html`，已标 `TODO client link` | 目标页未定。⚠ **Re-Activate Subscription 已于 Task 32 接上 detail 的 cancelled 态**，不再是死链 |
 | `href="#"` 的 **Forgot your password?** | `account-login.html`，已标 `TODO` | 密码找回页在稿里根本不存在，目标未定 |
 | **Help 页手风琴的全部文案** | `account.html` 的 `[data-acct-view="help"]`，已标 `TODO 待客户文案` | 板 `27170` 上七行的标题就是字面的 `Accordion Open` / `Accordion Closed`，正文是 `Text here` —— 设计里根本没有 FAQ 内容，**不许自拟** |
 | `email@email.com.au` / `0400 000 000` / `Mon - Fri, 6am - 11pm AEST` | `.gb-acct-help` 卡（Help 与 Order Detail 共用） | 板上的示例联系方式 |
 | Order History 的五张订单卡 | `[data-acct-view="orders"]` | `Order #1234567x` / `Aug 14-16, 2026` / `$89.99`·`$45.00`·`$0.00` 全是示例，且后两张是第二张的复制（见 §8） |
 | `Page 1 of 10` 与两个翻页箭头 | 同上 | 静态站只有一页，箭头做成 disabled；接后端后才有真分页 |
-| Order Detail 的四条商品行缩略图 | `.gb-acct-item__thumb` ×4 | 板上是 40×40 的纯 `#d9d9d9` 矩形、**没有 imageRef** —— 与订阅卡缩略图一样，设计里根本没有产品图，不是我们漏切 |
+| Order Detail 的四条商品行缩略图 | `.gb-acct-item__thumb` ×4 | 板上是 40×40 的纯 `#d9d9d9` 矩形、**没有 imageRef** —— 与订阅卡缩略图一样，设计里根本没有产品图，不是我们漏切。Task 30 起同样是 `images/product-placeholder.png` |
 | Order Detail 的四条商品行 | `[data-acct-view="order"] .gb-acct-item` ×4 | 同一件商品重复四次（同名、同口味位、同数量、同价），是排版占位不是真数据 |
 | Order Detail 的订单数据 | `[data-acct-view="order"]` | `Order #12345678` / `Aug 13, 2026` / `$121.50` / `$134.50`→`$133.50` ×4 / Order Summary 的四个 `$00.00` / `Susanna Rose, 12 Charnwood Rd…` / `•••• 5467` / `Shipping & Standard: $12.98` 全是板上的示例 |
-| 两个 auth 表单的 `action="#" method="post"` | `account-login.html` / `account-signup.html` | 静态壳，提交后只会跳回 `#`。接 Shopify 时换成 `customers/login` 与 `customers/register` 的真实 form |
+| **Refer a Friend 整页**（Task 29，无稿） | `[data-acct-view="referral"]` | `GUMI-0000` 是示例 code（没有 referral 后端）；hero 是 16/9 的 `images/product-placeholder.png`（Task 30 起；原为 `#eeeeee` 的 CSS 底色，统一到全站占位灰 `#d9d9d9`）；四个分享按钮都是 `href="#"`；`GIVE $20 / GET $20` 与说明文字沿用 overview 卡的 $20 口径。⚠ **刻意没有复用 `images/refer-friends.jpg`** —— 那张图带第三方品牌 logo，且一卡一图不允许它冒充第二处用图 |
+| 改密卡的说明文案（Task 29 改写） | `[data-acct-view="password"] .gb-acct-card__text` | 板 `27151` 写的是「会发一封重置邮件」，需求方改成 funkyfood 的内联表单，文案随之改写。三个密码字段稿上完全不存在 |
+| **`images/product-placeholder.png`**（14 处引用）| `.gb-acct-prod__thumb` ×6 / `.gb-acct-sub__thumb` ×3 / `.gb-acct-item__thumb` ×4 / `.gb-acct-referral__hero` ×1 | 400×400 的纯 `#d9d9d9`，**不是产品图**。接上真实商品数据时每一处都要换成各自的图，⚠ 一卡一图，不许复用同一张冒充多张 |
+| 两个 auth 表单的 `action="#" method="post"` | `account-login.html` 的两个视图 | 静态壳，提交后只会跳回 `#`。接 Shopify 时换成 `customers/login` 与 `customers/register` 的真实 form |
 
 ## 8c. 弹窗几何（r-a6 起，取自 29 张弹窗板）
 

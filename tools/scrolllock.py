@@ -71,12 +71,13 @@ VIEW = """() => ({
 })"""
 
 # page, width, what to click, the overlay that legitimately resizes
+# ⚠ The two reel-video cases were dropped in r123: reels play in the card now, so
+# there is no dialog and nothing locks the page. reelplay.py asserts that directly
+# ("page is NOT locked"). Do not re-add them without a dialog behind them.
 CASES = [
     ("index",          1440, '[data-modal="nutritional-label"]', ".gb-nl-modal"),
-    ("index",          1440, '[data-modal="reel-video"]',        ".gb-rv-modal"),
     ("pdp",            1440, '[data-modal="nutritional-label"]', ".gb-nl-modal"),
     ("reviews",        1440, '[data-modal="nutritional-label"]', ".gb-nl-modal"),
-    ("how-gumi-works", 1440, '[data-modal="reel-video"]',        ".gb-rv-modal"),
     ("our-story",      1024, '[data-modal="nutritional-label"]', ".gb-nl-modal"),
     # the mobile drawer takes the same lock; 700 is inside `narrow` and still has
     # a real desktop scrollbar, which a phone's overlay scrollbar never does

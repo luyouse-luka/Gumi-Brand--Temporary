@@ -1,0 +1,161 @@
+{%- liquid
+  assign s = section.settings
+  assign classes = 'gb-science'
+  if s.background == 'cream'
+    assign classes = classes | append: ' gb-science--cream'
+  endif
+  if s.tight
+    assign classes = classes | append: ' gb-science--tight'
+  endif
+-%}
+{%- if section.blocks.size > 0 -%}
+  <style>
+    {%- for i in (1..section.blocks.size) -%}
+      #gb-science-{{ section.id }} > .gb-science-card:nth-of-type({{ i }}) { animation-delay: {{ i | times: 0.1 }}s; }
+    {%- endfor -%}
+  </style>
+{%- endif -%}
+<section class="{{ classes }}">
+  {%- if s.leading_scallop != 'none' -%}
+    <div class="gb-scallop gb-scallop--edge-top gb-scallop--{{ s.leading_scallop }}"></div>
+  {%- endif -%}
+  {%- if s.deco_bear != blank -%}
+    <div class="gb-stats__deco-bear">
+      <picture>
+        <source type="image/webp" srcset="{{ s.deco_bear | image_url: width: 387, format: 'webp' }} 387w, {{ s.deco_bear | image_url: width: 774, format: 'webp' }} 774w">
+        <img src="{{ s.deco_bear | image_url: width: 387 }}"
+             srcset="{{ s.deco_bear | image_url: width: 387 }} 387w, {{ s.deco_bear | image_url: width: 774 }} 774w"
+             width="{{ s.deco_bear.width }}" height="{{ s.deco_bear.height }}"
+             loading="lazy" decoding="async" alt="">
+      </picture>
+    </div>
+  {%- endif -%}
+  <div class="gb-science__inner">
+    {%- if s.title != blank or s.lead != blank -%}
+      <div class="gb-science__head wowo fadeInUp">
+        {%- if s.title != blank -%}
+          <h2 class="gb-science__title" data-line-reveal>{%- render 'gb-lines', text: s.title -%}</h2>
+        {%- endif -%}
+        {%- if s.lead != blank -%}
+          <p class="gb-science__lead" data-line-reveal>{{ s.lead }}</p>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+    <div class="gb-science__cards" id="gb-science-{{ section.id }}">
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'card' -%}
+          {%- assign b = block.settings -%}
+          {%- assign card_class = 'gb-science-card' -%}
+          {%- if b.variant == 'nutrient' -%}{%- assign card_class = 'gb-science-card gb-science-card--nutrient' -%}{%- endif -%}
+          {%- assign fill = b.value | replace: '%', '' | replace: '+', '' | strip | plus: 0 -%}
+          {%- if fill > 100 -%}{%- assign fill = 100 -%}{%- endif -%}
+          {%- if fill < 0 -%}{%- assign fill = 0 -%}{%- endif -%}
+          <article class="{{ card_class }} wowo fadeInUp" {{ block.shopify_attributes }}>
+            <div class="gb-science-card__body">
+              {%- if b.eyebrow != blank -%}<p class="gb-science-card__eyebrow">{{ b.eyebrow | escape }}</p>{%- endif -%}
+              {%- if b.value != blank -%}<p class="gb-science-card__value" data-count-up><span>{{ b.value | escape }}</span></p>{%- endif -%}
+              {%- if b.variant == 'stat' and b.text != blank -%}<p class="gb-science-card__text">{{ b.text | escape }}</p>{%- endif -%}
+            </div>
+            {%- if b.variant == 'nutrient' and b.text != blank -%}
+              <p class="gb-science-card__text">{{ b.text | escape }}</p>
+            {%- endif -%}
+            {%- if b.variant == 'stat' and b.show_bear_meter -%}
+              <div class="gb-bear-meter" role="img" aria-label="{{ fill }} out of 100">
+                {%- for i in (1..100) -%}
+                  <span class="gb-bear-meter__bear{% if forloop.index0 >= fill %} is-off{% endif %}"></span>
+                {%- endfor -%}
+              </div>
+            {%- endif -%}
+          </article>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+    {%- if s.cta_label != blank -%}
+      <a class="gb-btn gb-btn--xl gb-science__cta wowo fadeInUp"
+         href="{{ s.cta_url | default: '#' }}">{{ s.cta_label | escape }}</a>
+    {%- endif -%}
+  </div>
+  {%- if s.trailing_scallop != 'none' -%}
+    <div class="gb-scallop gb-scallop--edge gb-scallop--lg gb-scallop--{{ s.trailing_scallop }}"></div>
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "Gumi Science",
+  "settings": [
+    { "type": "textarea", "id": "title", "label": "Heading (optional)", "info": "Press Enter to break the line on mobile only. End a line with // to break at every width, or with ^^ to break on desktop only." },
+    { "type": "inline_richtext", "id": "lead", "label": "Subheading (optional)" },
+    {
+      "type": "select",
+      "id": "background",
+      "label": "Background",
+      "options": [
+        { "value": "default", "label": "Default (white)" },
+        { "value": "cream", "label": "Cream" }
+      ],
+      "default": "cream"
+    },
+    { "type": "checkbox", "id": "tight", "label": "Tight (nutrient card grid)", "default": false },
+    { "type": "text", "id": "cta_label", "label": "Button label", "info": "Leave empty to hide the button." },
+    { "type": "url", "id": "cta_url", "label": "Button link" },
+    { "type": "image_picker", "id": "deco_bear", "label": "Decorative bear (absolutely positioned)" },
+    {
+      "type": "select",
+      "id": "leading_scallop",
+      "label": "Leading scallop (top)",
+      "options": [
+        { "value": "none", "label": "None" },
+        { "value": "cream-to-sand", "label": "Cream → Sand" },
+        { "value": "cream-to-white", "label": "Cream → White" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "select",
+      "id": "trailing_scallop",
+      "label": "Trailing scallop (bottom)",
+      "options": [
+        { "value": "none", "label": "None" },
+        { "value": "cream-to-white", "label": "Cream → White" },
+        { "value": "white-to-cream", "label": "White → Cream" },
+        { "value": "mint-to-cream", "label": "Mint → Cream" },
+        { "value": "sand-to-lime", "label": "Sand → Lime" }
+      ],
+      "default": "none"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "card",
+      "name": "Science card",
+      "settings": [
+        {
+          "type": "select",
+          "id": "variant",
+          "label": "Variant",
+          "options": [
+            { "value": "stat", "label": "Stat (with bear meter)" },
+            { "value": "nutrient", "label": "Nutrient (compact)" }
+          ],
+          "default": "stat"
+        },
+        { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Easy Habit" },
+        { "type": "text", "id": "value", "label": "Value (e.g. 95%)", "info": "Bear-meter fill auto-derives from this number (0–100).", "default": "95%" },
+        { "type": "textarea", "id": "text", "label": "Text" },
+        { "type": "checkbox", "id": "show_bear_meter", "label": "Show bear meter (stat variant only)", "default": true }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gumi Science",
+      "blocks": [
+        { "type": "card", "settings": { "variant": "stat" } },
+        { "type": "card", "settings": { "variant": "stat" } },
+        { "type": "card", "settings": { "variant": "stat" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

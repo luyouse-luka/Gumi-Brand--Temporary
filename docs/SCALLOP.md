@@ -1,5 +1,18 @@
 # `gb-scallop` — 波浪分隔条怎么用
 
+> ⚠ **2026-09-08 第一〇二轮起，25 处模块波浪已全部迁到独立的 `gb-wave` section**
+> （后台「添加区块」→「Gumi Wave」）。本文档描述的 `--edge` / `--edge-top` / `--bleed`
+> 机制**线上只剩 footer 与 footer-cta 那 22 处流内波浪在用**，其余保留在 liquid 里但
+> 设置已关。§3 的「每个模块自己预留 padding」**已被 `:has()` 取代**，别再往模块里写死
+> `var(--sc-h)`。新增波浪一律用 Gumi Wave。
+>
+> ⚠ **第一〇四轮起 Gumi Wave 的「Size」有四个值，默认 `sm`**：
+> `sm` / `lg` 是**设计稿的两档**（接 `--sc-w` / `--sc-lg-w`，与 §2.1 的内建波浪逐像素相同），
+> `3` / `5` 是**视口等分弧数**（第一〇一轮加的，高度随视口宽变，与稿不同）。
+> **要对稿就选 `sm` / `lg`** —— 线上模块的 `padding-bottom` 已经是净值，
+> 波浪高度对了，上下模块的间距也就对了。两条路径互斥：`sm`/`lg` 走 class，
+> `3`/`5` 走 inline `--wave-n`，走反了会渲染出高度不对的波浪且不报错。
+
 > 2026-09-08 建立（第九十九轮）。需求方问「波浪有的朝下有的朝上、颜色不同、
 > 对应模块的上下 padding 也不一样，到底怎么处理」。这份文档回答四件事：
 > **机制** / **变体清单** / **静态站真值表** / **线上现状与偏差**。
@@ -45,10 +58,18 @@
 
 ### 2.1 尺寸
 
-| 类 | 高度 @1440 | @390 | 稿上的 Spacer |
-|---|---|---|---|
-| （不加） | **96.9** | 48.0 | `310:8380` / `324:46328` |
-| `--lg` | **129** | 35.2 | `310:8412` / `324:46319` |
+| 类 | 高度 @1440 | @390 实现 | @390 稿 | 稿上的 Spacer |
+|---|---|---|---|---|
+| （不加） | **96.9** | 48.0 | **36** ❌ | `310:8380` / `324:46328`（**只在 1440 稿上**） |
+| `--lg` | **129** | 35.2 | 36 ✓ | `310:8412` / `324:46319`（**只在 1440 稿上**） |
+
+⚠ **@390 那两列不是同一来源。** 全部 390 稿只用一个 Spacer 组件（`83:5616` 底 / `83:5644` 顶），
+一律 **36 高、节距 144.81**，实心带算下来只有 **1.2**；上面两个组件在 390 稿里一次都没出现过。
+所以小波浪 `--sc-band` 的 clamp 下界 **13.3 是外推值，不是量出来的**，390 因此高出 12–13px。
+大波浪的下界 0.5 反而是对的（34.7 + 0.5 = 35.2 ≈ 36）。
+**未改**：390→1.2 / 1440→23.4 不是一条 vw 直线，改它等于重设断点体系，且
+`.gb-science` padding-top 53 / `.gb-stats` 12.1 / CTA 52 / footer 52 四处是对着偏高的波浪配的。
+见 CHANGELOG 第三十五 / 三十八 / 四十 / 一〇六轮。
 
 ### 2.2 方向
 
@@ -111,6 +132,25 @@
 
 **`--sc-h` 还是 `--sc-lg-h`，取决于这个模块底下挂的是哪一号波浪** —— 换波浪尺寸就
 必须同时改这里，否则要么内容被压、要么底部空一大块。
+
+⚠ **第一〇二轮起不再写死，改成 `:has()` 从 DOM 读**（见 CHANGELOG 第一〇二轮）：模块只写
+`calc(自己的值 + var(--sc-res, 0px))`，`--sc-res` 由这六条规则给：
+
+```scss
+// 波浪是自己的最后一个子元素（58 处内建波浪）
+:where(section, div, footer):has(> .gb-scallop--edge)                        { --sc-res: var(--sc-h); }
+:where(section, div, footer):has(> .gb-scallop--edge.gb-scallop--lg)         { --sc-res: var(--sc-lg-h); }
+// 波浪挂在【下一个】section 的顶边，或是一条会叠回来的 Gumi Wave（第一〇六轮补）
+:where(section, div, footer):has(+ * > .gb-scallop--edge-top)                { --sc-res: var(--sc-h); }
+:where(section, div, footer):has(+ * > .gb-scallop--edge-top.gb-scallop--lg) { --sc-res: var(--sc-lg-h); }
+:where(section, div, footer):has(+ * > .gb-wave--lap)                        { --sc-res: var(--sc-h); }
+:where(section, div, footer):has(+ * > .gb-wave--lg.gb-wave--lap)            { --sc-res: var(--sc-lg-h); }
+```
+
+⚠ **后三档是「从下一个兄弟读」**：`--edge-top` / `--lap` 的空间归**上面**那个 section，
+而上面那个从自己内部看不见它。第一〇二轮只做了前两条，`.gb-stats` 与 `.gb-nutrition`
+的预留因此静默归零，直到第一〇六轮才补上。
+⚠ **在流里的 Gumi Wave（不带 `--lap`）不需要任何预留** —— 它自己占高度。
 
 现有的 21 处预留：
 
@@ -197,9 +237,48 @@ hero 波浪要的那一对。任何一个 select 都补不出 science 现在的�
 
 ---
 
-## 6. ⚠ 线上与静态站的 14 处差异（现状记录，未修，等裁决）
+## 6. ⚠ 线上与静态站的差异
 
-`python3 tools/scallopmap.py --password 1234` 的输出，2026-09-08 实测：
+> **第一〇八轮（2026-09-08）已全部收口 —— 判据 `tools/wavegap.py` 现在是 45 ok / 0 red。**
+> 下面 A–D 四段是历史记录，**别照着再修一遍**。逐条现状：
+>
+> - **A 尺寸不对（6 处）** —— 第一〇四轮迁移时已全部改到 `sm`/`lg`。
+> - **B 颜色不对（2 处）** —— science 那处第一〇四轮修了；how-gumi-works 那处第一〇八轮
+>   **改的是块不是波浪**（`gb-reviews` 的 background `sand → cream`），因为稿上就是 cream。
+> - **C 线上没有这条波浪（5 处）** —— 第一〇八轮补了三条（how-gumi-works / our-story 的
+>   `gb-reviews` 之后、reviews 的 `app-section` 之后）+ index 的 `logo-scroll` 之后。
+>   **只剩 our-story 的 `gb-cta-band` 那条无法补** —— 线上这页根本没有 `gb-product`
+>   section，那条边界不存在（需求方已明确忽略）。
+> - **D 机制不同（1 处）** —— index 的 `nutrition -> product` 第一〇五轮已用
+>   `overlap` + 空的上方色还原成 `--bleed`。
+>
+> **第一〇八轮另删掉一条多余的波浪**：`page.reviews` 的 `wave_gb_product_tj33wK_after`
+> （`3` `white → sand`）。product 与 ingredients 两侧都是白，它凭空画一道 sand 带。
+> 当初把它列为 exempt 是因为那页没有 `app-section`，而对方已在 2026-09-08 加上了
+> `customer_reviews`，前提不再成立。
+>
+> ⚠⚠ **配色必须按线上的真实底色算，不能照抄下面第 4 节的静态站真值表** ——
+> 线上多数 section 是**裸基类**，静态站用的是 variant。最典型的 `.gb-reviews`：
+> 裸基类底色是 `$c-lime-150`（mint），而静态站三处分别是 `--cream` / `--sand`。
+> `tools/wavegap.py` 会自己解 variant，直接跑它，别手算。
+
+### 历史记录（第一〇二轮迁移前的现状）
+
+
+> **第一〇四轮已处理尺寸与两处配色**（25 处 wave 全部改到 `sm`/`lg`，science 与
+> how-gumi-works 各修一处 `color_below`）。判据换成 **`tools/r104map.py --password 1234`**
+> —— 它按「边界」对齐两边，`scallopmap.py` 按「宿主」对齐，迁移之后对不上了。
+>
+> 剩下的三类差异**都不是波浪本身的问题**，未修：
+>
+> 1. **index `nutrition -> product` 的 `--bleed`**（下面 D 条）—— 流内的波浪做不到「产品图
+>    从缝隙透出」，清空上色只会换来一条断掉的色带。
+> 2. **`reviews` 的 `product -> ingredients`、`how-gumi-works` 的 `dosed -> reviews` 配色 red**
+>    —— 根因分别是**线上缺 `app-section`**（两条 wave 各错一位）和 **`gb-reviews` 线上是
+>    sand 底而稿上是 cream 底**。改 wave 只会把错误固定下来。
+> 3. **五处线上根本没有 section**（下面 C 条）—— `LIVE-BACKLOG.md` 一.2 的模块缺口。
+
+（`python3 tools/scallopmap.py --password 1234`，2026-09-08）
 
 ### A. 尺寸不对（6 处）
 

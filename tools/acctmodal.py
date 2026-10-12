@@ -310,8 +310,13 @@ def run_width(b, w):
     body_sel = (".gb-acct-modal[data-acct-modal-panel='%s'] .gb-acct-modal__body" % names[0])
     # ⚠ the panel's real content is put back afterwards. Clearing it instead left
     # this panel an empty shell for every check that runs later in the file.
+    # ⚠ overflow-y is forced back on: r31 lets modal._fit() drop the clip on a
+    # body that does not overflow, and this probe is about who owns the wheel,
+    # not about which panels scroll. Restored with the probe div below.
     armed = pg.evaluate("""s=>{const b=document.querySelector(s);if(!b)return null;
         b.insertAdjacentHTML('beforeend','<div data-probe style="height:2000px"></div>');
+        b.dataset.probeOf=b.style.overflowY;
+        b.style.overflowY='auto';
         return {prevent:b.hasAttribute('data-lenis-prevent'),
                 scrollable:b.scrollHeight-b.clientHeight}}""", body_sel)
     if armed is None:
@@ -343,7 +348,8 @@ def run_width(b, w):
     # Only the probe div goes: rewriting innerHTML would rebuild the real fields
     # and detach the nodes acctForm captured, so Save could never wake up again.
     pg.evaluate("""s=>{const b=document.querySelector(s);if(!b)return;
-        const d=b.querySelector('[data-probe]');if(d)d.remove();b.scrollTop=0}""", body_sel)
+        const d=b.querySelector('[data-probe]');if(d)d.remove();b.scrollTop=0;
+        b.style.overflowY=b.dataset.probeOf||'';delete b.dataset.probeOf}""", body_sel)
     pg.keyboard.press("Escape")
     pg.wait_for_timeout(600)
 
@@ -407,6 +413,8 @@ PAD_PHONE = "20px"
 # hook -> (board node, phone panel height, save is dirty-gated)
 FORMS = {
     "edit-name":      ("2284:31330", 246, True),
+    # The inline calendar (Task 25/31) starts shut from Task 32 on, so the panel
+    # is field-only again and the board's 290 is comparable once more.
     "edit-date":      ("2284:31976", 290, True),
     "edit-frequency": ("2284:32135", 290, True),
     "edit-payment":   ("2284:32463", 256, False),
@@ -450,6 +458,9 @@ def check_forms(pg, w, label):
                     saveDisabled:save?save.disabled:null,
                     savePad:sb&&sb.paddingLeft,
                     copyW:copy?Math.round(copy.getBoundingClientRect().width):null,
+                    copyAvail:copy?Math.round(copy.parentElement.clientWidth
+                       -parseFloat(cs(copy.parentElement).paddingLeft)
+                       -parseFloat(cs(copy.parentElement).paddingRight)):null,
                     fieldH:field?Math.round(field.getBoundingClientRect().height):null,
                     fieldR:field?cs(field).borderTopLeftRadius:null,
                     fieldBorder:field?cs(field).borderTopColor:null}}""", [sel])
@@ -459,15 +470,22 @@ def check_forms(pg, w, label):
 
         # the phone panel must come out at the board's own height
         if w <= 767:
-            if abs(got["h"] - height) <= 2:
+            if height is None:
+                print("  NOTE %-46s panel %spx; board %s has no comparable height"
+                      % (tag, got["h"], node))
+            elif abs(got["h"] - height) <= 2:
                 good(tag)
             else:
                 bad("%s panel %spx tall, board %s is %s" % (tag, got["h"], node, height))
-        # the user settled the desktop width: the board's 390, not wider
-        if got["w"] == 390 or w <= 390:
+        # ⚠ the 2026-09-10 "desktop keeps the board's 390" ruling was REVERSED on
+        # 2026-09-15: desktop follows funkyfood's account portal (520). The phone
+        # still uses the board's own 390. Kept as an assertion, not dropped, so a
+        # revert to 390 on desktop still goes red.
+        want_w = 390 if w <= 767 else 520
+        if got["w"] == want_w or w <= want_w:
             good(tag)
         else:
-            bad("%s panel %spx wide, want the board's 390" % (tag, got["w"]))
+            bad("%s panel %spx wide, want %s at %s" % (tag, got["w"], want_w, w))
 
         for key, want, why in (
                 ("headPadX", pad, "head gutter follows the cards' 24/20 ramp"),
@@ -492,9 +510,14 @@ def check_forms(pg, w, label):
             else:
                 bad("%s %s is false" % (tag, key))
 
+        # ⚠ r27 handed the selects to main.js selectBox: the chevron is now
+        # .gb-select__arrow inside its button, not a sibling .gb-acct-field__icon.
+        # Either shape counts -- what must not happen is no chevron at all.
         sel_ap = pg.evaluate("""a=>{const s=document.querySelector(a[0]+' select.gb-acct-field__input');
-            return s?[getComputedStyle(s).appearance,
-                      !!s.parentElement.querySelector('.gb-acct-field__icon')]:null}""",
+            if(!s) return null;
+            const host=s.closest('.gb-acct-field__control')||s.parentElement;
+            return [getComputedStyle(s).appearance,
+                    !!host.querySelector('.gb-select__arrow, .gb-acct-field__icon')]}""",
                              [sel])
         if sel_ap is None:
             pass                                   # this panel has no <select>
@@ -572,11 +595,15 @@ def check_forms(pg, w, label):
             else:
                 bad("%s field border %s, board is #cccccc" % (tag, got["fieldBorder"]))
         else:
-            # 320 fixed copy frame, left aligned -- all three copy boards agree
-            if got["copyW"] == 320:
+            # r31: the three copy boards draw a 320 frame in the 350 content
+            # box, and the 30 of slack on the right is what the component is --
+            # pinned at 320 the desktop panel wrapped at phone width.
+            want = (got["copyAvail"] or 0) - 30
+            if got["copyW"] == want:
                 good(tag)
             else:
-                bad("%s copy block %spx wide, board frame is 320" % (tag, got["copyW"]))
+                bad("%s copy block %spx wide, want %s (avail %s less the board's 30)"
+                    % (tag, got["copyW"], want, got["copyAvail"]))
 
         pg.keyboard.press("Escape")
         pg.wait_for_timeout(600)
@@ -625,6 +652,22 @@ def check_products(pg, w, label):
             const bb=cs(bodyEl), fb=cs(foot);
             return {sheet:p.classList.contains('gb-acct-modal--sheet'),
                     bodyOverflow:bb&&bb.overflowY, bodyPadX:bb&&bb.paddingLeft,
+                    bodyScrolls:bodyEl?(()=>{
+                       /* ⚠ raw scrollHeight counts each closed .gb-select's
+                          absolutely positioned list, so a body with no visible
+                          overflow reports some. The pollutant is taken out and
+                          the browser's own overflow figure is read back -- not
+                          a copy of modal._fit()'s arithmetic, which would only
+                          ever agree with itself. */
+                       const ls=[...bodyEl.querySelectorAll('.gb-select__list')];
+                       const was=ls.map(l=>l.style.display);
+                       ls.forEach(l=>{l.style.display='none'});
+                       const of=bodyEl.style.overflowY;
+                       bodyEl.style.overflowY='auto';
+                       const n=bodyEl.scrollHeight-bodyEl.clientHeight;
+                       bodyEl.style.overflowY=of;
+                       ls.forEach((l,i)=>{l.style.display=was[i]});
+                       return n>1;})():null,
                     bodyPadY:bb&&bb.paddingTop,
                     lenis:bodyEl?bodyEl.hasAttribute('data-lenis-prevent'):null,
                     footPadY:fb&&fb.paddingTop,
@@ -635,6 +678,7 @@ def check_products(pg, w, label):
                     thumbRatio:thumb?Math.round(thumb.getBoundingClientRect().width
                                  /thumb.getBoundingClientRect().height*100)/100:null,
                     optInert:opt?(opt.getAttribute('aria-disabled')==='true'||opt.disabled===true):null,
+                    optPicker:!!q('.gb-select__button'),
                     qtyH:qty?Math.round(qty.getBoundingClientRect().height):null,
                     qtyR:qty?cs(qty).borderTopLeftRadius:null,
                     qtyBorder:qty?cs(qty).borderTopColor:null,
@@ -656,11 +700,15 @@ def check_products(pg, w, label):
             good(tag)
         else:
             bad("%s alert banner=%s want %s" % (tag, got["alert"], alert))
-        # 30917: the body is what scrolls, and it has to hold the wheel itself
-        if got["bodyOverflow"] == "auto":
+        # 30917: the body is what scrolls -- but r31 drops the clip on a body
+        # that does not have to, so a select inside it can open downwards
+        # instead of flipping up. Anything that DOES overflow must still be auto.
+        if got["bodyOverflow"] == "auto" or (
+                got["bodyOverflow"] == "visible" and not got["bodyScrolls"]):
             good(tag)
         else:
-            bad("%s body overflow-y=%s, want auto" % (tag, got["bodyOverflow"]))
+            bad("%s body overflow-y=%s (scrolls=%s), want auto or a non-scrolling visible"
+                % (tag, got["bodyOverflow"], got["bodyScrolls"]))
         if got["lenis"]:
             good(tag)
         else:
@@ -693,11 +741,17 @@ def check_products(pg, w, label):
             good(tag)
         else:
             bad("%s thumb aspect %s, board is square" % (tag, got["thumbRatio"]))
-        # 30913/30915: drawn, not operable (待裁决 J)
-        if got["optInert"]:
+        # ⚠ note 30913/30915 ("drawn, not operable", 待裁决 J) was REVERSED by the
+        # client on 2026-09-15: the option pickers are now real dropdowns. The
+        # assertion is inverted rather than dropped, so a silent regression back
+        # to an inert div still goes red.
+        # anchor first: `not optInert` is also true when the element is gone
+        if not got["optPicker"]:
+            bad("%s no .gb-select__button -- the option picker is missing" % tag)
+        elif not got["optInert"]:
             good(tag)
         else:
-            bad("%s Flavour is operable -- note 30913 says not yet" % tag)
+            bad("%s Flavour is inert -- the 2026-09-15 brief made it a dropdown" % tag)
         for key, want, why in (("qtyH", 42, "board QTY block is 42"),
                                ("qtyR", "8px", "board radius is 8"),
                                ("qtyBorder", "rgb(179, 179, 179)", "board border is #b3b3b3")):
@@ -717,71 +771,18 @@ def check_products(pg, w, label):
             pg.keyboard.press("Escape")
             pg.wait_for_timeout(600)
             continue
+        # Task 46: stepping belongs to the theme's gb-account-data.liquid now.
+        # A click here must be inert, or live steps twice per click.
         first = sel + " [data-acct-product]:first-child "
-        start = pg.evaluate("s=>parseInt(document.querySelector(s).textContent,10)",
-                            first + "[data-acct-qty-value]")
-        # Down as far as it goes. The button disables itself at the floor, and
-        # Playwright's click waits for "enabled", so this has to stop on the
-        # state rather than count clicks.
-        down = first + "[data-acct-qty='down']"
-        for _ in range(start + 4):
-            if pg.evaluate("s=>document.querySelector(s).disabled", down):
-                break
-            pg.click(down)
-            pg.wait_for_timeout(80)
-        else:
-            bad("%s stepper never bottomed out" % tag)
-        # One more, with the attribute lifted. ⚠ A disabled button does not fire
-        # click even from script, so leaving it on would test nothing: the JS
-        # floor guard would go unexercised on any panel whose button ships
-        # disabled in the markup (product-locked does).
-        pg.evaluate("""s=>{const b=document.querySelector(s);const was=b.disabled;
-            b.disabled=false;b.click();b.disabled=was}""", down)
+        val = first + "[data-acct-qty-value]"
+        before = pg.evaluate("s=>document.querySelector(s).value", val)
+        pg.evaluate("s=>{const b=document.querySelector(s);b.disabled=false;b.click()}",
+                    first + "[data-acct-qty='up']")
         pg.wait_for_timeout(120)
-        low = pg.evaluate("s=>parseInt(document.querySelector(s).textContent,10)",
-                          first + "[data-acct-qty-value]")
-        if low == floor:
+        if pg.evaluate("s=>document.querySelector(s).value", val) == before:
             good(tag)
         else:
-            bad("%s stepper bottomed out at %s, floor is %s (note 34502)"
-                % (tag, low, floor))
-        after = pg.evaluate("a=>document.querySelector(a[0]+' [data-acct-save]').textContent.trim()",
-                            [sel])
-        want_after = zero_label if (zero_label and low == 0) else cta
-        if after == want_after:
-            good(tag)
-        else:
-            bad("%s CTA at qty=%s is %r, want %r (note 34504)"
-                % (tag, low, after, want_after))
-        pg.click(first + "[data-acct-qty='up']")
-        pg.wait_for_timeout(120)
-        back = pg.evaluate("a=>document.querySelector(a[0]+' [data-acct-save]').textContent.trim()",
-                           [sel])
-        if back == cta:
-            good(tag)
-        else:
-            bad("%s CTA did not go back to %r after stepping up (got %r)"
-                % (tag, cta, back))
-        # one delegated bind only: a second open must not double every click
-        pg.keyboard.press("Escape")
-        pg.wait_for_timeout(600)
-        pg.evaluate("n=>window.gumiAcct.modal.open(n)", name)
-        pg.wait_for_timeout(450)
-        # ⚠ bind() runs once per panel at init, so simply reopening cannot produce
-        # a double bind and an "open it twice" test would pass no matter what.
-        # Call bind again by hand -- that is the case the guard exists for.
-        pg.evaluate("a=>window.gumiAcct.qty.bind(document.querySelector(a[0]))", [sel])
-        pg.wait_for_timeout(120)
-        before = pg.evaluate("s=>parseInt(document.querySelector(s).textContent,10)",
-                             first + "[data-acct-qty-value]")
-        pg.click(first + "[data-acct-qty='up']")
-        pg.wait_for_timeout(120)
-        step = pg.evaluate("s=>parseInt(document.querySelector(s).textContent,10)",
-                           first + "[data-acct-qty-value]") - before
-        if step == 1:
-            good(tag)
-        else:
-            bad("%s one click moved the stepper by %s -- bound more than once" % (tag, step))
+            bad("%s front end still steps the qty (live would double-step)" % tag)
         pg.keyboard.press("Escape")
         pg.wait_for_timeout(600)
 
@@ -811,6 +812,12 @@ def check_discount(pg, w, label):
         tag = "%s [%s]" % (label, name)
         sel = ".gb-acct-modal[data-acct-modal-panel='%s']" % name
         set_state(pg, BASE_STATE)
+        if name == "discount-applied":
+            # Layout fixture represents a discount confirmed by the API.
+            pg.evaluate("""s=>{const p=document.querySelector(s);
+                p.querySelector('.gb-acct-discount__result').hidden=false;
+                p.querySelector('.gb-acct-chip p').innerHTML=
+                    'Discount <strong>CEO90</strong> applied $35.25 off';}""", sel)
         pg.evaluate("n=>window.gumiAcct.modal.open(n)", name)
         pg.wait_for_timeout(450)
 
@@ -974,6 +981,10 @@ FORM_FIELDS = [
 
 def _open(pg, name):
     set_state(pg, BASE_STATE)
+    # ⚠ an earlier click left the pointer somewhere, and a drawer opens right
+    # under it -- Playwright DOES honour (hover: hover), so since Task 30 gave the
+    # buttons a colour hover the CTA gets measured mid-transition to lime.
+    pg.mouse.move(0, 0)
     pg.evaluate("n=>window.gumiAcct.modal.open(n)", name)
     pg.wait_for_timeout(450)
 
@@ -1022,6 +1033,9 @@ def check_ship_current(pg, w, label):
                 lineText:lines.map(e=>e.textContent.trim()),
                 lineColor:lines.map(e=>cs(e).color),
                 clipped:lines.length>5&&lines[5].scrollWidth>lines[5].clientWidth,
+                clampDeclared:lines.length>5&&(()=>{const c=cs(lines[5]);
+                  return c.whiteSpace==='nowrap'&&c.overflow==='hidden'
+                         &&c.textOverflow==='ellipsis'})(),
                 innerGap:lr.length>1?Math.round(lr[1].top-lr[0].bottom):null,
                 outerGap:lr.length>5?Math.round(lr[5].top-lr[4].bottom):null,
                 editTo:edit?edit.getAttribute('data-acct-modal'):null,
@@ -1102,13 +1116,22 @@ def check_ship_current(pg, w, label):
             "two groups into one puts it 4 too high" % (tag, got["outerGap"]))
 
     # 32458 is the one line with maxLines 1 / textTruncation ENDING. Letting it
-    # wrap is what puts the card at 198 instead of the board's 178, so the clamp
-    # has to be doing work rather than merely being declared.
-    if got["clipped"]:
+    # wrap is what puts the card at 198 instead of the board's 178.
+    # ⚠ Since r27 the desktop panel is 520 (funkyfood's account portal) and the
+    # line fits, so "actually clipping" can only be required at the board's own
+    # 390. The declaration is checked at both widths, or removing it would go
+    # unnoticed on desktop.
+    if got["clampDeclared"]:
         good(tag)
     else:
-        bad("%s the delivery line is not being clipped -- board 32458 truncates "
+        bad("%s the delivery line has no nowrap/ellipsis -- board 32458 truncates "
             "it to one line" % tag)
+    if w <= 767:
+        if got["clipped"]:
+            good(tag)
+        else:
+            bad("%s the delivery line is not being clipped at %s -- board 32458 "
+                "truncates it to one line" % (tag, w))
 
     # a radio's value never changes; only which one is picked does, so the dirty
     # gate has to read checked-ness or Save can never wake up for an address swap
@@ -1197,7 +1220,7 @@ def check_ship_form(pg, w, label):
                 stateTag:state?state.tagName.toLowerCase():null,
                 stateVal:state?state.value:null,
                 stateAppearance:state?cs(state).appearance:null,
-                stateChevron:!!q('select[data-acct-field] ~ .gb-acct-field__icon'),
+                stateChevron:!!q('.gb-acct-field__control:has(select[data-acct-field]) :is(.gb-select__arrow, .gb-acct-field__icon)'),
                 stateOpts:state?state.options.length:null,
                 postPattern:post?post.getAttribute('pattern'):null,
                 saveDisabled:q('[data-acct-save]')?q('[data-acct-save]').disabled:null,
@@ -1314,7 +1337,7 @@ def check_ship_form(pg, w, label):
     if got["stateChevron"]:
         good(tag)
     else:
-        bad("%s no .gb-acct-field__icon beside State -- board 33111 draws one" % tag)
+        bad("%s no chevron beside State -- board 33111 draws one" % tag)
     if got["stateAppearance"] == "none":
         good(tag)
     else:
@@ -1742,11 +1765,16 @@ def check_cancel_screens(pg, w, label):
     vid = pg.evaluate(r"""a=>{const p=document.querySelector(a[0]);
         const v=p.querySelector('.gb-acct-video');
         const play=p.querySelector('.gb-acct-video__play');
+        const med=p.querySelector('video.gb-acct-video__media');
         if(!v)return null;
         const r=e=>e.getBoundingClientRect();
         const cs=e=>getComputedStyle(e);
         return {w:Math.round(r(v).width), h:Math.round(r(v).height),
                 bg:cs(v).backgroundColor, radius:cs(v).borderTopLeftRadius,
+                medFills:!!(med&&Math.round(r(med).width)===Math.round(r(v).width)
+                              &&Math.round(r(med).height)===Math.round(r(v).height)),
+                medBg:med?cs(med).backgroundColor:null,
+                medSrc:med?(med.currentSrc||med.getAttribute('src')||''):null,
                 playW:play?Math.round(r(play).width):null,
                 playH:play?Math.round(r(play).height):null,
                 playBg:play?cs(play).backgroundColor:null,
@@ -1760,7 +1788,10 @@ def check_cancel_screens(pg, w, label):
                                ("playW", 62, "board 29752 is 61.8 wide"),
                                ("playH", 39, "board 29752 is 38.6 tall"),
                                ("playBg", "rgb(255, 255, 255)", "board 29752 is white"),
-                               ("glyph", True, "board 29753 is the triangle")):
+                               ("glyph", True, "board 29753 is the triangle"),
+                               ("medFills", True, "the video element covers the 350x190 box"),
+                               ("medBg", "rgba(0, 0, 0, 0)", "it must not paint over the grey"),
+                               ("medSrc", "", "no source yet -- a src would fire a request")):
             if vid[key] == want:
                 good(tag)
             else:
@@ -1833,10 +1864,11 @@ def check_cancel_reasons(pg, w, label):
         bad("%s CTA starts disabled=%s: with no reason picked there is nothing "
             "to continue to" % (tag, got["ctaDisabled"]))
 
-    if got["listGap"] == "12px":
+    # 12.5 is client-set (Task 45); board 30082 is 12
+    if got["listGap"] == "12.5px":
         good(tag)
     else:
-        bad("%s rows are %s apart, board 30082 is 12" % (tag, got["listGap"]))
+        bad("%s rows are %s apart, want the client-set 12.5" % (tag, got["listGap"]))
     # 30083 has strokesIncludedInLayout true: 12 + 20 + 12 + two 1px borders = 46
     for key, want, why in (("rowH", 46, "board 30083 is 46 with the border counted"),
                            ("rowPadY", "12px", "board pads 12 top and bottom"),
@@ -1904,52 +1936,65 @@ def check_calendar(pg, w, label):
     sel = _panel("cancel-holiday")
     _open(pg, "cancel-holiday")
 
+    # ⚠ Task 38 moved the grid onto flatpickr. Only the reads below changed --
+    # every assertion after this is still the board's. A day's date comes off its
+    # aria-label rather than the plugin's internal dateObj, so this stays true to
+    # what the DOM exposes.
     got = pg.evaluate(r"""a=>{const p=document.querySelector(a[0]);
         const cal=p&&p.querySelector('.gb-acct-cal');
         if(!cal)return null;
         const cs=e=>getComputedStyle(e);
         const r=e=>e.getBoundingClientRect();
-        const head=cal.querySelector('.gb-acct-cal__head');
-        const title=cal.querySelector('[data-acct-cal-title]');
-        const grid=cal.querySelector('table');
-        const ths=[...cal.querySelectorAll('thead th')];
-        const cells=[...cal.querySelectorAll('tbody button')];
-        const sel1=cells.filter(c=>c.getAttribute('aria-pressed')==='true');
-        const out=cells.filter(c=>c.dataset.acctCalOut!==undefined);
-        const dis=cells.filter(c=>c.disabled);
+        const head=cal.querySelector('.flatpickr-months');
+        const cur=cal.querySelector('.flatpickr-current-month');
+        const box=cal.querySelector('.flatpickr-calendar');
+        const ths=[...cal.querySelectorAll('.flatpickr-weekday')];
+        const cells=[...cal.querySelectorAll('.flatpickr-day')];
+        const pad=n=>(n<10?'0':'')+n;
+        const iso=c=>{const l=c.getAttribute('aria-label');
+                      if(!l)return null; const d=new Date(l);
+                      return isNaN(d)?null:
+                        d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+        const isOut=c=>c.classList.contains('prevMonthDay')||
+                       c.classList.contains('nextMonthDay');
+        const dead=c=>c.classList.contains('flatpickr-disabled')||isOut(c);
+        const sel1=cells.filter(c=>c.classList.contains('selected'));
+        const out=cells.filter(isOut);
+        const dis=cells.filter(dead);
         const one=cells[0];
         const today=new Date(); today.setHours(0,0,0,0);
-        const enabled=cells.filter(c=>!c.disabled);
+        const enabled=cells.filter(c=>!dead(c));
+        const label=cal.parentNode.querySelector('[data-acct-cal-input]');
         return {calW:Math.round(r(cal).width), calH:Math.round(r(cal).height),
                 calBg:cs(cal).backgroundColor, calR:cs(cal).borderTopLeftRadius,
-                contentPadY:cs(cal.querySelector('.gb-acct-cal__content')).paddingTop,
-                contentPadX:cs(cal.querySelector('.gb-acct-cal__content')).paddingLeft,
+                contentPadY:box?cs(box).paddingTop:null,
+                contentPadX:box?cs(box).paddingLeft:null,
                 headH:head?Math.round(r(head).height):null,
-                titleSize:title?cs(title).fontSize:null,
-                titleWeight:title?cs(title).fontWeight:null,
-                titleColor:title?cs(title).color:null,
-                title:title?title.textContent.trim():null,
+                titleSize:cur?cs(cur).fontSize:null,
+                titleWeight:cur?cs(cur).fontWeight:null,
+                titleColor:cur?cs(cur).color:null,
+                title:cur?(cur.querySelector('.cur-month').textContent.trim()+' '+
+                           cur.querySelector('.cur-year').value):null,
                 dayNames:ths.map(e=>e.textContent.trim()),
                 dayWeight:ths.length?cs(ths[0]).fontWeight:null,
                 dayColor:ths.length?cs(ths[0]).color:null,
                 cellCount:cells.length,
-                gridStart:cells.length?cells[0].dataset.acctCalDay:null,
-                gridEnd:cells.length?cells[cells.length-1].dataset.acctCalDay:null,
-                captionH:cal.querySelector('caption')?
-                         Math.round(r(cal.querySelector('caption')).height):null,
+                gridStart:cells.length?iso(cells[0]):null,
+                gridEnd:cells.length?iso(cells[cells.length-1]):null,
+                labelH:label?Math.round(r(label).height):null,
+                labelText:label?label.getAttribute('aria-label'):null,
                 cellH:one?Math.round(r(one).height):null,
                 cellR:one?cs(one).borderTopLeftRadius:null,
-                colGap:grid?cs(grid).borderSpacing:null,
                 selCount:sel1.length,
                 selBg:sel1.length?cs(sel1[0]).backgroundColor:null,
                 selColor:sel1.length?cs(sel1[0]).color:null,
-                selIso:sel1.length?sel1[0].dataset.acctCalDay:null,
+                selIso:sel1.length?iso(sel1[0]):null,
                 outColor:out.length?cs(out[0]).color:null,
-                outDisabled:out.every(c=>c.disabled),
-                firstEnabled:enabled.length?enabled[0].dataset.acctCalDay:null,
+                outDisabled:out.every(c=>cs(c).pointerEvents==='none'),
+                firstEnabled:enabled.length?iso(enabled[0]):null,
                 disabledCount:dis.length,
-                prev:!!cal.querySelector('[data-acct-cal-prev]'),
-                next:!!cal.querySelector('[data-acct-cal-next]'),
+                prev:!!cal.querySelector('.flatpickr-prev-month'),
+                next:!!cal.querySelector('.flatpickr-next-month'),
                 todayIso:new Date(today.getTime()-today.getTimezoneOffset()*60000)
                           .toISOString().slice(0,10)}}""", [sel])
     if got is None:
@@ -1961,7 +2006,8 @@ def check_calendar(pg, w, label):
     for key, want, why in (("calBg", "rgb(255, 255, 255)", "board 30621 is white"),
                            ("calR", "8px", "board radius is 8"),
                            ("contentPadY", "20px", "board 30623 pads 20 top"),
-                           ("contentPadX", "24px", "board 30623 pads 24 side"),
+                           # 22 is client-set (Task 45); board 30623 pads 24
+                           ("contentPadX", "22px", "the client-set 22 side padding"),
                            ("headH", 32, "board 30625 is 32 tall"),
                            ("titleSize", "16px", "30627 is 16/24"),
                            ("titleWeight", "500", "30627 is w500"),
@@ -1985,30 +2031,33 @@ def check_calendar(pg, w, label):
         bad("%s day row %r, board reads %r (Sat really is three letters)"
             % (tag, got["dayNames"], want_days))
 
-    # the grid is generated, so these are the invariants the board cannot give
-    # whole Monday-first weeks, and no more of them than the month needs: an
-    # off-by-one at either end silently adds a seventh row of the next month
+    # The grid is the plugin's, so these are the invariants the board cannot give:
+    # whole Monday-first weeks starting on the Monday on or before the 1st.
+    # ⚠ Task 38: flatpickr always lays out SIX weeks so the panel does not change
+    # height from month to month -- the hand-written grid drew only the rows the
+    # month needed (35 cells for a month like September). 42 is the plugin's
+    # fixed page, not an off-by-one.
     start = datetime.date.fromisoformat(got["gridStart"])
     end = datetime.date.fromisoformat(got["gridEnd"])
     view = datetime.date.fromisoformat(got["selIso"]).replace(day=1)
-    nxt = (view.replace(day=28) + datetime.timedelta(days=4)).replace(day=1)
-    span = (nxt - view).days
     want_start = view - datetime.timedelta(days=view.weekday())
-    want_end = want_start + datetime.timedelta(days=((view.weekday() + span + 6) // 7) * 7 - 1)
+    want_end = want_start + datetime.timedelta(days=41)
     if (start, end) == (want_start, want_end):
         good(tag)
     else:
-        bad("%s grid runs %s..%s, the whole weeks around this month are %s..%s"
+        bad("%s grid runs %s..%s, six whole weeks from this month's Monday are %s..%s"
             % (tag, start, end, want_start, want_end))
-    if got["cellCount"] == (want_end - want_start).days + 1:
+    if got["cellCount"] == 42:
         good(tag)
     else:
-        bad("%s %d cells for a %s..%s grid" % (tag, got["cellCount"], start, end))
-    # the caption names the grid for a reader without being drawn
-    if got["captionH"] in (0, 1):
+        bad("%s %d cells -- the plugin pages six weeks, so 42" % (tag, got["cellCount"]))
+    # the plugin has no caption, so the panel's own input carries the name and
+    # still must not draw
+    if got["labelText"] and got["labelH"] in (0, 1):
         good(tag)
     else:
-        bad("%s the table caption is %spx tall -- it should not draw" % (tag, got["captionH"]))
+        bad("%s the calendar's accessible name is %r at %spx tall -- it should "
+            "name the grid without drawing" % (tag, got["labelText"], got["labelH"]))
     if got["selCount"] == 1:
         good(tag)
     else:
@@ -2044,13 +2093,21 @@ def check_calendar(pg, w, label):
     # picking a different day moves the fill
     moved = pg.evaluate(r"""a=>{const p=document.querySelector(a[0]);
         if(!p)return null;
-        const cells=[...p.querySelectorAll('.gb-acct-cal tbody button')].filter(c=>!c.disabled);
+        const pad=n=>(n<10?'0':'')+n;
+        const iso=c=>{const l=c.getAttribute('aria-label');
+                      if(!l)return null; const d=new Date(l);
+                      return isNaN(d)?null:
+                        d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+        const dead=c=>c.classList.contains('flatpickr-disabled')||
+                      c.classList.contains('prevMonthDay')||
+                      c.classList.contains('nextMonthDay');
+        const all=()=>[...p.querySelectorAll('.gb-acct-cal .flatpickr-day')];
+        const cells=all().filter(c=>!dead(c));
         if(cells.length<2)return null;
+        const want=iso(cells[1]);
         cells[1].click();
-        const on=[...p.querySelectorAll('.gb-acct-cal tbody button')]
-                 .filter(c=>c.getAttribute('aria-pressed')==='true');
-        return {n:on.length, day:on.length?on[0].dataset.acctCalDay:null,
-                want:cells[1].dataset.acctCalDay}}""", [sel])
+        const on=all().filter(c=>c.classList.contains('selected'));
+        return {n:on.length, day:on.length?iso(on[0]):null, want:want}}""", [sel])
     if moved is None:
         bad("%s fewer than two selectable days to test the pick on" % tag)
     elif moved["n"] == 1 and moved["day"] == moved["want"]:
@@ -2061,12 +2118,14 @@ def check_calendar(pg, w, label):
 
     # the month arrows move the grid
     stepped = pg.evaluate(r"""a=>{const p=document.querySelector(a[0]);
-        if(!p||!p.querySelector('[data-acct-cal-title]'))return null;
-        const t=()=>p.querySelector('[data-acct-cal-title]').textContent.trim();
+        const cur=p&&p.querySelector('.flatpickr-current-month');
+        if(!cur)return null;
+        const t=()=>cur.querySelector('.cur-month').textContent.trim()+' '+
+                    cur.querySelector('.cur-year').value;
         const before=t();
-        p.querySelector('[data-acct-cal-next]').click();
+        p.querySelector('.flatpickr-next-month').click();
         const fwd=t();
-        p.querySelector('[data-acct-cal-prev]').click();
+        p.querySelector('.flatpickr-prev-month').click();
         return {before:before, fwd:fwd, back:t()}}""", [sel])
     if stepped is None:
         bad("%s no month title to step" % tag)

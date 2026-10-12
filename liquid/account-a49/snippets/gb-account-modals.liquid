@@ -1,0 +1,586 @@
+{%- doc -%}
+  Account modal panels. Opened by account.js via [data-acct-modal-panel]. Copy
+  of the frontend design HTML with SVG icons intact. Real backend wiring for
+  Appstle CRUD / address save / discount apply comes in later iterations.
+{%- enddoc -%}
+
+{%- comment -%} Reusable close cross SVG for modal headers {%- endcomment -%}
+
+{%- comment -%} Edit subscription name {%- endcomment -%}
+<div class="gb-acct-modal" data-acct-modal-panel="edit-name" role="dialog" aria-modal="true" aria-labelledby="acct-modal-edit-name" aria-hidden="true" hidden data-acct-watched="1">
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-edit-name">Edit name</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-modal__fields">
+        <div class="gb-acct-field">
+          <label class="gb-acct-field__label" for="acct-f-name">Name</label>
+          <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-f-name" type="text" value="My Subscription" data-acct-field></div>
+        </div>
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+      <button class="gb-acct-modal__save" type="button" data-acct-save data-acct-modal-close disabled>Save</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Edit renewal date (inline calendar) {%- endcomment -%}
+<div class="gb-acct-modal" data-acct-modal-panel="edit-date" role="dialog" aria-modal="true" aria-labelledby="acct-modal-edit-date" aria-hidden="true" hidden data-acct-watched="1">
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-edit-date">Edit renewal date</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-modal__fields">
+        <div class="gb-acct-field">
+          <label class="gb-acct-field__label" for="acct-f-date">Next renewal date</label>
+          <div class="gb-acct-field__control"><input class="gb-acct-field__input gb-acct-field__input--icon flatpickr-input" id="acct-f-date" type="text" value="19/07/2026" data-acct-field><svg class="gb-acct-field__icon" xmlns="http://www.w3.org/2000/svg" viewBox="336 397 20 20" fill="none" aria-hidden="true"><path d="M353.5 405.335H338.5M349.333 398.668V402.001M342.667 398.668V402.001M342.5 415.335H349.5C350.9 415.335 351.6 415.335 352.135 415.062C352.605 414.822 352.988 414.44 353.228 413.97C353.5 413.435 353.5 412.735 353.5 411.335V404.335C353.5 402.935 353.5 402.234 353.228 401.7C352.988 401.229 352.605 400.847 352.135 400.607C351.6 400.335 350.9 400.335 349.5 400.335H342.5C341.1 400.335 340.4 400.335 339.865 400.607C339.395 400.847 339.012 401.229 338.772 401.7C338.5 402.234 338.5 402.935 338.5 404.335V411.335C338.5 412.735 338.5 413.435 338.772 413.97C339.012 414.44 339.395 414.822 339.865 415.062C340.4 415.335 341.1 415.335 342.5 415.335Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="gb-acct-cal gb-acct-cal--field" data-acct-cal data-acct-cal-for="acct-f-date">{%- render 'gb-account-flatpickr-cal' -%}</div>
+        </div>
+        <p class="gb-acct-modal__hint">Your next subscription order will be charged and processed on this date</p>
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+      <button class="gb-acct-modal__save" type="button" data-acct-save data-acct-modal-close disabled>Save</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Edit frequency {%- endcomment -%}
+<div class="gb-acct-modal" data-acct-modal-panel="edit-frequency" role="dialog" aria-modal="true" aria-labelledby="acct-modal-edit-frequency" aria-hidden="true" hidden data-acct-watched="1">
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-edit-frequency">Edit frequency</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-modal__fields">
+        <div class="gb-acct-field">
+          <label class="gb-acct-field__label" for="acct-f-freq">Frequency</label>
+          <div class="gb-acct-field__control"><select class="gb-acct-field__input" id="acct-f-freq" data-acct-field data-select><option>Ships every 2 weeks</option><option selected>Ships every 4 weeks</option><option>Ships every 6 weeks</option></select></div>
+        </div>
+        <p class="gb-acct-modal__hint">Your recurring renewal day of the week is <b>2026-07-19</b><br>Please allow 2-5 working days for your order to be with you</p>
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+      <button class="gb-acct-modal__save" type="button" data-acct-save data-acct-modal-close disabled>Save</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Edit payment method — sends magic-link email {%- endcomment -%}
+<div class="gb-acct-modal" data-acct-modal-panel="edit-payment" role="dialog" aria-modal="true" aria-labelledby="acct-modal-edit-payment" aria-hidden="true" hidden>
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-edit-payment">Payment details</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <p class="gb-acct-modal__copy">We will email you a link to change your payment method. It might take a few minutes to arrive, try checking your spam folder if you can't find it.</p>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+      <button class="gb-acct-modal__save" type="button" data-acct-save data-acct-modal-close>Update payment method</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Skip next order {%- endcomment -%}
+<div class="gb-acct-modal" data-acct-modal-panel="skip-next" role="dialog" aria-modal="true" aria-labelledby="acct-modal-skip-next" aria-hidden="true" hidden>
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-skip-next">Skip next order</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <p class="gb-acct-modal__copy">Are you sure you want to skip the next order? Your next order date will be changed to <strong>17 July, 2026</strong></p>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+      <button class="gb-acct-modal__save" type="button" data-acct-save data-acct-modal-close>Skip next order</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} I need it now — expedite {%- endcomment -%}
+<div class="gb-acct-modal" data-acct-modal-panel="need-now" role="dialog" aria-modal="true" aria-labelledby="acct-modal-need-now" aria-hidden="true" hidden>
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-need-now">I need it now</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <p class="gb-acct-modal__copy">Your order will be placed and charged now. If you would like to make changes to your subscription do so before continuing to payment.</p>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+      <button class="gb-acct-modal__save" type="button" data-acct-save data-acct-modal-close>Get it to me now</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Discount code — empty state {%- endcomment -%}
+<div class="gb-acct-modal" data-acct-modal-panel="discount-add" data-acct-discount-state="empty" role="dialog" aria-modal="true" aria-labelledby="acct-modal-discount-add" aria-hidden="true" hidden>
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-discount-add">Add a discount code</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-discount">
+        <div class="gb-acct-discount__field">
+          <label class="gb-acct-field__label" for="acct-f-code">Discount code</label>
+          <div class="gb-acct-discount__row">
+            <input class="gb-acct-discount__input" id="acct-f-code" type="text" placeholder="Discount Code" value="" data-acct-discount-input>
+            <button class="gb-acct-discount__apply" type="button" data-acct-apply disabled>Apply</button>
+          </div>
+        </div>
+        <div class="gb-acct-discount__result" hidden>
+          <div class="gb-acct-chip">
+            <p></p>
+            <button class="gb-acct-chip__remove" type="button" data-acct-chip-remove aria-label="Remove discount"><svg xmlns="http://www.w3.org/2000/svg" viewBox="337 447 16 16" fill="none" aria-hidden="true"><path d="M343 449.129H347M339 451.129H351M349.667 451.129L349.199 458.142C349.129 459.194 349.094 459.72 348.867 460.119C348.667 460.47 348.365 460.752 348.001 460.929C347.588 461.129 347.061 461.129 346.006 461.129H343.994C342.939 461.129 342.412 461.129 341.999 460.929C341.635 460.752 341.333 460.47 341.133 460.119C340.906 459.72 340.871 459.194 340.801 458.142L340.333 451.129M343.667 454.129V457.462M346.333 454.129V457.462" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Discount code — applied state {%- endcomment -%}
+<div class="gb-acct-modal" data-acct-modal-panel="discount-applied" data-acct-discount-state="applied" role="dialog" aria-modal="true" aria-labelledby="acct-modal-discount-applied" aria-hidden="true" hidden>
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-discount-applied">Add a discount code</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-discount">
+        <div class="gb-acct-discount__field">
+          <label class="gb-acct-field__label" for="acct-f-code-2">Discount code</label>
+          <div class="gb-acct-discount__row">
+            <input class="gb-acct-discount__input" id="acct-f-code-2" type="text" placeholder="Discount Code" value="" data-acct-discount-input>
+            <button class="gb-acct-discount__apply" type="button" data-acct-apply disabled>Apply</button>
+          </div>
+        </div>
+        <div class="gb-acct-discount__result" hidden>
+          <div class="gb-acct-chip">
+            <p></p>
+            <button class="gb-acct-chip__remove" type="button" data-acct-chip-remove aria-label="Remove discount"><svg xmlns="http://www.w3.org/2000/svg" viewBox="337 447 16 16" fill="none" aria-hidden="true"><path d="M343 449.129H347M339 451.129H351M349.667 451.129L349.199 458.142C349.129 459.194 349.094 459.72 348.867 460.119C348.667 460.47 348.365 460.752 348.001 460.929C347.588 461.129 347.061 461.129 346.006 461.129H343.994C342.939 461.129 342.412 461.129 341.999 460.929C341.635 460.752 341.333 460.47 341.133 460.119C340.906 459.72 340.871 459.194 340.801 458.142L340.333 451.129M343.667 454.129V457.462M346.333 454.129V457.462" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Shipping address — current selection {%- endcomment -%}
+<div class="gb-acct-modal" data-acct-modal-panel="shipping-current" role="dialog" aria-modal="true" aria-labelledby="acct-modal-shipping-current" aria-hidden="true" hidden data-acct-watched="1">
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-shipping-current">Edit Shipping Address</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-addr">
+        <p class="gb-acct-addr__title">Current Address</p>
+        <div class="gb-acct-addr__card">
+          <label class="gb-acct-addr__pick" for="acct-addr-1">
+            <input class="gb-acct-addr__radio" id="acct-addr-1" type="radio" name="acct-shipping" value="current" checked data-acct-field>
+            <span class="gb-acct-addr__lines">
+              <span class="gb-acct-addr__group">
+                <span class="gb-acct-addr__line gb-acct-addr__line--name">{{ customer.default_address.name | default: customer.name | escape }}</span>
+                {%- if customer.default_address.address1 != blank -%}<span class="gb-acct-addr__line">{{ customer.default_address.address1 | escape }}</span>{%- endif -%}
+                {%- if customer.default_address.address2 != blank -%}<span class="gb-acct-addr__line">{{ customer.default_address.address2 | escape }}</span>{%- endif -%}
+                <span class="gb-acct-addr__line">{{ customer.default_address.city | escape }}, {{ customer.default_address.province | escape }}, {{ customer.default_address.country | escape }}</span>
+                <span class="gb-acct-addr__line">{{ customer.default_address.zip | escape }}</span>
+              </span>
+            </span>
+          </label>
+          <button class="gb-acct-link" type="button" data-acct-modal="shipping-form">Edit</button>
+        </div>
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+      <button class="gb-acct-modal__save" type="button" data-acct-save data-acct-modal-close disabled>Save</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Shipping address — edit form (submits, next → success) {%- endcomment -%}
+<div class="gb-acct-modal gb-acct-modal--sheet" data-acct-modal-panel="shipping-form" role="dialog" aria-modal="true" aria-labelledby="acct-modal-shipping-form" aria-hidden="true" hidden data-acct-watched="1">
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <form class="gb-acct-modal__panel" tabindex="-1" data-acct-modal-next="shipping-success">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-shipping-form">Edit Shipping Address</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-form">
+        <div class="gb-acct-form__row">
+          <div class="gb-acct-field">
+            <label class="gb-acct-field__label" for="acct-sh-first">First Name*</label>
+            <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-sh-first" name="first-name" type="text" value="{{ customer.default_address.first_name | escape }}" required autocomplete="given-name" data-acct-field></div>
+          </div>
+          <div class="gb-acct-field">
+            <label class="gb-acct-field__label" for="acct-sh-last">Last Name*</label>
+            <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-sh-last" name="last-name" type="text" value="{{ customer.default_address.last_name | escape }}" required autocomplete="family-name" data-acct-field></div>
+          </div>
+        </div>
+        <div class="gb-acct-field">
+          <label class="gb-acct-field__label" for="acct-sh-phone">Phone number*</label>
+          <div class="gb-acct-field__box"><span class="gb-acct-field__prefix">+61</span><input class="gb-acct-field__bare" id="acct-sh-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="000 000 000" value="{{ customer.default_address.phone | escape }}" required data-acct-field></div>
+        </div>
+        <div class="gb-acct-field">
+          <label class="gb-acct-field__label" for="acct-sh-company">Company</label>
+          <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-sh-company" name="company" type="text" placeholder="Company" value="{{ customer.default_address.company | escape }}" autocomplete="organization" data-acct-field></div>
+        </div>
+        <div class="gb-acct-field">
+          <label class="gb-acct-field__label" for="acct-sh-a1">Address Line 1*</label>
+          <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-sh-a1" name="address1" type="text" value="{{ customer.default_address.address1 | escape }}" required autocomplete="address-line1" data-acct-field></div>
+        </div>
+        <div class="gb-acct-field">
+          <label class="gb-acct-field__label" for="acct-sh-a2">Address Line 2</label>
+          <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-sh-a2" name="address2" type="text" value="{{ customer.default_address.address2 | escape }}" autocomplete="address-line2" data-acct-field></div>
+        </div>
+        <div class="gb-acct-field">
+          <label class="gb-acct-field__label" for="acct-sh-suburb">Suburb*</label>
+          <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-sh-suburb" name="suburb" type="text" value="{{ customer.default_address.city | escape }}" required autocomplete="address-level2" data-acct-field></div>
+        </div>
+        <div class="gb-acct-form__row">
+          <div class="gb-acct-field">
+            <label class="gb-acct-field__label" for="acct-sh-state">State*</label>
+            <div class="gb-acct-field__control"><select class="gb-acct-field__input" id="acct-sh-state" name="state" autocomplete="address-level1" required data-acct-field data-select>{%- assign _states = 'ACT,NSW,NT,QLD,SA,TAS,VIC,WA' | split: ',' -%}{%- for s in _states -%}<option{% if customer.default_address.province_code == s %} selected{% endif %}>{{ s }}</option>{%- endfor -%}</select></div>
+          </div>
+          <div class="gb-acct-field">
+            <label class="gb-acct-field__label" for="acct-sh-post">Postcode*</label>
+            <div class="gb-acct-field__control"><input class="gb-acct-field__input" id="acct-sh-post" name="postcode" type="text" value="{{ customer.default_address.zip | escape }}" required inputmode="numeric" pattern="\d{4}" maxlength="4" autocomplete="postal-code" data-acct-field></div>
+          </div>
+        </div>
+        <div class="gb-acct-field">
+          <label class="gb-acct-field__label" for="acct-sh-note">Delivery Instructions</label>
+          <div class="gb-acct-field__control"><textarea class="gb-acct-field__input gb-acct-field__input--area" id="acct-sh-note" name="delivery" placeholder="Delivery Instructions" data-acct-field data-lenis-prevent></textarea></div>
+        </div>
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-link" type="button" data-acct-modal="shipping-current">Go Back</button>
+      <button class="gb-acct-modal__save" type="submit" data-acct-save disabled>Save</button>
+    </div>
+  </form>
+</div>
+
+{%- comment -%} Shipping success confirmation {%- endcomment -%}
+<div class="gb-acct-modal" data-acct-modal-panel="shipping-success" role="dialog" aria-modal="true" aria-labelledby="acct-modal-shipping-success" aria-hidden="true" hidden>
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-shipping-success">Edit Shipping Address</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-note"><svg class="gb-acct-note__icon" xmlns="http://www.w3.org/2000/svg" viewBox="37 394 20 20" fill="none" aria-hidden="true"><path d="M47.0003 412.366C51.6027 412.366 55.3337 408.635 55.3337 404.033C55.3337 399.43 51.6027 395.699 47.0003 395.699C42.398 395.699 38.667 399.43 38.667 404.033C38.667 408.635 42.398 412.366 47.0003 412.366Z" fill="#005635"/><path d="M43.25 404L45.75 406.5L50.75 401.5" stroke="#ffffff" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="gb-acct-note__body">
+          <p class="gb-acct-note__title">Success!</p>
+          <p class="gb-acct-note__text">Your shipping details have been updated.</p>
+        </div>
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-link" type="button" data-acct-modal="shipping-current">Close</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Edit product line — flavour/size + qty {%- endcomment -%}
+<div class="gb-acct-modal gb-acct-modal--sheet" data-acct-modal-panel="edit-product" role="dialog" aria-modal="true" aria-labelledby="acct-modal-edit-product" aria-hidden="true" hidden data-acct-watched="1">
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-edit-product">Edit Product</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-prod-grid">
+        <div class="gb-acct-prod" data-acct-product data-acct-qty-min="0">
+          <img class="gb-acct-prod__thumb" src="{{ 'product-placeholder.png' | asset_url }}" width="400" height="400" alt="Superfood Greens Gummies" loading="lazy" decoding="async">
+          <div class="gb-acct-prod__info">
+            <p class="gb-acct-prod__name">Superfood Greens Gummies</p>
+            <p class="gb-acct-prod__price"><span class="gb-acct-prod__now">$121.50</span><span class="gb-acct-prod__was">$168.90</span></p>
+          </div>
+          <div class="gb-acct-prod__opts">
+            <div class="gb-acct-prod__opt">
+              <span class="gb-acct-prod__opt-label">Flavour</span>
+              <div class="gb-acct-field__control gb-acct-prod__control"><select class="gb-acct-field__input gb-acct-prod__select" data-acct-field data-select><option selected>Flavour</option><option>Flavour option 1</option><option>Flavour option 2</option><option>Flavour option 3</option></select></div>
+            </div>
+            <div class="gb-acct-prod__opt">
+              <span class="gb-acct-prod__opt-label">Size</span>
+              <div class="gb-acct-field__control gb-acct-prod__control"><select class="gb-acct-field__input gb-acct-prod__select" data-acct-field data-select><option selected>Size</option><option>Size option 1</option><option>Size option 2</option><option>Size option 3</option></select></div>
+            </div>
+          </div>
+          <div class="gb-acct-qty">
+            <button class="gb-acct-qty__btn gb-acct-qty__btn--down" type="button" data-acct-qty="down" aria-label="Decrease quantity"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 7H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <input class="gb-acct-qty__value" type="number" inputmode="numeric" min="0" step="1" value="1" data-acct-qty-value aria-label="Quantity">
+            <button class="gb-acct-qty__btn gb-acct-qty__btn--up" type="button" data-acct-qty="up" aria-label="Increase quantity"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1.167V12.833M1.167 7H12.833" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-modal__save" type="button" data-acct-save data-acct-modal-close data-acct-label-default="Save" data-acct-label-zero="Remove this product" disabled>Save</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Add product — grid with counters {%- endcomment -%}
+<div class="gb-acct-modal gb-acct-modal--sheet" data-acct-modal-panel="add-product" role="dialog" aria-modal="true" aria-labelledby="acct-modal-add-product" aria-hidden="true" hidden data-acct-watched="1">
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-add-product">Select a product</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-prod-grid">
+        {%- for i in (1..4) -%}
+          <div class="gb-acct-prod" data-acct-product data-acct-qty-min="0">
+            <img class="gb-acct-prod__thumb" src="{{ 'product-placeholder.png' | asset_url }}" width="400" height="400" alt="Superfood Greens Gummies" loading="lazy" decoding="async">
+            <div class="gb-acct-prod__info">
+              <p class="gb-acct-prod__name">Superfood Greens Gummies</p>
+              <p class="gb-acct-prod__price"><span class="gb-acct-prod__now">$121.50</span><span class="gb-acct-prod__was">$168.90</span></p>
+            </div>
+            <div class="gb-acct-prod__opts">
+              <div class="gb-acct-prod__opt">
+                <span class="gb-acct-prod__opt-label">Flavour</span>
+                <div class="gb-acct-field__control gb-acct-prod__control"><select class="gb-acct-field__input gb-acct-prod__select" data-acct-field data-select><option selected>Flavour</option><option>Flavour option 1</option><option>Flavour option 2</option><option>Flavour option 3</option></select></div>
+              </div>
+            </div>
+            <div class="gb-acct-qty">
+              <button class="gb-acct-qty__btn gb-acct-qty__btn--down" type="button" data-acct-qty="down" aria-label="Decrease quantity" disabled><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 7H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              <input class="gb-acct-qty__value" type="number" inputmode="numeric" min="0" step="1" value="0" data-acct-qty-value aria-label="Quantity">
+              <button class="gb-acct-qty__btn gb-acct-qty__btn--up" type="button" data-acct-qty="up" aria-label="Increase quantity"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1.167V12.833M1.167 7H12.833" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            </div>
+          </div>
+        {%- endfor -%}
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-modal__save" type="button" data-acct-save data-acct-modal-close data-acct-label-default="Add products" disabled>Add products</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Cancel flow — offer to skip {%- endcomment -%}
+<div class="gb-acct-modal gb-acct-modal--sheet" data-acct-modal-panel="cancel-offer-skip" role="dialog" aria-modal="true" aria-labelledby="acct-modal-cancel-offer-skip" aria-hidden="true" hidden>
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-cancel-offer-skip">We're sorry to see you go</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-flow">
+        <p class="gb-acct-modal__lead">Keep the best pricing available and skip your next order instead.</p>
+        <div class="gb-acct-video" role="img" aria-label="Video placeholder">
+          <video class="gb-acct-video__media" preload="none" playsinline muted loop></video>
+          <span class="gb-acct-video__play"><svg xmlns="http://www.w3.org/2000/svg" viewBox="188.869 426.914 13.7434 15.4545" fill="none" aria-hidden="true"><path d="M201.935 433.469C202.838 433.99 202.838 435.293 201.935 435.814L190.9 442.185C189.998 442.706 188.869 442.055 188.869 441.012L188.869 428.27C188.869 427.228 189.998 426.576 190.9 427.097L201.935 433.469Z" fill="#011307"/></svg></span>
+        </div>
+        <div class="gb-acct-reasons">
+          <label class="gb-acct-reason" for="acct-skip-1"><input class="gb-acct-reason__radio" id="acct-skip-1" type="radio" name="acct-skip-count" value="skip-1"><span class="gb-acct-reason__label">Skip 1 order</span></label>
+          <label class="gb-acct-reason" for="acct-skip-2"><input class="gb-acct-reason__radio" id="acct-skip-2" type="radio" name="acct-skip-count" value="skip-2"><span class="gb-acct-reason__label">Skip 2 orders</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-link" type="button" data-acct-modal="cancel-reason">Cancel now</button>
+      <button class="gb-acct-modal__save" type="button" data-acct-cta data-acct-modal="cancel-skipped">Continue to Skip</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Cancel flow — skipped confirmation {%- endcomment -%}
+<div class="gb-acct-modal gb-acct-modal--sheet" data-acct-modal-panel="cancel-skipped" role="dialog" aria-modal="true" aria-labelledby="acct-modal-cancel-skipped" aria-hidden="true" hidden>
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-cancel-skipped">Your next order has been skipped!</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-flow">
+        <div class="gb-acct-modal__prose">
+          <p class="gb-acct-modal__lead">You have skipped your next order.</p>
+          <p class="gb-acct-modal__sub">Next order will renew on 17 July, 2026</p>
+        </div>
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-modal__save" type="button" data-acct-cta data-acct-modal-close>Done</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Cancel flow — reason picker {%- endcomment -%}
+<div class="gb-acct-modal gb-acct-modal--sheet" data-acct-modal-panel="cancel-reason" role="dialog" aria-modal="true" aria-labelledby="acct-modal-cancel-reason" aria-hidden="true" hidden>
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-cancel-reason">We're sorry to see you go</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-flow">
+        <p class="gb-acct-modal__lead">Please let us know why you want to cancel?</p>
+        <div class="gb-acct-reasons" data-acct-reasons>
+          <label class="gb-acct-reason" for="acct-reason-going-away"><input class="gb-acct-reason__radio" id="acct-reason-going-away" type="radio" name="acct-cancel-reason" value="going-away" data-acct-reason><span class="gb-acct-reason__label">Going away or on holiday</span></label>
+          <label class="gb-acct-reason" for="acct-reason-too-expensive"><input class="gb-acct-reason__radio" id="acct-reason-too-expensive" type="radio" name="acct-cancel-reason" value="too-expensive" data-acct-reason><span class="gb-acct-reason__label">Too expensive right now</span></label>
+          <label class="gb-acct-reason" for="acct-reason-too-much-product"><input class="gb-acct-reason__radio" id="acct-reason-too-much-product" type="radio" name="acct-cancel-reason" value="too-much-product" data-acct-reason><span class="gb-acct-reason__label">I have too much product</span></label>
+          <label class="gb-acct-reason" for="acct-reason-try-once"><input class="gb-acct-reason__radio" id="acct-reason-try-once" type="radio" name="acct-cancel-reason" value="try-once" data-acct-reason><span class="gb-acct-reason__label">I just want to try once without subscribing</span></label>
+          <label class="gb-acct-reason" for="acct-reason-no-difference"><input class="gb-acct-reason__radio" id="acct-reason-no-difference" type="radio" name="acct-cancel-reason" value="no-difference" data-acct-reason><span class="gb-acct-reason__label">I&#39;m not feeling different in my health yet</span></label>
+          <label class="gb-acct-reason" for="acct-reason-taste-texture"><input class="gb-acct-reason__radio" id="acct-reason-taste-texture" type="radio" name="acct-cancel-reason" value="taste-texture" data-acct-reason><span class="gb-acct-reason__label">Taste or texture</span></label>
+          <label class="gb-acct-reason" for="acct-reason-purchased-elsewhere"><input class="gb-acct-reason__radio" id="acct-reason-purchased-elsewhere" type="radio" name="acct-cancel-reason" value="purchased-elsewhere" data-acct-reason><span class="gb-acct-reason__label">I purchased elsewhere</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel now</button>
+      <button class="gb-acct-modal__save" type="button" data-acct-cta disabled>Continue</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Cancel flow — holiday pause branch with resume-date calendar {%- endcomment -%}
+<div class="gb-acct-modal gb-acct-modal--sheet" data-acct-modal-panel="cancel-holiday" role="dialog" aria-modal="true" aria-labelledby="acct-modal-cancel-holiday" aria-hidden="true" hidden>
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-cancel-holiday">Heading away on holiday</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-flow">
+        <div class="gb-acct-modal__prose">
+          <p class="gb-acct-modal__lead">You can pause your deliveries and we will automatically resume when you are back.</p>
+          <p class="gb-acct-modal__sub">Choose when you'd like to resume.</p>
+        </div>
+        <div class="gb-acct-cal" data-acct-cal>{%- render 'gb-account-flatpickr-cal', hidden_input: 'true' -%}</div>
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel now</button>
+      <button class="gb-acct-modal__save" type="button" data-acct-cta data-acct-modal-close>Pause subscription</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Cancel flow — discount offer branch {%- endcomment -%}
+<div class="gb-acct-modal gb-acct-modal--sheet" data-acct-modal-panel="cancel-discount" role="dialog" aria-modal="true" aria-labelledby="acct-modal-cancel-discount" aria-hidden="true" hidden>
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-cancel-discount">Too expensive right now</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-flow">
+        <div class="gb-acct-modal__prose">
+          <p class="gb-acct-modal__lead">Before you go - here's 20% off</p>
+          <p class="gb-acct-modal__sub">Stay with us and enjoy 20% off your next order.</p>
+        </div>
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel now</button>
+      <button class="gb-acct-modal__save" type="button" data-acct-cta data-acct-modal-close>Claim my 20% discount</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Restart cancelled subscription — inline calendar {%- endcomment -%}
+<div class="gb-acct-modal" data-acct-modal-panel="restart" data-acct-save-ungated role="dialog" aria-modal="true" aria-labelledby="acct-modal-restart" aria-hidden="true" hidden>
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-restart">Restart subscription</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-flow gb-acct-flow--tight">
+        <p class="gb-acct-modal__lead">Select a restart date</p>
+        <div class="gb-acct-modal__fields">
+          <div class="gb-acct-field">
+            <label class="gb-acct-field__label" for="acct-f-restart">Restart date</label>
+            <div class="gb-acct-field__control"><input class="gb-acct-field__input gb-acct-field__input--icon flatpickr-input" id="acct-f-restart" type="text" value="22/07/2026" data-acct-field><svg class="gb-acct-field__icon" xmlns="http://www.w3.org/2000/svg" viewBox="336 397 20 20" fill="none" aria-hidden="true"><path d="M353.5 405.335H338.5M349.333 398.668V402.001M342.667 398.668V402.001M342.5 415.335H349.5C350.9 415.335 351.6 415.335 352.135 415.062C352.605 414.822 352.988 414.44 353.228 413.97C353.5 413.435 353.5 412.735 353.5 411.335V404.335C353.5 402.935 353.5 402.234 353.228 401.7C352.988 401.229 352.605 400.847 352.135 400.607C351.6 400.335 350.9 400.335 349.5 400.335H342.5C341.1 400.335 340.4 400.335 339.865 400.607C339.395 400.847 339.012 401.229 338.772 401.7C338.5 402.234 338.5 402.935 338.5 404.335V411.335C338.5 412.735 338.5 413.435 338.772 413.97C339.012 414.44 339.395 414.822 339.865 415.062C340.4 415.335 341.1 415.335 342.5 415.335Z" stroke="currentColor" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="gb-acct-cal gb-acct-cal--field" data-acct-cal data-acct-cal-for="acct-f-restart">{%- render 'gb-account-flatpickr-cal' -%}</div>
+          </div>
+          <p class="gb-acct-modal__hint">Your next subscription order will be charged and processed on this date. You can make edits up until then.</p>
+        </div>
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-link" type="button" data-acct-modal-close>Cancel</button>
+      <button class="gb-acct-modal__save" type="button" data-acct-save data-acct-modal-close>Save</button>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Product locked — cannot reduce to zero {%- endcomment -%}
+<div class="gb-acct-modal gb-acct-modal--sheet" data-acct-modal-panel="product-locked" role="dialog" aria-modal="true" aria-labelledby="acct-modal-product-locked" aria-hidden="true" hidden data-acct-watched="1">
+  <div class="gb-acct-modal__backdrop" data-acct-modal-close></div>
+  <div class="gb-acct-modal__panel" tabindex="-1">
+    <div class="gb-acct-modal__head">
+      <h2 class="gb-acct-modal__title" id="acct-modal-product-locked">Edit Product</h2>
+      <button class="gb-acct-modal__close" type="button" data-acct-modal-close aria-label="Close"><svg class="gb-acct-modal__cross" xmlns="http://www.w3.org/2000/svg" viewBox="346 317 24 24" fill="none" aria-hidden="true"><path d="M363 324L353 334M353 324L363 334" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="gb-acct-modal__alert"><svg xmlns="http://www.w3.org/2000/svg" viewBox="17 249 20 20" fill="none" aria-hidden="true"><path d="M26.9964 267.366C31.5988 267.366 35.3298 263.635 35.3298 259.033C35.3298 254.43 31.5988 250.699 26.9964 250.699C22.394 250.699 18.6631 254.43 18.6631 259.033C18.6631 263.635 22.394 267.366 26.9964 267.366Z" fill="#DD655E"/><path d="M29.4971 256.535L24.4971 261.535M24.4971 256.535L29.4971 261.535" stroke="#ffffff" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <p>Sorry! <span>Subscriptions need to have at least one product. You need to add another product in order to delete this one.</span></p>
+    </div>
+    <div class="gb-acct-modal__body" data-lenis-prevent>
+      <div class="gb-acct-prod-grid">
+        <div class="gb-acct-prod" data-acct-product data-acct-qty-min="1">
+          <img class="gb-acct-prod__thumb" src="{{ 'product-placeholder.png' | asset_url }}" width="400" height="400" alt="Superfood Greens Gummies" loading="lazy" decoding="async">
+          <div class="gb-acct-prod__info">
+            <p class="gb-acct-prod__name">Superfood Greens Gummies</p>
+            <p class="gb-acct-prod__price"><span class="gb-acct-prod__now">$121.50</span><span class="gb-acct-prod__was">$168.90</span></p>
+          </div>
+          <div class="gb-acct-prod__opts">
+            <div class="gb-acct-prod__opt">
+              <span class="gb-acct-prod__opt-label">Flavour</span>
+              <div class="gb-acct-field__control gb-acct-prod__control"><select class="gb-acct-field__input gb-acct-prod__select" data-acct-field data-select><option selected>Flavour</option><option>Flavour option 1</option><option>Flavour option 2</option><option>Flavour option 3</option></select></div>
+            </div>
+          </div>
+          <div class="gb-acct-qty">
+            <button class="gb-acct-qty__btn gb-acct-qty__btn--down" type="button" data-acct-qty="down" aria-label="Decrease quantity" disabled><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 7H13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <input class="gb-acct-qty__value" type="number" inputmode="numeric" min="0" step="1" value="1" data-acct-qty-value aria-label="Quantity">
+            <button class="gb-acct-qty__btn gb-acct-qty__btn--up" type="button" data-acct-qty="up" aria-label="Increase quantity"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1.167V12.833M1.167 7H12.833" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="gb-acct-modal__foot">
+      <button class="gb-acct-modal__save" type="button" data-acct-save data-acct-modal-close data-acct-label-default="Save" disabled>Save</button>
+    </div>
+  </div>
+</div>

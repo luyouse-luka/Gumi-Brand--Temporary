@@ -1,0 +1,16 @@
+--- /tmp/claude-1007/-home-ly/af6d2363-070b-408c-8d99-7b8a6347533c/scratchpad/gb-reviews.r125.liquid	2026-09-09 03:26:54.069564424 +0000
++++ liquid/sections/gb-reviews.liquid	2026-09-09 03:26:54.081564228 +0000
+@@ -155,9 +155,10 @@
+       "type": "reel",
+       "name": "Reel",
+       "settings": [
+-        { "type": "video", "id": "video", "label": "Video (poster auto-derived from upload)" },
+-        { "type": "text", "id": "video_embed", "label": "Or a hosted video URL", "info": "YouTube or Vimeo. Takes priority over the upload above. Plain text, not a link field -- Shopify's URL type rejects watch links." },
+-        { "type": "image_picker", "id": "poster", "label": "Poster (hosted video only)", "info": "An upload derives its own poster; a hosted link cannot." },
++        { "type": "paragraph", "content": "Reels are PORTRAIT 9:16 — the card renders 304 x 540 (228 x 405 on mobile). Upload 1080 x 1920 or similar. A landscape clip is not cropped, it is letterboxed: a 16:9 video fills only about a third of the card's height and the rest is dark." },
++        { "type": "video", "id": "video", "label": "Video — portrait 9:16", "info": "1080 x 1920 recommended. Landscape clips letterbox with large bars top and bottom." },
++        { "type": "text", "id": "video_embed", "label": "Or a hosted video URL — portrait 9:16", "info": "YouTube or Vimeo. Takes priority over the upload above. Plain text, not a link field -- Shopify's URL type rejects watch links." },
++        { "type": "image_picker", "id": "poster", "label": "Poster (hosted video only) — portrait 9:16", "info": "An upload derives its own poster; a hosted link cannot. Match the video's 9:16 or the still will not fill the card." },
+         { "type": "text", "id": "alt", "label": "Accessible label", "default": "Play customer reel" }
+       ]
+     },

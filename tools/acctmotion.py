@@ -26,12 +26,13 @@ def _chrome():
 
 # page -> selectors that must have a real transition when motion is allowed
 TARGETS = {
-    "account.html": [".gb-acct-header__logo", ".gb-acct-nav__link",
+    "account.html": [".gb-acct-nav__link",
                      ".gb-acct-logout", ".gb-acct-field__input",
                      ".gb-acct-modal__panel", ".gb-acct-link"],
+    # Task 28: Sign up merged into this page -- its submit and inputs are the
+    # same classes, so the selectors below cover both views.
     "account-login.html": [".gb-acct-auth__submit", "a.gb-acct-auth__aside",
                            ".gb-acct-auth__alt a", ".gb-acct-field__input"],
-    "account-signup.html": [".gb-acct-auth__submit", ".gb-acct-field__input"],
 }
 GET = ("s=>{const e=document.querySelector(s);if(!e)return null;"
        "const c=getComputedStyle(e);"

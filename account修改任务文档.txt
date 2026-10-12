@@ -1,0 +1,5 @@
+
+1. gb-acct-auth__aside align-self: flex-start; hover  去掉透明度变色，应该为        color: #b5ed61;signup 的链接hover也是同样
+2. .gb-scallop--to-green的--wave-bg 改为 #FAF9F8
+3. account的header 的.gb-header__cta 改为    padding: 0 32px;gb-acct-auth__note     width: 472px;
+4. gb-acct-nav__item的button内部的左侧缺少一个深灰色圆点，查看设计； .gb-acct-sub__body     row-gap: 23.5px;.gb-acct-header__icons     column-gap: 24px; .gb-acct-schedule__days     padding: 0 4px;

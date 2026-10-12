@@ -34,7 +34,7 @@ BOARDS = {
     "subscriptions@1440": ("2284-28000", "account.html",        1440, "subscriptions"),
     "detail@1440":        ("2284-27792", "account.html",        1440, "detail"),
     "login@1440":         ("2284-35137", "account-login.html",  1440, None),
-    "signup@1440":        ("2284-35059", "account-signup.html", 1440, None),
+    "signup@1440":        ("2284-35059", "account-login.html",  1440, "signup"),
     "overview@390":       ("2284-27604", "account.html",        390,  None),
     "subscriptions@390":  ("2284-28305", "account.html",        390,  "subscriptions"),
     "detail@390":         ("2284-28330", "account.html",        390,  "detail"),
@@ -44,7 +44,7 @@ BOARDS = {
     "password@390":       ("2284-27151", "account.html",        390,  "password"),
     "help@390":           ("2284-27170", "account.html",        390,  "help"),
     "login@390":          ("2284-34993", "account-login.html",  390,  None),
-    "signup@390":         ("2284-35023", "account-signup.html", 390,  None),
+    "signup@390":         ("2284-35023", "account-login.html",  390,  "signup"),
 }
 
 # Frames that are staging, not content: the fake browser chrome on every phone
@@ -111,7 +111,9 @@ READ = """
 () => {
   const out = [];
   for (const el of document.querySelectorAll('body *')) {
-    if (!el.checkVisibility || !el.checkVisibility()) continue;
+    // visibilityProperty: the account menu fades via visibility:hidden while
+    // keeping display (r-a20), and the default check would measure it as shown.
+    if (!el.checkVisibility || !el.checkVisibility({visibilityProperty: true})) continue;
     let own = '';
     for (const n of el.childNodes) if (n.nodeType === 3) own += n.nodeValue;
     // A filled field's text lives in .value, an empty one's in @placeholder;
@@ -165,13 +167,23 @@ def main():
                 nav = ".gb-acct-nav" if w > 767 else ".gb-acct-list"
                 try:
                     if view == "detail":
+                        # ⚠ Task 40: the view being left runs a 500ms exit
+                        # animation; reading sooner samples the old view's copy
+                        # of the same strings
                         pg.click(nav + " [data-acct-goto='subscriptions']", timeout=3000)
-                        pg.wait_for_timeout(400)
+                        pg.wait_for_timeout(750)
                         pg.click("[data-acct-view='subscriptions'] "
                                  ".gb-acct-sub__cta[data-acct-goto='detail']", timeout=3000)
                     else:
-                        pg.click(nav + " [data-acct-goto='%s']" % view, timeout=3000)
-                    pg.wait_for_timeout(500)
+                        # the auth page switches views from its alt line, not a nav
+                        hook = ".gb-acct-auth__alt" if page == "account-login.html" else nav
+                        pg.click(hook + " [data-acct-goto='%s']" % view, timeout=3000)
+                    # ⚠ the click leaves the pointer where it landed, and the
+                    # incoming view often puts a button right there -- Playwright
+                    # DOES honour (hover: hover), so the hover colour gets measured
+                    # as if it were the resting one. Park the pointer off-content.
+                    pg.mouse.move(0, 0)
+                    pg.wait_for_timeout(750)
                 except Exception as e:
                     print("SKIP %-20s cannot reach view: %s" % (key, type(e).__name__))
                     pg.close(); continue

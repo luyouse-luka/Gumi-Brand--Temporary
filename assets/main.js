@@ -1935,7 +1935,10 @@
       var kids = box.list.children;
       for (var j = 0; j < kids.length; j++) {
         kids[j].setAttribute("aria-selected", j === i ? "true" : "false");
+        kids[j].classList.toggle("is-active", j === i);
       }
+      box.active = i;
+      if (box.open && kids[i]) box.list.setAttribute("aria-activedescendant", kids[i].id);
     }
   };
 

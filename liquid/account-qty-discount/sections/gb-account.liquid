@@ -1,0 +1,328 @@
+{%- doc -%}
+  Account portal — one template, tab-switched views. Account top bar with the shared site menu.
+  Design HTML kept verbatim from the frontend team's export; Liquid only swaps
+  in dynamic values (logo snippet, greeting, customer profile, order history,
+  save endpoint). CSS/JS delivered by the frontend team via assets/account.css
+  and assets/account.js — this file must not touch either.
+{%- enddoc -%}
+
+<main class="gb-acct">
+  <div class="gb-scallop gb-scallop--down gb-scallop--mint-to-cream gb-acct__wave" aria-hidden="true"></div>
+  <div class="gb-acct__inner">
+    <nav class="gb-acct-nav" aria-label="Account">
+      <ul class="gb-acct-nav__group">
+        <li class="gb-acct-nav__item"><button class="gb-acct-nav__link is-current" type="button" data-acct-goto="overview" aria-current="page">Account Overview</button></li>
+        <li class="gb-acct-nav__item"><button class="gb-acct-nav__link" type="button" data-acct-goto="subscriptions">My Subscriptions</button></li>
+        <li class="gb-acct-nav__item"><button class="gb-acct-nav__link" type="button" data-acct-goto="orders">Order History</button></li>
+      </ul>
+      <ul class="gb-acct-nav__group">
+        <li class="gb-acct-nav__item"><button class="gb-acct-nav__link" type="button" data-acct-goto="details">My Details</button></li>
+      </ul>
+      <ul class="gb-acct-nav__group">
+        <li class="gb-acct-nav__item"><a class="gb-acct-nav__link" href="https://gumi.com.au/pages/referral">Refer a friend</a></li>
+        <li class="gb-acct-nav__item"><button class="gb-acct-nav__link" type="button" data-acct-goto="help">Help</button></li>
+      </ul>
+      <ul class="gb-acct-nav__group">
+        <li class="gb-acct-nav__item"><a class="gb-acct-nav__link" href="/account/logout">Logout</a></li>
+      </ul>
+    </nav>
+
+    <div class="gb-acct__views">
+      {%- comment -%} Overview — hardcoded design placeholders except greeting {%- endcomment -%}
+      <section class="gb-acct__view" data-acct-view="overview">
+        <div class="gb-acct-ov">
+          <div class="gb-acct-hello">
+            <p class="gb-acct-hello__title">Hi, {{ customer.first_name | default: customer.name | escape }}</p>
+            <p class="gb-acct-hello__sub">Welcome back!</p>
+            <span class="gb-acct-hello__art" aria-hidden="true">
+              <svg class="gb-acct-hello__halo" xmlns="http://www.w3.org/2000/svg" viewBox="259.773 183.996 94.2284 120.023" fill="none" aria-hidden="true"><path d="M331.454 194.032C336.178 191.37 341.47 191.337 346.291 194.105C350.439 196.491 353.62 200.817 353.969 205.922C354.132 208.365 353.685 210.833 352.695 213.057C352.224 214.112 351.51 215.199 351.137 215.832C350.715 216.547 350.495 217.034 350.414 217.456L350.398 217.537C350.349 217.845 350.317 218.162 350.293 218.568L350.26 219.014C349.87 224.428 348.418 229.679 346.096 234.541C344.254 238.388 342.72 242.121 342.623 245.814V245.993C342.614 246.723 342.647 247.462 342.688 248.306L342.825 251.244C342.963 254.15 342.858 256.82 342.063 259.847C341.503 261.998 340.618 263.995 339.725 265.805C337.899 269.538 336.3 272.436 335.724 275.885L335.667 276.218C335.407 277.866 335.253 279.529 335.058 281.331C334.871 283.093 334.66 284.959 334.279 286.834L334.198 287.208C334.1 287.654 333.995 288.108 333.873 288.563C333.873 288.563 332.907 292.24 332.006 294.017C330.399 297.182 327.753 300.259 323.931 302.198C322.226 303.067 320.359 303.667 318.428 303.919C316.285 304.195 314.361 303.83 312.884 303.643C311.31 303.44 309.735 303.221 308.177 302.994C305.214 302.555 302.325 302.101 299.452 301.687C296.473 301.265 292.878 300.762 289.663 299.082C285.906 297.118 284.136 294.155 283.122 290.803C281.904 290.657 280.687 290.478 279.478 290.267C276.45 289.756 273.447 289.074 270.485 288.222C268.504 287.654 265.858 286.964 263.683 284.911C261.93 283.255 260.599 281.007 260.079 278.572C259.528 275.983 259.804 273.402 260.266 271.162C261.005 267.582 262.66 262.826 266.329 260.01C268.196 258.581 270.282 258.127 271.978 257.875C273.885 257.591 275.038 257.559 276.296 257.185C276.572 257.104 276.872 256.909 277.075 256.674C277.14 256.601 277.181 256.536 277.213 256.479C277.091 256.374 276.937 256.26 276.726 256.106C276.515 255.952 276.158 255.708 275.866 255.473C273.528 253.606 271.775 250.944 271.426 247.681C270.947 243.258 272.855 239.686 275.476 237.073C278.057 234.5 281.45 232.723 284.477 231.643C287.261 230.653 289.388 230.125 291.758 229.135C292.123 228.981 292.342 228.892 292.512 228.802C292.577 228.77 292.618 228.754 292.642 228.737C292.658 228.697 292.691 228.624 292.731 228.518C293.007 227.723 293.105 227.041 293.04 226.408C292.975 225.759 292.78 225.061 292.512 224.16C292.261 223.348 291.912 222.261 291.717 221.181C291.254 218.633 292.05 216.352 292.626 214.745C292.845 214.12 293.072 213.495 293.292 212.87C293.511 212.245 293.738 211.62 293.957 210.995C294.274 210.11 294.614 209.145 295.012 208.187C295.937 205.947 297.114 203.812 298.518 201.832C298.697 201.58 298.884 201.345 299.022 201.166C299.176 200.971 299.281 200.834 299.379 200.696C299.574 200.428 299.582 200.355 299.582 200.371C299.679 200.006 299.655 199.6 299.606 198.512C299.468 195.745 300.052 192.863 301.489 190.355C304.557 185.007 310.831 182.75 316.585 184.674C319.994 185.818 322.738 188.107 324.823 190.574C325.976 191.938 326.114 192.206 326.804 192.498C327.266 192.701 327.786 192.855 328.451 193.042C329.068 193.212 329.872 193.431 330.651 193.715C330.773 193.756 330.894 193.805 330.992 193.845C331.097 193.886 331.187 193.918 331.276 193.959C331.341 193.983 331.398 194 331.446 194.024L331.454 194.032Z" fill="#B5ED61"/></svg>
+              <picture><source srcset="{{ 'acct-bear-side.webp' | asset_url }}" type="image/webp"><img class="gb-acct-hello__bear" src="{{ 'acct-bear-side.png' | asset_url }}" alt="" width="378" height="292" loading="lazy" decoding="async"></picture>
+            </span>
+          </div>
+
+          {%- comment -%} Current order — three states share DOM, JS/CSS pick one via [data-acct-order-state]. {%- endcomment -%}
+          <div class="gb-acct-api-loading gb-acct-api-loading--overview" data-acct-overview-loading role="status" aria-label="Loading subscription"><span class="gb-acct-api-spinner" aria-hidden="true"></span></div>
+          <div class="gb-acct-order gb-acct-order--shipped" data-acct-order-state="shipped" hidden style="display:none">
+            <div class="gb-acct-order__body">
+              <div class="gb-acct-order__head">
+                <p class="gb-acct-order__label"><span data-state="preparing">Current order:</span><span data-state="shipped">Current order:</span><span data-state="renewal">It's upcoming!</span></p>
+                <p class="gb-acct-order__status"><span data-state="preparing">Preparing, Aug 13</span><span data-state="shipped">It's been shipped</span><span data-state="renewal">Renewal Date, Sep 13</span><svg class="gb-acct-order__icon" data-state="preparing" xmlns="http://www.w3.org/2000/svg" viewBox="205 332 24 24" fill="none" aria-hidden="true"><path d="M225.516 339.087L217.016 343.809M217.016 343.809L208.516 339.087M217.016 343.809L217.016 353.309M226.016 347.868V339.751C226.016 339.408 226.016 339.237 225.965 339.084C225.92 338.949 225.847 338.825 225.751 338.72C225.642 338.602 225.492 338.518 225.193 338.352L217.793 334.241C217.509 334.083 217.367 334.005 217.217 333.974C217.084 333.946 216.947 333.946 216.814 333.974C216.664 334.005 216.522 334.083 216.239 334.241L208.839 338.352C208.539 338.518 208.389 338.602 208.28 338.72C208.184 338.825 208.111 338.949 208.066 339.084C208.016 339.237 208.016 339.408 208.016 339.751V347.868C208.016 348.21 208.016 348.382 208.066 348.534C208.111 348.67 208.184 348.794 208.28 348.898C208.389 349.017 208.539 349.1 208.839 349.266L216.239 353.377C216.522 353.535 216.664 353.614 216.814 353.645C216.947 353.672 217.084 353.672 217.217 353.645C217.367 353.614 217.509 353.535 217.793 353.377L225.193 349.266C225.492 349.1 225.642 349.017 225.751 348.898C225.847 348.794 225.92 348.67 225.965 348.534C226.016 348.382 226.016 348.21 226.016 347.868Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M221.516 341.309L212.516 336.309" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="gb-acct-order__icon" data-state="shipped" xmlns="http://www.w3.org/2000/svg" viewBox="202 332 24 24" fill="none" aria-hidden="true"><path d="M217.902 347.809V338.009C217.902 336.888 217.902 336.328 217.684 335.901C217.493 335.524 217.187 335.218 216.81 335.027C216.383 334.809 215.822 334.809 214.702 334.809H207.102C205.982 334.809 205.422 334.809 204.994 335.027C204.618 335.218 204.312 335.524 204.12 335.901C203.902 336.328 203.902 336.888 203.902 338.009V344.609C203.902 345.729 203.902 346.289 204.12 346.717C204.312 347.093 204.618 347.399 204.994 347.591C205.422 347.809 205.982 347.809 207.102 347.809H217.902ZM217.902 347.809H222.302C222.862 347.809 223.142 347.809 223.356 347.7C223.544 347.604 223.697 347.451 223.793 347.263C223.902 347.049 223.902 346.769 223.902 346.209V343.471C223.902 343.227 223.902 343.104 223.875 342.989C223.85 342.887 223.81 342.79 223.755 342.7C223.693 342.599 223.607 342.513 223.434 342.34L221.371 340.277C221.198 340.104 221.112 340.018 221.011 339.956C220.921 339.901 220.824 339.861 220.722 339.836C220.606 339.809 220.484 339.809 220.24 339.809H217.902M210.902 350.309C210.902 351.689 209.783 352.809 208.402 352.809C207.022 352.809 205.902 351.689 205.902 350.309C205.902 348.928 207.022 347.809 208.402 347.809C209.783 347.809 210.902 348.928 210.902 350.309ZM221.902 350.309C221.902 351.689 220.783 352.809 219.402 352.809C218.022 352.809 216.902 351.689 216.902 350.309C216.902 348.928 218.022 347.809 219.402 347.809C220.783 347.809 221.902 348.928 221.902 350.309Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="gb-acct-order__icon" data-state="renewal" xmlns="http://www.w3.org/2000/svg" viewBox="239 336 24 24" fill="none" aria-hidden="true"><path d="M256 345.809L260 341.809L256 337.809M260 341.809H246.8C245.12 341.809 244.28 341.809 243.638 342.136C243.074 342.423 242.615 342.882 242.327 343.447C242 344.088 242 344.928 242 346.609V346.809M242 353.809H255.2C256.88 353.809 257.72 353.809 258.362 353.482C258.926 353.194 259.385 352.735 259.673 352.171C260 351.529 260 350.689 260 349.009V348.809M246 349.809L242 353.809L246 357.809" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></p>
+              </div>
+              <p class="gb-acct-order__note"><span data-state="preparing">We're preparing your order.</span><span data-state="shipped">Estimated delivery 3-6 business days.</span><span data-state="renewal">You can make changes up until Sep 13, 6:59 AM</span></p>
+            </div>
+            <a class="gb-acct-order__cta" href="#"><span data-state="preparing">View Order</span><span data-state="shipped">View Order</span><span data-state="renewal">Manage Subscription</span></a>
+          </div>
+
+          <a class="gb-acct-refer" href="https://gumi.com.au/pages/referral" style="text-decoration:none" aria-label="Refer a Friend">
+            <div class="gb-acct-refer__body">
+              <img class="gb-acct-refer__img" src="{{ 'refer-friends.webp' | asset_url }}" alt="" width="80" height="80" loading="lazy">
+              <div class="gb-acct-refer__text">
+                <p class="gb-acct-refer__tag">Refer a Friend</p>
+                <p class="gb-acct-refer__note">Earn rewards and $20 for every referral.</p>
+              </div>
+            </div>
+            <span class="gb-acct-refer__action"><svg class="gb-acct-refer__arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          </a>
+
+          <nav class="gb-acct-list" aria-label="Account sections">
+            <ul class="gb-acct-list__group">
+              <li class="gb-acct-list__item"><button class="gb-acct-list__link" type="button" data-acct-goto="subscriptions">My Subscriptions</button></li>
+              <li class="gb-acct-list__item"><button class="gb-acct-list__link" type="button" data-acct-goto="orders">Order History</button></li>
+            </ul>
+            <ul class="gb-acct-list__group">
+              <li class="gb-acct-list__item"><button class="gb-acct-list__link" type="button" data-acct-goto="details">My Details</button></li>
+            </ul>
+            <ul class="gb-acct-list__group">
+              <li class="gb-acct-list__item"><a class="gb-acct-list__link" href="https://gumi.com.au/pages/referral">Refer a friend</a></li>
+              <li class="gb-acct-list__item"><button class="gb-acct-list__link" type="button" data-acct-goto="help">Help</button></li>
+            </ul>
+          </nav>
+
+          <a class="gb-acct-logout" href="/account/logout"><svg class="gb-acct-logout__icon" xmlns="http://www.w3.org/2000/svg" viewBox="150.5 1136 24 24" fill="none" aria-hidden="true"><path d="M166.5 1143L171.5 1148L166.5 1153M171.5 1148H159.5M159.5 1139H158.3C156.62 1139 155.78 1139 155.138 1139.33C154.574 1139.61 154.115 1140.07 153.827 1140.64C153.5 1141.28 153.5 1142.12 153.5 1143.8V1152.2C153.5 1153.88 153.5 1154.72 153.827 1155.36C154.115 1155.93 154.574 1156.39 155.138 1156.67C155.78 1157 156.62 1157 158.3 1157H159.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Logout</span></a>
+        </div>
+      </section>
+
+      {%- comment -%} My Details — wired to Shopify customer object; save via Cloudflare Worker at /apps/account/update-profile {%- endcomment -%}
+      <section class="gb-acct__view" data-acct-view="details" hidden>
+        <div class="gb-acct-page">
+          <div class="gb-acct-intro">
+            <button class="gb-acct-intro__back is-current" type="button" data-acct-goto="overview" aria-label="Back to account overview" aria-current="page"><svg class="gb-acct-intro__arrow" xmlns="http://www.w3.org/2000/svg" viewBox="26 174 20 20" fill="none" aria-hidden="true"><path d="M41.8307 184.001H30.1641M35.9974 178.168L30.1641 184.001L35.9974 189.835" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <div class="gb-acct-intro__text">
+              <h1 class="gb-acct-intro__title">Your details</h1>
+            </div>
+          </div>
+
+          <form class="gb-acct-profile" id="gb-acct-details-form" action="/apps/account/update-profile" method="post" data-acct-form data-acct-watched="1" novalidate>
+            <div class="gb-acct-cards">
+              <div class="gb-acct-card">
+                <div class="gb-acct-card__body">
+                  <div class="gb-acct-card__group">
+                    <p class="gb-acct-card__title">Email</p>
+                    <div class="gb-acct-field">
+                      <label class="gb-acct-field__label" for="acct-md-email">Email*</label>
+                      <input class="gb-acct-field__input" id="acct-md-email" name="email" type="email" autocomplete="email" value="{{ customer.email | escape }}" required data-acct-field readonly>
+                    </div>
+                  </div>
+                  <p class="gb-acct-card__note" data-acct-email-status role="status" aria-live="polite" hidden></p>
+                  <p class="gb-acct-card__note">To change your email, confirm the links sent to both your current and new email addresses. Your email will only change after both are confirmed.</p>
+                </div>
+              </div>
+
+              <div class="gb-acct-card">
+                <div class="gb-acct-card__body">
+                  <div class="gb-acct-card__group">
+                    <p class="gb-acct-card__title">Your name</p>
+                    <div class="gb-acct-profile__row">
+                      <div class="gb-acct-field">
+                        <label class="gb-acct-field__label" for="acct-md-first">First name*</label>
+                        <input class="gb-acct-field__input" id="acct-md-first" name="first_name" type="text" autocomplete="given-name" value="{{ customer.first_name | escape }}" required data-acct-field>
+                      </div>
+                      <div class="gb-acct-field">
+                        <label class="gb-acct-field__label" for="acct-md-last">Last name*</label>
+                        <input class="gb-acct-field__input" id="acct-md-last" name="last_name" type="text" autocomplete="family-name" value="{{ customer.last_name | escape }}" required data-acct-field>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="gb-acct-card">
+                <div class="gb-acct-card__body">
+                  <div class="gb-acct-card__group">
+                    <p class="gb-acct-card__title">Phone number</p>
+                    <div class="gb-acct-field">
+                      <label class="gb-acct-field__label" for="acct-md-phone">Phone number*</label>
+                      <div class="gb-acct-field__box"><span class="gb-acct-field__prefix">AU</span><input class="gb-acct-field__bare" id="acct-md-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" value="{{ customer.phone | escape }}" required data-acct-field></div>
+                    </div>
+                  </div>
+                  <p class="gb-acct-card__note">Opt in to order updates via text message</p>
+                </div>
+              </div>
+            </div>
+
+            <button class="gb-acct-btn gb-acct-profile__submit" type="submit" data-acct-save disabled>Save changes</button>
+            <p class="gb-acct-profile__note" data-acct-details-msg>You will receive an email confirmation to verify changes.</p>
+          </form>
+        </div>
+      </section>
+
+      {%- render 'gb-account-placeholders' -%}
+    </div>
+  </div>
+<style>
+  .gb-acct-product--oos .gb-acct-product__label { color: #dd655e; text-decoration: line-through; }
+  .gb-acct-product--oos .gb-acct-product__flavour, .gb-acct-prod__stock { color: #dd655e; }
+  .gb-acct-product--oos [data-acct-modal="edit-product"] { color: #b5b5b5; cursor: not-allowed; }
+  .gb-acct-prod--oos .gb-acct-prod__name { color: #dd655e; text-decoration: line-through; }
+  #gb-acct-details-form .gb-acct-field__input.is-required-invalid,
+  #gb-acct-details-form .gb-acct-field__input[aria-invalid="true"],
+  #gb-acct-details-form .gb-acct-field__box.is-required-invalid {
+    border-color: #d93025 !important;
+    box-shadow: 0 0 0 1px #d93025 !important;
+  }
+</style>
+</main>
+
+{%- render 'gb-account-modals' -%}
+{%- render 'gb-account-data' -%}
+
+<script>
+  (function () {
+    if (window.__gbAcctDetailsBound) return; window.__gbAcctDetailsBound = true;
+    var form = document.getElementById('gb-acct-details-form');
+    if (!form) return;
+    var msg = form.querySelector('[data-acct-details-msg]');
+    var saveBtn = form.querySelector('[data-acct-save]');
+    var fields = form.querySelectorAll('[data-acct-field]');
+
+    function snapshot() { var v=[]; for (var i=0;i<fields.length;i++) v.push(fields[i].value); return JSON.stringify(v); }
+    var initial = snapshot();
+    var emailField = form.querySelector('[name="email"]');
+    var currentEmail = emailField.value;
+    var emailEnabled = false;
+    var saving = false;
+    var emailStatus = form.querySelector('[data-acct-email-status]');
+    var pendingEmail = null;
+    function showPending(pending) {
+      pendingEmail = pending;
+      if (!emailStatus) return;
+      emailStatus.hidden = !pending;
+      if (!pending) { emailStatus.textContent = ''; return; }
+      var progress = pending.processing ? 'Both addresses confirmed. Updating your account…' :
+        pending.old_confirmed ? 'Current address confirmed. Check your new inbox to finish.' :
+        pending.new_confirmed ? 'New address confirmed. Check your current inbox to finish.' :
+        'Check both your current and new inboxes and confirm each link.';
+      emailStatus.textContent = 'Email change pending: ' + pending.new_email + '. ' + progress;
+    }
+    function api(path, body) {
+      return fetch('/apps/account/' + path, {
+        method: body ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store',
+        headers: body ? { 'Content-Type': 'application/json' } : {},
+        body: body ? JSON.stringify(body) : undefined
+      }).then(function (r) { return r.json().then(function (j) {
+        if (!r.ok || !j.ok) {
+          var error = new Error((j.userErrors || []).map(function (u) { return u.message; }).join('; ') || j.error || 'Save failed.');
+          error.userErrors = j.userErrors; throw error;
+        }
+        return j;
+      }); });
+    }
+    function loadEmailStatus() {
+      if (saving) return;
+      api('email-change-status').then(function (j) {
+        if (saving) return;
+        emailEnabled = !!j.enabled;
+        emailField.readOnly = !emailEnabled;
+        if (j.current_email && j.current_email !== currentEmail) {
+          var baseline = JSON.parse(initial);
+          Array.prototype.forEach.call(fields, function (field, i) {
+            if (field === emailField) baseline[i] = j.current_email;
+          });
+          if (emailField.value === currentEmail) emailField.value = j.current_email;
+          currentEmail = j.current_email;
+          initial = JSON.stringify(baseline);
+          if (pendingEmail && msg) msg.textContent = 'Your email address has been changed.';
+          recompute();
+        }
+        showPending(j.pending);
+      }).catch(function () { /* Leave the existing form usable if status is unavailable. */ });
+    }
+    loadEmailStatus();
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) loadEmailStatus(); });
+    setInterval(function () { if (pendingEmail && !document.hidden) loadEmailStatus(); }, 30000);
+    function isRequiredEmpty(field) { return field.required && !String(field.value || '').trim(); }
+    function paintField(field, invalid) {
+      field.classList.toggle('is-required-invalid', invalid);
+      field.setAttribute('aria-invalid', invalid ? 'true' : 'false');
+      var box = field.closest('.gb-acct-field__box');
+      if (box) box.classList.toggle('is-required-invalid', invalid);
+    }
+    function validateRequiredFields() {
+      var firstInvalid = null;
+      Array.prototype.forEach.call(fields, function (field) {
+        var invalid = isRequiredEmpty(field) || !field.checkValidity();
+        paintField(field, invalid);
+        if (invalid && !firstInvalid) firstInvalid = field;
+      });
+      if (firstInvalid) firstInvalid.focus();
+      return !firstInvalid;
+    }
+    function recompute(event) {
+      if (saveBtn) saveBtn.disabled = saving || (snapshot() === initial);
+      // Clear only the edited field's server error; keep errors on other fields visible.
+      var field = event && event.target;
+      if (field && field.matches('[data-acct-field]') && field.classList.contains('is-required-invalid')) {
+        paintField(field, isRequiredEmpty(field) || !field.checkValidity());
+      }
+    }
+    function paintServerErrors(errors) {
+      var names = { firstName: 'first_name', lastName: 'last_name', phone: 'phone', email: 'email' };
+      var firstInvalid = null;
+      (errors || []).forEach(function (error) {
+        var path = Array.isArray(error.field) ? error.field : String(error.field || '').split('.');
+        var name = path[path.length - 1];
+        name = names[name] || name;
+        var field = Array.prototype.find.call(fields, function (input) { return input.name === name; });
+        if (!field) return;
+        paintField(field, true);
+        if (!firstInvalid) firstInvalid = field;
+      });
+      if (firstInvalid) firstInvalid.focus();
+    }
+    form.addEventListener('input', recompute);
+    form.addEventListener('change', recompute);
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (saving) return;
+      if (!validateRequiredFields()) {
+        if (msg) msg.textContent = 'Please complete all required fields with valid values.';
+        return;
+      }
+      var requestedEmail = emailField.value.trim().toLowerCase();
+      var changingEmail = emailEnabled && requestedEmail !== currentEmail.toLowerCase();
+      if (msg) msg.textContent = changingEmail ? 'Saving and sending confirmation emails…' : 'Saving…';
+      saving = true;
+      Array.prototype.forEach.call(fields, function (field) { field.disabled = true; });
+      recompute();
+      var body = {
+        first_name: form.querySelector('[name="first_name"]').value,
+        last_name: form.querySelector('[name="last_name"]').value,
+        phone: form.querySelector('[name="phone"]').value
+      };
+      api('update-profile', body).then(function () {
+        // Keep the original email until both inboxes confirm. Profile fields are saved independently.
+        var oldValue = emailField.value;
+        emailField.value = currentEmail;
+        initial = snapshot();
+        emailField.value = oldValue;
+        if (!changingEmail) return null;
+        return api('request-email-change', { new_email: requestedEmail });
+      }).then(function (j) {
+        if (j) {
+          currentEmail = j.current_email;
+          emailField.value = currentEmail;
+          showPending(j.pending);
+          if (msg) msg.textContent = 'Confirmation emails sent. Confirm both addresses to complete your email change.';
+        } else if (msg) msg.textContent = 'Saved.';
+        initial = snapshot();
+      }).catch(function (error) {
+        Array.prototype.forEach.call(fields, function (field) { field.disabled = false; });
+        paintServerErrors(error.userErrors);
+        if (msg) msg.textContent = error.message || 'Network error. Try again.';
+      }).then(function () {
+        saving = false;
+        Array.prototype.forEach.call(fields, function (field) { field.disabled = false; });
+        recompute();
+      });
+    });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Account portal",
+  "settings": [],
+  "presets": [{ "name": "Account portal" }]
+}
+{% endschema %}
